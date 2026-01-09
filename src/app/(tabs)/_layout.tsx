@@ -5,8 +5,12 @@ import { Calendar, Users, MessageSquare, DollarSign, MoreHorizontal, Shield, Ima
 import { useTeamStore } from '@/lib/store';
 
 export default function TabLayout() {
-  const isAdmin = useTeamStore((s) => s.isAdmin);
-  const canManageTeam = useTeamStore((s) => s.canManageTeam);
+  const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
+  const players = useTeamStore((s) => s.players);
+
+  // Derive admin status from reactive state
+  const currentPlayer = players.find((p) => p.id === currentPlayerId);
+  const isAdminUser = currentPlayer?.roles?.includes('admin') ?? false;
 
   return (
     <Tabs
@@ -118,7 +122,7 @@ export default function TabLayout() {
         name="admin"
         options={{
           title: 'Admin',
-          href: isAdmin() ? undefined : null,
+          href: isAdminUser ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
