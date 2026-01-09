@@ -60,6 +60,24 @@ export type PlayerRole = 'admin' | 'captain';
 // Player Status
 export type PlayerStatus = 'active' | 'reserve';
 
+// Notification Preferences
+export interface NotificationPreferences {
+  gameInvites: boolean;
+  gameReminderDayBefore: boolean;
+  gameReminderHoursBefore: boolean;
+  chatMessages: boolean;
+  paymentReminders: boolean;
+  pushToken?: string; // For future push notification implementation
+}
+
+export const defaultNotificationPreferences: NotificationPreferences = {
+  gameInvites: true,
+  gameReminderDayBefore: true,
+  gameReminderHoursBefore: true,
+  chatMessages: true,
+  paymentReminders: true,
+};
+
 // Types
 export interface Player {
   id: string;
@@ -71,6 +89,7 @@ export interface Player {
   avatar?: string;
   roles: PlayerRole[]; // Array of roles - can be admin, captain, or both
   status: PlayerStatus; // active or reserve (this is separate from roles)
+  notificationPreferences?: NotificationPreferences;
 }
 
 export interface Game {
@@ -235,6 +254,10 @@ interface TeamStore {
   // Helper to check if current user has admin/captain privileges
   canManageTeam: () => boolean;
   isAdmin: () => boolean;
+
+  // Notification Preferences
+  updateNotificationPreferences: (playerId: string, prefs: Partial<NotificationPreferences>) => void;
+  getNotificationPreferences: (playerId: string) => NotificationPreferences;
 }
 
 // Mock data
@@ -511,6 +534,26 @@ export const useTeamStore = create<TeamStore>()(
         const state = get();
         const currentPlayer = state.players.find((p) => p.id === state.currentPlayerId);
         return currentPlayer?.roles?.includes('admin') || false;
+      },
+
+      // Notification Preferences
+      updateNotificationPreferences: (playerId, prefs) => set((state) => ({
+        players: state.players.map((p) =>
+          p.id === playerId
+            ? {
+                ...p,
+                notificationPreferences: {
+                  ...(p.notificationPreferences || defaultNotificationPreferences),
+                  ...prefs,
+                },
+              }
+            : p
+        ),
+      })),
+      getNotificationPreferences: (playerId) => {
+        const state = get();
+        const player = state.players.find((p) => p.id === playerId);
+        return player?.notificationPreferences || defaultNotificationPreferences;
       },
     }),
     {

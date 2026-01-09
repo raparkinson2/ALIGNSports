@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Alert, Platform, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert, Platform, Modal, TextInput, KeyboardAvoidingView, Switch } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -14,6 +14,7 @@ import {
   X,
   Camera,
   Pencil,
+  BellRing,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -21,7 +22,7 @@ import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { useTeamStore, Player } from '@/lib/store';
+import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences } from '@/lib/store';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 
 interface MenuItemProps {
@@ -213,6 +214,142 @@ function EditProfileModal({ visible, onClose, player, onSave }: EditProfileModal
   );
 }
 
+interface NotificationPreferencesModalProps {
+  visible: boolean;
+  onClose: () => void;
+  preferences: NotificationPreferences;
+  onSave: (prefs: Partial<NotificationPreferences>) => void;
+}
+
+interface PreferenceToggleProps {
+  label: string;
+  description: string;
+  value: boolean;
+  onToggle: (value: boolean) => void;
+}
+
+function PreferenceToggle({ label, description, value, onToggle }: PreferenceToggleProps) {
+  return (
+    <View className="flex-row items-center justify-between py-4 border-b border-slate-800">
+      <View className="flex-1 mr-4">
+        <Text className="text-white font-medium text-base">{label}</Text>
+        <Text className="text-slate-400 text-sm mt-0.5">{description}</Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={(newValue) => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onToggle(newValue);
+        }}
+        trackColor={{ false: '#334155', true: '#0891b2' }}
+        thumbColor={value ? '#67e8f9' : '#94a3b8'}
+      />
+    </View>
+  );
+}
+
+function NotificationPreferencesModal({ visible, onClose, preferences, onSave }: NotificationPreferencesModalProps) {
+  const [prefs, setPrefs] = useState<NotificationPreferences>(preferences);
+
+  const handleToggle = (key: keyof NotificationPreferences, value: boolean) => {
+    setPrefs((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSave = () => {
+    onSave(prefs);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onClose();
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View className="flex-1 bg-black/60 justify-end">
+        <View className="bg-slate-900 rounded-t-3xl max-h-[85%]">
+          {/* Header */}
+          <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+            <Text className="text-white text-lg font-bold">Notification Settings</Text>
+            <Pressable
+              onPress={onClose}
+              className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center"
+            >
+              <X size={18} color="#94a3b8" />
+            </Pressable>
+          </View>
+
+          <ScrollView className="px-5" showsVerticalScrollIndicator={false}>
+            {/* Game Notifications Section */}
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-4 mb-2">
+              Game Notifications
+            </Text>
+
+            <PreferenceToggle
+              label="Game Invites"
+              description="Get notified when you're invited to a game"
+              value={prefs.gameInvites}
+              onToggle={(v) => handleToggle('gameInvites', v)}
+            />
+
+            <PreferenceToggle
+              label="Day Before Reminder"
+              description="Reminder 24 hours before game time"
+              value={prefs.gameReminderDayBefore}
+              onToggle={(v) => handleToggle('gameReminderDayBefore', v)}
+            />
+
+            <PreferenceToggle
+              label="Hours Before Reminder"
+              description="Reminder 2 hours before game time"
+              value={prefs.gameReminderHoursBefore}
+              onToggle={(v) => handleToggle('gameReminderHoursBefore', v)}
+            />
+
+            {/* Communication Section */}
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-6 mb-2">
+              Communication
+            </Text>
+
+            <PreferenceToggle
+              label="Chat Messages"
+              description="Get notified when someone sends a team message"
+              value={prefs.chatMessages}
+              onToggle={(v) => handleToggle('chatMessages', v)}
+            />
+
+            {/* Payments Section */}
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-6 mb-2">
+              Payments
+            </Text>
+
+            <PreferenceToggle
+              label="Payment Reminders"
+              description="Get reminders about outstanding payments"
+              value={prefs.paymentReminders}
+              onToggle={(v) => handleToggle('paymentReminders', v)}
+            />
+
+            {/* Info Note */}
+            <View className="bg-slate-800/50 rounded-xl p-4 mt-6 mb-4">
+              <Text className="text-cyan-400 font-medium mb-1">About Push Notifications</Text>
+              <Text className="text-slate-400 text-sm">
+                Push notifications let you know about important team updates even when the app is closed.
+                You can enable or disable specific notification types above.
+              </Text>
+            </View>
+
+            {/* Save Button */}
+            <Pressable
+              onPress={handleSave}
+              className="bg-cyan-500 rounded-xl py-4 items-center mb-8 active:bg-cyan-600"
+            >
+              <Text className="text-white font-semibold text-base">Save Preferences</Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function MoreScreen() {
   const router = useRouter();
   const players = useTeamStore((s) => s.players);
@@ -222,12 +359,15 @@ export default function MoreScreen() {
   const games = useTeamStore((s) => s.games);
   const notifications = useTeamStore((s) => s.notifications);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
+  const updateNotificationPreferences = useTeamStore((s) => s.updateNotificationPreferences);
+  const getNotificationPreferences = useTeamStore((s) => s.getNotificationPreferences);
 
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
   const canManageTeam = currentPlayer?.roles?.includes('admin') || currentPlayer?.roles?.includes('captain');
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [playerToEdit, setPlayerToEdit] = useState<Player | null>(null);
+  const [notifPrefsVisible, setNotifPrefsVisible] = useState(false);
 
   const handleEditProfile = (player: Player) => {
     // Can edit own profile, or any profile if admin/captain
@@ -244,6 +384,13 @@ export default function MoreScreen() {
       updatePlayer(playerToEdit.id, updates);
     }
   };
+
+  const handleSaveNotificationPrefs = (prefs: Partial<NotificationPreferences>) => {
+    if (currentPlayerId) {
+      updateNotificationPreferences(currentPlayerId, prefs);
+    }
+  };
+
   const unreadCount = notifications.filter((n) => n.toPlayerId === currentPlayerId && !n.read).length;
 
   const handleEmailTeam = () => {
@@ -410,6 +557,26 @@ export default function MoreScreen() {
             </Pressable>
           </Animated.View>
 
+          {/* Notification Settings */}
+          <Animated.View entering={FadeInDown.delay(125).springify()}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setNotifPrefsVisible(true);
+              }}
+              className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
+            >
+              <View className="w-10 h-10 rounded-full items-center justify-center bg-cyan-500/20">
+                <BellRing size={20} color="#67e8f9" />
+              </View>
+              <View className="flex-1 ml-3">
+                <Text className="font-semibold text-white">Notification Settings</Text>
+                <Text className="text-slate-400 text-sm">Manage push notification preferences</Text>
+              </View>
+              <ChevronRight size={20} color="#64748b" />
+            </Pressable>
+          </Animated.View>
+
           <MenuItem
             icon={<Mail size={20} color="#67e8f9" />}
             title="Email Team"
@@ -469,6 +636,16 @@ export default function MoreScreen() {
           }}
           player={playerToEdit}
           onSave={handleSaveProfile}
+        />
+      )}
+
+      {/* Notification Preferences Modal */}
+      {currentPlayerId && (
+        <NotificationPreferencesModal
+          visible={notifPrefsVisible}
+          onClose={() => setNotifPrefsVisible(false)}
+          preferences={getNotificationPreferences(currentPlayerId)}
+          onSave={handleSaveNotificationPrefs}
         />
       )}
     </View>

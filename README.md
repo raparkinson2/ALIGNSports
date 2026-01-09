@@ -94,6 +94,12 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - View notifications in More > Notifications
 - Unread badge shows count
 - Tap notification to go to game details
+- **Notification Preferences**: Customize which notifications you receive
+  - Game Invites: Get notified when invited to games
+  - Day Before Reminder: 24 hours before game time
+  - Hours Before Reminder: 2 hours before game time
+  - Chat Messages: Team chat notifications
+  - Payment Reminders: Outstanding payment alerts
 
 ### Admin Panel (Admin only)
 - **Team Settings**: Edit team name
@@ -112,6 +118,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 ### More Tab
 - View your current player profile
 - Access notifications with unread badge
+- **Notification Settings**: Manage push notification preferences
 - Email the entire team at once
 - Send game invites to potential subs
 - Log out to switch players
