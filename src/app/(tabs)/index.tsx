@@ -516,88 +516,6 @@ export default function ScheduleScreen() {
                 </View>
               </View>
 
-              {/* Refreshment Duty */}
-              <View className="mb-5">
-                <View className="flex-row items-center justify-between bg-slate-800 rounded-xl p-4">
-                  <View className="flex-row items-center">
-                    <Beer size={20} color="#f59e0b" />
-                    <Text className="text-white font-medium ml-3">Refreshment Duty</Text>
-                  </View>
-                  <Switch
-                    value={showBeerDuty}
-                    onValueChange={setShowBeerDuty}
-                    trackColor={{ false: '#334155', true: '#f59e0b40' }}
-                    thumbColor={showBeerDuty ? '#f59e0b' : '#64748b'}
-                  />
-                </View>
-
-                {showBeerDuty && (
-                  <View className="mt-3">
-                    <Text className="text-slate-400 text-sm mb-2">Assign Player</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
-                      <Pressable
-                        onPress={() => setSelectedBeerDutyPlayer(null)}
-                        className={cn(
-                          'px-4 py-2 rounded-xl mr-2 border',
-                          selectedBeerDutyPlayer === null
-                            ? 'bg-amber-500/20 border-amber-500/50'
-                            : 'bg-slate-800 border-slate-700'
-                        )}
-                      >
-                        <Text className={cn(
-                          'font-medium',
-                          selectedBeerDutyPlayer === null ? 'text-amber-400' : 'text-slate-400'
-                        )}>
-                          None
-                        </Text>
-                      </Pressable>
-                      {activePlayers.map((player) => (
-                        <Pressable
-                          key={player.id}
-                          onPress={() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            setSelectedBeerDutyPlayer(player.id);
-                          }}
-                          className={cn(
-                            'flex-row items-center px-3 py-2 rounded-xl mr-2 border',
-                            selectedBeerDutyPlayer === player.id
-                              ? 'bg-amber-500/20 border-amber-500/50'
-                              : 'bg-slate-800 border-slate-700'
-                          )}
-                        >
-                          <Image
-                            source={{ uri: player.avatar }}
-                            style={{ width: 24, height: 24, borderRadius: 12 }}
-                            contentFit="cover"
-                          />
-                          <Text className={cn(
-                            'font-medium ml-2',
-                            selectedBeerDutyPlayer === player.id ? 'text-amber-400' : 'text-slate-400'
-                          )}>
-                            {player.name.split(' ')[0]}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-              </View>
-
-              {/* Notes */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Notes (Optional)</Text>
-                <TextInput
-                  value={notes}
-                  onChangeText={setNotes}
-                  placeholder="Any additional info..."
-                  placeholderTextColor="#64748b"
-                  multiline
-                  numberOfLines={3}
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                  style={{ minHeight: 80, textAlignVertical: 'top' }}
-                />
-              </View>
-
               {/* Player Invitations */}
               <View className="mb-5">
                 <Pressable
@@ -758,6 +676,88 @@ export default function ScheduleScreen() {
                     )}
                   </View>
                 )}
+              </View>
+
+              {/* Refreshment Duty */}
+              <View className="mb-5">
+                <View className="flex-row items-center justify-between bg-slate-800 rounded-xl p-4">
+                  <View className="flex-row items-center">
+                    <Beer size={20} color="#f59e0b" />
+                    <Text className="text-white font-medium ml-3">Refreshment Duty</Text>
+                  </View>
+                  <Switch
+                    value={showBeerDuty}
+                    onValueChange={setShowBeerDuty}
+                    trackColor={{ false: '#334155', true: '#f59e0b40' }}
+                    thumbColor={showBeerDuty ? '#f59e0b' : '#64748b'}
+                  />
+                </View>
+
+                {showBeerDuty && (
+                  <View className="mt-3">
+                    <Text className="text-slate-400 text-sm mb-2">Assign Player</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
+                      <Pressable
+                        onPress={() => setSelectedBeerDutyPlayer(null)}
+                        className={cn(
+                          'px-4 py-2 rounded-xl mr-2 border',
+                          selectedBeerDutyPlayer === null
+                            ? 'bg-amber-500/20 border-amber-500/50'
+                            : 'bg-slate-800 border-slate-700'
+                        )}
+                      >
+                        <Text className={cn(
+                          'font-medium',
+                          selectedBeerDutyPlayer === null ? 'text-amber-400' : 'text-slate-400'
+                        )}>
+                          None
+                        </Text>
+                      </Pressable>
+                      {activePlayers.map((player) => (
+                        <Pressable
+                          key={player.id}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setSelectedBeerDutyPlayer(player.id);
+                          }}
+                          className={cn(
+                            'flex-row items-center px-3 py-2 rounded-xl mr-2 border',
+                            selectedBeerDutyPlayer === player.id
+                              ? 'bg-amber-500/20 border-amber-500/50'
+                              : 'bg-slate-800 border-slate-700'
+                          )}
+                        >
+                          <Image
+                            source={{ uri: player.avatar }}
+                            style={{ width: 24, height: 24, borderRadius: 12 }}
+                            contentFit="cover"
+                          />
+                          <Text className={cn(
+                            'font-medium ml-2',
+                            selectedBeerDutyPlayer === player.id ? 'text-amber-400' : 'text-slate-400'
+                          )}>
+                            {player.name.split(' ')[0]}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+
+              {/* Notes */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Notes (Optional)</Text>
+                <TextInput
+                  value={notes}
+                  onChangeText={setNotes}
+                  placeholder="Any additional info..."
+                  placeholderTextColor="#64748b"
+                  multiline
+                  numberOfLines={3}
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  style={{ minHeight: 80, textAlignVertical: 'top' }}
+                />
               </View>
             </ScrollView>
           </SafeAreaView>
