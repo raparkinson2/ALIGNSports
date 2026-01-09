@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Platform, Alert, Modal, Switch, TextInput } from 'react-native';
+import { View, Text, ScrollView, Pressable, Platform, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -370,11 +370,6 @@ export default function GameDetailScreen() {
     setIsInviteModalVisible(false);
   };
 
-  const handleToggleBeerDuty = (value: boolean) => {
-    updateGame(game.id, { showBeerDuty: value });
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
   const handleSelectBeerDutyPlayer = (playerId: string) => {
     updateGame(game.id, { beerDutyPlayerId: playerId });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -739,52 +734,6 @@ export default function GameDetailScreen() {
                   </View>
                 </View>
               </Pressable>
-
-              {/* Beer Duty Toggle - Admin Only */}
-              {isAdmin() && (
-                <View className="bg-slate-800/80 rounded-xl p-4 mb-4 border border-slate-700/50">
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center flex-1">
-                      <Beer size={20} color="#f59e0b" />
-                      <View className="ml-3">
-                        <Text className="text-white font-semibold">Show Refreshment Duty</Text>
-                        <Text className="text-slate-400 text-sm">
-                          Display who's bringing drinks
-                        </Text>
-                      </View>
-                    </View>
-                    <Switch
-                      value={game.showBeerDuty ?? false}
-                      onValueChange={handleToggleBeerDuty}
-                      trackColor={{ false: '#334155', true: '#f59e0b40' }}
-                      thumbColor={game.showBeerDuty ? '#f59e0b' : '#64748b'}
-                    />
-                  </View>
-                </View>
-              )}
-
-              {/* Beer Duty Player Selection */}
-              {game.showBeerDuty && (
-                <Pressable
-                  onPress={() => setIsBeerDutyModalVisible(true)}
-                  className="bg-slate-800/80 rounded-xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/80"
-                >
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center flex-1">
-                      <Beer size={20} color="#f59e0b" />
-                      <View className="ml-3">
-                        <Text className="text-white font-semibold">Assign Refreshment Duty</Text>
-                        {beerDutyPlayer ? (
-                          <Text className="text-amber-400 text-sm">{beerDutyPlayer.name}</Text>
-                        ) : (
-                          <Text className="text-slate-400 text-sm">Not assigned</Text>
-                        )}
-                      </View>
-                    </View>
-                    <ChevronDown size={20} color="#64748b" />
-                  </View>
-                </Pressable>
-              )}
 
               {/* Delete Game Button */}
               {isAdmin() && (
