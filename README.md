@@ -34,13 +34,21 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **In-App Notifications**: Send game invites and reminders to all players
 - **Refreshment Duty**: Admin toggle to show/hide who's bringing drinks (age-appropriate toggle)
 - Send game invites via text or email (pre-fills recipients)
+- **Invite More Players**: Admins/Captains can invite additional players after game creation
+  - Invite individual players with one tap
+  - Bulk invite all uninvited Active or Reserve players
+  - Notifications sent automatically when inviting
 
 ### Game Creation (Admin/Captain)
 - Set opponent, date, time
 - Choose location with address
 - Select jersey color from team's configured colors
 - Add optional notes
-- Auto-invites all active players
+- **Player Selection**:
+  - Select which players to invite
+  - Quick buttons to select all Active, all Reserve, or All players
+  - Individual player toggle for custom selection
+  - Defaults to all Active players if none selected
 
 ### Roster Tab
 - View all team players organized by position groups

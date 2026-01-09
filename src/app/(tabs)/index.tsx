@@ -184,8 +184,16 @@ export default function ScheduleScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showBeerDuty, setShowBeerDuty] = useState(false);
   const [selectedBeerDutyPlayer, setSelectedBeerDutyPlayer] = useState<string | null>(null);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [showPlayerSelection, setShowPlayerSelection] = useState(false);
 
   const activePlayers = players.filter((p) => p.status === 'active');
+  const reservePlayers = players.filter((p) => p.status === 'reserve');
+
+  // Initialize selected players with active players by default
+  const initializeSelectedPlayers = () => {
+    setSelectedPlayerIds(activePlayers.map((p) => p.id));
+  };
 
   // Sort games by date
   const sortedGames = [...games].sort(
@@ -206,6 +214,8 @@ export default function ScheduleScreen() {
     setNotes('');
     setShowBeerDuty(false);
     setSelectedBeerDutyPlayer(null);
+    setSelectedPlayerIds([]);
+    setShowPlayerSelection(false);
   };
 
   const handleCreateGame = () => {
@@ -214,7 +224,10 @@ export default function ScheduleScreen() {
       return;
     }
 
-    const activePlayerIds = activePlayers.map((p) => p.id);
+    // Use selected players or default to active players if none selected
+    const invitedPlayerIds = selectedPlayerIds.length > 0
+      ? selectedPlayerIds
+      : activePlayers.map((p) => p.id);
 
     const newGame: Game = {
       id: Date.now().toString(),
@@ -226,7 +239,7 @@ export default function ScheduleScreen() {
       jerseyColor: selectedJersey,
       notes: notes.trim() || undefined,
       checkedInPlayers: [],
-      invitedPlayers: activePlayerIds,
+      invitedPlayers: invitedPlayerIds,
       photos: [],
       showBeerDuty: showBeerDuty,
       beerDutyPlayerId: selectedBeerDutyPlayer || undefined,
@@ -237,6 +250,57 @@ export default function ScheduleScreen() {
     setIsModalVisible(false);
     resetForm();
   };
+
+  // Player selection helpers
+  const togglePlayer = (playerId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedPlayerIds((prev) =>
+      prev.includes(playerId)
+        ? prev.filter((id) => id !== playerId)
+        : [...prev, playerId]
+    );
+  };
+
+  const selectAllActive = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const activeIds = activePlayers.map((p) => p.id);
+    setSelectedPlayerIds((prev) => {
+      const nonActiveSelected = prev.filter((id) => !activePlayers.find((p) => p.id === id));
+      return [...nonActiveSelected, ...activeIds];
+    });
+  };
+
+  const selectAllReserve = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const reserveIds = reservePlayers.map((p) => p.id);
+    setSelectedPlayerIds((prev) => {
+      const nonReserveSelected = prev.filter((id) => !reservePlayers.find((p) => p.id === id));
+      return [...nonReserveSelected, ...reserveIds];
+    });
+  };
+
+  const deselectAllActive = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedPlayerIds((prev) => prev.filter((id) => !activePlayers.find((p) => p.id === id)));
+  };
+
+  const deselectAllReserve = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedPlayerIds((prev) => prev.filter((id) => !reservePlayers.find((p) => p.id === id)));
+  };
+
+  const selectAll = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSelectedPlayerIds(players.map((p) => p.id));
+  };
+
+  const deselectAll = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedPlayerIds([]);
+  };
+
+  const isAllActiveSelected = activePlayers.every((p) => selectedPlayerIds.includes(p.id));
+  const isAllReserveSelected = reservePlayers.length > 0 && reservePlayers.every((p) => selectedPlayerIds.includes(p.id));
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -532,6 +596,168 @@ export default function ScheduleScreen() {
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                   style={{ minHeight: 80, textAlignVertical: 'top' }}
                 />
+              </View>
+
+              {/* Player Invitations */}
+              <View className="mb-5">
+                <Pressable
+                  onPress={() => {
+                    if (!showPlayerSelection && selectedPlayerIds.length === 0) {
+                      initializeSelectedPlayers();
+                    }
+                    setShowPlayerSelection(!showPlayerSelection);
+                  }}
+                  className="flex-row items-center justify-between bg-slate-800 rounded-xl p-4"
+                >
+                  <View className="flex-row items-center">
+                    <Users size={20} color="#67e8f9" />
+                    <View className="ml-3">
+                      <Text className="text-white font-medium">Invite Players</Text>
+                      <Text className="text-slate-400 text-sm">
+                        {selectedPlayerIds.length === 0
+                          ? 'All active players (default)'
+                          : `${selectedPlayerIds.length} player${selectedPlayerIds.length !== 1 ? 's' : ''} selected`}
+                      </Text>
+                    </View>
+                  </View>
+                  <ChevronDown
+                    size={20}
+                    color="#64748b"
+                    style={{ transform: [{ rotate: showPlayerSelection ? '180deg' : '0deg' }] }}
+                  />
+                </Pressable>
+
+                {showPlayerSelection && (
+                  <View className="mt-3 bg-slate-800/50 rounded-xl p-4">
+                    {/* Group Selection Buttons */}
+                    <View className="flex-row mb-4">
+                      <Pressable
+                        onPress={isAllActiveSelected ? deselectAllActive : selectAllActive}
+                        className={cn(
+                          'flex-1 py-2 rounded-lg mr-2 border items-center',
+                          isAllActiveSelected
+                            ? 'bg-green-500/20 border-green-500/50'
+                            : 'bg-slate-700/50 border-slate-600'
+                        )}
+                      >
+                        <Text className={cn(
+                          'font-medium text-sm',
+                          isAllActiveSelected ? 'text-green-400' : 'text-slate-400'
+                        )}>
+                          {isAllActiveSelected ? '✓ Active' : 'Active'} ({activePlayers.length})
+                        </Text>
+                      </Pressable>
+                      {reservePlayers.length > 0 && (
+                        <Pressable
+                          onPress={isAllReserveSelected ? deselectAllReserve : selectAllReserve}
+                          className={cn(
+                            'flex-1 py-2 rounded-lg mr-2 border items-center',
+                            isAllReserveSelected
+                              ? 'bg-amber-500/20 border-amber-500/50'
+                              : 'bg-slate-700/50 border-slate-600'
+                          )}
+                        >
+                          <Text className={cn(
+                            'font-medium text-sm',
+                            isAllReserveSelected ? 'text-amber-400' : 'text-slate-400'
+                          )}>
+                            {isAllReserveSelected ? '✓ Reserve' : 'Reserve'} ({reservePlayers.length})
+                          </Text>
+                        </Pressable>
+                      )}
+                      <Pressable
+                        onPress={selectedPlayerIds.length === players.length ? deselectAll : selectAll}
+                        className={cn(
+                          'py-2 px-3 rounded-lg border items-center',
+                          selectedPlayerIds.length === players.length
+                            ? 'bg-cyan-500/20 border-cyan-500/50'
+                            : 'bg-slate-700/50 border-slate-600'
+                        )}
+                      >
+                        <Text className={cn(
+                          'font-medium text-sm',
+                          selectedPlayerIds.length === players.length ? 'text-cyan-400' : 'text-slate-400'
+                        )}>
+                          {selectedPlayerIds.length === players.length ? '✓ All' : 'All'}
+                        </Text>
+                      </Pressable>
+                    </View>
+
+                    {/* Active Players */}
+                    <Text className="text-green-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                      Active Players
+                    </Text>
+                    <View className="flex-row flex-wrap mb-4">
+                      {activePlayers.map((player) => {
+                        const isSelected = selectedPlayerIds.includes(player.id);
+                        return (
+                          <Pressable
+                            key={player.id}
+                            onPress={() => togglePlayer(player.id)}
+                            className={cn(
+                              'flex-row items-center px-3 py-2 rounded-lg mr-2 mb-2 border',
+                              isSelected
+                                ? 'bg-green-500/20 border-green-500/50'
+                                : 'bg-slate-700/50 border-slate-600'
+                            )}
+                          >
+                            <Image
+                              source={{ uri: player.avatar }}
+                              style={{ width: 24, height: 24, borderRadius: 12 }}
+                              contentFit="cover"
+                            />
+                            <Text className={cn(
+                              'font-medium ml-2 text-sm',
+                              isSelected ? 'text-green-400' : 'text-slate-400'
+                            )}>
+                              {player.name.split(' ')[0]}
+                            </Text>
+                            {isSelected && <Check size={14} color="#22c55e" style={{ marginLeft: 4 }} />}
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+
+                    {/* Reserve Players */}
+                    {reservePlayers.length > 0 && (
+                      <>
+                        <Text className="text-amber-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                          Reserve Players
+                        </Text>
+                        <View className="flex-row flex-wrap">
+                          {reservePlayers.map((player) => {
+                            const isSelected = selectedPlayerIds.includes(player.id);
+                            return (
+                              <Pressable
+                                key={player.id}
+                                onPress={() => togglePlayer(player.id)}
+                                className={cn(
+                                  'flex-row items-center px-3 py-2 rounded-lg mr-2 mb-2 border',
+                                  isSelected
+                                    ? 'bg-amber-500/20 border-amber-500/50'
+                                    : 'bg-slate-700/50 border-slate-600'
+                                )}
+                              >
+                                <Image
+                                  source={{ uri: player.avatar }}
+                                  style={{ width: 24, height: 24, borderRadius: 12 }}
+                                  contentFit="cover"
+                                />
+                                <Text className={cn(
+                                  'font-medium ml-2 text-sm',
+                                  isSelected ? 'text-amber-400' : 'text-slate-400'
+                                )}>
+                                  {player.name.split(' ')[0]}
+                                </Text>
+                                {isSelected && <Check size={14} color="#f59e0b" style={{ marginLeft: 4 }} />}
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      </>
+                    )}
+                  </View>
+                )}
               </View>
             </ScrollView>
           </SafeAreaView>
