@@ -35,17 +35,23 @@ import { cn } from '@/lib/cn';
 function HockeyIcon({ color, size = 18 }: { color: string; size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {/* Hockey stick */}
+      {/* Hockey stick - angled with blade */}
       <Path
-        d="M4 4L14 14L14 20L18 20L18 12L6 2"
+        d="M19 2L15 6L15 16L13 18L7 18L7 20L14 20L16 18L16 6L20 2"
         stroke={color}
-        strokeWidth={2}
+        strokeWidth={1.5}
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
       />
-      {/* Puck */}
-      <Ellipse cx="8" cy="19" rx="3" ry="1.5" fill={color} />
+      {/* Tape on stick */}
+      <Line x1="15" y1="8" x2="16" y2="8" stroke={color} strokeWidth={1} />
+      <Line x1="15" y1="10" x2="16" y2="10" stroke={color} strokeWidth={1} />
+      {/* Puck - 3D oval */}
+      <Ellipse cx="5" cy="14" rx="3.5" ry="1.5" stroke={color} strokeWidth={1.5} fill="none" />
+      <Path d="M1.5 14L1.5 16C1.5 16.8 3 17.5 5 17.5C7 17.5 8.5 16.8 8.5 16L8.5 14" stroke={color} strokeWidth={1.5} fill="none" />
+      <Line x1="1.5" y1="15" x2="1.5" y2="14" stroke={color} strokeWidth={1.5} />
+      <Line x1="8.5" y1="15" x2="8.5" y2="14" stroke={color} strokeWidth={1.5} />
     </Svg>
   );
 }
@@ -53,19 +59,22 @@ function HockeyIcon({ color, size = 18 }: { color: string; size?: number }) {
 function BaseballIcon({ color, size = 18 }: { color: string; size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {/* Bat */}
+      {/* Baseball bat - angled */}
       <Path
-        d="M6 18L16 8C17 7 19 5 18 4C17 3 15 5 14 6L4 16L6 18Z"
+        d="M20 2C20 2 21 3 21 4L14 11L12 13L10 13L10 11L12 9L19 2C19 2 20 2 20 2Z"
         stroke={color}
-        strokeWidth={2}
+        strokeWidth={1.5}
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
       />
-      {/* Batter stance hint */}
-      <Line x1="4" y1="16" x2="3" y2="20" stroke={color} strokeWidth={2} strokeLinecap="round" />
-      {/* Ball */}
-      <SvgCircle cx="20" cy="18" r="2.5" stroke={color} strokeWidth={1.5} fill="none" />
+      {/* Bat handle */}
+      <Path d="M10 13L8 15L6 15L6 13L8 11L10 11" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      {/* Baseball with stitching */}
+      <SvgCircle cx="7" cy="19" r="4" stroke={color} strokeWidth={1.5} fill="none" />
+      {/* Stitching curves */}
+      <Path d="M4.5 17C5 17.5 5 18.5 4.5 19C4 19.5 4 20.5 4.5 21" stroke={color} strokeWidth={1} fill="none" />
+      <Path d="M9.5 17C9 17.5 9 18.5 9.5 19C10 19.5 10 20.5 9.5 21" stroke={color} strokeWidth={1} fill="none" />
     </Svg>
   );
 }
@@ -74,15 +83,15 @@ function BasketballIcon({ color, size = 18 }: { color: string; size?: number }) 
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       {/* Ball outline */}
-      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
-      {/* Horizontal line */}
-      <Line x1="3" y1="12" x2="21" y2="12" stroke={color} strokeWidth={1.5} />
+      <SvgCircle cx="12" cy="12" r="10" stroke={color} strokeWidth={1.5} fill="none" />
       {/* Vertical line */}
-      <Line x1="12" y1="3" x2="12" y2="21" stroke={color} strokeWidth={1.5} />
+      <Line x1="12" y1="2" x2="12" y2="22" stroke={color} strokeWidth={1.5} />
+      {/* Horizontal line */}
+      <Line x1="2" y1="12" x2="22" y2="12" stroke={color} strokeWidth={1.5} />
       {/* Left curve */}
-      <Path d="M7 4.5C7 4.5 9 8 9 12C9 16 7 19.5 7 19.5" stroke={color} strokeWidth={1.5} fill="none" />
+      <Path d="M7 2.5C7 2.5 4 6 4 12C4 18 7 21.5 7 21.5" stroke={color} strokeWidth={1.5} fill="none" />
       {/* Right curve */}
-      <Path d="M17 4.5C17 4.5 15 8 15 12C15 16 17 19.5 17 19.5" stroke={color} strokeWidth={1.5} fill="none" />
+      <Path d="M17 2.5C17 2.5 20 6 20 12C20 18 17 21.5 17 21.5" stroke={color} strokeWidth={1.5} fill="none" />
     </Svg>
   );
 }
@@ -91,20 +100,29 @@ function SoccerIcon({ color, size = 18 }: { color: string; size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       {/* Ball outline */}
-      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
-      {/* Pentagon in center */}
+      <SvgCircle cx="12" cy="12" r="10" stroke={color} strokeWidth={1.5} fill="none" />
+      {/* Center pentagon - filled */}
       <Path
-        d="M12 7L15.5 9.5L14 13.5H10L8.5 9.5L12 7Z"
+        d="M12 7L15.5 9.5L14 14H10L8.5 9.5L12 7Z"
         stroke={color}
         strokeWidth={1.5}
-        fill="none"
+        fill={color}
       />
-      {/* Lines to edges */}
-      <Line x1="12" y1="7" x2="12" y2="3" stroke={color} strokeWidth={1.5} />
-      <Line x1="15.5" y1="9.5" x2="20" y2="8" stroke={color} strokeWidth={1.5} />
-      <Line x1="14" y1="13.5" x2="17" y2="18" stroke={color} strokeWidth={1.5} />
-      <Line x1="10" y1="13.5" x2="7" y2="18" stroke={color} strokeWidth={1.5} />
-      <Line x1="8.5" y1="9.5" x2="4" y2="8" stroke={color} strokeWidth={1.5} />
+      {/* Top pentagon */}
+      <Path d="M12 7L12 2" stroke={color} strokeWidth={1.5} />
+      <Path d="M9 3L12 2L15 3" stroke={color} strokeWidth={1.5} fill="none" />
+      {/* Top right */}
+      <Path d="M15.5 9.5L20 7" stroke={color} strokeWidth={1.5} />
+      <Path d="M18 4L20 7L21 10" stroke={color} strokeWidth={1.5} fill="none" />
+      {/* Bottom right */}
+      <Path d="M14 14L17 18" stroke={color} strokeWidth={1.5} />
+      <Path d="M20 15L17 18L15 21" stroke={color} strokeWidth={1.5} fill="none" />
+      {/* Bottom left */}
+      <Path d="M10 14L7 18" stroke={color} strokeWidth={1.5} />
+      <Path d="M4 15L7 18L9 21" stroke={color} strokeWidth={1.5} fill="none" />
+      {/* Top left */}
+      <Path d="M8.5 9.5L4 7" stroke={color} strokeWidth={1.5} />
+      <Path d="M6 4L4 7L3 10" stroke={color} strokeWidth={1.5} fill="none" />
     </Svg>
   );
 }
