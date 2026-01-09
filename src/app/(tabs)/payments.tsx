@@ -56,6 +56,12 @@ const PAYMENT_APP_INFO: Record<PaymentApp, {
     urlScheme: (username) => `zelle://transfer?recipient=${encodeURIComponent(username)}`,
     // Zelle has no web fallback - it's bank-specific
   },
+  cashapp: {
+    name: 'Cash App',
+    color: '#00D632',
+    urlScheme: (username, amount) => `cashapp://cash.app/pay/${username.replace('$', '')}${amount ? `?amount=${amount}` : ''}`,
+    webFallback: (username) => `https://cash.app/${username.replace('$', '')}`,
+  },
 };
 
 interface PaymentMethodButtonProps {
@@ -77,10 +83,10 @@ function PaymentMethodButton({ method, amount }: PaymentMethodButtonProps) {
         return;
       }
 
-      // For Venmo, try app first, then fall back to web
-      if (method.app === 'venmo') {
+      // For Venmo and Cash App, try app first, then fall back to web
+      if (method.app === 'venmo' || method.app === 'cashapp') {
         try {
-          // Try to open the Venmo app directly
+          // Try to open the app directly
           await Linking.openURL(url);
         } catch {
           // If app fails, use web fallback
@@ -570,12 +576,15 @@ export default function PaymentsScreen() {
 
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">
-                  {selectedApp === 'venmo' ? 'Venmo Username' : selectedApp === 'paypal' ? 'PayPal.me Username' : 'Zelle Email/Phone'}
+                  {selectedApp === 'venmo' ? 'Venmo Username' :
+                   selectedApp === 'paypal' ? 'PayPal.me Username' :
+                   selectedApp === 'cashapp' ? 'Cash App $Cashtag' :
+                   'Zelle Email/Phone'}
                 </Text>
                 <TextInput
                   value={paymentUsername}
                   onChangeText={setPaymentUsername}
-                  placeholder={selectedApp === 'zelle' ? 'email@example.com' : '@username'}
+                  placeholder={selectedApp === 'zelle' ? 'email@example.com' : selectedApp === 'cashapp' ? '$username' : '@username'}
                   placeholderTextColor="#64748b"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                   autoCapitalize="none"

@@ -111,7 +111,7 @@ export interface ChatMessage {
 }
 
 // Payment tracking types
-export type PaymentApp = 'venmo' | 'paypal' | 'zelle';
+export type PaymentApp = 'venmo' | 'paypal' | 'zelle' | 'cashapp';
 
 export interface PaymentMethod {
   app: PaymentApp;

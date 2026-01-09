@@ -65,7 +65,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - Modern chat interface with message bubbles
 
 ### Payments Tab
-- **Payment Methods**: Admin can add Venmo, PayPal, or Zelle accounts
+- **Payment Methods**: Admin can add Venmo, PayPal, Zelle, or Cash App accounts
 - **One-Tap Payments**: Players tap a button to open the payment app directly
 - **Payment Tracking** (Admin/Captain):
   - Create payment periods (e.g., "Season Dues - Fall 2025")
@@ -98,7 +98,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Team Settings**: Edit team name
 - **Sport Selection**: Change sport type (updates positions)
 - **Jersey Colors**: Add/remove team jersey colors
-- **Payment Methods**: Configure Venmo/PayPal/Zelle for the team
+- **Payment Methods**: Configure Venmo/PayPal/Zelle/Cash App for the team
 - **Refreshment Duty Toggle**: Enable/disable per game
 - **Player Management**:
   - View all player contact info (email, phone - formatted as (XXX)XXX-XXXX)
@@ -133,7 +133,8 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 When players tap a payment method:
 - **Venmo**: Opens Venmo app with recipient pre-filled
 - **PayPal**: Opens PayPal.me link in browser
-- **Zelle**: Opens Zelle app with recipient pre-filled
+- **Zelle**: Shows recipient info (bank-specific, no universal deep link)
+- **Cash App**: Opens Cash App with recipient pre-filled
 
 ## Tech Stack
 - Expo SDK 53 / React Native
