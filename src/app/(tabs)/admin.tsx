@@ -12,7 +12,6 @@ import {
   Plus,
   Trash2,
   Palette,
-  Trophy,
   ChevronRight,
   UserCog,
   Mail,
@@ -21,6 +20,7 @@ import {
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
+import Svg, { Path, Circle as SvgCircle, Line, Rect, Ellipse } from 'react-native-svg';
 import {
   useTeamStore,
   Player,
@@ -30,6 +30,99 @@ import {
   PlayerStatus,
 } from '@/lib/store';
 import { cn } from '@/lib/cn';
+
+// Custom Sport Icons
+function HockeyIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {/* Hockey stick */}
+      <Path
+        d="M4 4L14 14L14 20L18 20L18 12L6 2"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      {/* Puck */}
+      <Ellipse cx="8" cy="19" rx="3" ry="1.5" fill={color} />
+    </Svg>
+  );
+}
+
+function BaseballIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {/* Bat */}
+      <Path
+        d="M6 18L16 8C17 7 19 5 18 4C17 3 15 5 14 6L4 16L6 18Z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      {/* Batter stance hint */}
+      <Line x1="4" y1="16" x2="3" y2="20" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      {/* Ball */}
+      <SvgCircle cx="20" cy="18" r="2.5" stroke={color} strokeWidth={1.5} fill="none" />
+    </Svg>
+  );
+}
+
+function BasketballIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {/* Ball outline */}
+      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
+      {/* Horizontal line */}
+      <Line x1="3" y1="12" x2="21" y2="12" stroke={color} strokeWidth={1.5} />
+      {/* Vertical line */}
+      <Line x1="12" y1="3" x2="12" y2="21" stroke={color} strokeWidth={1.5} />
+      {/* Left curve */}
+      <Path d="M7 4.5C7 4.5 9 8 9 12C9 16 7 19.5 7 19.5" stroke={color} strokeWidth={1.5} fill="none" />
+      {/* Right curve */}
+      <Path d="M17 4.5C17 4.5 15 8 15 12C15 16 17 19.5 17 19.5" stroke={color} strokeWidth={1.5} fill="none" />
+    </Svg>
+  );
+}
+
+function SoccerIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {/* Ball outline */}
+      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
+      {/* Pentagon in center */}
+      <Path
+        d="M12 7L15.5 9.5L14 13.5H10L8.5 9.5L12 7Z"
+        stroke={color}
+        strokeWidth={1.5}
+        fill="none"
+      />
+      {/* Lines to edges */}
+      <Line x1="12" y1="7" x2="12" y2="3" stroke={color} strokeWidth={1.5} />
+      <Line x1="15.5" y1="9.5" x2="20" y2="8" stroke={color} strokeWidth={1.5} />
+      <Line x1="14" y1="13.5" x2="17" y2="18" stroke={color} strokeWidth={1.5} />
+      <Line x1="10" y1="13.5" x2="7" y2="18" stroke={color} strokeWidth={1.5} />
+      <Line x1="8.5" y1="9.5" x2="4" y2="8" stroke={color} strokeWidth={1.5} />
+    </Svg>
+  );
+}
+
+function SportIcon({ sport, color, size = 18 }: { sport: Sport; color: string; size?: number }) {
+  switch (sport) {
+    case 'hockey':
+      return <HockeyIcon color={color} size={size} />;
+    case 'baseball':
+      return <BaseballIcon color={color} size={size} />;
+    case 'basketball':
+      return <BasketballIcon color={color} size={size} />;
+    case 'soccer':
+      return <SoccerIcon color={color} size={size} />;
+    default:
+      return null;
+  }
+}
 
 interface PlayerManageCardProps {
   player: Player;
@@ -297,25 +390,26 @@ export default function AdminScreen() {
               Sport
             </Text>
 
-            <View className="flex-row flex-wrap">
+            <View className="flex-row justify-between">
               {(Object.keys(SPORT_NAMES) as Sport[]).map((sport) => (
                 <Pressable
                   key={sport}
                   onPress={() => handleChangeSport(sport)}
                   className={cn(
-                    'flex-row items-center px-4 py-3 rounded-xl mr-2 mb-2 border',
+                    'flex-1 items-center py-3 rounded-xl mx-1 border',
                     teamSettings.sport === sport
                       ? 'bg-cyan-500/20 border-cyan-500/50'
                       : 'bg-slate-800/80 border-slate-700/50'
                   )}
                 >
-                  <Trophy
-                    size={16}
+                  <SportIcon
+                    sport={sport}
+                    size={20}
                     color={teamSettings.sport === sport ? '#67e8f9' : '#64748b'}
                   />
                   <Text
                     className={cn(
-                      'ml-2 font-medium',
+                      'mt-1 text-xs font-medium',
                       teamSettings.sport === sport ? 'text-cyan-400' : 'text-slate-400'
                     )}
                   >
