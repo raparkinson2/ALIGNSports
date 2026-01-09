@@ -33,7 +33,7 @@ import {
   PlayerStatus,
 } from '@/lib/store';
 import { cn } from '@/lib/cn';
-import { formatPhoneNumber } from '@/lib/phone';
+import { formatPhoneNumber, formatPhoneInput, unformatPhone } from '@/lib/phone';
 
 // Custom Sport Icons
 function HockeyIcon({ color, size = 18 }: { color: string; size?: number }) {
@@ -228,6 +228,8 @@ export default function AdminScreen() {
   // Player edit form
   const [editPlayerName, setEditPlayerName] = useState('');
   const [editPlayerNumber, setEditPlayerNumber] = useState('');
+  const [editPlayerPhone, setEditPlayerPhone] = useState('');
+  const [editPlayerEmail, setEditPlayerEmail] = useState('');
 
   // Jersey color form
   const [newColorName, setNewColorName] = useState('');
@@ -254,6 +256,8 @@ export default function AdminScreen() {
     setSelectedPlayer(player);
     setEditPlayerName(player.name);
     setEditPlayerNumber(player.number);
+    setEditPlayerPhone(formatPhoneNumber(player.phone));
+    setEditPlayerEmail(player.email || '');
     setIsPlayerModalVisible(true);
   };
 
@@ -269,6 +273,21 @@ export default function AdminScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     updatePlayer(selectedPlayer.id, { number: editPlayerNumber.trim() });
     setSelectedPlayer({ ...selectedPlayer, number: editPlayerNumber.trim() });
+  };
+
+  const handleSavePlayerPhone = () => {
+    if (!selectedPlayer) return;
+    const rawPhone = unformatPhone(editPlayerPhone);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    updatePlayer(selectedPlayer.id, { phone: rawPhone || undefined });
+    setSelectedPlayer({ ...selectedPlayer, phone: rawPhone || undefined });
+  };
+
+  const handleSavePlayerEmail = () => {
+    if (!selectedPlayer) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    updatePlayer(selectedPlayer.id, { email: editPlayerEmail.trim() || undefined });
+    setSelectedPlayer({ ...selectedPlayer, email: editPlayerEmail.trim() || undefined });
   };
 
   const handleToggleRole = (role: PlayerRole) => {
@@ -624,22 +643,49 @@ export default function AdminScreen() {
                   />
                 </View>
 
-                {/* Contact Info (visible to admins) */}
+                {/* Contact Info - Editable */}
                 <View className="bg-slate-800/80 rounded-xl p-4 mb-4 border border-slate-700/50">
                   <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
                     Contact Information
                   </Text>
-                  <View className="flex-row items-center mb-2">
-                    <Mail size={16} color="#67e8f9" />
-                    <Text className="text-white ml-3">
-                      {selectedPlayer.email || 'No email set'}
-                    </Text>
+
+                  {/* Phone */}
+                  <View className="mb-3">
+                    <View className="flex-row items-center mb-2">
+                      <Phone size={14} color="#67e8f9" />
+                      <Text className="text-slate-400 text-sm ml-2">Phone</Text>
+                    </View>
+                    <TextInput
+                      value={editPlayerPhone}
+                      onChangeText={(text) => setEditPlayerPhone(formatPhoneInput(text))}
+                      placeholder="(555)123-4567"
+                      placeholderTextColor="#64748b"
+                      className="bg-slate-700 rounded-xl px-4 py-3 text-white"
+                      keyboardType="phone-pad"
+                      onBlur={handleSavePlayerPhone}
+                      onSubmitEditing={handleSavePlayerPhone}
+                      returnKeyType="done"
+                    />
                   </View>
-                  <View className="flex-row items-center">
-                    <Phone size={16} color="#67e8f9" />
-                    <Text className="text-white ml-3">
-                      {formatPhoneNumber(selectedPlayer.phone) || 'No phone set'}
-                    </Text>
+
+                  {/* Email */}
+                  <View>
+                    <View className="flex-row items-center mb-2">
+                      <Mail size={14} color="#67e8f9" />
+                      <Text className="text-slate-400 text-sm ml-2">Email</Text>
+                    </View>
+                    <TextInput
+                      value={editPlayerEmail}
+                      onChangeText={setEditPlayerEmail}
+                      placeholder="player@example.com"
+                      placeholderTextColor="#64748b"
+                      className="bg-slate-700 rounded-xl px-4 py-3 text-white"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      onBlur={handleSavePlayerEmail}
+                      onSubmitEditing={handleSavePlayerEmail}
+                      returnKeyType="done"
+                    />
                   </View>
                 </View>
 
