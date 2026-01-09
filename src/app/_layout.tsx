@@ -1,11 +1,11 @@
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTeamStore } from '@/lib/store';
 
 export const unstable_settings = {
@@ -30,15 +30,21 @@ const HockeyDarkTheme = {
   },
 };
 
-function AuthNavigator() {
+function useProtectedRoute(isLoggedIn: boolean) {
   const router = useRouter();
   const segments = useSegments();
-  const isLoggedIn = useTeamStore((s) => s.isLoggedIn);
-  const rootNavigationState = useRootNavigationState();
+  const [isNavigationReady, setIsNavigationReady] = useState(false);
 
   useEffect(() => {
-    // Wait until the navigation is ready before navigating
-    if (!rootNavigationState?.key) return;
+    // Set navigation ready after first render to ensure Stack is mounted
+    const timer = setTimeout(() => {
+      setIsNavigationReady(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isNavigationReady) return;
 
     const inAuthGroup = segments[0] === 'login';
 
@@ -47,7 +53,12 @@ function AuthNavigator() {
     } else if (isLoggedIn && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [isLoggedIn, segments, rootNavigationState?.key]);
+  }, [isLoggedIn, segments, isNavigationReady, router]);
+}
+
+function AuthNavigator() {
+  const isLoggedIn = useTeamStore((s) => s.isLoggedIn);
+  useProtectedRoute(isLoggedIn);
 
   return (
     <Stack>
