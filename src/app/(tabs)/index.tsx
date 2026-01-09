@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, TextInput, Modal, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Modal, Platform, Switch } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -13,10 +13,13 @@ import {
   Plus,
   X,
   Check,
+  Beer,
+  ChevronDown,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { useTeamStore, Game } from '@/lib/store';
 import { cn } from '@/lib/cn';
 
@@ -175,11 +178,14 @@ export default function ScheduleScreen() {
   const [location, setLocation] = useState('');
   const [address, setAddress] = useState('');
   const [gameDate, setGameDate] = useState(new Date());
-  const [gameTime, setGameTime] = useState(new Date());
+  const [gameTime, setGameTime] = useState('7:00 PM');
   const [selectedJersey, setSelectedJersey] = useState(teamSettings.jerseyColors[0]?.name || '');
   const [notes, setNotes] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showBeerDuty, setShowBeerDuty] = useState(false);
+  const [selectedBeerDutyPlayer, setSelectedBeerDutyPlayer] = useState<string | null>(null);
+
+  const activePlayers = players.filter((p) => p.status === 'active');
 
   // Sort games by date
   const sortedGames = [...games].sort(
@@ -195,9 +201,11 @@ export default function ScheduleScreen() {
     setLocation('');
     setAddress('');
     setGameDate(new Date());
-    setGameTime(new Date());
+    setGameTime('7:00 PM');
     setSelectedJersey(teamSettings.jerseyColors[0]?.name || '');
     setNotes('');
+    setShowBeerDuty(false);
+    setSelectedBeerDutyPlayer(null);
   };
 
   const handleCreateGame = () => {
@@ -206,22 +214,22 @@ export default function ScheduleScreen() {
       return;
     }
 
-    const timeString = format(gameTime, 'h:mm a');
-    const activePlayers = players.filter((p) => p.status === 'active').map((p) => p.id);
+    const activePlayerIds = activePlayers.map((p) => p.id);
 
     const newGame: Game = {
       id: Date.now().toString(),
       opponent: opponent.trim(),
       date: gameDate.toISOString(),
-      time: timeString,
+      time: gameTime.trim() || '7:00 PM',
       location: location.trim(),
       address: address.trim(),
       jerseyColor: selectedJersey,
       notes: notes.trim() || undefined,
       checkedInPlayers: [],
-      invitedPlayers: activePlayers,
+      invitedPlayers: activePlayerIds,
       photos: [],
-      showBeerDuty: false,
+      showBeerDuty: showBeerDuty,
+      beerDutyPlayerId: selectedBeerDutyPlayer || undefined,
     };
 
     addGame(newGame);
@@ -352,7 +360,7 @@ export default function ScheduleScreen() {
                   </Text>
                 </Pressable>
                 {showDatePicker && (
-                  <View className="bg-slate-800 rounded-xl mt-2 overflow-hidden">
+                  <View className="bg-slate-800 rounded-xl mt-2 overflow-hidden items-center">
                     <DateTimePicker
                       value={gameDate}
                       mode="date"
@@ -371,27 +379,15 @@ export default function ScheduleScreen() {
 
               {/* Time */}
               <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Time</Text>
-                <Pressable
-                  onPress={() => setShowTimePicker(true)}
-                  className="bg-slate-800 rounded-xl px-4 py-3"
-                >
-                  <Text className="text-white text-lg">
-                    {format(gameTime, 'h:mm a')}
-                  </Text>
-                </Pressable>
-                {showTimePicker && (
-                  <DateTimePicker
-                    value={gameTime}
-                    mode="time"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(event, time) => {
-                      setShowTimePicker(Platform.OS === 'ios');
-                      if (time) setGameTime(time);
-                    }}
-                    themeVariant="dark"
-                  />
-                )}
+                <Text className="text-slate-400 text-sm mb-2">Time (e.g., 7:30 PM)</Text>
+                <TextInput
+                  value={gameTime}
+                  onChangeText={setGameTime}
+                  placeholder="7:00 PM"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  autoCapitalize="characters"
+                />
               </View>
 
               {/* Location */}
@@ -454,6 +450,73 @@ export default function ScheduleScreen() {
                     </Pressable>
                   ))}
                 </View>
+              </View>
+
+              {/* Refreshment Duty */}
+              <View className="mb-5">
+                <View className="flex-row items-center justify-between bg-slate-800 rounded-xl p-4">
+                  <View className="flex-row items-center">
+                    <Beer size={20} color="#f59e0b" />
+                    <Text className="text-white font-medium ml-3">Refreshment Duty</Text>
+                  </View>
+                  <Switch
+                    value={showBeerDuty}
+                    onValueChange={setShowBeerDuty}
+                    trackColor={{ false: '#334155', true: '#f59e0b40' }}
+                    thumbColor={showBeerDuty ? '#f59e0b' : '#64748b'}
+                  />
+                </View>
+
+                {showBeerDuty && (
+                  <View className="mt-3">
+                    <Text className="text-slate-400 text-sm mb-2">Assign Player</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
+                      <Pressable
+                        onPress={() => setSelectedBeerDutyPlayer(null)}
+                        className={cn(
+                          'px-4 py-2 rounded-xl mr-2 border',
+                          selectedBeerDutyPlayer === null
+                            ? 'bg-amber-500/20 border-amber-500/50'
+                            : 'bg-slate-800 border-slate-700'
+                        )}
+                      >
+                        <Text className={cn(
+                          'font-medium',
+                          selectedBeerDutyPlayer === null ? 'text-amber-400' : 'text-slate-400'
+                        )}>
+                          None
+                        </Text>
+                      </Pressable>
+                      {activePlayers.map((player) => (
+                        <Pressable
+                          key={player.id}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setSelectedBeerDutyPlayer(player.id);
+                          }}
+                          className={cn(
+                            'flex-row items-center px-3 py-2 rounded-xl mr-2 border',
+                            selectedBeerDutyPlayer === player.id
+                              ? 'bg-amber-500/20 border-amber-500/50'
+                              : 'bg-slate-800 border-slate-700'
+                          )}
+                        >
+                          <Image
+                            source={{ uri: player.avatar }}
+                            style={{ width: 24, height: 24, borderRadius: 12 }}
+                            contentFit="cover"
+                          />
+                          <Text className={cn(
+                            'font-medium ml-2',
+                            selectedBeerDutyPlayer === player.id ? 'text-amber-400' : 'text-slate-400'
+                          )}>
+                            {player.name.split(' ')[0]}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
               </View>
 
               {/* Notes */}
