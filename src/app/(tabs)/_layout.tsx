@@ -6,7 +6,7 @@ import { useTeamStore } from '@/lib/store';
 
 export default function TabLayout() {
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
-  const players = useTeamStore((s) => s.players);
+  const players = useTeamStore((s) => s.players) ?? [];
 
   // Derive admin status from reactive state
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
