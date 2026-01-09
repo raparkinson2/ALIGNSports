@@ -8,7 +8,8 @@ export default function TabLayout() {
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const players = useTeamStore((s) => s.players) ?? [];
   const notifications = useTeamStore((s) => s.notifications) ?? [];
-  const getUnreadChatCount = useTeamStore((s) => s.getUnreadChatCount);
+  const chatMessages = useTeamStore((s) => s.chatMessages) ?? [];
+  const chatLastReadAt = useTeamStore((s) => s.chatLastReadAt) ?? {};
 
   // Derive admin status from reactive state
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
@@ -19,8 +20,19 @@ export default function TabLayout() {
     (n) => n.toPlayerId === currentPlayerId && !n.read
   ).length;
 
-  // Count unread chat messages
-  const unreadChatCount = currentPlayerId ? getUnreadChatCount(currentPlayerId) : 0;
+  // Count unread chat messages reactively
+  const unreadChatCount = React.useMemo(() => {
+    if (!currentPlayerId) return 0;
+    const lastReadAt = chatLastReadAt[currentPlayerId];
+    if (!lastReadAt) {
+      // If never read, count all messages from others
+      return chatMessages.filter((m) => m.senderId !== currentPlayerId).length;
+    }
+    // Count messages from others after last read time
+    return chatMessages.filter(
+      (m) => m.senderId !== currentPlayerId && new Date(m.createdAt) > new Date(lastReadAt)
+    ).length;
+  }, [currentPlayerId, chatMessages, chatLastReadAt]);
 
   return (
     <Tabs
