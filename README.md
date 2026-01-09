@@ -70,6 +70,10 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Payment Tracking** (Admin/Captain):
   - Create payment periods (e.g., "Season Dues - Fall 2025")
   - Set total amount per player
+  - **Player Selection**: Choose which players to include in each period
+    - Quick select: All Active, All Reserve, All, or None
+    - Individual player toggle for custom groups
+    - Create different payment periods for different player groups with different amounts
   - Tap any player to view/add payments
   - **Payment Ledger**: Add multiple payments with amounts and dates
   - Payments automatically sum up and update status

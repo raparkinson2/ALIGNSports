@@ -201,6 +201,7 @@ export default function PaymentsScreen() {
   // New period form
   const [periodTitle, setPeriodTitle] = useState('');
   const [periodAmount, setPeriodAmount] = useState('');
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
 
   const paymentMethods = teamSettings.paymentMethods ?? [];
 
@@ -240,14 +241,17 @@ export default function PaymentsScreen() {
 
   const handleCreatePeriod = () => {
     if (!periodTitle.trim() || !periodAmount.trim()) return;
+    if (selectedPlayerIds.length === 0) {
+      Alert.alert('No Players Selected', 'Please select at least one player for this payment period.');
+      return;
+    }
 
-    const activePlayers = players.filter((p) => p.status === 'active');
     const newPeriod: PaymentPeriod = {
       id: Date.now().toString(),
       title: periodTitle.trim(),
       amount: parseFloat(periodAmount),
-      playerPayments: activePlayers.map((p) => ({
-        playerId: p.id,
+      playerPayments: selectedPlayerIds.map((playerId) => ({
+        playerId,
         status: 'unpaid' as const,
         entries: [],
       })),
@@ -258,6 +262,7 @@ export default function PaymentsScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setPeriodTitle('');
     setPeriodAmount('');
+    setSelectedPlayerIds([]);
     setIsNewPeriodModalVisible(false);
   };
 
@@ -597,12 +602,18 @@ export default function PaymentsScreen() {
         visible={isNewPeriodModalVisible}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setIsNewPeriodModalVisible(false)}
+        onRequestClose={() => {
+          setIsNewPeriodModalVisible(false);
+          setSelectedPlayerIds([]);
+        }}
       >
         <View className="flex-1 bg-slate-900">
           <SafeAreaView className="flex-1">
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsNewPeriodModalVisible(false)}>
+              <Pressable onPress={() => {
+                setIsNewPeriodModalVisible(false);
+                setSelectedPlayerIds([]);
+              }}>
                 <X size={24} color="#64748b" />
               </Pressable>
               <Text className="text-white text-lg font-semibold">New Payment Period</Text>
@@ -611,7 +622,7 @@ export default function PaymentsScreen() {
               </Pressable>
             </View>
 
-            <ScrollView className="flex-1 px-5 pt-6">
+            <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Title</Text>
                 <TextInput
@@ -633,6 +644,103 @@ export default function PaymentsScreen() {
                   keyboardType="decimal-pad"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                 />
+              </View>
+
+              {/* Player Selection */}
+              <View className="mb-6">
+                <View className="flex-row items-center justify-between mb-3">
+                  <Text className="text-slate-400 text-sm">Select Players</Text>
+                  <Text className="text-cyan-400 text-sm font-medium">
+                    {selectedPlayerIds.length} selected
+                  </Text>
+                </View>
+
+                {/* Quick Select Buttons */}
+                <View className="flex-row mb-4">
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      const activeIds = players.filter((p) => p.status === 'active').map((p) => p.id);
+                      setSelectedPlayerIds(activeIds);
+                    }}
+                    className="bg-green-500/20 rounded-xl px-4 py-2 mr-2"
+                  >
+                    <Text className="text-green-400 font-medium">All Active</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      const reserveIds = players.filter((p) => p.status === 'reserve').map((p) => p.id);
+                      setSelectedPlayerIds(reserveIds);
+                    }}
+                    className="bg-slate-600/50 rounded-xl px-4 py-2 mr-2"
+                  >
+                    <Text className="text-slate-300 font-medium">All Reserve</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSelectedPlayerIds(players.map((p) => p.id));
+                    }}
+                    className="bg-cyan-500/20 rounded-xl px-4 py-2 mr-2"
+                  >
+                    <Text className="text-cyan-400 font-medium">All</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSelectedPlayerIds([]);
+                    }}
+                    className="bg-slate-700/50 rounded-xl px-4 py-2"
+                  >
+                    <Text className="text-slate-400 font-medium">None</Text>
+                  </Pressable>
+                </View>
+
+                {/* Player List */}
+                {players.map((player) => {
+                  const isSelected = selectedPlayerIds.includes(player.id);
+                  return (
+                    <Pressable
+                      key={player.id}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        if (isSelected) {
+                          setSelectedPlayerIds(selectedPlayerIds.filter((id) => id !== player.id));
+                        } else {
+                          setSelectedPlayerIds([...selectedPlayerIds, player.id]);
+                        }
+                      }}
+                      className={cn(
+                        'flex-row items-center p-3 rounded-xl mb-2 border',
+                        isSelected
+                          ? 'bg-green-500/20 border-green-500/50'
+                          : 'bg-slate-800/60 border-slate-700/50'
+                      )}
+                    >
+                      <Image
+                        source={{ uri: player.avatar }}
+                        style={{ width: 40, height: 40, borderRadius: 20 }}
+                        contentFit="cover"
+                      />
+                      <View className="flex-1 ml-3">
+                        <Text className="text-white font-medium">{player.name}</Text>
+                        <Text className={cn(
+                          'text-xs',
+                          player.status === 'active' ? 'text-green-400' : 'text-slate-400'
+                        )}>
+                          {player.status === 'active' ? 'Active' : 'Reserve'} · #{player.number}
+                        </Text>
+                      </View>
+                      <View className={cn(
+                        'w-6 h-6 rounded-full border-2 items-center justify-center',
+                        isSelected ? 'bg-green-500 border-green-500' : 'border-slate-500'
+                      )}>
+                        {isSelected && <Check size={14} color="white" />}
+                      </View>
+                    </Pressable>
+                  );
+                })}
               </View>
             </ScrollView>
           </SafeAreaView>
