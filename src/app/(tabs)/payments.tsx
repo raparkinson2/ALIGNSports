@@ -29,11 +29,17 @@ import {
 import { cn } from '@/lib/cn';
 import { format, parseISO } from 'date-fns';
 
-const PAYMENT_APP_INFO: Record<PaymentApp, { name: string; color: string; urlScheme: (username: string, amount?: number) => string }> = {
+const PAYMENT_APP_INFO: Record<PaymentApp, {
+  name: string;
+  color: string;
+  urlScheme: (username: string, amount?: number) => string;
+  webFallback?: (username: string) => string;
+}> = {
   venmo: {
     name: 'Venmo',
     color: '#3D95CE',
     urlScheme: (username, amount) => `venmo://paycharge?txn=pay&recipients=${username}${amount ? `&amount=${amount}` : ''}`,
+    webFallback: (username) => `https://venmo.com/${username.replace('@', '')}`,
   },
   paypal: {
     name: 'PayPal',
@@ -44,6 +50,7 @@ const PAYMENT_APP_INFO: Record<PaymentApp, { name: string; color: string; urlSch
     name: 'Zelle',
     color: '#6D1ED4',
     urlScheme: (username) => `zelle://transfer?recipient=${encodeURIComponent(username)}`,
+    // Zelle has no web fallback - it's bank-specific
   },
 };
 
@@ -60,13 +67,27 @@ function PaymentMethodButton({ method, amount }: PaymentMethodButtonProps) {
     const url = info.urlScheme(method.username, amount);
 
     try {
+      // For PayPal, always use the HTTPS URL directly (no app scheme)
+      if (method.app === 'paypal') {
+        await Linking.openURL(url);
+        return;
+      }
+
+      // For Venmo and Zelle, try the app scheme first
       const supported = await Linking.canOpenURL(url);
       if (supported) {
         await Linking.openURL(url);
+      } else if (info.webFallback) {
+        // Use web fallback if available (Venmo)
+        await Linking.openURL(info.webFallback(method.username));
       } else {
-        // Fallback to web for PayPal
-        if (method.app === 'paypal') {
-          await Linking.openURL(`https://paypal.me/${method.username}`);
+        // Zelle has no web fallback - show helpful message
+        if (method.app === 'zelle') {
+          Alert.alert(
+            'Zelle Payment',
+            `Send payment to: ${method.username}\n\nOpen your bank app and use Zelle to send money to this recipient.`,
+            [{ text: 'OK' }]
+          );
         } else {
           Alert.alert(
             `${info.name} Not Installed`,
@@ -75,7 +96,22 @@ function PaymentMethodButton({ method, amount }: PaymentMethodButtonProps) {
         }
       }
     } catch (error) {
-      Alert.alert('Error', `Could not open ${info.name}`);
+      // If app scheme fails, try web fallback
+      if (info.webFallback) {
+        try {
+          await Linking.openURL(info.webFallback(method.username));
+        } catch {
+          Alert.alert('Error', `Could not open ${info.name}`);
+        }
+      } else if (method.app === 'zelle') {
+        Alert.alert(
+          'Zelle Payment',
+          `Send payment to: ${method.username}\n\nOpen your bank app and use Zelle to send money to this recipient.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Error', `Could not open ${info.name}`);
+      }
     }
   };
 
