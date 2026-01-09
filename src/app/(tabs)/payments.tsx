@@ -469,12 +469,19 @@ export default function PaymentsScreen() {
                   key={period.id}
                   entering={FadeInDown.delay(200 + index * 50).springify()}
                 >
-                  <View className={cn(
-                    'rounded-xl p-4 mb-3 border',
-                    payment?.status === 'paid' ? 'bg-green-500/20 border-green-500/30' :
-                    payment?.status === 'partial' ? 'bg-amber-500/20 border-amber-500/30' :
-                    'bg-slate-800/80 border-slate-700/50'
-                  )}>
+                  <Pressable
+                    onPress={() => {
+                      setSelectedPeriodId(period.id);
+                      setSelectedPlayerId(currentPlayerId);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }}
+                    className={cn(
+                      'rounded-xl p-4 mb-3 border active:opacity-80',
+                      payment?.status === 'paid' ? 'bg-green-500/20 border-green-500/30' :
+                      payment?.status === 'partial' ? 'bg-amber-500/20 border-amber-500/30' :
+                      'bg-slate-800/80 border-slate-700/50'
+                    )}
+                  >
                     <View className="flex-row items-center justify-between">
                       <View className="flex-1">
                         <Text className="text-white font-semibold text-lg">{period.title}</Text>
@@ -500,8 +507,9 @@ export default function PaymentsScreen() {
                           </>
                         )}
                       </View>
+                      <ChevronRight size={20} color="#64748b" className="ml-2" />
                     </View>
-                  </View>
+                  </Pressable>
                 </Animated.View>
               ))}
             </Animated.View>
