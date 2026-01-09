@@ -129,40 +129,56 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, onToggle, o
       'flex-row items-center p-3 rounded-xl mb-2',
       status === 'paid' ? 'bg-green-500/20' : status === 'partial' ? 'bg-amber-500/20' : 'bg-slate-800/60'
     )}>
-      <Pressable
-        onPress={isAdmin ? onToggle : undefined}
-        disabled={!isAdmin}
-        className="flex-row items-center flex-1"
-      >
-        <Image
-          source={{ uri: player.avatar }}
-          style={{ width: 40, height: 40, borderRadius: 20 }}
-          contentFit="cover"
-        />
-        <View className="flex-1 ml-3">
-          <Text className="text-white font-medium">{player.name}</Text>
-          <Text className={cn(
-            'text-xs',
-            status === 'paid' ? 'text-green-400' : status === 'partial' ? 'text-amber-400' : 'text-slate-400'
-          )}>
-            {status === 'paid' ? 'Paid in Full' : status === 'partial' ? `Paid $${paidAmount ?? 0} of $${totalAmount}` : 'Unpaid'}
-          </Text>
+      <Image
+        source={{ uri: player.avatar }}
+        style={{ width: 40, height: 40, borderRadius: 20 }}
+        contentFit="cover"
+      />
+      <View className="flex-1 ml-3">
+        <Text className="text-white font-medium">{player.name}</Text>
+        <Text className={cn(
+          'text-xs',
+          status === 'paid' ? 'text-green-400' : status === 'partial' ? 'text-amber-400' : 'text-slate-400'
+        )}>
+          {status === 'paid' ? 'Paid in Full' : status === 'partial' ? `Paid $${paidAmount ?? 0} of $${totalAmount}` : `Owes $${totalAmount}`}
+        </Text>
+      </View>
+
+      {isAdmin ? (
+        <View className="flex-row items-center">
+          {/* Edit Amount Button - always visible for admin */}
+          <Pressable
+            onPress={onEditAmount}
+            className="bg-cyan-500/20 border border-cyan-500/50 rounded-lg px-4 py-2 mr-2 active:bg-cyan-500/30"
+          >
+            <Text className="text-cyan-400 font-semibold text-sm">
+              {status === 'paid' ? 'Edit' : 'Enter $'}
+            </Text>
+          </Pressable>
+
+          {/* Status Toggle */}
+          <Pressable
+            onPress={onToggle}
+            className="p-1"
+          >
+            {status === 'paid' ? (
+              <CheckCircle2 size={28} color="#22c55e" />
+            ) : status === 'partial' ? (
+              <AlertCircle size={28} color="#f59e0b" />
+            ) : (
+              <Circle size={28} color="#64748b" />
+            )}
+          </Pressable>
         </View>
-        {status === 'paid' ? (
-          <CheckCircle2 size={24} color="#22c55e" />
+      ) : (
+        // Non-admin just sees status icon
+        status === 'paid' ? (
+          <CheckCircle2 size={28} color="#22c55e" />
         ) : status === 'partial' ? (
-          <AlertCircle size={24} color="#f59e0b" />
+          <AlertCircle size={28} color="#f59e0b" />
         ) : (
-          <Circle size={24} color="#64748b" />
-        )}
-      </Pressable>
-      {isAdmin && status !== 'paid' && (
-        <Pressable
-          onPress={onEditAmount}
-          className="ml-2 bg-slate-700/50 rounded-lg px-2 py-1"
-        >
-          <Text className="text-cyan-400 text-xs font-medium">Edit $</Text>
-        </Pressable>
+          <Circle size={28} color="#64748b" />
+        )
       )}
     </View>
   );
