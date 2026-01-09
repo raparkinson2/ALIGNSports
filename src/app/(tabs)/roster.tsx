@@ -6,27 +6,14 @@ import {
   Users,
   Plus,
   X,
-  Shirt,
-  Check,
+  Shield,
+  Crown,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { useTeamStore, Player } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES } from '@/lib/store';
 import { cn } from '@/lib/cn';
-
-const JERSEY_COLORS = [
-  { hex: '#1e40af', name: 'Blue' },
-  { hex: '#dc2626', name: 'Red' },
-  { hex: '#ffffff', name: 'White' },
-  { hex: '#16a34a', name: 'Green' },
-  { hex: '#000000', name: 'Black' },
-  { hex: '#7c3aed', name: 'Purple' },
-  { hex: '#ea580c', name: 'Orange' },
-  { hex: '#ca8a04', name: 'Gold' },
-];
-
-const POSITIONS = ['C', 'LW', 'RW', 'D', 'G'] as const;
 
 interface PlayerCardProps {
   player: Player;
@@ -35,6 +22,9 @@ interface PlayerCardProps {
 }
 
 function PlayerCard({ player, index, onPress }: PlayerCardProps) {
+  const sport = useTeamStore((s) => s.teamSettings.sport);
+  const positionName = SPORT_POSITION_NAMES[sport][player.position] || player.position;
+
   return (
     <Animated.View entering={FadeInDown.delay(index * 60).springify()}>
       <Pressable
@@ -54,22 +44,33 @@ function PlayerCard({ player, index, onPress }: PlayerCardProps) {
           </View>
 
           <View className="flex-1 ml-4">
-            <Text className="text-white text-lg font-semibold">{player.name}</Text>
-            <Text className="text-slate-400 text-sm">{player.position}</Text>
+            <View className="flex-row items-center">
+              <Text className="text-white text-lg font-semibold">{player.name}</Text>
+              {player.role === 'captain' && (
+                <View className="ml-2 bg-amber-500/20 rounded-full p-1">
+                  <Crown size={14} color="#f59e0b" />
+                </View>
+              )}
+              {player.role === 'admin' && (
+                <View className="ml-2 bg-purple-500/20 rounded-full p-1">
+                  <Shield size={14} color="#a78bfa" />
+                </View>
+              )}
+            </View>
+            <Text className="text-slate-400 text-sm">{positionName}</Text>
           </View>
 
-          {/* Jersey Colors */}
-          <View className="flex-row items-center">
-            <Shirt size={16} color="#67e8f9" className="mr-2" />
-            <View className="flex-row">
-              {player.jerseyColors.map((color, idx) => (
-                <View
-                  key={idx}
-                  className="w-5 h-5 rounded-full -ml-1 border-2 border-slate-800"
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-            </View>
+          {/* Status Badge */}
+          <View className={cn(
+            'px-2 py-1 rounded-full',
+            player.status === 'active' ? 'bg-green-500/20' : 'bg-slate-600/50'
+          )}>
+            <Text className={cn(
+              'text-xs font-medium',
+              player.status === 'active' ? 'text-green-400' : 'text-slate-400'
+            )}>
+              {player.status === 'active' ? 'Active' : 'Reserve'}
+            </Text>
           </View>
         </View>
       </Pressable>
@@ -81,33 +82,42 @@ export default function RosterScreen() {
   const players = useTeamStore((s) => s.players);
   const addPlayer = useTeamStore((s) => s.addPlayer);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
+  const teamSettings = useTeamStore((s) => s.teamSettings);
+  const canManageTeam = useTeamStore((s) => s.canManageTeam);
+
+  const positions = SPORT_POSITIONS[teamSettings.sport];
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
-  const [position, setPosition] = useState<Player['position']>('C');
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [position, setPosition] = useState(positions[0]);
 
   const resetForm = () => {
     setName('');
     setNumber('');
-    setPosition('C');
-    setSelectedColors([]);
+    setPosition(positions[0]);
     setEditingPlayer(null);
   };
 
   const openAddModal = () => {
+    if (!canManageTeam()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
     resetForm();
     setIsModalVisible(true);
   };
 
   const openEditModal = (player: Player) => {
+    if (!canManageTeam()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
     setEditingPlayer(player);
     setName(player.name);
     setNumber(player.number);
     setPosition(player.position);
-    setSelectedColors(player.jerseyColors);
     setIsModalVisible(true);
   };
 
@@ -121,7 +131,6 @@ export default function RosterScreen() {
         name: name.trim(),
         number: number.trim(),
         position,
-        jerseyColors: selectedColors.length > 0 ? selectedColors : ['#1e40af'],
       });
     } else {
       const newPlayer: Player = {
@@ -129,8 +138,9 @@ export default function RosterScreen() {
         name: name.trim(),
         number: number.trim(),
         position,
-        jerseyColors: selectedColors.length > 0 ? selectedColors : ['#1e40af'],
         avatar: `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150`,
+        role: 'player',
+        status: 'active',
       };
       addPlayer(newPlayer);
     }
@@ -139,19 +149,39 @@ export default function RosterScreen() {
     resetForm();
   };
 
-  const toggleColor = (hex: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (selectedColors.includes(hex)) {
-      setSelectedColors(selectedColors.filter((c) => c !== hex));
+  // Group players by position type based on sport
+  const getPositionGroups = () => {
+    const sport = teamSettings.sport;
+
+    if (sport === 'hockey') {
+      return [
+        { title: 'Forwards', players: players.filter((p) => ['C', 'LW', 'RW'].includes(p.position)) },
+        { title: 'Defense', players: players.filter((p) => ['LD', 'RD'].includes(p.position)) },
+        { title: 'Goalies', players: players.filter((p) => p.position === 'G') },
+      ];
+    } else if (sport === 'baseball') {
+      return [
+        { title: 'Battery', players: players.filter((p) => ['P', 'C'].includes(p.position)) },
+        { title: 'Infield', players: players.filter((p) => ['1B', '2B', '3B', 'SS'].includes(p.position)) },
+        { title: 'Outfield', players: players.filter((p) => ['LF', 'RF', 'CF'].includes(p.position)) },
+      ];
+    } else if (sport === 'basketball') {
+      return [
+        { title: 'Guards', players: players.filter((p) => ['PG', 'SG'].includes(p.position)) },
+        { title: 'Forwards', players: players.filter((p) => ['SF', 'PF'].includes(p.position)) },
+        { title: 'Centers', players: players.filter((p) => p.position === 'C') },
+      ];
     } else {
-      setSelectedColors([...selectedColors, hex]);
+      return [
+        { title: 'Goalkeepers', players: players.filter((p) => p.position === 'GK') },
+        { title: 'Defenders', players: players.filter((p) => p.position === 'DEF') },
+        { title: 'Midfielders', players: players.filter((p) => p.position === 'MID') },
+        { title: 'Forwards', players: players.filter((p) => p.position === 'FWD') },
+      ];
     }
   };
 
-  // Group players by position
-  const forwards = players.filter((p) => ['C', 'LW', 'RW'].includes(p.position));
-  const defense = players.filter((p) => p.position === 'D');
-  const goalies = players.filter((p) => p.position === 'G');
+  const positionGroups = getPositionGroups();
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -170,12 +200,14 @@ export default function RosterScreen() {
             <Text className="text-slate-400 text-sm font-medium">Team</Text>
             <Text className="text-white text-3xl font-bold">Roster</Text>
           </View>
-          <Pressable
-            onPress={openAddModal}
-            className="bg-cyan-500 w-10 h-10 rounded-full items-center justify-center active:bg-cyan-600"
-          >
-            <Plus size={24} color="white" />
-          </Pressable>
+          {canManageTeam() && (
+            <Pressable
+              onPress={openAddModal}
+              className="bg-cyan-500 w-10 h-10 rounded-full items-center justify-center active:bg-cyan-600"
+            >
+              <Plus size={24} color="white" />
+            </Pressable>
+          )}
         </Animated.View>
 
         <ScrollView
@@ -183,65 +215,26 @@ export default function RosterScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {/* Forwards Section */}
-          {forwards.length > 0 && (
-            <View className="mb-6">
-              <View className="flex-row items-center mb-3">
-                <Users size={16} color="#67e8f9" />
-                <Text className="text-cyan-400 font-semibold ml-2">
-                  Forwards ({forwards.length})
-                </Text>
+          {positionGroups.map((group) => (
+            group.players.length > 0 && (
+              <View key={group.title} className="mb-6">
+                <View className="flex-row items-center mb-3">
+                  <Users size={16} color="#67e8f9" />
+                  <Text className="text-cyan-400 font-semibold ml-2">
+                    {group.title} ({group.players.length})
+                  </Text>
+                </View>
+                {group.players.map((player, index) => (
+                  <PlayerCard
+                    key={player.id}
+                    player={player}
+                    index={index}
+                    onPress={() => openEditModal(player)}
+                  />
+                ))}
               </View>
-              {forwards.map((player, index) => (
-                <PlayerCard
-                  key={player.id}
-                  player={player}
-                  index={index}
-                  onPress={() => openEditModal(player)}
-                />
-              ))}
-            </View>
-          )}
-
-          {/* Defense Section */}
-          {defense.length > 0 && (
-            <View className="mb-6">
-              <View className="flex-row items-center mb-3">
-                <Users size={16} color="#67e8f9" />
-                <Text className="text-cyan-400 font-semibold ml-2">
-                  Defense ({defense.length})
-                </Text>
-              </View>
-              {defense.map((player, index) => (
-                <PlayerCard
-                  key={player.id}
-                  player={player}
-                  index={index}
-                  onPress={() => openEditModal(player)}
-                />
-              ))}
-            </View>
-          )}
-
-          {/* Goalies Section */}
-          {goalies.length > 0 && (
-            <View className="mb-6">
-              <View className="flex-row items-center mb-3">
-                <Users size={16} color="#67e8f9" />
-                <Text className="text-cyan-400 font-semibold ml-2">
-                  Goalies ({goalies.length})
-                </Text>
-              </View>
-              {goalies.map((player, index) => (
-                <PlayerCard
-                  key={player.id}
-                  player={player}
-                  index={index}
-                  onPress={() => openEditModal(player)}
-                />
-              ))}
-            </View>
-          )}
+            )
+          ))}
         </ScrollView>
       </SafeAreaView>
 
@@ -297,8 +290,8 @@ export default function RosterScreen() {
               {/* Position Selector */}
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Position</Text>
-                <View className="flex-row">
-                  {POSITIONS.map((pos) => (
+                <View className="flex-row flex-wrap">
+                  {positions.map((pos) => (
                     <Pressable
                       key={pos}
                       onPress={() => {
@@ -306,7 +299,7 @@ export default function RosterScreen() {
                         setPosition(pos);
                       }}
                       className={cn(
-                        'flex-1 py-3 rounded-xl mr-2 items-center',
+                        'py-3 px-4 rounded-xl mr-2 mb-2 items-center',
                         position === pos ? 'bg-cyan-500' : 'bg-slate-800'
                       )}
                     >
@@ -318,40 +311,6 @@ export default function RosterScreen() {
                       >
                         {pos}
                       </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-
-              {/* Jersey Colors */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">
-                  Jersey Colors (Select all you own)
-                </Text>
-                <View className="flex-row flex-wrap">
-                  {JERSEY_COLORS.map((color) => (
-                    <Pressable
-                      key={color.hex}
-                      onPress={() => toggleColor(color.hex)}
-                      className="mr-3 mb-3 items-center"
-                    >
-                      <View
-                        className={cn(
-                          'w-12 h-12 rounded-full items-center justify-center border-2',
-                          selectedColors.includes(color.hex)
-                            ? 'border-cyan-400'
-                            : 'border-slate-600'
-                        )}
-                        style={{ backgroundColor: color.hex }}
-                      >
-                        {selectedColors.includes(color.hex) && (
-                          <Check
-                            size={20}
-                            color={color.hex === '#ffffff' ? '#000' : '#fff'}
-                          />
-                        )}
-                      </View>
-                      <Text className="text-slate-400 text-xs mt-1">{color.name}</Text>
                     </Pressable>
                   ))}
                 </View>

@@ -1,9 +1,12 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
-import { Calendar, Users, Camera, MoreHorizontal } from 'lucide-react-native';
+import { Calendar, Users, Camera, MoreHorizontal, Shield } from 'lucide-react-native';
+import { useTeamStore } from '@/lib/store';
 
 export default function TabLayout() {
+  const isAdmin = useTeamStore((s) => s.isAdmin);
+
   return (
     <Tabs
       screenOptions={{
@@ -73,6 +76,25 @@ export default function TabLayout() {
               <Camera size={22} color={color} />
             </View>
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="admin"
+        options={{
+          title: 'Admin',
+          href: isAdmin() ? undefined : null,
+          tabBarIcon: ({ color, focused }) => (
+            <View
+              style={{
+                backgroundColor: focused ? 'rgba(167, 139, 250, 0.15)' : 'transparent',
+                borderRadius: 10,
+                padding: 6,
+              }}
+            >
+              <Shield size={22} color={focused ? '#a78bfa' : color} />
+            </View>
+          ),
+          tabBarActiveTintColor: '#a78bfa',
         }}
       />
       <Tabs.Screen

@@ -103,8 +103,8 @@ export default function MoreScreen() {
       message += `Our next game:\n`;
       message += `vs ${nextGame.opponent}\n`;
       message += `${gameDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at ${nextGame.time}\n`;
-      message += `${nextGame.rinkName}\n`;
-      message += `${nextGame.rinkAddress}\n\n`;
+      message += `${nextGame.location}\n`;
+      message += `${nextGame.address}\n\n`;
     }
 
     message += `Let me know if you can make it!`;

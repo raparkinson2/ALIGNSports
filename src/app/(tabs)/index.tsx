@@ -1,23 +1,24 @@
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Modal, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
-import { Calendar, MapPin, Clock, Beer, Users, ChevronRight } from 'lucide-react-native';
+import { useState } from 'react';
+import {
+  Calendar,
+  MapPin,
+  Clock,
+  Users,
+  ChevronRight,
+  Plus,
+  X,
+  Check,
+} from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Haptics from 'expo-haptics';
 import { useTeamStore, Game } from '@/lib/store';
 import { cn } from '@/lib/cn';
-
-const getJerseyColorName = (hex: string): string => {
-  const colorMap: Record<string, string> = {
-    '#1e40af': 'Blue',
-    '#dc2626': 'Red',
-    '#ffffff': 'White',
-    '#16a34a': 'Green',
-    '#000000': 'Black',
-  };
-  return colorMap[hex] || 'Custom';
-};
 
 const getDateLabel = (dateString: string): string => {
   const date = parseISO(dateString);
@@ -33,10 +34,11 @@ interface GameCardProps {
 }
 
 function GameCard({ game, index, onPress }: GameCardProps) {
-  const players = useTeamStore((s) => s.players);
-  const beerPerson = players.find((p) => p.id === game.beerBagAssignee);
+  const teamSettings = useTeamStore((s) => s.teamSettings);
   const checkedInCount = game.checkedInPlayers.length;
-  const totalPlayers = players.length;
+  const invitedCount = game.invitedPlayers.length;
+
+  const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === game.jerseyColor);
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 100).springify()}>
@@ -47,7 +49,7 @@ function GameCard({ game, index, onPress }: GameCardProps) {
       >
         <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
           {/* Jersey Color Bar */}
-          <View style={{ backgroundColor: game.jerseyColor, height: 4 }} />
+          <View style={{ backgroundColor: jerseyColorInfo?.color || '#ffffff', height: 4 }} />
 
           <View className="p-4">
             {/* Date Badge & Opponent */}
@@ -72,10 +74,10 @@ function GameCard({ game, index, onPress }: GameCardProps) {
               <View className="flex-1 flex-row items-center">
                 <View
                   className="w-3 h-3 rounded-full mr-2 border border-white/30"
-                  style={{ backgroundColor: game.jerseyColor }}
+                  style={{ backgroundColor: jerseyColorInfo?.color || '#ffffff' }}
                 />
                 <Text className="text-slate-300 text-sm">
-                  {getJerseyColorName(game.jerseyColor)} Jersey
+                  {game.jerseyColor} Jersey
                 </Text>
               </View>
             </View>
@@ -83,7 +85,7 @@ function GameCard({ game, index, onPress }: GameCardProps) {
             {/* Location */}
             <View className="flex-row items-center mb-3">
               <MapPin size={14} color="#67e8f9" />
-              <Text className="text-slate-400 text-sm ml-2">{game.rinkName}</Text>
+              <Text className="text-slate-400 text-sm ml-2">{game.location}</Text>
             </View>
 
             {/* Footer */}
@@ -91,13 +93,7 @@ function GameCard({ game, index, onPress }: GameCardProps) {
               <View className="flex-row items-center">
                 <Users size={14} color="#22c55e" />
                 <Text className="text-green-400 text-sm ml-2 font-medium">
-                  {checkedInCount}/{totalPlayers} checked in
-                </Text>
-              </View>
-              <View className="flex-row items-center bg-amber-500/20 px-2 py-1 rounded-full">
-                <Beer size={12} color="#f59e0b" />
-                <Text className="text-amber-400 text-xs ml-1">
-                  {beerPerson?.name?.split(' ')[0] || 'TBD'}
+                  {checkedInCount}/{invitedCount} checked in
                 </Text>
               </View>
             </View>
@@ -112,6 +108,21 @@ export default function ScheduleScreen() {
   const router = useRouter();
   const teamName = useTeamStore((s) => s.teamName);
   const games = useTeamStore((s) => s.games);
+  const players = useTeamStore((s) => s.players);
+  const teamSettings = useTeamStore((s) => s.teamSettings);
+  const addGame = useTeamStore((s) => s.addGame);
+  const canManageTeam = useTeamStore((s) => s.canManageTeam);
+
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [opponent, setOpponent] = useState('');
+  const [location, setLocation] = useState('');
+  const [address, setAddress] = useState('');
+  const [gameDate, setGameDate] = useState(new Date());
+  const [gameTime, setGameTime] = useState(new Date());
+  const [selectedJersey, setSelectedJersey] = useState(teamSettings.jerseyColors[0]?.name || '');
+  const [notes, setNotes] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   // Sort games by date
   const sortedGames = [...games].sort(
@@ -121,6 +132,45 @@ export default function ScheduleScreen() {
   const upcomingGames = sortedGames.filter(
     (g) => new Date(g.date) >= new Date(new Date().setHours(0, 0, 0, 0))
   );
+
+  const resetForm = () => {
+    setOpponent('');
+    setLocation('');
+    setAddress('');
+    setGameDate(new Date());
+    setGameTime(new Date());
+    setSelectedJersey(teamSettings.jerseyColors[0]?.name || '');
+    setNotes('');
+  };
+
+  const handleCreateGame = () => {
+    if (!opponent.trim() || !location.trim()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    const timeString = format(gameTime, 'h:mm a');
+    const activePlayers = players.filter((p) => p.status === 'active').map((p) => p.id);
+
+    const newGame: Game = {
+      id: Date.now().toString(),
+      opponent: opponent.trim(),
+      date: gameDate.toISOString(),
+      time: timeString,
+      location: location.trim(),
+      address: address.trim(),
+      jerseyColor: selectedJersey,
+      notes: notes.trim() || undefined,
+      checkedInPlayers: [],
+      invitedPlayers: activePlayers,
+      photos: [],
+    };
+
+    addGame(newGame);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsModalVisible(false);
+    resetForm();
+  };
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -158,6 +208,14 @@ export default function ScheduleScreen() {
               <Text className="text-slate-400 text-center mt-4">
                 No upcoming games scheduled
               </Text>
+              {canManageTeam() && (
+                <Pressable
+                  onPress={() => setIsModalVisible(true)}
+                  className="mt-4 bg-cyan-500 rounded-xl px-6 py-3"
+                >
+                  <Text className="text-white font-semibold">Add First Game</Text>
+                </Pressable>
+              )}
             </View>
           ) : (
             upcomingGames.map((game, index) => (
@@ -170,7 +228,191 @@ export default function ScheduleScreen() {
             ))
           )}
         </ScrollView>
+
+        {/* FAB for adding games */}
+        {canManageTeam() && upcomingGames.length > 0 && (
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setIsModalVisible(true);
+            }}
+            className="absolute bottom-28 right-5 bg-cyan-500 w-14 h-14 rounded-full items-center justify-center shadow-lg active:bg-cyan-600"
+            style={{
+              shadowColor: '#67e8f9',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 8,
+            }}
+          >
+            <Plus size={28} color="white" />
+          </Pressable>
+        )}
       </SafeAreaView>
+
+      {/* Create Game Modal */}
+      <Modal
+        visible={isModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">New Game</Text>
+              <Pressable onPress={handleCreateGame}>
+                <Text className="text-cyan-400 font-semibold">Create</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-6">
+              {/* Opponent */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Opponent</Text>
+                <TextInput
+                  value={opponent}
+                  onChangeText={setOpponent}
+                  placeholder="e.g., Ice Wolves"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                />
+              </View>
+
+              {/* Date */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Date</Text>
+                <Pressable
+                  onPress={() => setShowDatePicker(true)}
+                  className="bg-slate-800 rounded-xl px-4 py-3"
+                >
+                  <Text className="text-white text-lg">
+                    {format(gameDate, 'EEEE, MMMM d, yyyy')}
+                  </Text>
+                </Pressable>
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={gameDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(event, date) => {
+                      setShowDatePicker(Platform.OS === 'ios');
+                      if (date) setGameDate(date);
+                    }}
+                    minimumDate={new Date()}
+                    themeVariant="dark"
+                  />
+                )}
+              </View>
+
+              {/* Time */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Time</Text>
+                <Pressable
+                  onPress={() => setShowTimePicker(true)}
+                  className="bg-slate-800 rounded-xl px-4 py-3"
+                >
+                  <Text className="text-white text-lg">
+                    {format(gameTime, 'h:mm a')}
+                  </Text>
+                </Pressable>
+                {showTimePicker && (
+                  <DateTimePicker
+                    value={gameTime}
+                    mode="time"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(event, time) => {
+                      setShowTimePicker(Platform.OS === 'ios');
+                      if (time) setGameTime(time);
+                    }}
+                    themeVariant="dark"
+                  />
+                )}
+              </View>
+
+              {/* Location */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Location Name</Text>
+                <TextInput
+                  value={location}
+                  onChangeText={setLocation}
+                  placeholder="e.g., Glacier Ice Arena"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                />
+              </View>
+
+              {/* Address */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Address</Text>
+                <TextInput
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="e.g., 1234 Main Street"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                />
+              </View>
+
+              {/* Jersey Color */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Jersey Color</Text>
+                <View className="flex-row flex-wrap">
+                  {teamSettings.jerseyColors.map((color) => (
+                    <Pressable
+                      key={color.name}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setSelectedJersey(color.name);
+                      }}
+                      className={cn(
+                        'flex-row items-center px-4 py-3 rounded-xl mr-2 mb-2 border',
+                        selectedJersey === color.name
+                          ? 'bg-cyan-500/20 border-cyan-500/50'
+                          : 'bg-slate-800 border-slate-700'
+                      )}
+                    >
+                      <View
+                        className="w-5 h-5 rounded-full mr-2 border border-white/30"
+                        style={{ backgroundColor: color.color }}
+                      />
+                      <Text
+                        className={cn(
+                          'font-medium',
+                          selectedJersey === color.name ? 'text-cyan-400' : 'text-slate-400'
+                        )}
+                      >
+                        {color.name}
+                      </Text>
+                      {selectedJersey === color.name && (
+                        <Check size={16} color="#67e8f9" className="ml-2" />
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              {/* Notes */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Notes (Optional)</Text>
+                <TextInput
+                  value={notes}
+                  onChangeText={setNotes}
+                  placeholder="Any additional info..."
+                  placeholderTextColor="#64748b"
+                  multiline
+                  numberOfLines={3}
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  style={{ minHeight: 80, textAlignVertical: 'top' }}
+                />
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
     </View>
   );
 }

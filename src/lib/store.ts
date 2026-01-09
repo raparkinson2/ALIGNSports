@@ -2,15 +2,75 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Sport Types and Positions
+export type Sport = 'hockey' | 'baseball' | 'basketball' | 'soccer';
+
+export const SPORT_POSITIONS: Record<Sport, string[]> = {
+  hockey: ['C', 'LW', 'RW', 'LD', 'RD', 'G'],
+  baseball: ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'RF', 'CF'],
+  basketball: ['PG', 'SG', 'SF', 'PF', 'C'],
+  soccer: ['GK', 'DEF', 'MID', 'FWD'],
+};
+
+export const SPORT_POSITION_NAMES: Record<Sport, Record<string, string>> = {
+  hockey: {
+    C: 'Center',
+    LW: 'Left Wing',
+    RW: 'Right Wing',
+    LD: 'Left Defense',
+    RD: 'Right Defense',
+    G: 'Goalie',
+  },
+  baseball: {
+    P: 'Pitcher',
+    C: 'Catcher',
+    '1B': 'First Base',
+    '2B': 'Second Base',
+    '3B': 'Third Base',
+    SS: 'Shortstop',
+    LF: 'Left Field',
+    RF: 'Right Field',
+    CF: 'Center Field',
+  },
+  basketball: {
+    PG: 'Point Guard',
+    SG: 'Shooting Guard',
+    SF: 'Small Forward',
+    PF: 'Power Forward',
+    C: 'Center',
+  },
+  soccer: {
+    GK: 'Goalkeeper',
+    DEF: 'Defender',
+    MID: 'Midfielder',
+    FWD: 'Forward',
+  },
+};
+
+export const SPORT_NAMES: Record<Sport, string> = {
+  hockey: 'Hockey',
+  baseball: 'Baseball',
+  basketball: 'Basketball',
+  soccer: 'Soccer',
+};
+
+// Role Types
+export type PlayerRole = 'admin' | 'captain' | 'player';
+
+// Player Status
+export type PlayerStatus = 'active' | 'reserve';
+
 // Types
 export interface Player {
   id: string;
   name: string;
   email?: string;
+  phone?: string;
   number: string;
-  position: 'C' | 'LW' | 'RW' | 'D' | 'G';
-  jerseyColors: string[];
+  position: string;
   avatar?: string;
+  role: PlayerRole;
+  status: PlayerStatus;
 }
 
 export interface Game {
@@ -18,17 +78,26 @@ export interface Game {
   opponent: string;
   date: string; // ISO string
   time: string;
-  rinkName: string;
-  rinkAddress: string;
+  location: string;
+  address: string;
   jerseyColor: string;
-  beerBagAssignee: string; // player id
+  notes?: string;
   checkedInPlayers: string[]; // player ids
-  lineup: {
-    forwards: string[];
-    defense: string[];
-    goalies: string[];
-  };
+  invitedPlayers: string[]; // player ids
   photos: string[];
+}
+
+export interface Event {
+  id: string;
+  title: string;
+  type: 'practice' | 'meeting' | 'social' | 'other';
+  date: string;
+  time: string;
+  location: string;
+  address?: string;
+  notes?: string;
+  invitedPlayers: string[];
+  confirmedPlayers: string[];
 }
 
 export interface Photo {
@@ -39,39 +108,64 @@ export interface Photo {
   uploadedAt: string;
 }
 
+export interface TeamSettings {
+  sport: Sport;
+  jerseyColors: { name: string; color: string }[];
+}
+
 interface TeamStore {
   teamName: string;
   setTeamName: (name: string) => void;
+
+  teamSettings: TeamSettings;
+  setTeamSettings: (settings: Partial<TeamSettings>) => void;
+
   players: Player[];
   addPlayer: (player: Player) => void;
   updatePlayer: (id: string, updates: Partial<Player>) => void;
   removePlayer: (id: string) => void;
+
   games: Game[];
   addGame: (game: Game) => void;
   updateGame: (id: string, updates: Partial<Game>) => void;
   removeGame: (id: string) => void;
   checkInToGame: (gameId: string, playerId: string) => void;
   checkOutFromGame: (gameId: string, playerId: string) => void;
+  invitePlayersToGame: (gameId: string, playerIds: string[]) => void;
+
+  events: Event[];
+  addEvent: (event: Event) => void;
+  updateEvent: (id: string, updates: Partial<Event>) => void;
+  removeEvent: (id: string) => void;
+  confirmEventAttendance: (eventId: string, playerId: string) => void;
+  declineEventAttendance: (eventId: string, playerId: string) => void;
+  invitePlayersToEvent: (eventId: string, playerIds: string[]) => void;
+
   photos: Photo[];
   addPhoto: (photo: Photo) => void;
   removePhoto: (id: string) => void;
+
   currentPlayerId: string | null;
   setCurrentPlayerId: (id: string | null) => void;
   isLoggedIn: boolean;
   setIsLoggedIn: (loggedIn: boolean) => void;
   logout: () => void;
+
+  // Helper to check if current user has admin/captain privileges
+  canManageTeam: () => boolean;
+  isAdmin: () => boolean;
 }
 
 // Mock data
 const mockPlayers: Player[] = [
-  { id: '1', name: 'Mike Johnson', email: 'mike.johnson@email.com', number: '12', position: 'C', jerseyColors: ['#1e40af', '#dc2626', '#ffffff'], avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' },
-  { id: '2', name: 'Dave Williams', email: 'dave.williams@email.com', number: '7', position: 'LW', jerseyColors: ['#1e40af', '#16a34a'], avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150' },
-  { id: '3', name: 'Chris Brown', email: 'chris.brown@email.com', number: '22', position: 'RW', jerseyColors: ['#1e40af', '#dc2626'], avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150' },
-  { id: '4', name: 'Jake Miller', email: 'jake.miller@email.com', number: '4', position: 'D', jerseyColors: ['#1e40af', '#ffffff'], avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150' },
-  { id: '5', name: 'Ryan Davis', email: 'ryan.davis@email.com', number: '8', position: 'D', jerseyColors: ['#1e40af', '#dc2626', '#16a34a'], avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150' },
-  { id: '6', name: 'Tom Wilson', email: 'tom.wilson@email.com', number: '31', position: 'G', jerseyColors: ['#1e40af'], avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150' },
-  { id: '7', name: 'Steve Anderson', email: 'steve.anderson@email.com', number: '15', position: 'C', jerseyColors: ['#1e40af', '#dc2626'], avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150' },
-  { id: '8', name: 'Kevin Martinez', email: 'kevin.martinez@email.com', number: '19', position: 'LW', jerseyColors: ['#1e40af'], avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150' },
+  { id: '1', name: 'Mike Johnson', email: 'mike.johnson@email.com', phone: '555-0101', number: '12', position: 'C', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', role: 'admin', status: 'active' },
+  { id: '2', name: 'Dave Williams', email: 'dave.williams@email.com', phone: '555-0102', number: '7', position: 'LW', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', role: 'captain', status: 'active' },
+  { id: '3', name: 'Chris Brown', email: 'chris.brown@email.com', phone: '555-0103', number: '22', position: 'RW', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', role: 'player', status: 'active' },
+  { id: '4', name: 'Jake Miller', email: 'jake.miller@email.com', phone: '555-0104', number: '4', position: 'LD', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', role: 'player', status: 'active' },
+  { id: '5', name: 'Ryan Davis', email: 'ryan.davis@email.com', phone: '555-0105', number: '8', position: 'RD', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', role: 'player', status: 'active' },
+  { id: '6', name: 'Tom Wilson', email: 'tom.wilson@email.com', phone: '555-0106', number: '31', position: 'G', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150', role: 'player', status: 'active' },
+  { id: '7', name: 'Steve Anderson', email: 'steve.anderson@email.com', phone: '555-0107', number: '15', position: 'C', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150', role: 'player', status: 'reserve' },
+  { id: '8', name: 'Kevin Martinez', email: 'kevin.martinez@email.com', phone: '555-0108', number: '19', position: 'LW', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150', role: 'player', status: 'reserve' },
 ];
 
 const mockGames: Game[] = [
@@ -80,12 +174,11 @@ const mockGames: Game[] = [
     opponent: 'Ice Wolves',
     date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
     time: '8:30 PM',
-    rinkName: 'Glacier Ice Arena',
-    rinkAddress: '1234 Frozen Lake Drive',
-    jerseyColor: '#1e40af',
-    beerBagAssignee: '2',
+    location: 'Glacier Ice Arena',
+    address: '1234 Frozen Lake Drive',
+    jerseyColor: 'White',
     checkedInPlayers: ['1', '3', '4', '6'],
-    lineup: { forwards: ['1', '2', '3', '7', '8'], defense: ['4', '5'], goalies: ['6'] },
+    invitedPlayers: ['1', '2', '3', '4', '5', '6'],
     photos: [],
   },
   {
@@ -93,12 +186,11 @@ const mockGames: Game[] = [
     opponent: 'Polar Bears',
     date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     time: '9:15 PM',
-    rinkName: 'Northside Ice Complex',
-    rinkAddress: '567 Winter Road',
-    jerseyColor: '#dc2626',
-    beerBagAssignee: '5',
+    location: 'Northside Ice Complex',
+    address: '567 Winter Road',
+    jerseyColor: 'Black',
     checkedInPlayers: ['2', '5'],
-    lineup: { forwards: ['1', '2', '3', '7', '8'], defense: ['4', '5'], goalies: ['6'] },
+    invitedPlayers: ['1', '2', '3', '4', '5', '6', '7', '8'],
     photos: [],
   },
   {
@@ -106,21 +198,33 @@ const mockGames: Game[] = [
     opponent: 'Frost Giants',
     date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
     time: '7:45 PM',
-    rinkName: 'Downtown Ice Center',
-    rinkAddress: '890 Main Street',
-    jerseyColor: '#ffffff',
-    beerBagAssignee: '1',
+    location: 'Downtown Ice Center',
+    address: '890 Main Street',
+    jerseyColor: 'White',
     checkedInPlayers: [],
-    lineup: { forwards: ['1', '2', '3', '7', '8'], defense: ['4', '5'], goalies: ['6'] },
+    invitedPlayers: ['1', '2', '3', '4', '5', '6'],
     photos: [],
   },
 ];
+
+const defaultTeamSettings: TeamSettings = {
+  sport: 'hockey',
+  jerseyColors: [
+    { name: 'White', color: '#ffffff' },
+    { name: 'Black', color: '#1a1a1a' },
+  ],
+};
 
 export const useTeamStore = create<TeamStore>()(
   persist(
     (set, get) => ({
       teamName: 'Blue Line Bandits',
       setTeamName: (name) => set({ teamName: name }),
+
+      teamSettings: defaultTeamSettings,
+      setTeamSettings: (settings) => set((state) => ({
+        teamSettings: { ...state.teamSettings, ...settings },
+      })),
 
       players: mockPlayers,
       addPlayer: (player) => set((state) => ({ players: [...state.players, player] })),
@@ -150,17 +254,59 @@ export const useTeamStore = create<TeamStore>()(
             : g
         ),
       })),
+      invitePlayersToGame: (gameId, playerIds) => set((state) => ({
+        games: state.games.map((g) =>
+          g.id === gameId ? { ...g, invitedPlayers: playerIds } : g
+        ),
+      })),
+
+      events: [],
+      addEvent: (event) => set((state) => ({ events: [...state.events, event] })),
+      updateEvent: (id, updates) => set((state) => ({
+        events: state.events.map((e) => (e.id === id ? { ...e, ...updates } : e)),
+      })),
+      removeEvent: (id) => set((state) => ({ events: state.events.filter((e) => e.id !== id) })),
+      confirmEventAttendance: (eventId, playerId) => set((state) => ({
+        events: state.events.map((e) =>
+          e.id === eventId && !e.confirmedPlayers.includes(playerId)
+            ? { ...e, confirmedPlayers: [...e.confirmedPlayers, playerId] }
+            : e
+        ),
+      })),
+      declineEventAttendance: (eventId, playerId) => set((state) => ({
+        events: state.events.map((e) =>
+          e.id === eventId
+            ? { ...e, confirmedPlayers: e.confirmedPlayers.filter((id) => id !== playerId) }
+            : e
+        ),
+      })),
+      invitePlayersToEvent: (eventId, playerIds) => set((state) => ({
+        events: state.events.map((e) =>
+          e.id === eventId ? { ...e, invitedPlayers: playerIds } : e
+        ),
+      })),
 
       photos: [],
       addPhoto: (photo) => set((state) => ({ photos: [...state.photos, photo] })),
       removePhoto: (id) => set((state) => ({ photos: state.photos.filter((p) => p.id !== id) })),
 
-      currentPlayerId: '1', // Default to first player
+      currentPlayerId: '1', // Default to first player (admin)
       setCurrentPlayerId: (id) => set({ currentPlayerId: id }),
 
       isLoggedIn: false,
       setIsLoggedIn: (loggedIn) => set({ isLoggedIn: loggedIn }),
       logout: () => set({ isLoggedIn: false, currentPlayerId: null }),
+
+      canManageTeam: () => {
+        const state = get();
+        const currentPlayer = state.players.find((p) => p.id === state.currentPlayerId);
+        return currentPlayer?.role === 'admin' || currentPlayer?.role === 'captain';
+      },
+      isAdmin: () => {
+        const state = get();
+        const currentPlayer = state.players.find((p) => p.id === state.currentPlayerId);
+        return currentPlayer?.role === 'admin';
+      },
     }),
     {
       name: 'team-storage',
