@@ -215,6 +215,7 @@ interface TeamStore {
   // Chat
   chatMessages: ChatMessage[];
   addChatMessage: (message: ChatMessage) => void;
+  deleteChatMessage: (messageId: string) => void;
 
   // Payments
   paymentPeriods: PaymentPeriod[];
@@ -402,6 +403,9 @@ export const useTeamStore = create<TeamStore>()(
       chatMessages: [],
       addChatMessage: (message) => set((state) => ({
         chatMessages: [...state.chatMessages, message],
+      })),
+      deleteChatMessage: (messageId) => set((state) => ({
+        chatMessages: state.chatMessages.filter((m) => m.id !== messageId),
       })),
 
       // Payments

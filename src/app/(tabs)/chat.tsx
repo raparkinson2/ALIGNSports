@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useRef, useEffect } from 'react';
@@ -16,18 +16,44 @@ interface MessageBubbleProps {
   senderName: string;
   senderAvatar?: string;
   index: number;
+  onDelete?: () => void;
 }
 
-function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index }: MessageBubbleProps) {
+function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index, onDelete }: MessageBubbleProps) {
   const messageDate = parseISO(message.createdAt);
   const timeStr = format(messageDate, 'h:mm a');
+
+  const handleLongPress = () => {
+    if (isOwnMessage && onDelete) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Alert.alert(
+        'Delete Message',
+        'Are you sure you want to delete this message?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: () => {
+              onDelete();
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            },
+          },
+        ]
+      );
+    }
+  };
 
   return (
     <Animated.View
       entering={FadeInDown.delay(index * 30).springify()}
       className={cn('mb-3', isOwnMessage ? 'items-end' : 'items-start')}
     >
-      <View className={cn('flex-row items-end max-w-[80%]', isOwnMessage && 'flex-row-reverse')}>
+      <Pressable
+        onLongPress={handleLongPress}
+        delayLongPress={500}
+        className={cn('flex-row items-end max-w-[80%]', isOwnMessage && 'flex-row-reverse')}
+      >
         {!isOwnMessage && (
           <Image
             source={{ uri: senderAvatar }}
@@ -55,7 +81,7 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index 
             {timeStr}
           </Text>
         </View>
-      </View>
+      </Pressable>
     </Animated.View>
   );
 }
@@ -77,6 +103,7 @@ function DateSeparator({ date }: { date: Date }) {
 export default function ChatScreen() {
   const chatMessages = useTeamStore((s) => s.chatMessages);
   const addChatMessage = useTeamStore((s) => s.addChatMessage);
+  const deleteChatMessage = useTeamStore((s) => s.deleteChatMessage);
   const players = useTeamStore((s) => s.players);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const teamName = useTeamStore((s) => s.teamName);
@@ -185,6 +212,7 @@ export default function ChatScreen() {
                         senderName={sender?.name || 'Unknown'}
                         senderAvatar={sender?.avatar}
                         index={groupIndex * 10 + msgIndex}
+                        onDelete={isOwnMessage ? () => deleteChatMessage(message.id) : undefined}
                       />
                     );
                   })}
