@@ -45,23 +45,24 @@ import { formatPhoneNumber, formatPhoneInput, unformatPhone } from '@/lib/phone'
 function HockeyIcon({ color, size = 18 }: { color: string; size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {/* Hockey stick - angled with blade */}
+      {/* Hockey stick */}
       <Path
-        d="M19 2L15 6L15 16L13 18L7 18L7 20L14 20L16 18L16 6L20 2"
+        d="M4 3L4 17L8 21L12 21L12 17"
         stroke={color}
-        strokeWidth={1.5}
+        strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
       />
-      {/* Tape on stick */}
-      <Line x1="15" y1="8" x2="16" y2="8" stroke={color} strokeWidth={1} />
-      <Line x1="15" y1="10" x2="16" y2="10" stroke={color} strokeWidth={1} />
-      {/* Puck - 3D oval */}
-      <Ellipse cx="5" cy="14" rx="3.5" ry="1.5" stroke={color} strokeWidth={1.5} fill="none" />
-      <Path d="M1.5 14L1.5 16C1.5 16.8 3 17.5 5 17.5C7 17.5 8.5 16.8 8.5 16L8.5 14" stroke={color} strokeWidth={1.5} fill="none" />
-      <Line x1="1.5" y1="15" x2="1.5" y2="14" stroke={color} strokeWidth={1.5} />
-      <Line x1="8.5" y1="15" x2="8.5" y2="14" stroke={color} strokeWidth={1.5} />
+      {/* Stick blade */}
+      <Path
+        d="M4 17L12 17"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+      {/* Puck */}
+      <Ellipse cx="18" cy="19" rx="4" ry="2" stroke={color} strokeWidth={2} fill="none" />
     </Svg>
   );
 }
@@ -69,22 +70,24 @@ function HockeyIcon({ color, size = 18 }: { color: string; size?: number }) {
 function BaseballIcon({ color, size = 18 }: { color: string; size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {/* Baseball bat - angled */}
+      {/* Baseball circle */}
+      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
+      {/* Left stitching */}
       <Path
-        d="M20 2C20 2 21 3 21 4L14 11L12 13L10 13L10 11L12 9L19 2C19 2 20 2 20 2Z"
+        d="M7 5C8 7 8 9 7 12C6 15 6 17 7 19"
         stroke={color}
         strokeWidth={1.5}
         strokeLinecap="round"
-        strokeLinejoin="round"
         fill="none"
       />
-      {/* Bat handle */}
-      <Path d="M10 13L8 15L6 15L6 13L8 11L10 11" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      {/* Baseball with stitching */}
-      <SvgCircle cx="7" cy="19" r="4" stroke={color} strokeWidth={1.5} fill="none" />
-      {/* Stitching curves */}
-      <Path d="M4.5 17C5 17.5 5 18.5 4.5 19C4 19.5 4 20.5 4.5 21" stroke={color} strokeWidth={1} fill="none" />
-      <Path d="M9.5 17C9 17.5 9 18.5 9.5 19C10 19.5 10 20.5 9.5 21" stroke={color} strokeWidth={1} fill="none" />
+      {/* Right stitching */}
+      <Path
+        d="M17 5C16 7 16 9 17 12C18 15 18 17 17 19"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        fill="none"
+      />
     </Svg>
   );
 }
@@ -93,15 +96,15 @@ function BasketballIcon({ color, size = 18 }: { color: string; size?: number }) 
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       {/* Ball outline */}
-      <SvgCircle cx="12" cy="12" r="10" stroke={color} strokeWidth={1.5} fill="none" />
+      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
       {/* Vertical line */}
-      <Line x1="12" y1="2" x2="12" y2="22" stroke={color} strokeWidth={1.5} />
+      <Line x1="12" y1="3" x2="12" y2="21" stroke={color} strokeWidth={1.5} />
       {/* Horizontal line */}
-      <Line x1="2" y1="12" x2="22" y2="12" stroke={color} strokeWidth={1.5} />
+      <Line x1="3" y1="12" x2="21" y2="12" stroke={color} strokeWidth={1.5} />
       {/* Left curve */}
-      <Path d="M7 2.5C7 2.5 4 6 4 12C4 18 7 21.5 7 21.5" stroke={color} strokeWidth={1.5} fill="none" />
+      <Path d="M8 3.5C6 6 5 9 5 12C5 15 6 18 8 20.5" stroke={color} strokeWidth={1.5} fill="none" />
       {/* Right curve */}
-      <Path d="M17 2.5C17 2.5 20 6 20 12C20 18 17 21.5 17 21.5" stroke={color} strokeWidth={1.5} fill="none" />
+      <Path d="M16 3.5C18 6 19 9 19 12C19 15 18 18 16 20.5" stroke={color} strokeWidth={1.5} fill="none" />
     </Svg>
   );
 }
@@ -110,29 +113,21 @@ function SoccerIcon({ color, size = 18 }: { color: string; size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       {/* Ball outline */}
-      <SvgCircle cx="12" cy="12" r="10" stroke={color} strokeWidth={1.5} fill="none" />
-      {/* Center pentagon - filled */}
+      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
+      {/* Center pentagon */}
       <Path
-        d="M12 7L15.5 9.5L14 14H10L8.5 9.5L12 7Z"
+        d="M12 8L15 10.5L13.5 14.5H10.5L9 10.5L12 8Z"
         stroke={color}
         strokeWidth={1.5}
+        strokeLinejoin="round"
         fill={color}
       />
-      {/* Top pentagon */}
-      <Path d="M12 7L12 2" stroke={color} strokeWidth={1.5} />
-      <Path d="M9 3L12 2L15 3" stroke={color} strokeWidth={1.5} fill="none" />
-      {/* Top right */}
-      <Path d="M15.5 9.5L20 7" stroke={color} strokeWidth={1.5} />
-      <Path d="M18 4L20 7L21 10" stroke={color} strokeWidth={1.5} fill="none" />
-      {/* Bottom right */}
-      <Path d="M14 14L17 18" stroke={color} strokeWidth={1.5} />
-      <Path d="M20 15L17 18L15 21" stroke={color} strokeWidth={1.5} fill="none" />
-      {/* Bottom left */}
-      <Path d="M10 14L7 18" stroke={color} strokeWidth={1.5} />
-      <Path d="M4 15L7 18L9 21" stroke={color} strokeWidth={1.5} fill="none" />
-      {/* Top left */}
-      <Path d="M8.5 9.5L4 7" stroke={color} strokeWidth={1.5} />
-      <Path d="M6 4L4 7L3 10" stroke={color} strokeWidth={1.5} fill="none" />
+      {/* Lines from pentagon to edge */}
+      <Line x1="12" y1="8" x2="12" y2="3.5" stroke={color} strokeWidth={1.5} />
+      <Line x1="15" y1="10.5" x2="20" y2="9" stroke={color} strokeWidth={1.5} />
+      <Line x1="13.5" y1="14.5" x2="17" y2="19" stroke={color} strokeWidth={1.5} />
+      <Line x1="10.5" y1="14.5" x2="7" y2="19" stroke={color} strokeWidth={1.5} />
+      <Line x1="9" y1="10.5" x2="4" y2="9" stroke={color} strokeWidth={1.5} />
     </Svg>
   );
 }
