@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, TextInput, Modal } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Modal, Platform, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
@@ -10,10 +10,13 @@ import {
   Crown,
   Phone,
   Mail,
+  MessageSquare,
+  Send,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
+import * as Linking from 'expo-linking';
 import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
@@ -86,6 +89,7 @@ export default function RosterScreen() {
   const addPlayer = useTeamStore((s) => s.addPlayer);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
   const teamSettings = useTeamStore((s) => s.teamSettings);
+  const teamName = useTeamStore((s) => s.teamName);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const isAdmin = useTeamStore((s) => s.isAdmin);
 
@@ -98,6 +102,10 @@ export default function RosterScreen() {
   const [position, setPosition] = useState(positions[0]);
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+
+  // Invite modal state
+  const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
+  const [newlyCreatedPlayer, setNewlyCreatedPlayer] = useState<Player | null>(null);
 
   const resetForm = () => {
     setName('');
@@ -147,6 +155,8 @@ export default function RosterScreen() {
         phone: rawPhone || undefined,
         email: email.trim() || undefined,
       });
+      setIsModalVisible(false);
+      resetForm();
     } else {
       const newPlayer: Player = {
         id: Date.now().toString(),
@@ -160,10 +170,65 @@ export default function RosterScreen() {
         status: 'active',
       };
       addPlayer(newPlayer);
+      setIsModalVisible(false);
+      resetForm();
+
+      // Show invite modal if player has phone or email
+      if (rawPhone || email.trim()) {
+        setNewlyCreatedPlayer({ ...newPlayer, phone: rawPhone || undefined, email: email.trim() || undefined });
+        setIsInviteModalVisible(true);
+      }
+    }
+  };
+
+  const getInviteMessage = () => {
+    return `Hey ${newlyCreatedPlayer?.name}!\n\nYou've been added to ${teamName}! Download the app and log in using your info to view the schedule, check in for games, and stay connected with the team.\n\nYour jersey number: #${newlyCreatedPlayer?.number}\n\nSee you at the next game!`;
+  };
+
+  const handleSendTextInvite = () => {
+    if (!newlyCreatedPlayer?.phone) {
+      Alert.alert('No Phone Number', 'This player does not have a phone number.');
+      return;
     }
 
-    setIsModalVisible(false);
-    resetForm();
+    const message = encodeURIComponent(getInviteMessage());
+    const phoneNumber = newlyCreatedPlayer.phone;
+
+    const smsUrl = Platform.select({
+      ios: `sms:${phoneNumber}&body=${message}`,
+      android: `sms:${phoneNumber}?body=${message}`,
+      default: `sms:${phoneNumber}?body=${message}`,
+    });
+
+    Linking.openURL(smsUrl).catch(() => {
+      Alert.alert('Error', 'Could not open messaging app');
+    });
+
+    setIsInviteModalVisible(false);
+    setNewlyCreatedPlayer(null);
+  };
+
+  const handleSendEmailInvite = () => {
+    if (!newlyCreatedPlayer?.email) {
+      Alert.alert('No Email', 'This player does not have an email address.');
+      return;
+    }
+
+    const subject = encodeURIComponent(`Welcome to ${teamName}!`);
+    const body = encodeURIComponent(getInviteMessage());
+    const mailtoUrl = `mailto:${newlyCreatedPlayer.email}?subject=${subject}&body=${body}`;
+
+    Linking.openURL(mailtoUrl).catch(() => {
+      Alert.alert('Error', 'Could not open email app');
+    });
+
+    setIsInviteModalVisible(false);
+    setNewlyCreatedPlayer(null);
+  };
+
+  const handleSkipInvite = () => {
+    setIsInviteModalVisible(false);
+    setNewlyCreatedPlayer(null);
   };
 
   // Group players by position type based on sport
@@ -371,6 +436,61 @@ export default function RosterScreen() {
               )}
             </ScrollView>
           </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Send Invite Modal */}
+      <Modal
+        visible={isInviteModalVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={handleSkipInvite}
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-700">
+            {/* Header */}
+            <View className="items-center mb-6">
+              <View className="w-16 h-16 rounded-full bg-green-500/20 items-center justify-center mb-4">
+                <Send size={32} color="#22c55e" />
+              </View>
+              <Text className="text-white text-xl font-bold text-center">
+                Player Added!
+              </Text>
+              <Text className="text-slate-400 text-center mt-2">
+                Send {newlyCreatedPlayer?.name} an invite to register and join the team?
+              </Text>
+            </View>
+
+            {/* Invite Options */}
+            <View className="space-y-3">
+              {newlyCreatedPlayer?.phone && (
+                <Pressable
+                  onPress={handleSendTextInvite}
+                  className="flex-row items-center justify-center bg-cyan-500 rounded-xl py-4 mb-3 active:bg-cyan-600"
+                >
+                  <MessageSquare size={20} color="white" />
+                  <Text className="text-white font-semibold ml-2">Send Text Message</Text>
+                </Pressable>
+              )}
+
+              {newlyCreatedPlayer?.email && (
+                <Pressable
+                  onPress={handleSendEmailInvite}
+                  className="flex-row items-center justify-center bg-purple-500 rounded-xl py-4 mb-3 active:bg-purple-600"
+                >
+                  <Mail size={20} color="white" />
+                  <Text className="text-white font-semibold ml-2">Send Email</Text>
+                </Pressable>
+              )}
+
+              <Pressable
+                onPress={handleSkipInvite}
+                className="flex-row items-center justify-center bg-slate-700 rounded-xl py-4 active:bg-slate-600"
+              >
+                <Text className="text-slate-300 font-semibold">Skip for Now</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
       </Modal>
     </View>
