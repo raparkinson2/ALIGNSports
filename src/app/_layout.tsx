@@ -1,5 +1,5 @@
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, useNavigationContainerRef } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -30,21 +30,21 @@ const HockeyDarkTheme = {
   },
 };
 
-function useProtectedRoute(isLoggedIn: boolean) {
+function AuthNavigator() {
   const router = useRouter();
   const segments = useSegments();
-  const [isNavigationReady, setIsNavigationReady] = useState(false);
+  const isLoggedIn = useTeamStore((s) => s.isLoggedIn);
+  const navigationRef = useNavigationContainerRef();
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Set navigation ready after first render to ensure Stack is mounted
-    const timer = setTimeout(() => {
-      setIsNavigationReady(true);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+    if (navigationRef?.isReady()) {
+      setIsReady(true);
+    }
+  }, [navigationRef]);
 
   useEffect(() => {
-    if (!isNavigationReady) return;
+    if (!isReady) return;
 
     const inAuthGroup = segments[0] === 'login';
 
@@ -53,12 +53,7 @@ function useProtectedRoute(isLoggedIn: boolean) {
     } else if (isLoggedIn && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [isLoggedIn, segments, isNavigationReady, router]);
-}
-
-function AuthNavigator() {
-  const isLoggedIn = useTeamStore((s) => s.isLoggedIn);
-  useProtectedRoute(isLoggedIn);
+  }, [isLoggedIn, segments, isReady, router]);
 
   return (
     <Stack>
