@@ -56,14 +56,19 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - Messages grouped by date
 - Modern chat interface with message bubbles
 
-### Payments Tab (NEW)
+### Payments Tab
 - **Payment Methods**: Admin can add Venmo, PayPal, or Zelle accounts
 - **One-Tap Payments**: Players tap a button to open the payment app directly
-- **Payment Tracking** (Admin only):
+- **Payment Tracking** (Admin/Captain only):
   - Create payment periods (e.g., "Season Dues - Spring 2025")
   - Set amounts per player
   - Track paid/unpaid/partial status for each player
+  - Enter partial payment amounts when players make payments
   - Visual progress bar showing team payment status
+- **My Payment Status** (Players):
+  - See team dues amount set by captain
+  - View your paid/unpaid/partial status with amounts
+  - Color-coded cards: green for paid, amber for partial, default for unpaid
 
 ### Notifications
 - In-app notification system for game invites and reminders

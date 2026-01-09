@@ -116,42 +116,55 @@ function PaymentMethodButton({ method, amount }: PaymentMethodButtonProps) {
 interface PlayerPaymentRowProps {
   player: Player;
   status: 'unpaid' | 'paid' | 'partial';
+  paidAmount?: number;
+  totalAmount: number;
   onToggle: () => void;
+  onEditAmount: () => void;
   isAdmin: boolean;
 }
 
-function PlayerPaymentRow({ player, status, onToggle, isAdmin }: PlayerPaymentRowProps) {
+function PlayerPaymentRow({ player, status, paidAmount, totalAmount, onToggle, onEditAmount, isAdmin }: PlayerPaymentRowProps) {
   return (
-    <Pressable
-      onPress={isAdmin ? onToggle : undefined}
-      disabled={!isAdmin}
-      className={cn(
-        'flex-row items-center p-3 rounded-xl mb-2',
-        status === 'paid' ? 'bg-green-500/20' : status === 'partial' ? 'bg-amber-500/20' : 'bg-slate-800/60'
+    <View className={cn(
+      'flex-row items-center p-3 rounded-xl mb-2',
+      status === 'paid' ? 'bg-green-500/20' : status === 'partial' ? 'bg-amber-500/20' : 'bg-slate-800/60'
+    )}>
+      <Pressable
+        onPress={isAdmin ? onToggle : undefined}
+        disabled={!isAdmin}
+        className="flex-row items-center flex-1"
+      >
+        <Image
+          source={{ uri: player.avatar }}
+          style={{ width: 40, height: 40, borderRadius: 20 }}
+          contentFit="cover"
+        />
+        <View className="flex-1 ml-3">
+          <Text className="text-white font-medium">{player.name}</Text>
+          <Text className={cn(
+            'text-xs',
+            status === 'paid' ? 'text-green-400' : status === 'partial' ? 'text-amber-400' : 'text-slate-400'
+          )}>
+            {status === 'paid' ? 'Paid in Full' : status === 'partial' ? `Paid $${paidAmount ?? 0} of $${totalAmount}` : 'Unpaid'}
+          </Text>
+        </View>
+        {status === 'paid' ? (
+          <CheckCircle2 size={24} color="#22c55e" />
+        ) : status === 'partial' ? (
+          <AlertCircle size={24} color="#f59e0b" />
+        ) : (
+          <Circle size={24} color="#64748b" />
+        )}
+      </Pressable>
+      {isAdmin && status !== 'paid' && (
+        <Pressable
+          onPress={onEditAmount}
+          className="ml-2 bg-slate-700/50 rounded-lg px-2 py-1"
+        >
+          <Text className="text-cyan-400 text-xs font-medium">Edit $</Text>
+        </Pressable>
       )}
-    >
-      <Image
-        source={{ uri: player.avatar }}
-        style={{ width: 40, height: 40, borderRadius: 20 }}
-        contentFit="cover"
-      />
-      <View className="flex-1 ml-3">
-        <Text className="text-white font-medium">{player.name}</Text>
-        <Text className={cn(
-          'text-xs',
-          status === 'paid' ? 'text-green-400' : status === 'partial' ? 'text-amber-400' : 'text-slate-400'
-        )}>
-          {status === 'paid' ? 'Paid' : status === 'partial' ? 'Partial' : 'Unpaid'}
-        </Text>
-      </View>
-      {status === 'paid' ? (
-        <CheckCircle2 size={24} color="#22c55e" />
-      ) : status === 'partial' ? (
-        <AlertCircle size={24} color="#f59e0b" />
-      ) : (
-        <Circle size={24} color="#64748b" />
-      )}
-    </Pressable>
+    </View>
   );
 }
 
@@ -169,6 +182,9 @@ export default function PaymentsScreen() {
   const [isPaymentMethodModalVisible, setIsPaymentMethodModalVisible] = useState(false);
   const [isNewPeriodModalVisible, setIsNewPeriodModalVisible] = useState(false);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
+  const [editingPayment, setEditingPayment] = useState<{ periodId: string; playerId: string; currentAmount: number } | null>(null);
+  const [editPaymentAmount, setEditPaymentAmount] = useState('');
+  const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
 
   // Payment method form
   const [selectedApp, setSelectedApp] = useState<PaymentApp>('venmo');
@@ -243,7 +259,36 @@ export default function PaymentsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  const handleSavePaymentAmount = () => {
+    if (!editingPayment) return;
+    const amount = parseFloat(editPaymentAmount) || 0;
+    const period = paymentPeriods.find((p) => p.id === editingPayment.periodId);
+    if (!period) return;
+
+    // Determine status based on amount
+    let status: 'unpaid' | 'paid' | 'partial' = 'unpaid';
+    if (amount >= period.amount) {
+      status = 'paid';
+    } else if (amount > 0) {
+      status = 'partial';
+    }
+
+    updatePlayerPayment(editingPayment.periodId, editingPayment.playerId, status, amount);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setEditingPayment(null);
+    setEditPaymentAmount('');
+  };
+
   const selectedPeriod = paymentPeriods.find((p) => p.id === selectedPeriodId);
+
+  // Get current player's payment status across all periods
+  const myPaymentStatus = paymentPeriods.map((period) => {
+    const myPayment = period.playerPayments.find((pp) => pp.playerId === currentPlayerId);
+    return {
+      period,
+      payment: myPayment,
+    };
+  }).filter((item) => item.payment);
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -380,6 +425,57 @@ export default function PaymentsScreen() {
                   );
                 })
               )}
+            </Animated.View>
+          )}
+
+          {/* My Payment Status - For regular players */}
+          {!isAdmin() && !canManageTeam() && myPaymentStatus.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(150).springify()}>
+              <View className="flex-row items-center mb-3">
+                <DollarSign size={16} color="#22c55e" />
+                <Text className="text-green-400 font-semibold ml-2">My Payment Status</Text>
+              </View>
+
+              {myPaymentStatus.map(({ period, payment }, index) => (
+                <Animated.View
+                  key={period.id}
+                  entering={FadeInDown.delay(200 + index * 50).springify()}
+                >
+                  <View className={cn(
+                    'rounded-xl p-4 mb-3 border',
+                    payment?.status === 'paid' ? 'bg-green-500/20 border-green-500/30' :
+                    payment?.status === 'partial' ? 'bg-amber-500/20 border-amber-500/30' :
+                    'bg-slate-800/80 border-slate-700/50'
+                  )}>
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-1">
+                        <Text className="text-white font-semibold text-lg">{period.title}</Text>
+                        <Text className="text-slate-400 text-sm">Amount Due: ${period.amount}</Text>
+                      </View>
+                      <View className="items-end">
+                        {payment?.status === 'paid' ? (
+                          <>
+                            <CheckCircle2 size={28} color="#22c55e" />
+                            <Text className="text-green-400 font-semibold mt-1">Paid</Text>
+                          </>
+                        ) : payment?.status === 'partial' ? (
+                          <>
+                            <AlertCircle size={28} color="#f59e0b" />
+                            <Text className="text-amber-400 font-semibold mt-1">
+                              ${payment.amount ?? 0} / ${period.amount}
+                            </Text>
+                          </>
+                        ) : (
+                          <>
+                            <Circle size={28} color="#64748b" />
+                            <Text className="text-slate-400 font-semibold mt-1">Unpaid</Text>
+                          </>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                </Animated.View>
+              ))}
             </Animated.View>
           )}
         </ScrollView>
@@ -566,7 +662,17 @@ export default function PaymentsScreen() {
                       key={pp.playerId}
                       player={player}
                       status={pp.status}
+                      paidAmount={pp.amount}
+                      totalAmount={selectedPeriod.amount}
                       onToggle={() => handleTogglePayment(selectedPeriod.id, pp.playerId, pp.status)}
+                      onEditAmount={() => {
+                        setEditingPayment({
+                          periodId: selectedPeriod.id,
+                          playerId: pp.playerId,
+                          currentAmount: pp.amount ?? 0,
+                        });
+                        setEditPaymentAmount((pp.amount ?? 0).toString());
+                      }}
                       isAdmin={isAdmin()}
                     />
                   );
@@ -574,6 +680,54 @@ export default function PaymentsScreen() {
               </ScrollView>
             )}
           </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Edit Payment Amount Modal */}
+      <Modal
+        visible={!!editingPayment}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setEditingPayment(null)}
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm">
+            <Text className="text-white text-lg font-semibold mb-4">Enter Payment Amount</Text>
+
+            {editingPayment && (
+              <Text className="text-slate-400 text-sm mb-4">
+                Total due: ${paymentPeriods.find((p) => p.id === editingPayment.periodId)?.amount ?? 0}
+              </Text>
+            )}
+
+            <View className="flex-row items-center bg-slate-700 rounded-xl px-4 py-3 mb-6">
+              <Text className="text-white text-2xl font-bold mr-1">$</Text>
+              <TextInput
+                value={editPaymentAmount}
+                onChangeText={setEditPaymentAmount}
+                placeholder="0.00"
+                placeholderTextColor="#64748b"
+                keyboardType="decimal-pad"
+                className="flex-1 text-white text-2xl font-bold"
+                autoFocus
+              />
+            </View>
+
+            <View className="flex-row">
+              <Pressable
+                onPress={() => setEditingPayment(null)}
+                className="flex-1 py-3 rounded-xl bg-slate-700 mr-2"
+              >
+                <Text className="text-white text-center font-semibold">Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSavePaymentAmount}
+                className="flex-1 py-3 rounded-xl bg-green-500"
+              >
+                <Text className="text-white text-center font-semibold">Save</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
       </Modal>
     </View>

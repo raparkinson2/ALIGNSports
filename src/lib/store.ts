@@ -211,7 +211,7 @@ interface TeamStore {
   addPaymentPeriod: (period: PaymentPeriod) => void;
   updatePaymentPeriod: (id: string, updates: Partial<PaymentPeriod>) => void;
   removePaymentPeriod: (id: string) => void;
-  updatePlayerPayment: (periodId: string, playerId: string, status: 'unpaid' | 'paid' | 'partial', notes?: string) => void;
+  updatePlayerPayment: (periodId: string, playerId: string, status: 'unpaid' | 'paid' | 'partial', amount?: number, notes?: string) => void;
 
   currentPlayerId: string | null;
   setCurrentPlayerId: (id: string | null) => void;
@@ -405,7 +405,7 @@ export const useTeamStore = create<TeamStore>()(
       removePaymentPeriod: (id) => set((state) => ({
         paymentPeriods: state.paymentPeriods.filter((p) => p.id !== id),
       })),
-      updatePlayerPayment: (periodId, playerId, status, notes) => set((state) => ({
+      updatePlayerPayment: (periodId, playerId, status, amount, notes) => set((state) => ({
         paymentPeriods: state.paymentPeriods.map((period) => {
           if (period.id !== periodId) return period;
           const existingPayment = period.playerPayments.find((pp) => pp.playerId === playerId);
@@ -414,7 +414,7 @@ export const useTeamStore = create<TeamStore>()(
               ...period,
               playerPayments: period.playerPayments.map((pp) =>
                 pp.playerId === playerId
-                  ? { ...pp, status, notes, paidAt: status === 'paid' ? new Date().toISOString() : undefined }
+                  ? { ...pp, status, amount, notes, paidAt: status === 'paid' ? new Date().toISOString() : undefined }
                   : pp
               ),
             };
@@ -423,7 +423,7 @@ export const useTeamStore = create<TeamStore>()(
               ...period,
               playerPayments: [
                 ...period.playerPayments,
-                { playerId, status, notes, paidAt: status === 'paid' ? new Date().toISOString() : undefined },
+                { playerId, status, amount, notes, paidAt: status === 'paid' ? new Date().toISOString() : undefined },
               ],
             };
           }
