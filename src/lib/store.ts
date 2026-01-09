@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export interface Player {
   id: string;
   name: string;
+  email?: string;
   number: string;
   position: 'C' | 'LW' | 'RW' | 'D' | 'G';
   jerseyColors: string[];
@@ -56,18 +57,21 @@ interface TeamStore {
   removePhoto: (id: string) => void;
   currentPlayerId: string | null;
   setCurrentPlayerId: (id: string | null) => void;
+  isLoggedIn: boolean;
+  setIsLoggedIn: (loggedIn: boolean) => void;
+  logout: () => void;
 }
 
 // Mock data
 const mockPlayers: Player[] = [
-  { id: '1', name: 'Mike Johnson', number: '12', position: 'C', jerseyColors: ['#1e40af', '#dc2626', '#ffffff'], avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' },
-  { id: '2', name: 'Dave Williams', number: '7', position: 'LW', jerseyColors: ['#1e40af', '#16a34a'], avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150' },
-  { id: '3', name: 'Chris Brown', number: '22', position: 'RW', jerseyColors: ['#1e40af', '#dc2626'], avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150' },
-  { id: '4', name: 'Jake Miller', number: '4', position: 'D', jerseyColors: ['#1e40af', '#ffffff'], avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150' },
-  { id: '5', name: 'Ryan Davis', number: '8', position: 'D', jerseyColors: ['#1e40af', '#dc2626', '#16a34a'], avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150' },
-  { id: '6', name: 'Tom Wilson', number: '31', position: 'G', jerseyColors: ['#1e40af'], avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150' },
-  { id: '7', name: 'Steve Anderson', number: '15', position: 'C', jerseyColors: ['#1e40af', '#dc2626'], avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150' },
-  { id: '8', name: 'Kevin Martinez', number: '19', position: 'LW', jerseyColors: ['#1e40af'], avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150' },
+  { id: '1', name: 'Mike Johnson', email: 'mike.johnson@email.com', number: '12', position: 'C', jerseyColors: ['#1e40af', '#dc2626', '#ffffff'], avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' },
+  { id: '2', name: 'Dave Williams', email: 'dave.williams@email.com', number: '7', position: 'LW', jerseyColors: ['#1e40af', '#16a34a'], avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150' },
+  { id: '3', name: 'Chris Brown', email: 'chris.brown@email.com', number: '22', position: 'RW', jerseyColors: ['#1e40af', '#dc2626'], avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150' },
+  { id: '4', name: 'Jake Miller', email: 'jake.miller@email.com', number: '4', position: 'D', jerseyColors: ['#1e40af', '#ffffff'], avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150' },
+  { id: '5', name: 'Ryan Davis', email: 'ryan.davis@email.com', number: '8', position: 'D', jerseyColors: ['#1e40af', '#dc2626', '#16a34a'], avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150' },
+  { id: '6', name: 'Tom Wilson', email: 'tom.wilson@email.com', number: '31', position: 'G', jerseyColors: ['#1e40af'], avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150' },
+  { id: '7', name: 'Steve Anderson', email: 'steve.anderson@email.com', number: '15', position: 'C', jerseyColors: ['#1e40af', '#dc2626'], avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150' },
+  { id: '8', name: 'Kevin Martinez', email: 'kevin.martinez@email.com', number: '19', position: 'LW', jerseyColors: ['#1e40af'], avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150' },
 ];
 
 const mockGames: Game[] = [
@@ -153,6 +157,10 @@ export const useTeamStore = create<TeamStore>()(
 
       currentPlayerId: '1', // Default to first player
       setCurrentPlayerId: (id) => set({ currentPlayerId: id }),
+
+      isLoggedIn: false,
+      setIsLoggedIn: (loggedIn) => set({ isLoggedIn: loggedIn }),
+      logout: () => set({ isLoggedIn: false, currentPlayerId: null }),
     }),
     {
       name: 'team-storage',

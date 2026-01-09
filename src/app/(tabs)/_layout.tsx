@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
-import { Calendar, Users, Camera } from 'lucide-react-native';
+import { Calendar, Users, Camera, MoreHorizontal } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -71,6 +71,23 @@ export default function TabLayout() {
               }}
             >
               <Camera size={22} color={color} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="more"
+        options={{
+          title: 'More',
+          tabBarIcon: ({ color, focused }) => (
+            <View
+              style={{
+                backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
+                borderRadius: 10,
+                padding: 6,
+              }}
+            >
+              <MoreHorizontal size={22} color={color} />
             </View>
           ),
         }}

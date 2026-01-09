@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, Platform, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -14,6 +14,8 @@ import {
   Camera,
   Navigation,
   Shirt,
+  Send,
+  Mail,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -97,6 +99,7 @@ export default function GameDetailScreen() {
 
   const games = useTeamStore((s) => s.games);
   const players = useTeamStore((s) => s.players);
+  const teamName = useTeamStore((s) => s.teamName);
   const checkInToGame = useTeamStore((s) => s.checkInToGame);
   const checkOutFromGame = useTeamStore((s) => s.checkOutFromGame);
 
@@ -126,6 +129,51 @@ export default function GameDetailScreen() {
   const handleOpenMaps = () => {
     const address = encodeURIComponent(`${game.rinkName}, ${game.rinkAddress}`);
     Linking.openURL(`https://maps.apple.com/?q=${address}`);
+  };
+
+  const handleSendTextInvite = () => {
+    const gameDate = new Date(game.date);
+    const dateStr = gameDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+    let message = `Hey! You're invited to play hockey with ${teamName}!\n\n`;
+    message += `Game Details:\n`;
+    message += `vs ${game.opponent}\n`;
+    message += `${dateStr} at ${game.time}\n`;
+    message += `${game.rinkName}\n`;
+    message += `${game.rinkAddress}\n\n`;
+    message += `Let me know if you can make it!`;
+
+    const smsUrl = Platform.select({
+      ios: `sms:&body=${encodeURIComponent(message)}`,
+      android: `sms:?body=${encodeURIComponent(message)}`,
+      default: `sms:?body=${encodeURIComponent(message)}`,
+    });
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Linking.openURL(smsUrl).catch(() => {
+      Alert.alert('Error', 'Could not open messaging app');
+    });
+  };
+
+  const handleSendEmailInvite = () => {
+    const gameDate = new Date(game.date);
+    const dateStr = gameDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+    const subject = encodeURIComponent(`Hockey Game Invite - ${teamName} vs ${game.opponent}`);
+    let body = `Hey!\n\nYou're invited to play hockey with ${teamName}!\n\n`;
+    body += `Game Details:\n`;
+    body += `vs ${game.opponent}\n`;
+    body += `${dateStr} at ${game.time}\n`;
+    body += `${game.rinkName}\n`;
+    body += `${game.rinkAddress}\n\n`;
+    body += `Let me know if you can make it!`;
+
+    const mailtoUrl = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Linking.openURL(mailtoUrl).catch(() => {
+      Alert.alert('Error', 'Could not open email app');
+    });
   };
 
   // Group players by position for lineup
@@ -234,6 +282,35 @@ export default function GameDetailScreen() {
                 </View>
               </View>
             </Pressable>
+          </Animated.View>
+
+          {/* Send Game Invite Section */}
+          <Animated.View
+            entering={FadeInUp.delay(175).springify()}
+            className="mx-4 mb-4"
+          >
+            <View className="flex-row items-center mb-3">
+              <Send size={18} color="#a78bfa" />
+              <Text className="text-purple-400 text-lg font-semibold ml-2">
+                Invite Someone
+              </Text>
+            </View>
+            <View className="flex-row">
+              <Pressable
+                onPress={handleSendTextInvite}
+                className="flex-1 bg-purple-500/20 rounded-xl p-4 mr-2 border border-purple-500/30 active:bg-purple-500/30 flex-row items-center justify-center"
+              >
+                <Send size={18} color="#a78bfa" />
+                <Text className="text-purple-400 font-semibold ml-2">Text Invite</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSendEmailInvite}
+                className="flex-1 bg-purple-500/20 rounded-xl p-4 ml-2 border border-purple-500/30 active:bg-purple-500/30 flex-row items-center justify-center"
+              >
+                <Mail size={18} color="#a78bfa" />
+                <Text className="text-purple-400 font-semibold ml-2">Email Invite</Text>
+              </Pressable>
+            </View>
           </Animated.View>
 
           {/* Check-In Section */}

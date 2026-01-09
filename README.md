@@ -4,6 +4,11 @@ A mobile app for recreational hockey teams to manage schedules, check-ins, lineu
 
 ## Features
 
+### Login
+- Select your player profile to log in
+- Personalized experience showing your player info
+- Easy player switching via logout
+
 ### Schedule Tab
 - View upcoming games with opponent, date, time, and rink location
 - See jersey color for each game
@@ -16,6 +21,7 @@ A mobile app for recreational hockey teams to manage schedules, check-ins, lineu
 - Check in/out for games
 - View tonight's lineup organized by position (Forwards, Defense, Goalie)
 - See who's assigned beer bag duty
+- Send game invites via text or email to invite subs or friends
 
 ### Roster Tab
 - View all team players organized by position
@@ -27,6 +33,13 @@ A mobile app for recreational hockey teams to manage schedules, check-ins, lineu
 - Team photo gallery
 - Add photos from camera roll or take new photos
 - Share game memories with the team
+
+### More Tab
+- View your current player profile
+- Email the entire team at once
+- Send game invites to potential subs
+- Group message the team
+- Log out to switch players
 
 ## Tech Stack
 - Expo SDK 53 / React Native
