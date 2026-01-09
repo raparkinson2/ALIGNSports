@@ -1,16 +1,22 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View } from 'react-native';
+import { View, Text } from 'react-native';
 import { Calendar, Users, MessageSquare, DollarSign, MoreHorizontal, Shield, ImageIcon } from 'lucide-react-native';
 import { useTeamStore } from '@/lib/store';
 
 export default function TabLayout() {
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const players = useTeamStore((s) => s.players) ?? [];
+  const notifications = useTeamStore((s) => s.notifications) ?? [];
 
   // Derive admin status from reactive state
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
   const isAdminUser = currentPlayer?.roles?.includes('admin') ?? false;
+
+  // Count unread notifications for current player
+  const unreadNotificationCount = notifications.filter(
+    (n) => n.toPlayerId === currentPlayerId && !n.read
+  ).length;
 
   return (
     <Tabs
@@ -147,9 +153,30 @@ export default function TabLayout() {
                 backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
                 borderRadius: 10,
                 padding: 6,
+                position: 'relative',
               }}
             >
               <MoreHorizontal size={22} color={color} />
+              {unreadNotificationCount > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    backgroundColor: '#ef4444',
+                    borderRadius: 10,
+                    minWidth: 18,
+                    height: 18,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 4,
+                  }}
+                >
+                  <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
+                    {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                  </Text>
+                </View>
+              )}
             </View>
           ),
         }}

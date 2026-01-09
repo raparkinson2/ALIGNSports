@@ -403,8 +403,29 @@ export const useTeamStore = create<TeamStore>()(
       addPhoto: (photo) => set((state) => ({ photos: [...state.photos, photo] })),
       removePhoto: (id) => set((state) => ({ photos: state.photos.filter((p) => p.id !== id) })),
 
-      // Notifications
-      notifications: [],
+      // Notifications - start with some mock notifications
+      notifications: [
+        {
+          id: 'notif-1',
+          type: 'game_invite',
+          title: 'Game Invite',
+          message: 'You\'ve been invited to play vs Ice Wolves',
+          gameId: '1',
+          toPlayerId: '1',
+          createdAt: new Date().toISOString(),
+          read: false,
+        },
+        {
+          id: 'notif-2',
+          type: 'game_reminder',
+          title: 'Game Tomorrow',
+          message: 'Don\'t forget: Game vs Ice Wolves tomorrow at 8:30 PM',
+          gameId: '1',
+          toPlayerId: '1',
+          createdAt: new Date(Date.now() - 3600000).toISOString(),
+          read: false,
+        },
+      ],
       addNotification: (notification) => set((state) => ({
         notifications: [notification, ...state.notifications]
       })),
