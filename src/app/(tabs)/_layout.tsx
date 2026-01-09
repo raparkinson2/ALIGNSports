@@ -1,11 +1,12 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
-import { Calendar, Users, Camera, MoreHorizontal, Shield } from 'lucide-react-native';
+import { Calendar, Users, MessageSquare, DollarSign, MoreHorizontal, Shield } from 'lucide-react-native';
 import { useTeamStore } from '@/lib/store';
 
 export default function TabLayout() {
   const isAdmin = useTeamStore((s) => s.isAdmin);
+  const canManageTeam = useTeamStore((s) => s.canManageTeam);
 
   return (
     <Tabs
@@ -62,9 +63,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="photos"
+        name="chat"
         options={{
-          title: 'Photos',
+          title: 'Chat',
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
@@ -73,9 +74,27 @@ export default function TabLayout() {
                 padding: 6,
               }}
             >
-              <Camera size={22} color={color} />
+              <MessageSquare size={22} color={color} />
             </View>
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="payments"
+        options={{
+          title: 'Payments',
+          tabBarIcon: ({ color, focused }) => (
+            <View
+              style={{
+                backgroundColor: focused ? 'rgba(34, 197, 94, 0.15)' : 'transparent',
+                borderRadius: 10,
+                padding: 6,
+              }}
+            >
+              <DollarSign size={22} color={focused ? '#22c55e' : color} />
+            </View>
+          ),
+          tabBarActiveTintColor: '#22c55e',
         }}
       />
       <Tabs.Screen
@@ -112,6 +131,12 @@ export default function TabLayout() {
               <MoreHorizontal size={22} color={color} />
             </View>
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="photos"
+        options={{
+          href: null, // Hide photos tab for now
         }}
       />
       <Tabs.Screen

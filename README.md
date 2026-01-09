@@ -1,6 +1,6 @@
 # Team Manager
 
-A mobile app for recreational sports teams to manage schedules, rosters, check-ins, and team communication. Supports multiple sports including Hockey, Baseball, Basketball, and Soccer.
+A mobile app for recreational sports teams to manage schedules, rosters, check-ins, payments, and team communication. Supports multiple sports including Hockey, Baseball, Basketball, and Soccer.
 
 ## Features
 
@@ -10,9 +10,9 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - Position names displayed appropriately for each sport
 
 ### Role-Based Access
-- **Admin**: Full control - manage players, settings, create games, invite players
+- **Admin**: Full control - manage players, settings, create games, payment tracking
 - **Captain**: Can create games, manage game invites, edit lineups
-- **Player**: View schedules, check-in to games, view roster
+- **Player**: View schedules, check-in to games, view roster, chat
 
 ### Login
 - Select your player profile to log in
@@ -21,7 +21,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 
 ### Schedule Tab
 - View upcoming games with opponent, date, time, and location
-- See jersey color for each game (configurable in admin)
+- See jersey color for each game (shows color name like "White" or "Black")
 - Quick view of check-in status
 - Admins/Captains can add new games via the + button
 - Tap any game to view full details
@@ -31,7 +31,9 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - Tap location to open in Maps for directions
 - Check in/out for games
 - See who's been invited and who's checked in
-- Send game invites via text or email
+- **In-App Notifications**: Send game invites and reminders to all players
+- **Refreshment Duty**: Admin toggle to show/hide who's bringing drinks (age-appropriate toggle)
+- Send game invites via text or email (pre-fills recipients)
 
 ### Game Creation (Admin/Captain)
 - Set opponent, date, time
@@ -47,15 +49,34 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - Captain and Admin badges displayed next to names
 - Add/edit players (Admin/Captain only)
 
-### Photos Tab
-- Team photo gallery
-- Add photos from camera roll or take new photos
-- Share game memories with the team
+### Chat Tab (NEW)
+- Real-time team chat within the app
+- Send messages to the entire team
+- See who sent each message with avatars
+- Messages grouped by date
+- Modern chat interface with message bubbles
+
+### Payments Tab (NEW)
+- **Payment Methods**: Admin can add Venmo, PayPal, or Zelle accounts
+- **One-Tap Payments**: Players tap a button to open the payment app directly
+- **Payment Tracking** (Admin only):
+  - Create payment periods (e.g., "Season Dues - Spring 2025")
+  - Set amounts per player
+  - Track paid/unpaid/partial status for each player
+  - Visual progress bar showing team payment status
+
+### Notifications
+- In-app notification system for game invites and reminders
+- View notifications in More > Notifications
+- Unread badge shows count
+- Tap notification to go to game details
 
 ### Admin Panel (Admin only)
 - **Team Settings**: Edit team name
 - **Sport Selection**: Change sport type (updates positions)
 - **Jersey Colors**: Add/remove team jersey colors
+- **Payment Methods**: Configure Venmo/PayPal/Zelle for the team
+- **Refreshment Duty Toggle**: Enable/disable per game
 - **Player Management**:
   - View all player contact info (email, phone)
   - Assign roles (Admin, Captain, Player)
@@ -63,6 +84,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 
 ### More Tab
 - View your current player profile
+- Access notifications with unread badge
 - Email the entire team at once
 - Send game invites to potential subs
 - Group message the team
@@ -73,9 +95,16 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Reserve**: Backup players, can be selectively invited
 
 ## Communication
+- **In-App Notifications**: Game invites and reminders delivered within the app
 - Send text invites that open your messaging app with pre-filled game details
 - Send email invites with full game information
 - Communication opens native apps (SMS/Email) with recipients pre-populated
+
+## Payment Deep Links
+When players tap a payment method:
+- **Venmo**: Opens Venmo app with recipient pre-filled
+- **PayPal**: Opens PayPal.me link in browser
+- **Zelle**: Opens Zelle app with recipient pre-filled
 
 ## Tech Stack
 - Expo SDK 53 / React Native
@@ -87,6 +116,11 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 
 ## Design
 - Dark theme with ice blue (#67e8f9) accents
+- Green accents (#22c55e) for payments
 - Purple accents (#a78bfa) for admin features
+- Amber accents (#f59e0b) for refreshment duty
 - Smooth animations and haptic feedback
 - Mobile-first, thumb-friendly design
+
+## Testing Admin Features
+Log in as **Mike Johnson** (#12) to access admin features. He is set as admin in the mock data.

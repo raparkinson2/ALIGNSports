@@ -1,8 +1,9 @@
-import { View, Text, ScrollView, Pressable, Platform, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, Platform, Alert, Modal, Switch } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { format, parseISO } from 'date-fns';
+import { useState } from 'react';
 import {
   MapPin,
   Clock,
@@ -14,12 +15,18 @@ import {
   Shirt,
   Send,
   Mail,
+  Bell,
+  BellRing,
+  Beer,
+  Settings,
+  X,
+  ChevronDown,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
-import { useTeamStore, Player, SPORT_POSITION_NAMES } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification } from '@/lib/store';
 import { cn } from '@/lib/cn';
 
 interface PlayerRowProps {
@@ -85,6 +92,14 @@ export default function GameDetailScreen() {
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const checkInToGame = useTeamStore((s) => s.checkInToGame);
   const checkOutFromGame = useTeamStore((s) => s.checkOutFromGame);
+  const addNotification = useTeamStore((s) => s.addNotification);
+  const updateGame = useTeamStore((s) => s.updateGame);
+  const canManageTeam = useTeamStore((s) => s.canManageTeam);
+  const isAdmin = useTeamStore((s) => s.isAdmin);
+  const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
+
+  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
+  const [isBeerDutyModalVisible, setIsBeerDutyModalVisible] = useState(false);
 
   const game = games.find((g) => g.id === id);
 
@@ -98,6 +113,7 @@ export default function GameDetailScreen() {
 
   const checkedInCount = game.checkedInPlayers?.length ?? 0;
   const invitedPlayers = players.filter((p) => game.invitedPlayers?.includes(p.id));
+  const beerDutyPlayer = game.beerDutyPlayerId ? players.find((p) => p.id === game.beerDutyPlayerId) : null;
 
   const handleToggleCheckIn = (playerId: string) => {
     if (game.checkedInPlayers?.includes(playerId)) {
@@ -113,11 +129,38 @@ export default function GameDetailScreen() {
     Linking.openURL(`https://maps.apple.com/?q=${address}`);
   };
 
+  const handleSendInAppNotification = (type: 'invite' | 'reminder') => {
+    const gameDate = parseISO(game.date);
+    const dateStr = format(gameDate, 'EEEE, MMMM d');
+
+    invitedPlayers.forEach((player) => {
+      const notification: AppNotification = {
+        id: `${Date.now()}-${player.id}`,
+        type: type === 'invite' ? 'game_invite' : 'game_reminder',
+        title: type === 'invite' ? 'Game Invite' : 'Game Reminder',
+        message: type === 'invite'
+          ? `You're invited to play vs ${game.opponent} on ${dateStr} at ${game.time}. Wear your ${game.jerseyColor} jersey!`
+          : `Reminder: Game vs ${game.opponent} is coming up on ${dateStr} at ${game.time}. Don't forget your ${game.jerseyColor} jersey!`,
+        gameId: game.id,
+        fromPlayerId: currentPlayerId ?? undefined,
+        toPlayerId: player.id,
+        createdAt: new Date().toISOString(),
+        read: false,
+      };
+      addNotification(notification);
+    });
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert(
+      'Notifications Sent',
+      `${type === 'invite' ? 'Game invites' : 'Reminders'} sent to ${invitedPlayers.length} players!`
+    );
+  };
+
   const handleSendTextInvite = () => {
     const gameDate = new Date(game.date);
     const dateStr = gameDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    // Get phone numbers of invited players
     const phoneNumbers = invitedPlayers
       .filter((p) => p.phone)
       .map((p) => p.phone)
@@ -148,7 +191,6 @@ export default function GameDetailScreen() {
     const gameDate = new Date(game.date);
     const dateStr = gameDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    // Get emails of invited players
     const emails = invitedPlayers
       .filter((p) => p.email)
       .map((p) => p.email)
@@ -172,6 +214,17 @@ export default function GameDetailScreen() {
     });
   };
 
+  const handleToggleBeerDuty = (value: boolean) => {
+    updateGame(game.id, { showBeerDuty: value });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleSelectBeerDutyPlayer = (playerId: string) => {
+    updateGame(game.id, { beerDutyPlayerId: playerId });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsBeerDutyModalVisible(false);
+  };
+
   // Get jersey color info
   const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === game.jerseyColor);
 
@@ -186,7 +239,7 @@ export default function GameDetailScreen() {
         {/* Header */}
         <Animated.View
           entering={FadeIn.delay(50)}
-          className="flex-row items-center px-4 py-3"
+          className="flex-row items-center justify-between px-4 py-3"
         >
           <Pressable
             onPress={() => router.back()}
@@ -195,6 +248,15 @@ export default function GameDetailScreen() {
             <ChevronLeft size={24} color="#67e8f9" />
             <Text className="text-cyan-400 ml-1">Schedule</Text>
           </Pressable>
+
+          {canManageTeam() && (
+            <Pressable
+              onPress={() => setIsSettingsModalVisible(true)}
+              className="p-2"
+            >
+              <Settings size={22} color="#64748b" />
+            </Pressable>
+          )}
         </Animated.View>
 
         <ScrollView
@@ -247,6 +309,41 @@ export default function GameDetailScreen() {
             </View>
           </Animated.View>
 
+          {/* Beer/Refreshment Duty - Only show if enabled */}
+          {game.showBeerDuty && (
+            <Animated.View
+              entering={FadeInUp.delay(120).springify()}
+              className="mx-4 mb-4"
+            >
+              <Pressable
+                onPress={canManageTeam() ? () => setIsBeerDutyModalVisible(true) : undefined}
+                className="bg-amber-500/20 rounded-2xl p-4 border border-amber-500/30"
+              >
+                <View className="flex-row items-center">
+                  <Beer size={24} color="#f59e0b" />
+                  <View className="flex-1 ml-3">
+                    <Text className="text-amber-400 font-semibold">Refreshment Duty</Text>
+                    {beerDutyPlayer ? (
+                      <View className="flex-row items-center mt-1">
+                        <Image
+                          source={{ uri: beerDutyPlayer.avatar }}
+                          style={{ width: 24, height: 24, borderRadius: 12 }}
+                          contentFit="cover"
+                        />
+                        <Text className="text-white ml-2">{beerDutyPlayer.name}</Text>
+                      </View>
+                    ) : (
+                      <Text className="text-slate-400 text-sm">Not assigned</Text>
+                    )}
+                  </View>
+                  {canManageTeam() && (
+                    <ChevronDown size={20} color="#f59e0b" />
+                  )}
+                </View>
+              </Pressable>
+            </Animated.View>
+          )}
+
           {/* Location Card */}
           <Animated.View
             entering={FadeInUp.delay(150).springify()}
@@ -272,7 +369,38 @@ export default function GameDetailScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Send Game Invite Section */}
+          {/* In-App Notifications Section */}
+          {canManageTeam() && (
+            <Animated.View
+              entering={FadeInUp.delay(160).springify()}
+              className="mx-4 mb-4"
+            >
+              <View className="flex-row items-center mb-3">
+                <Bell size={18} color="#22c55e" />
+                <Text className="text-green-400 text-lg font-semibold ml-2">
+                  Send Notifications
+                </Text>
+              </View>
+              <View className="flex-row">
+                <Pressable
+                  onPress={() => handleSendInAppNotification('invite')}
+                  className="flex-1 bg-green-500/20 rounded-xl p-4 mr-2 border border-green-500/30 active:bg-green-500/30 flex-row items-center justify-center"
+                >
+                  <Bell size={18} color="#22c55e" />
+                  <Text className="text-green-400 font-semibold ml-2">Send Invite</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => handleSendInAppNotification('reminder')}
+                  className="flex-1 bg-green-500/20 rounded-xl p-4 ml-2 border border-green-500/30 active:bg-green-500/30 flex-row items-center justify-center"
+                >
+                  <BellRing size={18} color="#22c55e" />
+                  <Text className="text-green-400 font-semibold ml-2">Reminder</Text>
+                </Pressable>
+              </View>
+            </Animated.View>
+          )}
+
+          {/* External Invite Section */}
           <Animated.View
             entering={FadeInUp.delay(175).springify()}
             className="mx-4 mb-4"
@@ -345,6 +473,119 @@ export default function GameDetailScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
+
+      {/* Game Settings Modal (Admin only) */}
+      <Modal
+        visible={isSettingsModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsSettingsModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsSettingsModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Game Settings</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-6">
+              {/* Beer Duty Toggle - Admin Only */}
+              {isAdmin() && (
+                <View className="bg-slate-800/80 rounded-xl p-4 mb-4 border border-slate-700/50">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1">
+                      <Beer size={20} color="#f59e0b" />
+                      <View className="ml-3">
+                        <Text className="text-white font-semibold">Show Refreshment Duty</Text>
+                        <Text className="text-slate-400 text-sm">
+                          Display who's bringing drinks
+                        </Text>
+                      </View>
+                    </View>
+                    <Switch
+                      value={game.showBeerDuty ?? false}
+                      onValueChange={handleToggleBeerDuty}
+                      trackColor={{ false: '#334155', true: '#f59e0b40' }}
+                      thumbColor={game.showBeerDuty ? '#f59e0b' : '#64748b'}
+                    />
+                  </View>
+                </View>
+              )}
+
+              {/* Beer Duty Player Selection */}
+              {game.showBeerDuty && (
+                <Pressable
+                  onPress={() => setIsBeerDutyModalVisible(true)}
+                  className="bg-slate-800/80 rounded-xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/80"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1">
+                      <Beer size={20} color="#f59e0b" />
+                      <View className="ml-3">
+                        <Text className="text-white font-semibold">Assign Refreshment Duty</Text>
+                        {beerDutyPlayer ? (
+                          <Text className="text-amber-400 text-sm">{beerDutyPlayer.name}</Text>
+                        ) : (
+                          <Text className="text-slate-400 text-sm">Not assigned</Text>
+                        )}
+                      </View>
+                    </View>
+                    <ChevronDown size={20} color="#64748b" />
+                  </View>
+                </Pressable>
+              )}
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Beer Duty Player Selection Modal */}
+      <Modal
+        visible={isBeerDutyModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsBeerDutyModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsBeerDutyModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Assign Refreshment Duty</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-4">
+              {invitedPlayers.map((player) => (
+                <Pressable
+                  key={player.id}
+                  onPress={() => handleSelectBeerDutyPlayer(player.id)}
+                  className={cn(
+                    'flex-row items-center p-4 rounded-xl mb-2 border',
+                    game.beerDutyPlayerId === player.id
+                      ? 'bg-amber-500/20 border-amber-500/50'
+                      : 'bg-slate-800/60 border-slate-700/50'
+                  )}
+                >
+                  <Image
+                    source={{ uri: player.avatar }}
+                    style={{ width: 44, height: 44, borderRadius: 22 }}
+                    contentFit="cover"
+                  />
+                  <Text className="text-white font-semibold ml-3 flex-1">{player.name}</Text>
+                  {game.beerDutyPlayerId === player.id && (
+                    <CheckCircle2 size={24} color="#f59e0b" />
+                  )}
+                </Pressable>
+              ))}
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
     </View>
   );
 }

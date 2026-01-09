@@ -164,6 +164,7 @@ export default function ScheduleScreen() {
       checkedInPlayers: [],
       invitedPlayers: activePlayers,
       photos: [],
+      showBeerDuty: false,
     };
 
     addGame(newGame);

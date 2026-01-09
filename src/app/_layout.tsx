@@ -66,6 +66,13 @@ function AuthNavigator() {
           presentation: 'card',
         }}
       />
+      <Stack.Screen
+        name="notifications"
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
       <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
     </Stack>
   );

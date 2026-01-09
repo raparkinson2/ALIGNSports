@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Users,
   MessageSquare,
+  Bell,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -64,8 +65,10 @@ export default function MoreScreen() {
   const teamName = useTeamStore((s) => s.teamName);
   const logout = useTeamStore((s) => s.logout);
   const games = useTeamStore((s) => s.games);
+  const notifications = useTeamStore((s) => s.notifications);
 
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
+  const unreadCount = notifications.filter((n) => n.toPlayerId === currentPlayerId && !n.read).length;
 
   const handleEmailTeam = () => {
     const emails = players
@@ -196,6 +199,33 @@ export default function MoreScreen() {
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
             Communication
           </Text>
+
+          {/* Notifications with badge */}
+          <Animated.View entering={FadeInDown.delay(100).springify()}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/notifications');
+              }}
+              className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
+            >
+              <View className="w-10 h-10 rounded-full items-center justify-center bg-cyan-500/20 relative">
+                <Bell size={20} color="#67e8f9" />
+                {unreadCount > 0 && (
+                  <View className="absolute -top-1 -right-1 bg-red-500 rounded-full min-w-5 h-5 items-center justify-center px-1">
+                    <Text className="text-white text-xs font-bold">{unreadCount}</Text>
+                  </View>
+                )}
+              </View>
+              <View className="flex-1 ml-3">
+                <Text className="font-semibold text-white">Notifications</Text>
+                <Text className="text-slate-400 text-sm">
+                  {unreadCount > 0 ? `${unreadCount} unread` : 'Game invites & reminders'}
+                </Text>
+              </View>
+              <ChevronRight size={20} color="#64748b" />
+            </Pressable>
+          </Animated.View>
 
           <MenuItem
             icon={<Mail size={20} color="#67e8f9" />}

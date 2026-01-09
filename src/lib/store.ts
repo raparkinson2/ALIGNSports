@@ -85,6 +85,55 @@ export interface Game {
   checkedInPlayers: string[]; // player ids
   invitedPlayers: string[]; // player ids
   photos: string[];
+  showBeerDuty: boolean; // Admin toggle for beer/refreshment duty display
+  beerDutyPlayerId?: string; // Player responsible for bringing beverages
+}
+
+// In-app notification types
+export interface AppNotification {
+  id: string;
+  type: 'game_invite' | 'game_reminder' | 'payment_reminder' | 'chat_message';
+  title: string;
+  message: string;
+  gameId?: string;
+  fromPlayerId?: string;
+  toPlayerId: string;
+  createdAt: string;
+  read: boolean;
+}
+
+// Chat message type
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  message: string;
+  createdAt: string;
+}
+
+// Payment tracking types
+export type PaymentApp = 'venmo' | 'paypal' | 'zelle';
+
+export interface PaymentMethod {
+  app: PaymentApp;
+  username: string; // Venmo/PayPal username or Zelle email/phone
+  displayName: string; // Display name for the button
+}
+
+export interface PlayerPayment {
+  playerId: string;
+  status: 'unpaid' | 'paid' | 'partial';
+  amount?: number;
+  notes?: string;
+  paidAt?: string;
+}
+
+export interface PaymentPeriod {
+  id: string;
+  title: string;
+  amount: number;
+  dueDate?: string;
+  playerPayments: PlayerPayment[];
+  createdAt: string;
 }
 
 export interface Event {
@@ -111,6 +160,7 @@ export interface Photo {
 export interface TeamSettings {
   sport: Sport;
   jerseyColors: { name: string; color: string }[];
+  paymentMethods: PaymentMethod[];
 }
 
 interface TeamStore {
@@ -144,6 +194,24 @@ interface TeamStore {
   photos: Photo[];
   addPhoto: (photo: Photo) => void;
   removePhoto: (id: string) => void;
+
+  // Notifications
+  notifications: AppNotification[];
+  addNotification: (notification: AppNotification) => void;
+  markNotificationRead: (id: string) => void;
+  clearNotifications: () => void;
+  getUnreadCount: () => number;
+
+  // Chat
+  chatMessages: ChatMessage[];
+  addChatMessage: (message: ChatMessage) => void;
+
+  // Payments
+  paymentPeriods: PaymentPeriod[];
+  addPaymentPeriod: (period: PaymentPeriod) => void;
+  updatePaymentPeriod: (id: string, updates: Partial<PaymentPeriod>) => void;
+  removePaymentPeriod: (id: string) => void;
+  updatePlayerPayment: (periodId: string, playerId: string, status: 'unpaid' | 'paid' | 'partial', notes?: string) => void;
 
   currentPlayerId: string | null;
   setCurrentPlayerId: (id: string | null) => void;
@@ -180,6 +248,8 @@ const mockGames: Game[] = [
     checkedInPlayers: ['1', '3', '4', '6'],
     invitedPlayers: ['1', '2', '3', '4', '5', '6'],
     photos: [],
+    showBeerDuty: true,
+    beerDutyPlayerId: '3',
   },
   {
     id: '2',
@@ -192,6 +262,8 @@ const mockGames: Game[] = [
     checkedInPlayers: ['2', '5'],
     invitedPlayers: ['1', '2', '3', '4', '5', '6', '7', '8'],
     photos: [],
+    showBeerDuty: true,
+    beerDutyPlayerId: '4',
   },
   {
     id: '3',
@@ -204,6 +276,7 @@ const mockGames: Game[] = [
     checkedInPlayers: [],
     invitedPlayers: ['1', '2', '3', '4', '5', '6'],
     photos: [],
+    showBeerDuty: false,
   },
 ];
 
@@ -213,6 +286,7 @@ const defaultTeamSettings: TeamSettings = {
     { name: 'White', color: '#ffffff' },
     { name: 'Black', color: '#1a1a1a' },
   ],
+  paymentMethods: [],
 };
 
 export const useTeamStore = create<TeamStore>()(
@@ -289,6 +363,69 @@ export const useTeamStore = create<TeamStore>()(
       photos: [],
       addPhoto: (photo) => set((state) => ({ photos: [...state.photos, photo] })),
       removePhoto: (id) => set((state) => ({ photos: state.photos.filter((p) => p.id !== id) })),
+
+      // Notifications
+      notifications: [],
+      addNotification: (notification) => set((state) => ({
+        notifications: [notification, ...state.notifications]
+      })),
+      markNotificationRead: (id) => set((state) => ({
+        notifications: state.notifications.map((n) =>
+          n.id === id ? { ...n, read: true } : n
+        ),
+      })),
+      clearNotifications: () => set({ notifications: [] }),
+      getUnreadCount: () => {
+        const state = get();
+        const currentPlayerId = state.currentPlayerId;
+        return state.notifications.filter(
+          (n) => n.toPlayerId === currentPlayerId && !n.read
+        ).length;
+      },
+
+      // Chat
+      chatMessages: [],
+      addChatMessage: (message) => set((state) => ({
+        chatMessages: [...state.chatMessages, message],
+      })),
+
+      // Payments
+      paymentPeriods: [],
+      addPaymentPeriod: (period) => set((state) => ({
+        paymentPeriods: [...state.paymentPeriods, period],
+      })),
+      updatePaymentPeriod: (id, updates) => set((state) => ({
+        paymentPeriods: state.paymentPeriods.map((p) =>
+          p.id === id ? { ...p, ...updates } : p
+        ),
+      })),
+      removePaymentPeriod: (id) => set((state) => ({
+        paymentPeriods: state.paymentPeriods.filter((p) => p.id !== id),
+      })),
+      updatePlayerPayment: (periodId, playerId, status, notes) => set((state) => ({
+        paymentPeriods: state.paymentPeriods.map((period) => {
+          if (period.id !== periodId) return period;
+          const existingPayment = period.playerPayments.find((pp) => pp.playerId === playerId);
+          if (existingPayment) {
+            return {
+              ...period,
+              playerPayments: period.playerPayments.map((pp) =>
+                pp.playerId === playerId
+                  ? { ...pp, status, notes, paidAt: status === 'paid' ? new Date().toISOString() : undefined }
+                  : pp
+              ),
+            };
+          } else {
+            return {
+              ...period,
+              playerPayments: [
+                ...period.playerPayments,
+                { playerId, status, notes, paidAt: status === 'paid' ? new Date().toISOString() : undefined },
+              ],
+            };
+          }
+        }),
+      })),
 
       currentPlayerId: '1', // Default to first player (admin)
       setCurrentPlayerId: (id) => set({ currentPlayerId: id }),
