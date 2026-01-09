@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert, Linking } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert, Linking, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
@@ -15,16 +15,20 @@ import {
   AlertCircle,
   Trash2,
   ExternalLink,
+  Calendar,
+  ChevronLeft,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   useTeamStore,
   PaymentPeriod,
   PaymentMethod,
   PaymentApp,
   Player,
+  PaymentEntry,
 } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { format, parseISO } from 'date-fns';
@@ -118,69 +122,50 @@ interface PlayerPaymentRowProps {
   status: 'unpaid' | 'paid' | 'partial';
   paidAmount?: number;
   totalAmount: number;
-  onToggle: () => void;
-  onEditAmount: () => void;
-  isAdmin: boolean;
+  onPress: () => void;
 }
 
-function PlayerPaymentRow({ player, status, paidAmount, totalAmount, onToggle, onEditAmount, isAdmin }: PlayerPaymentRowProps) {
+function PlayerPaymentRow({ player, status, paidAmount, totalAmount, onPress }: PlayerPaymentRowProps) {
+  const balance = totalAmount - (paidAmount ?? 0);
+
   return (
-    <View className={cn(
-      'flex-row items-center p-3 rounded-xl mb-2',
-      status === 'paid' ? 'bg-green-500/20' : status === 'partial' ? 'bg-amber-500/20' : 'bg-slate-800/60'
-    )}>
+    <Pressable
+      onPress={onPress}
+      className={cn(
+        'flex-row items-center p-4 rounded-xl mb-2 active:opacity-80',
+        status === 'paid' ? 'bg-green-500/20' : status === 'partial' ? 'bg-amber-500/20' : 'bg-slate-800/60'
+      )}
+    >
       <Image
         source={{ uri: player.avatar }}
-        style={{ width: 40, height: 40, borderRadius: 20 }}
+        style={{ width: 44, height: 44, borderRadius: 22 }}
         contentFit="cover"
       />
       <View className="flex-1 ml-3">
-        <Text className="text-white font-medium">{player.name}</Text>
+        <Text className="text-white font-medium text-base">{player.name}</Text>
         <Text className={cn(
-          'text-xs',
+          'text-sm mt-0.5',
           status === 'paid' ? 'text-green-400' : status === 'partial' ? 'text-amber-400' : 'text-slate-400'
         )}>
-          {status === 'paid' ? 'Paid in Full' : status === 'partial' ? `Paid $${paidAmount ?? 0} of $${totalAmount}` : `Owes $${totalAmount}`}
+          {status === 'paid'
+            ? `Paid $${paidAmount ?? totalAmount}`
+            : status === 'partial'
+              ? `$${paidAmount ?? 0} paid - $${balance} remaining`
+              : `$${totalAmount} due`}
         </Text>
       </View>
 
-      {isAdmin ? (
-        <View className="flex-row items-center">
-          {/* Edit Amount Button - always visible for admin */}
-          <Pressable
-            onPress={onEditAmount}
-            className="bg-cyan-500/20 border border-cyan-500/50 rounded-lg px-4 py-2 mr-2 active:bg-cyan-500/30"
-          >
-            <Text className="text-cyan-400 font-semibold text-sm">
-              {status === 'paid' ? 'Edit' : 'Enter $'}
-            </Text>
-          </Pressable>
-
-          {/* Status Toggle */}
-          <Pressable
-            onPress={onToggle}
-            className="p-1"
-          >
-            {status === 'paid' ? (
-              <CheckCircle2 size={28} color="#22c55e" />
-            ) : status === 'partial' ? (
-              <AlertCircle size={28} color="#f59e0b" />
-            ) : (
-              <Circle size={28} color="#64748b" />
-            )}
-          </Pressable>
-        </View>
-      ) : (
-        // Non-admin just sees status icon
-        status === 'paid' ? (
+      <View className="items-end">
+        {status === 'paid' ? (
           <CheckCircle2 size={28} color="#22c55e" />
         ) : status === 'partial' ? (
           <AlertCircle size={28} color="#f59e0b" />
         ) : (
           <Circle size={28} color="#64748b" />
-        )
-      )}
-    </View>
+        )}
+      </View>
+      <ChevronRight size={20} color="#64748b" className="ml-2" />
+    </Pressable>
   );
 }
 
@@ -191,16 +176,22 @@ export default function PaymentsScreen() {
   const paymentPeriods = useTeamStore((s) => s.paymentPeriods);
   const addPaymentPeriod = useTeamStore((s) => s.addPaymentPeriod);
   const removePaymentPeriod = useTeamStore((s) => s.removePaymentPeriod);
-  const updatePlayerPayment = useTeamStore((s) => s.updatePlayerPayment);
+  const addPaymentEntry = useTeamStore((s) => s.addPaymentEntry);
+  const removePaymentEntry = useTeamStore((s) => s.removePaymentEntry);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
 
   const [isPaymentMethodModalVisible, setIsPaymentMethodModalVisible] = useState(false);
   const [isNewPeriodModalVisible, setIsNewPeriodModalVisible] = useState(false);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
-  const [editingPayment, setEditingPayment] = useState<{ periodId: string; playerId: string; currentAmount: number } | null>(null);
-  const [editPaymentAmount, setEditPaymentAmount] = useState('');
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
+
+  // Add payment entry form
+  const [newPaymentAmount, setNewPaymentAmount] = useState('');
+  const [newPaymentDate, setNewPaymentDate] = useState(new Date());
+  const [newPaymentNote, setNewPaymentNote] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Payment method form
   const [selectedApp, setSelectedApp] = useState<PaymentApp>('venmo');
@@ -257,7 +248,8 @@ export default function PaymentsScreen() {
       amount: parseFloat(periodAmount),
       playerPayments: activePlayers.map((p) => ({
         playerId: p.id,
-        status: 'unpaid',
+        status: 'unpaid' as const,
+        entries: [],
       })),
       createdAt: new Date().toISOString(),
     };
@@ -269,33 +261,53 @@ export default function PaymentsScreen() {
     setIsNewPeriodModalVisible(false);
   };
 
-  const handleTogglePayment = (periodId: string, playerId: string, currentStatus: string) => {
-    const nextStatus = currentStatus === 'unpaid' ? 'paid' : currentStatus === 'paid' ? 'partial' : 'unpaid';
-    updatePlayerPayment(periodId, playerId, nextStatus as 'unpaid' | 'paid' | 'partial');
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const handleAddPaymentEntry = () => {
+    if (!selectedPeriodId || !selectedPlayerId || !newPaymentAmount.trim()) return;
+    const amount = parseFloat(newPaymentAmount);
+    if (isNaN(amount) || amount <= 0) return;
+
+    const entry: PaymentEntry = {
+      id: Date.now().toString(),
+      amount,
+      date: newPaymentDate.toISOString(),
+      note: newPaymentNote.trim() || undefined,
+      createdAt: new Date().toISOString(),
+    };
+
+    addPaymentEntry(selectedPeriodId, selectedPlayerId, entry);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setNewPaymentAmount('');
+    setNewPaymentNote('');
+    setNewPaymentDate(new Date());
   };
 
-  const handleSavePaymentAmount = () => {
-    if (!editingPayment) return;
-    const amount = parseFloat(editPaymentAmount) || 0;
-    const period = paymentPeriods.find((p) => p.id === editingPayment.periodId);
-    if (!period) return;
-
-    // Determine status based on amount
-    let status: 'unpaid' | 'paid' | 'partial' = 'unpaid';
-    if (amount >= period.amount) {
-      status = 'paid';
-    } else if (amount > 0) {
-      status = 'partial';
-    }
-
-    updatePlayerPayment(editingPayment.periodId, editingPayment.playerId, status, amount);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setEditingPayment(null);
-    setEditPaymentAmount('');
+  const handleDeletePaymentEntry = (entryId: string) => {
+    if (!selectedPeriodId || !selectedPlayerId) return;
+    Alert.alert(
+      'Delete Payment',
+      'Are you sure you want to delete this payment entry?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            removePaymentEntry(selectedPeriodId, selectedPlayerId, entryId);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
+        },
+      ]
+    );
   };
 
   const selectedPeriod = paymentPeriods.find((p) => p.id === selectedPeriodId);
+  const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
+  const selectedPlayerPayment = selectedPeriod?.playerPayments.find((pp) => pp.playerId === selectedPlayerId);
+
+  // Check if current user can view this player's details
+  const canViewPlayerDetails = (playerId: string) => {
+    return canManageTeam() || playerId === currentPlayerId;
+  };
 
   // Get current player's payment status across all periods
   const myPaymentStatus = paymentPeriods.map((period) => {
@@ -666,12 +678,15 @@ export default function PaymentsScreen() {
                 </View>
 
                 <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-                  {isAdmin() ? 'Tap to toggle payment status' : 'Payment Status'}
+                  Tap a player to view/add payments
                 </Text>
 
                 {selectedPeriod.playerPayments.map((pp) => {
                   const player = players.find((p) => p.id === pp.playerId);
                   if (!player) return null;
+
+                  // Only show players the current user can view
+                  if (!canViewPlayerDetails(pp.playerId)) return null;
 
                   return (
                     <PlayerPaymentRow
@@ -680,16 +695,10 @@ export default function PaymentsScreen() {
                       status={pp.status}
                       paidAmount={pp.amount}
                       totalAmount={selectedPeriod.amount}
-                      onToggle={() => handleTogglePayment(selectedPeriod.id, pp.playerId, pp.status)}
-                      onEditAmount={() => {
-                        setEditingPayment({
-                          periodId: selectedPeriod.id,
-                          playerId: pp.playerId,
-                          currentAmount: pp.amount ?? 0,
-                        });
-                        setEditPaymentAmount((pp.amount ?? 0).toString());
+                      onPress={() => {
+                        setSelectedPlayerId(pp.playerId);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       }}
-                      isAdmin={isAdmin()}
                     />
                   );
                 })}
@@ -699,51 +708,182 @@ export default function PaymentsScreen() {
         </View>
       </Modal>
 
-      {/* Edit Payment Amount Modal */}
+      {/* Player Payment Detail Modal */}
       <Modal
-        visible={!!editingPayment}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setEditingPayment(null)}
+        visible={!!selectedPlayerId && !!selectedPeriod}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setSelectedPlayerId(null)}
       >
-        <View className="flex-1 bg-black/60 justify-center items-center px-6">
-          <View className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm">
-            <Text className="text-white text-lg font-semibold mb-4">Enter Payment Amount</Text>
-
-            {editingPayment && (
-              <Text className="text-slate-400 text-sm mb-4">
-                Total due: ${paymentPeriods.find((p) => p.id === editingPayment.periodId)?.amount ?? 0}
-              </Text>
-            )}
-
-            <View className="flex-row items-center bg-slate-700 rounded-xl px-4 py-3 mb-6">
-              <Text className="text-white text-2xl font-bold mr-1">$</Text>
-              <TextInput
-                value={editPaymentAmount}
-                onChangeText={setEditPaymentAmount}
-                placeholder="0.00"
-                placeholderTextColor="#64748b"
-                keyboardType="decimal-pad"
-                className="flex-1 text-white text-2xl font-bold"
-                autoFocus
-              />
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            {/* Header */}
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setSelectedPlayerId(null)} className="flex-row items-center">
+                <ChevronLeft size={24} color="#64748b" />
+                <Text className="text-slate-400 ml-1">Back</Text>
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Payment Details</Text>
+              <View style={{ width: 60 }} />
             </View>
 
-            <View className="flex-row">
-              <Pressable
-                onPress={() => setEditingPayment(null)}
-                className="flex-1 py-3 rounded-xl bg-slate-700 mr-2"
-              >
-                <Text className="text-white text-center font-semibold">Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleSavePaymentAmount}
-                className="flex-1 py-3 rounded-xl bg-green-500"
-              >
-                <Text className="text-white text-center font-semibold">Save</Text>
-              </Pressable>
-            </View>
-          </View>
+            <ScrollView className="flex-1 px-5 pt-6">
+              {selectedPlayer && selectedPeriod && (
+                <>
+                  {/* Player Info */}
+                  <View className="items-center mb-6">
+                    <Image
+                      source={{ uri: selectedPlayer.avatar }}
+                      style={{ width: 80, height: 80, borderRadius: 40 }}
+                      contentFit="cover"
+                    />
+                    <Text className="text-white text-xl font-bold mt-3">{selectedPlayer.name}</Text>
+                    <Text className="text-slate-400">{selectedPeriod.title}</Text>
+                  </View>
+
+                  {/* Balance Summary */}
+                  <View className={cn(
+                    'rounded-2xl p-5 mb-6 border',
+                    selectedPlayerPayment?.status === 'paid'
+                      ? 'bg-green-500/20 border-green-500/30'
+                      : selectedPlayerPayment?.status === 'partial'
+                        ? 'bg-amber-500/20 border-amber-500/30'
+                        : 'bg-slate-800 border-slate-700'
+                  )}>
+                    <View className="flex-row justify-between items-center mb-3">
+                      <Text className="text-slate-400">Total Due</Text>
+                      <Text className="text-white text-xl font-bold">${selectedPeriod.amount}</Text>
+                    </View>
+                    <View className="flex-row justify-between items-center mb-3">
+                      <Text className="text-slate-400">Paid</Text>
+                      <Text className="text-green-400 text-xl font-bold">${selectedPlayerPayment?.amount ?? 0}</Text>
+                    </View>
+                    <View className="h-px bg-slate-700 my-2" />
+                    <View className="flex-row justify-between items-center">
+                      <Text className="text-slate-400">Balance</Text>
+                      <Text className={cn(
+                        'text-xl font-bold',
+                        (selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0)) <= 0
+                          ? 'text-green-400'
+                          : 'text-amber-400'
+                      )}>
+                        ${Math.max(0, selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0))}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Add Payment Section - Only for Admins/Captains */}
+                  {canManageTeam() && (
+                    <View className="bg-slate-800/60 rounded-2xl p-4 mb-6 border border-slate-700/50">
+                      <Text className="text-cyan-400 font-semibold mb-4">Add Payment</Text>
+
+                      {/* Amount Input */}
+                      <View className="mb-4">
+                        <Text className="text-slate-400 text-sm mb-2">Amount</Text>
+                        <View className="flex-row items-center bg-slate-700 rounded-xl px-4 py-3">
+                          <Text className="text-white text-xl font-bold mr-1">$</Text>
+                          <TextInput
+                            value={newPaymentAmount}
+                            onChangeText={setNewPaymentAmount}
+                            placeholder="0.00"
+                            placeholderTextColor="#64748b"
+                            keyboardType="decimal-pad"
+                            className="flex-1 text-white text-xl font-bold"
+                          />
+                        </View>
+                      </View>
+
+                      {/* Date Input */}
+                      <View className="mb-4">
+                        <Text className="text-slate-400 text-sm mb-2">Date</Text>
+                        <Pressable
+                          onPress={() => setShowDatePicker(true)}
+                          className="flex-row items-center bg-slate-700 rounded-xl px-4 py-3"
+                        >
+                          <Calendar size={20} color="#64748b" />
+                          <Text className="text-white ml-3">{format(newPaymentDate, 'MMM d, yyyy')}</Text>
+                        </Pressable>
+                        {showDatePicker && (
+                          <DateTimePicker
+                            value={newPaymentDate}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={(event, date) => {
+                              setShowDatePicker(Platform.OS === 'ios');
+                              if (date) setNewPaymentDate(date);
+                            }}
+                            themeVariant="dark"
+                          />
+                        )}
+                      </View>
+
+                      {/* Note Input */}
+                      <View className="mb-4">
+                        <Text className="text-slate-400 text-sm mb-2">Note (optional)</Text>
+                        <TextInput
+                          value={newPaymentNote}
+                          onChangeText={setNewPaymentNote}
+                          placeholder="e.g., Venmo payment"
+                          placeholderTextColor="#64748b"
+                          className="bg-slate-700 rounded-xl px-4 py-3 text-white"
+                        />
+                      </View>
+
+                      {/* Add Button */}
+                      <Pressable
+                        onPress={handleAddPaymentEntry}
+                        className="bg-green-500 rounded-xl py-3 active:bg-green-600"
+                      >
+                        <Text className="text-white text-center font-semibold">Add Payment</Text>
+                      </Pressable>
+                    </View>
+                  )}
+
+                  {/* Payment History */}
+                  <View className="mb-6">
+                    <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                      Payment History
+                    </Text>
+
+                    {(selectedPlayerPayment?.entries ?? []).length === 0 ? (
+                      <View className="bg-slate-800/40 rounded-xl p-6 items-center">
+                        <DollarSign size={32} color="#64748b" />
+                        <Text className="text-slate-400 mt-2">No payments recorded</Text>
+                      </View>
+                    ) : (
+                      (selectedPlayerPayment?.entries ?? [])
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map((entry) => (
+                          <View
+                            key={entry.id}
+                            className="flex-row items-center bg-slate-800/60 rounded-xl p-4 mb-2 border border-slate-700/50"
+                          >
+                            <View className="w-10 h-10 rounded-full bg-green-500/20 items-center justify-center">
+                              <DollarSign size={20} color="#22c55e" />
+                            </View>
+                            <View className="flex-1 ml-3">
+                              <Text className="text-white font-semibold">${entry.amount}</Text>
+                              <Text className="text-slate-400 text-sm">
+                                {format(parseISO(entry.date), 'MMM d, yyyy')}
+                                {entry.note && ` • ${entry.note}`}
+                              </Text>
+                            </View>
+                            {canManageTeam() && (
+                              <Pressable
+                                onPress={() => handleDeletePaymentEntry(entry.id)}
+                                className="p-2"
+                              >
+                                <Trash2 size={18} color="#ef4444" />
+                              </Pressable>
+                            )}
+                          </View>
+                        ))
+                    )}
+                  </View>
+                </>
+              )}
+            </ScrollView>
+          </SafeAreaView>
         </View>
       </Modal>
     </View>

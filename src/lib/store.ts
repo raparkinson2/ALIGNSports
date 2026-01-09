@@ -119,12 +119,21 @@ export interface PaymentMethod {
   displayName: string; // Display name for the button
 }
 
+export interface PaymentEntry {
+  id: string;
+  amount: number;
+  date: string;
+  note?: string;
+  createdAt: string;
+}
+
 export interface PlayerPayment {
   playerId: string;
   status: 'unpaid' | 'paid' | 'partial';
-  amount?: number;
+  amount?: number; // Total paid (computed from entries)
   notes?: string;
   paidAt?: string;
+  entries: PaymentEntry[]; // Individual payment entries
 }
 
 export interface PaymentPeriod {
@@ -212,6 +221,8 @@ interface TeamStore {
   updatePaymentPeriod: (id: string, updates: Partial<PaymentPeriod>) => void;
   removePaymentPeriod: (id: string) => void;
   updatePlayerPayment: (periodId: string, playerId: string, status: 'unpaid' | 'paid' | 'partial', amount?: number, notes?: string) => void;
+  addPaymentEntry: (periodId: string, playerId: string, entry: PaymentEntry) => void;
+  removePaymentEntry: (periodId: string, playerId: string, entryId: string) => void;
 
   currentPlayerId: string | null;
   setCurrentPlayerId: (id: string | null) => void;
@@ -423,10 +434,59 @@ export const useTeamStore = create<TeamStore>()(
               ...period,
               playerPayments: [
                 ...period.playerPayments,
-                { playerId, status, amount, notes, paidAt: status === 'paid' ? new Date().toISOString() : undefined },
+                { playerId, status, amount, notes, entries: [], paidAt: status === 'paid' ? new Date().toISOString() : undefined },
               ],
             };
           }
+        }),
+      })),
+
+      addPaymentEntry: (periodId, playerId, entry) => set((state) => ({
+        paymentPeriods: state.paymentPeriods.map((period) => {
+          if (period.id !== periodId) return period;
+          const existingPayment = period.playerPayments.find((pp) => pp.playerId === playerId);
+          if (existingPayment) {
+            const newEntries = [...(existingPayment.entries || []), entry];
+            const totalPaid = newEntries.reduce((sum, e) => sum + e.amount, 0);
+            const status = totalPaid >= period.amount ? 'paid' : totalPaid > 0 ? 'partial' : 'unpaid';
+            return {
+              ...period,
+              playerPayments: period.playerPayments.map((pp) =>
+                pp.playerId === playerId
+                  ? { ...pp, entries: newEntries, amount: totalPaid, status, paidAt: status === 'paid' ? new Date().toISOString() : undefined }
+                  : pp
+              ),
+            };
+          } else {
+            const totalPaid = entry.amount;
+            const status = totalPaid >= period.amount ? 'paid' : totalPaid > 0 ? 'partial' : 'unpaid';
+            return {
+              ...period,
+              playerPayments: [
+                ...period.playerPayments,
+                { playerId, status, amount: totalPaid, entries: [entry], paidAt: status === 'paid' ? new Date().toISOString() : undefined },
+              ],
+            };
+          }
+        }),
+      })),
+
+      removePaymentEntry: (periodId, playerId, entryId) => set((state) => ({
+        paymentPeriods: state.paymentPeriods.map((period) => {
+          if (period.id !== periodId) return period;
+          const existingPayment = period.playerPayments.find((pp) => pp.playerId === playerId);
+          if (!existingPayment) return period;
+          const newEntries = (existingPayment.entries || []).filter((e) => e.id !== entryId);
+          const totalPaid = newEntries.reduce((sum, e) => sum + e.amount, 0);
+          const status = totalPaid >= period.amount ? 'paid' : totalPaid > 0 ? 'partial' : 'unpaid';
+          return {
+            ...period,
+            playerPayments: period.playerPayments.map((pp) =>
+              pp.playerId === playerId
+                ? { ...pp, entries: newEntries, amount: totalPaid, status, paidAt: status === 'paid' ? new Date().toISOString() : undefined }
+                : pp
+            ),
+          };
         }),
       })),
 
