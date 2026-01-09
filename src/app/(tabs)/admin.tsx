@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
@@ -18,17 +18,23 @@ import {
   Phone,
   ImageIcon,
   Camera,
+  MessageSquare,
+  Send,
+  UserPlus,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import * as Linking from 'expo-linking';
 import Svg, { Path, Circle as SvgCircle, Line, Rect, Ellipse } from 'react-native-svg';
 import {
   useTeamStore,
   Player,
   Sport,
   SPORT_NAMES,
+  SPORT_POSITIONS,
+  SPORT_POSITION_NAMES,
   PlayerRole,
   PlayerStatus,
 } from '@/lib/store';
@@ -212,6 +218,7 @@ function PlayerManageCard({ player, index, onPress, isCurrentUser }: PlayerManag
 
 export default function AdminScreen() {
   const players = useTeamStore((s) => s.players);
+  const addPlayer = useTeamStore((s) => s.addPlayer);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
@@ -219,6 +226,8 @@ export default function AdminScreen() {
   const setTeamName = useTeamStore((s) => s.setTeamName);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const isAdmin = useTeamStore((s) => s.isAdmin);
+
+  const positions = SPORT_POSITIONS[teamSettings.sport];
 
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isPlayerModalVisible, setIsPlayerModalVisible] = useState(false);
@@ -230,6 +239,18 @@ export default function AdminScreen() {
   const [editPlayerNumber, setEditPlayerNumber] = useState('');
   const [editPlayerPhone, setEditPlayerPhone] = useState('');
   const [editPlayerEmail, setEditPlayerEmail] = useState('');
+
+  // New player form
+  const [isNewPlayerModalVisible, setIsNewPlayerModalVisible] = useState(false);
+  const [newPlayerName, setNewPlayerName] = useState('');
+  const [newPlayerNumber, setNewPlayerNumber] = useState('');
+  const [newPlayerPosition, setNewPlayerPosition] = useState(positions[0]);
+  const [newPlayerPhone, setNewPlayerPhone] = useState('');
+  const [newPlayerEmail, setNewPlayerEmail] = useState('');
+
+  // Invite modal state
+  const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
+  const [newlyCreatedPlayer, setNewlyCreatedPlayer] = useState<Player | null>(null);
 
   // Jersey color form
   const [newColorName, setNewColorName] = useState('');
@@ -288,6 +309,97 @@ export default function AdminScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     updatePlayer(selectedPlayer.id, { email: editPlayerEmail.trim() || undefined });
     setSelectedPlayer({ ...selectedPlayer, email: editPlayerEmail.trim() || undefined });
+  };
+
+  // New Player Functions
+  const resetNewPlayerForm = () => {
+    setNewPlayerName('');
+    setNewPlayerNumber('');
+    setNewPlayerPosition(positions[0]);
+    setNewPlayerPhone('');
+    setNewPlayerEmail('');
+  };
+
+  const handleCreatePlayer = () => {
+    if (!newPlayerName.trim() || !newPlayerNumber.trim()) {
+      Alert.alert('Missing Info', 'Please enter a name and jersey number.');
+      return;
+    }
+
+    const rawPhone = unformatPhone(newPlayerPhone);
+
+    const newPlayer: Player = {
+      id: Date.now().toString(),
+      name: newPlayerName.trim(),
+      number: newPlayerNumber.trim(),
+      position: newPlayerPosition,
+      phone: rawPhone || undefined,
+      email: newPlayerEmail.trim() || undefined,
+      avatar: `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150`,
+      roles: [],
+      status: 'active',
+    };
+
+    addPlayer(newPlayer);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsNewPlayerModalVisible(false);
+    resetNewPlayerForm();
+
+    // Show invite modal if player has phone or email
+    if (rawPhone || newPlayerEmail.trim()) {
+      setNewlyCreatedPlayer({ ...newPlayer, phone: rawPhone || undefined, email: newPlayerEmail.trim() || undefined });
+      setIsInviteModalVisible(true);
+    }
+  };
+
+  const getInviteMessage = () => {
+    return `Hey ${newlyCreatedPlayer?.name}!\n\nYou've been added to ${teamName}! Download the app and log in using your info to view the schedule, check in for games, and stay connected with the team.\n\nYour jersey number: #${newlyCreatedPlayer?.number}\n\nSee you at the next game!`;
+  };
+
+  const handleSendTextInvite = () => {
+    if (!newlyCreatedPlayer?.phone) {
+      Alert.alert('No Phone Number', 'This player does not have a phone number.');
+      return;
+    }
+
+    const message = encodeURIComponent(getInviteMessage());
+    const phoneNumber = newlyCreatedPlayer.phone;
+
+    const smsUrl = Platform.select({
+      ios: `sms:${phoneNumber}&body=${message}`,
+      android: `sms:${phoneNumber}?body=${message}`,
+      default: `sms:${phoneNumber}?body=${message}`,
+    });
+
+    Linking.openURL(smsUrl).catch(() => {
+      Alert.alert('Error', 'Could not open messaging app');
+    });
+
+    setIsInviteModalVisible(false);
+    setNewlyCreatedPlayer(null);
+  };
+
+  const handleSendEmailInvite = () => {
+    if (!newlyCreatedPlayer?.email) {
+      Alert.alert('No Email', 'This player does not have an email address.');
+      return;
+    }
+
+    const subject = encodeURIComponent(`Welcome to ${teamName}!`);
+    const body = encodeURIComponent(getInviteMessage());
+    const mailtoUrl = `mailto:${newlyCreatedPlayer.email}?subject=${subject}&body=${body}`;
+
+    Linking.openURL(mailtoUrl).catch(() => {
+      Alert.alert('Error', 'Could not open email app');
+    });
+
+    setIsInviteModalVisible(false);
+    setNewlyCreatedPlayer(null);
+  };
+
+  const handleSkipInvite = () => {
+    setIsInviteModalVisible(false);
+    setNewlyCreatedPlayer(null);
   };
 
   const handleToggleRole = (role: PlayerRole) => {
@@ -559,11 +671,24 @@ export default function AdminScreen() {
 
           {/* Player Management */}
           <Animated.View entering={FadeInDown.delay(200).springify()} className="mt-6">
-            <View className="flex-row items-center mb-3">
-              <UserCog size={16} color="#67e8f9" />
-              <Text className="text-cyan-400 font-semibold ml-2">
-                Manage Players ({players.length})
-              </Text>
+            <View className="flex-row items-center justify-between mb-3">
+              <View className="flex-row items-center">
+                <UserCog size={16} color="#67e8f9" />
+                <Text className="text-cyan-400 font-semibold ml-2">
+                  Manage Players ({players.length})
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setNewPlayerPosition(positions[0]);
+                  setIsNewPlayerModalVisible(true);
+                }}
+                className="flex-row items-center bg-green-500/20 rounded-full px-3 py-1.5"
+              >
+                <UserPlus size={14} color="#22c55e" />
+                <Text className="text-green-400 font-medium text-sm ml-1">Add</Text>
+              </Pressable>
             </View>
 
             {players.map((player, index) => (
@@ -909,6 +1034,187 @@ export default function AdminScreen() {
               </View>
             </ScrollView>
           </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* New Player Modal */}
+      <Modal
+        visible={isNewPlayerModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => {
+          setIsNewPlayerModalVisible(false);
+          resetNewPlayerForm();
+        }}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => {
+                setIsNewPlayerModalVisible(false);
+                resetNewPlayerForm();
+              }}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Add Player</Text>
+              <Pressable onPress={handleCreatePlayer}>
+                <Text className="text-cyan-400 font-semibold">Create</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
+              {/* Name */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Name *</Text>
+                <TextInput
+                  value={newPlayerName}
+                  onChangeText={setNewPlayerName}
+                  placeholder="Player name"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                />
+              </View>
+
+              {/* Jersey Number */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Jersey Number *</Text>
+                <TextInput
+                  value={newPlayerNumber}
+                  onChangeText={setNewPlayerNumber}
+                  placeholder="00"
+                  placeholderTextColor="#64748b"
+                  keyboardType="number-pad"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  maxLength={3}
+                />
+              </View>
+
+              {/* Position */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Position</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
+                  <View className="flex-row">
+                    {positions.map((pos) => (
+                      <Pressable
+                        key={pos}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setNewPlayerPosition(pos);
+                        }}
+                        className={cn(
+                          'px-4 py-2 rounded-xl mr-2 border',
+                          newPlayerPosition === pos
+                            ? 'bg-cyan-500/20 border-cyan-500/50'
+                            : 'bg-slate-800 border-slate-700'
+                        )}
+                      >
+                        <Text
+                          className={cn(
+                            'font-medium',
+                            newPlayerPosition === pos ? 'text-cyan-400' : 'text-slate-400'
+                          )}
+                        >
+                          {SPORT_POSITION_NAMES[teamSettings.sport][pos] || pos}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+
+              {/* Phone */}
+              <View className="mb-5">
+                <View className="flex-row items-center mb-2">
+                  <Phone size={14} color="#67e8f9" />
+                  <Text className="text-slate-400 text-sm ml-2">Phone</Text>
+                </View>
+                <TextInput
+                  value={newPlayerPhone}
+                  onChangeText={(text) => setNewPlayerPhone(formatPhoneInput(text))}
+                  placeholder="(555)123-4567"
+                  placeholderTextColor="#64748b"
+                  keyboardType="phone-pad"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                />
+              </View>
+
+              {/* Email */}
+              <View className="mb-8">
+                <View className="flex-row items-center mb-2">
+                  <Mail size={14} color="#67e8f9" />
+                  <Text className="text-slate-400 text-sm ml-2">Email</Text>
+                </View>
+                <TextInput
+                  value={newPlayerEmail}
+                  onChangeText={setNewPlayerEmail}
+                  placeholder="player@example.com"
+                  placeholderTextColor="#64748b"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                />
+              </View>
+
+              <Text className="text-slate-500 text-sm text-center mb-6">
+                Add phone or email to send an invite after creating the player
+              </Text>
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Send Invite Modal */}
+      <Modal
+        visible={isInviteModalVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={handleSkipInvite}
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-700">
+            {/* Header */}
+            <View className="items-center mb-6">
+              <View className="w-16 h-16 rounded-full bg-green-500/20 items-center justify-center mb-4">
+                <Send size={32} color="#22c55e" />
+              </View>
+              <Text className="text-white text-xl font-bold text-center">
+                Player Added!
+              </Text>
+              <Text className="text-slate-400 text-center mt-2">
+                Send {newlyCreatedPlayer?.name} an invite to register and join the team?
+              </Text>
+            </View>
+
+            {/* Invite Options */}
+            <View>
+              {newlyCreatedPlayer?.phone && (
+                <Pressable
+                  onPress={handleSendTextInvite}
+                  className="flex-row items-center justify-center bg-cyan-500 rounded-xl py-4 mb-3 active:bg-cyan-600"
+                >
+                  <MessageSquare size={20} color="white" />
+                  <Text className="text-white font-semibold ml-2">Send Text Message</Text>
+                </Pressable>
+              )}
+
+              {newlyCreatedPlayer?.email && (
+                <Pressable
+                  onPress={handleSendEmailInvite}
+                  className="flex-row items-center justify-center bg-purple-500 rounded-xl py-4 mb-3 active:bg-purple-600"
+                >
+                  <Mail size={20} color="white" />
+                  <Text className="text-white font-semibold ml-2">Send Email</Text>
+                </Pressable>
+              )}
+
+              <Pressable
+                onPress={handleSkipInvite}
+                className="flex-row items-center justify-center bg-slate-700 rounded-xl py-4 active:bg-slate-600"
+              >
+                <Text className="text-slate-300 font-semibold">Skip for Now</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
       </Modal>
     </View>
