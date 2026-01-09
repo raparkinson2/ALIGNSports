@@ -224,6 +224,9 @@ export default function AdminScreen() {
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const [isJerseyModalVisible, setIsJerseyModalVisible] = useState(false);
 
+  // Player edit form
+  const [editPlayerName, setEditPlayerName] = useState('');
+
   // Jersey color form
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#ffffff');
@@ -247,7 +250,15 @@ export default function AdminScreen() {
 
   const openPlayerModal = (player: Player) => {
     setSelectedPlayer(player);
+    setEditPlayerName(player.name);
     setIsPlayerModalVisible(true);
+  };
+
+  const handleSavePlayerName = () => {
+    if (!selectedPlayer || !editPlayerName.trim()) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    updatePlayer(selectedPlayer.id, { name: editPlayerName.trim() });
+    setSelectedPlayer({ ...selectedPlayer, name: editPlayerName.trim() });
   };
 
   const handleToggleRole = (role: PlayerRole) => {
@@ -565,10 +576,26 @@ export default function AdminScreen() {
                     style={{ width: 80, height: 80, borderRadius: 40 }}
                     contentFit="cover"
                   />
-                  <Text className="text-white text-xl font-bold mt-3">
-                    {selectedPlayer.name}
+                  <Text className="text-slate-400 mt-2">#{selectedPlayer.number}</Text>
+                </View>
+
+                {/* Name Edit */}
+                <View className="bg-slate-800/80 rounded-xl p-4 mb-4 border border-slate-700/50">
+                  <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                    Player Name
                   </Text>
-                  <Text className="text-slate-400">#{selectedPlayer.number}</Text>
+                  <View className="flex-row items-center">
+                    <TextInput
+                      value={editPlayerName}
+                      onChangeText={setEditPlayerName}
+                      placeholder="Enter player name"
+                      placeholderTextColor="#64748b"
+                      className="bg-slate-700 rounded-xl px-4 py-3 text-white flex-1"
+                      onBlur={handleSavePlayerName}
+                      onSubmitEditing={handleSavePlayerName}
+                      returnKeyType="done"
+                    />
+                  </View>
                 </View>
 
                 {/* Contact Info (visible to admins) */}
