@@ -33,6 +33,7 @@ import {
   PlayerStatus,
 } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { formatPhoneNumber } from '@/lib/phone';
 
 // Custom Sport Icons
 function HockeyIcon({ color, size = 18 }: { color: string; size?: number }) {
@@ -226,6 +227,7 @@ export default function AdminScreen() {
 
   // Player edit form
   const [editPlayerName, setEditPlayerName] = useState('');
+  const [editPlayerNumber, setEditPlayerNumber] = useState('');
 
   // Jersey color form
   const [newColorName, setNewColorName] = useState('');
@@ -251,6 +253,7 @@ export default function AdminScreen() {
   const openPlayerModal = (player: Player) => {
     setSelectedPlayer(player);
     setEditPlayerName(player.name);
+    setEditPlayerNumber(player.number);
     setIsPlayerModalVisible(true);
   };
 
@@ -259,6 +262,13 @@ export default function AdminScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     updatePlayer(selectedPlayer.id, { name: editPlayerName.trim() });
     setSelectedPlayer({ ...selectedPlayer, name: editPlayerName.trim() });
+  };
+
+  const handleSavePlayerNumber = () => {
+    if (!selectedPlayer || !editPlayerNumber.trim()) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    updatePlayer(selectedPlayer.id, { number: editPlayerNumber.trim() });
+    setSelectedPlayer({ ...selectedPlayer, number: editPlayerNumber.trim() });
   };
 
   const handleToggleRole = (role: PlayerRole) => {
@@ -576,7 +586,6 @@ export default function AdminScreen() {
                     style={{ width: 80, height: 80, borderRadius: 40 }}
                     contentFit="cover"
                   />
-                  <Text className="text-slate-400 mt-2">#{selectedPlayer.number}</Text>
                 </View>
 
                 {/* Name Edit */}
@@ -584,18 +593,35 @@ export default function AdminScreen() {
                   <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
                     Player Name
                   </Text>
-                  <View className="flex-row items-center">
-                    <TextInput
-                      value={editPlayerName}
-                      onChangeText={setEditPlayerName}
-                      placeholder="Enter player name"
-                      placeholderTextColor="#64748b"
-                      className="bg-slate-700 rounded-xl px-4 py-3 text-white flex-1"
-                      onBlur={handleSavePlayerName}
-                      onSubmitEditing={handleSavePlayerName}
-                      returnKeyType="done"
-                    />
-                  </View>
+                  <TextInput
+                    value={editPlayerName}
+                    onChangeText={setEditPlayerName}
+                    placeholder="Enter player name"
+                    placeholderTextColor="#64748b"
+                    className="bg-slate-700 rounded-xl px-4 py-3 text-white"
+                    onBlur={handleSavePlayerName}
+                    onSubmitEditing={handleSavePlayerName}
+                    returnKeyType="done"
+                  />
+                </View>
+
+                {/* Jersey Number Edit */}
+                <View className="bg-slate-800/80 rounded-xl p-4 mb-4 border border-slate-700/50">
+                  <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                    Jersey Number
+                  </Text>
+                  <TextInput
+                    value={editPlayerNumber}
+                    onChangeText={setEditPlayerNumber}
+                    placeholder="Enter jersey number"
+                    placeholderTextColor="#64748b"
+                    className="bg-slate-700 rounded-xl px-4 py-3 text-white"
+                    keyboardType="number-pad"
+                    onBlur={handleSavePlayerNumber}
+                    onSubmitEditing={handleSavePlayerNumber}
+                    returnKeyType="done"
+                    maxLength={3}
+                  />
                 </View>
 
                 {/* Contact Info (visible to admins) */}
@@ -612,7 +638,7 @@ export default function AdminScreen() {
                   <View className="flex-row items-center">
                     <Phone size={16} color="#67e8f9" />
                     <Text className="text-white ml-3">
-                      {selectedPlayer.phone || 'No phone set'}
+                      {formatPhoneNumber(selectedPlayer.phone) || 'No phone set'}
                     </Text>
                   </View>
                 </View>

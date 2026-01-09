@@ -97,7 +97,8 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Payment Methods**: Configure Venmo/PayPal/Zelle for the team
 - **Refreshment Duty Toggle**: Enable/disable per game
 - **Player Management**:
-  - View all player contact info (email, phone)
+  - View all player contact info (email, phone - formatted as (XXX)XXX-XXXX)
+  - Edit player names and jersey numbers
   - Assign roles (Admin, Captain, Player)
   - Set status (Active, Reserve)
 

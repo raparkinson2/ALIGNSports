@@ -16,6 +16,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 
 interface PlayerCardProps {
   player: Player;
@@ -125,7 +126,7 @@ export default function RosterScreen() {
     setName(player.name);
     setNumber(player.number);
     setPosition(player.position);
-    setPhone(player.phone || '');
+    setPhone(formatPhoneNumber(player.phone));
     setEmail(player.email || '');
     setIsModalVisible(true);
   };
@@ -135,12 +136,15 @@ export default function RosterScreen() {
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
+    // Store raw phone digits
+    const rawPhone = unformatPhone(phone);
+
     if (editingPlayer) {
       updatePlayer(editingPlayer.id, {
         name: name.trim(),
         number: number.trim(),
         position,
-        phone: phone.trim() || undefined,
+        phone: rawPhone || undefined,
         email: email.trim() || undefined,
       });
     } else {
@@ -149,7 +153,7 @@ export default function RosterScreen() {
         name: name.trim(),
         number: number.trim(),
         position,
-        phone: phone.trim() || undefined,
+        phone: rawPhone || undefined,
         email: email.trim() || undefined,
         avatar: `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150`,
         roles: [],
@@ -338,8 +342,8 @@ export default function RosterScreen() {
                   </View>
                   <TextInput
                     value={phone}
-                    onChangeText={setPhone}
-                    placeholder="(555) 123-4567"
+                    onChangeText={(text) => setPhone(formatPhoneInput(text))}
+                    placeholder="(555)123-4567"
                     placeholderTextColor="#64748b"
                     keyboardType="phone-pad"
                     className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"

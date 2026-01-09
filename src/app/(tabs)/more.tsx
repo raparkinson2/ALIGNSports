@@ -22,6 +22,7 @@ import * as Linking from 'expo-linking';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { useTeamStore, Player } from '@/lib/store';
+import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 
 interface MenuItemProps {
   icon: React.ReactNode;
@@ -73,7 +74,7 @@ interface EditProfileModalProps {
 function EditProfileModal({ visible, onClose, player, onSave }: EditProfileModalProps) {
   const [avatar, setAvatar] = useState(player.avatar || '');
   const [number, setNumber] = useState(player.number);
-  const [phone, setPhone] = useState(player.phone || '');
+  const [phone, setPhone] = useState(formatPhoneNumber(player.phone));
   const [email, setEmail] = useState(player.email || '');
 
   const handlePickImage = async () => {
@@ -94,10 +95,12 @@ function EditProfileModal({ visible, onClose, player, onSave }: EditProfileModal
       Alert.alert('Error', 'Jersey number is required');
       return;
     }
+    // Store raw phone digits
+    const rawPhone = unformatPhone(phone);
     onSave({
       avatar: avatar || undefined,
       number: number.trim(),
-      phone: phone.trim() || undefined,
+      phone: rawPhone || undefined,
       email: email.trim() || undefined,
     });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -173,8 +176,8 @@ function EditProfileModal({ visible, onClose, player, onSave }: EditProfileModal
                 <Text className="text-slate-400 text-sm mb-2">Phone Number</Text>
                 <TextInput
                   value={phone}
-                  onChangeText={setPhone}
-                  placeholder="Enter phone number"
+                  onChangeText={(text) => setPhone(formatPhoneInput(text))}
+                  placeholder="(555)123-4567"
                   placeholderTextColor="#64748b"
                   keyboardType="phone-pad"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-base"
