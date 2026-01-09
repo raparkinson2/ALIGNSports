@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Platform, Alert, Modal, Switch } from 'react-native';
+import { View, Text, ScrollView, Pressable, Platform, Alert, Modal, Switch, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -21,11 +21,15 @@ import {
   Settings,
   X,
   ChevronDown,
+  Pencil,
+  Check,
+  Trash2,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification } from '@/lib/store';
 import { cn } from '@/lib/cn';
 
@@ -94,12 +98,25 @@ export default function GameDetailScreen() {
   const checkOutFromGame = useTeamStore((s) => s.checkOutFromGame);
   const addNotification = useTeamStore((s) => s.addNotification);
   const updateGame = useTeamStore((s) => s.updateGame);
+  const removeGame = useTeamStore((s) => s.removeGame);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
 
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const [isBeerDutyModalVisible, setIsBeerDutyModalVisible] = useState(false);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+
+  // Edit form state
+  const [editOpponent, setEditOpponent] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editDate, setEditDate] = useState(new Date());
+  const [editTime, setEditTime] = useState(new Date());
+  const [editJersey, setEditJersey] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [showEditDatePicker, setShowEditDatePicker] = useState(false);
+  const [showEditTimePicker, setShowEditTimePicker] = useState(false);
 
   const game = games.find((g) => g.id === id);
 
@@ -229,6 +246,68 @@ export default function GameDetailScreen() {
     updateGame(game.id, { beerDutyPlayerId: playerId });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsBeerDutyModalVisible(false);
+  };
+
+  const openEditModal = () => {
+    // Populate form with current game data
+    setEditOpponent(game.opponent);
+    setEditLocation(game.location);
+    setEditAddress(game.address || '');
+    setEditDate(parseISO(game.date));
+    // Parse time string to Date
+    const [time, period] = game.time.split(' ');
+    const [hours, minutes] = time.split(':').map(Number);
+    const timeDate = new Date();
+    let hour = hours;
+    if (period === 'PM' && hours !== 12) hour += 12;
+    if (period === 'AM' && hours === 12) hour = 0;
+    timeDate.setHours(hour, minutes, 0, 0);
+    setEditTime(timeDate);
+    setEditJersey(game.jerseyColor);
+    setEditNotes(game.notes || '');
+    setIsSettingsModalVisible(false);
+    setIsEditModalVisible(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editOpponent.trim() || !editLocation.trim()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    const timeString = format(editTime, 'h:mm a');
+
+    updateGame(game.id, {
+      opponent: editOpponent.trim(),
+      location: editLocation.trim(),
+      address: editAddress.trim(),
+      date: editDate.toISOString(),
+      time: timeString,
+      jerseyColor: editJersey,
+      notes: editNotes.trim() || undefined,
+    });
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsEditModalVisible(false);
+  };
+
+  const handleDeleteGame = () => {
+    Alert.alert(
+      'Delete Game',
+      `Are you sure you want to delete the game vs ${game.opponent}? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            removeGame(game.id);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            router.back();
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -495,6 +574,20 @@ export default function GameDetailScreen() {
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6">
+              {/* Edit Game Button */}
+              <Pressable
+                onPress={openEditModal}
+                className="bg-cyan-500/20 rounded-xl p-4 mb-4 border border-cyan-500/30 active:bg-cyan-500/30"
+              >
+                <View className="flex-row items-center">
+                  <Pencil size={20} color="#67e8f9" />
+                  <View className="ml-3">
+                    <Text className="text-cyan-400 font-semibold">Edit Game Details</Text>
+                    <Text className="text-slate-400 text-sm">Change date, time, location, etc.</Text>
+                  </View>
+                </View>
+              </Pressable>
+
               {/* Beer Duty Toggle - Admin Only */}
               {isAdmin() && (
                 <View className="bg-slate-800/80 rounded-xl p-4 mb-4 border border-slate-700/50">
@@ -537,6 +630,22 @@ export default function GameDetailScreen() {
                       </View>
                     </View>
                     <ChevronDown size={20} color="#64748b" />
+                  </View>
+                </Pressable>
+              )}
+
+              {/* Delete Game Button */}
+              {isAdmin() && (
+                <Pressable
+                  onPress={handleDeleteGame}
+                  className="bg-red-500/20 rounded-xl p-4 mb-4 border border-red-500/30 active:bg-red-500/30"
+                >
+                  <View className="flex-row items-center">
+                    <Trash2 size={20} color="#ef4444" />
+                    <View className="ml-3">
+                      <Text className="text-red-400 font-semibold">Delete Game</Text>
+                      <Text className="text-slate-400 text-sm">Permanently remove this game</Text>
+                    </View>
                   </View>
                 </Pressable>
               )}
@@ -585,6 +694,169 @@ export default function GameDetailScreen() {
                   )}
                 </Pressable>
               ))}
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Edit Game Modal */}
+      <Modal
+        visible={isEditModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsEditModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsEditModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Edit Game</Text>
+              <Pressable onPress={handleSaveEdit}>
+                <Text className="text-cyan-400 font-semibold">Save</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-6">
+              {/* Opponent */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Opponent</Text>
+                <TextInput
+                  value={editOpponent}
+                  onChangeText={setEditOpponent}
+                  placeholder="e.g., Ice Wolves"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                />
+              </View>
+
+              {/* Date */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Date</Text>
+                <Pressable
+                  onPress={() => setShowEditDatePicker(true)}
+                  className="bg-slate-800 rounded-xl px-4 py-3"
+                >
+                  <Text className="text-white text-lg">
+                    {format(editDate, 'EEEE, MMMM d, yyyy')}
+                  </Text>
+                </Pressable>
+                {showEditDatePicker && (
+                  <DateTimePicker
+                    value={editDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(event, date) => {
+                      setShowEditDatePicker(Platform.OS === 'ios');
+                      if (date) setEditDate(date);
+                    }}
+                    themeVariant="dark"
+                  />
+                )}
+              </View>
+
+              {/* Time */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Time</Text>
+                <Pressable
+                  onPress={() => setShowEditTimePicker(true)}
+                  className="bg-slate-800 rounded-xl px-4 py-3"
+                >
+                  <Text className="text-white text-lg">
+                    {format(editTime, 'h:mm a')}
+                  </Text>
+                </Pressable>
+                {showEditTimePicker && (
+                  <DateTimePicker
+                    value={editTime}
+                    mode="time"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(event, time) => {
+                      setShowEditTimePicker(Platform.OS === 'ios');
+                      if (time) setEditTime(time);
+                    }}
+                    themeVariant="dark"
+                  />
+                )}
+              </View>
+
+              {/* Location */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Location Name</Text>
+                <TextInput
+                  value={editLocation}
+                  onChangeText={setEditLocation}
+                  placeholder="e.g., Glacier Ice Arena"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                />
+              </View>
+
+              {/* Address */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Address</Text>
+                <TextInput
+                  value={editAddress}
+                  onChangeText={setEditAddress}
+                  placeholder="e.g., 1234 Main Street"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                />
+              </View>
+
+              {/* Jersey Color */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Jersey Color</Text>
+                <View className="flex-row flex-wrap">
+                  {teamSettings.jerseyColors.map((color) => (
+                    <Pressable
+                      key={color.name}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setEditJersey(color.name);
+                      }}
+                      className={cn(
+                        'flex-row items-center px-4 py-3 rounded-xl mr-2 mb-2 border',
+                        editJersey === color.name
+                          ? 'bg-cyan-500/20 border-cyan-500/50'
+                          : 'bg-slate-800 border-slate-700'
+                      )}
+                    >
+                      <View
+                        className="w-5 h-5 rounded-full mr-2 border border-white/30"
+                        style={{ backgroundColor: color.color }}
+                      />
+                      <Text
+                        className={cn(
+                          'font-medium',
+                          editJersey === color.name ? 'text-cyan-400' : 'text-slate-400'
+                        )}
+                      >
+                        {color.name}
+                      </Text>
+                      {editJersey === color.name && (
+                        <Check size={16} color="#67e8f9" style={{ marginLeft: 8 }} />
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              {/* Notes */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Notes (Optional)</Text>
+                <TextInput
+                  value={editNotes}
+                  onChangeText={setEditNotes}
+                  placeholder="Any additional info..."
+                  placeholderTextColor="#64748b"
+                  multiline
+                  numberOfLines={3}
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  style={{ minHeight: 80, textAlignVertical: 'top' }}
+                />
+              </View>
             </ScrollView>
           </SafeAreaView>
         </View>

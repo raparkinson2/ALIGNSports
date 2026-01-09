@@ -27,6 +27,59 @@ const getDateLabel = (dateString: string): string => {
   return format(date, 'EEE, MMM d');
 };
 
+// Helper to convert hex codes to readable color names
+const hexToColorName = (hex: string): string => {
+  const colorMap: Record<string, string> = {
+    '#ffffff': 'White',
+    '#000000': 'Black',
+    '#1a1a1a': 'Black',
+    '#ff0000': 'Red',
+    '#00ff00': 'Green',
+    '#0000ff': 'Blue',
+    '#1e40af': 'Blue',
+    '#ffff00': 'Yellow',
+    '#ff6600': 'Orange',
+    '#800080': 'Purple',
+    '#ffc0cb': 'Pink',
+    '#808080': 'Gray',
+    '#a52a2a': 'Brown',
+    '#00ffff': 'Cyan',
+    '#000080': 'Navy',
+    '#008000': 'Green',
+    '#c0c0c0': 'Silver',
+    '#ffd700': 'Gold',
+    '#8b0000': 'Maroon',
+    '#2563eb': 'Blue',
+    '#dc2626': 'Red',
+    '#16a34a': 'Green',
+    '#ca8a04': 'Yellow',
+    '#9333ea': 'Purple',
+    '#ea580c': 'Orange',
+  };
+
+  const lowerHex = hex.toLowerCase();
+  if (colorMap[lowerHex]) return colorMap[lowerHex];
+
+  // If hex starts with #, try to identify the color family
+  if (hex.startsWith('#') && hex.length === 7) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+
+    // Simple color detection
+    if (r > 200 && g > 200 && b > 200) return 'White';
+    if (r < 50 && g < 50 && b < 50) return 'Black';
+    if (r > g && r > b) return r > 150 ? 'Red' : 'Maroon';
+    if (g > r && g > b) return 'Green';
+    if (b > r && b > g) return 'Blue';
+    if (r > 200 && g > 200 && b < 100) return 'Yellow';
+    if (r > 200 && g < 150 && b < 100) return 'Orange';
+    return 'Gray';
+  }
+
+  return hex; // Return as-is if not a recognized format
+};
+
 interface GameCardProps {
   game: Game;
   index: number;
@@ -40,7 +93,9 @@ function GameCard({ game, index, onPress }: GameCardProps) {
 
   // Look up jersey color by name or hex code (handles both cases)
   const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === game.jerseyColor || c.color === game.jerseyColor);
-  const jerseyColorName = jerseyColorInfo?.name || game.jerseyColor;
+  // If found in settings, use the name. Otherwise, try to convert hex to color name
+  const jerseyColorName = jerseyColorInfo?.name || hexToColorName(game.jerseyColor);
+  const jerseyColorHex = jerseyColorInfo?.color || game.jerseyColor;
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 100).springify()}>
@@ -51,7 +106,7 @@ function GameCard({ game, index, onPress }: GameCardProps) {
       >
         <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
           {/* Jersey Color Bar */}
-          <View style={{ backgroundColor: jerseyColorInfo?.color || '#ffffff', height: 4 }} />
+          <View style={{ backgroundColor: jerseyColorHex, height: 4 }} />
 
           <View className="p-4">
             {/* Date Badge & Opponent */}
@@ -76,7 +131,7 @@ function GameCard({ game, index, onPress }: GameCardProps) {
               <View className="flex-1 flex-row items-center">
                 <View
                   className="w-3 h-3 rounded-full mr-2 border border-white/30"
-                  style={{ backgroundColor: jerseyColorInfo?.color || '#ffffff' }}
+                  style={{ backgroundColor: jerseyColorHex }}
                 />
                 <Text className="text-slate-300 text-sm">
                   {jerseyColorName} Jersey
