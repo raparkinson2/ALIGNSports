@@ -236,6 +236,11 @@ interface TeamStore {
   addChatMessage: (message: ChatMessage) => void;
   deleteChatMessage: (messageId: string) => void;
 
+  // Chat read tracking
+  chatLastReadAt: Record<string, string>; // playerId -> ISO timestamp
+  markChatAsRead: (playerId: string) => void;
+  getUnreadChatCount: (playerId: string) => number;
+
   // Payments
   paymentPeriods: PaymentPeriod[];
   addPaymentPeriod: (period: PaymentPeriod) => void;
@@ -443,14 +448,54 @@ export const useTeamStore = create<TeamStore>()(
         ).length;
       },
 
-      // Chat
-      chatMessages: [],
+      // Chat - start with some mock messages
+      chatMessages: [
+        {
+          id: 'chat-1',
+          senderId: '7', // Steve Anderson
+          message: 'Whats up brother?',
+          createdAt: new Date(Date.now() - 3600000).toISOString(),
+        },
+        {
+          id: 'chat-2',
+          senderId: '4', // Jake Miller
+          message: 'We better fucking win.',
+          createdAt: new Date(Date.now() - 2400000).toISOString(),
+        },
+        {
+          id: 'chat-3',
+          senderId: '3', // Chris Brown
+          message: 'Thats dusty.',
+          createdAt: new Date(Date.now() - 1200000).toISOString(),
+        },
+      ],
       addChatMessage: (message) => set((state) => ({
         chatMessages: [...state.chatMessages, message],
       })),
       deleteChatMessage: (messageId) => set((state) => ({
         chatMessages: state.chatMessages.filter((m) => m.id !== messageId),
       })),
+
+      // Chat read tracking
+      chatLastReadAt: {},
+      markChatAsRead: (playerId) => set((state) => ({
+        chatLastReadAt: {
+          ...state.chatLastReadAt,
+          [playerId]: new Date().toISOString(),
+        },
+      })),
+      getUnreadChatCount: (playerId) => {
+        const state = get();
+        const lastReadAt = state.chatLastReadAt[playerId];
+        if (!lastReadAt) {
+          // If never read, count all messages from others
+          return state.chatMessages.filter((m) => m.senderId !== playerId).length;
+        }
+        // Count messages from others after last read time
+        return state.chatMessages.filter(
+          (m) => m.senderId !== playerId && new Date(m.createdAt) > new Date(lastReadAt)
+        ).length;
+      },
 
       // Payments
       paymentPeriods: [],

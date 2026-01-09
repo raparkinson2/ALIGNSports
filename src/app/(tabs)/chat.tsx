@@ -107,18 +107,30 @@ export default function ChatScreen() {
   const players = useTeamStore((s) => s.players);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const teamName = useTeamStore((s) => s.teamName);
+  const markChatAsRead = useTeamStore((s) => s.markChatAsRead);
 
   const [messageText, setMessageText] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
 
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
 
+  // Mark chat as read when entering the screen
   useEffect(() => {
+    if (currentPlayerId) {
+      markChatAsRead(currentPlayerId);
+    }
+  }, [currentPlayerId, markChatAsRead]);
+
+  // Also mark as read when new messages arrive (user is viewing)
+  useEffect(() => {
+    if (currentPlayerId) {
+      markChatAsRead(currentPlayerId);
+    }
     // Scroll to bottom on new messages
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
-  }, [chatMessages.length]);
+  }, [chatMessages.length, currentPlayerId, markChatAsRead]);
 
   const handleSendMessage = () => {
     if (!messageText.trim() || !currentPlayerId) return;

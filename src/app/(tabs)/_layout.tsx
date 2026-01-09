@@ -8,6 +8,7 @@ export default function TabLayout() {
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const players = useTeamStore((s) => s.players) ?? [];
   const notifications = useTeamStore((s) => s.notifications) ?? [];
+  const getUnreadChatCount = useTeamStore((s) => s.getUnreadChatCount);
 
   // Derive admin status from reactive state
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
@@ -17,6 +18,9 @@ export default function TabLayout() {
   const unreadNotificationCount = notifications.filter(
     (n) => n.toPlayerId === currentPlayerId && !n.read
   ).length;
+
+  // Count unread chat messages
+  const unreadChatCount = currentPlayerId ? getUnreadChatCount(currentPlayerId) : 0;
 
   return (
     <Tabs
@@ -82,9 +86,30 @@ export default function TabLayout() {
                 backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
                 borderRadius: 10,
                 padding: 6,
+                position: 'relative',
               }}
             >
               <MessageSquare size={22} color={color} />
+              {unreadChatCount > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    backgroundColor: '#ef4444',
+                    borderRadius: 10,
+                    minWidth: 18,
+                    height: 18,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 4,
+                  }}
+                >
+                  <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
+                    {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                  </Text>
+                </View>
+              )}
             </View>
           ),
         }}
