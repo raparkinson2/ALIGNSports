@@ -96,11 +96,11 @@ export default function GameDetailScreen() {
     );
   }
 
-  const checkedInCount = game.checkedInPlayers.length;
-  const invitedPlayers = players.filter((p) => game.invitedPlayers.includes(p.id));
+  const checkedInCount = game.checkedInPlayers?.length ?? 0;
+  const invitedPlayers = players.filter((p) => game.invitedPlayers?.includes(p.id));
 
   const handleToggleCheckIn = (playerId: string) => {
-    if (game.checkedInPlayers.includes(playerId)) {
+    if (game.checkedInPlayers?.includes(playerId)) {
       checkOutFromGame(game.id, playerId);
     } else {
       checkInToGame(game.id, playerId);
@@ -318,7 +318,7 @@ export default function GameDetailScreen() {
                 <PlayerRow
                   key={player.id}
                   player={player}
-                  isCheckedIn={game.checkedInPlayers.includes(player.id)}
+                  isCheckedIn={game.checkedInPlayers?.includes(player.id) ?? false}
                   onToggleCheckIn={() => handleToggleCheckIn(player.id)}
                   index={index}
                 />

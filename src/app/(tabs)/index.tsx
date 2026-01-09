@@ -35,8 +35,8 @@ interface GameCardProps {
 
 function GameCard({ game, index, onPress }: GameCardProps) {
   const teamSettings = useTeamStore((s) => s.teamSettings);
-  const checkedInCount = game.checkedInPlayers.length;
-  const invitedCount = game.invitedPlayers.length;
+  const checkedInCount = game.checkedInPlayers?.length ?? 0;
+  const invitedCount = game.invitedPlayers?.length ?? 0;
 
   const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === game.jerseyColor);
 
