@@ -1,5 +1,5 @@
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -34,8 +34,12 @@ function AuthNavigator() {
   const router = useRouter();
   const segments = useSegments();
   const isLoggedIn = useTeamStore((s) => s.isLoggedIn);
+  const rootNavigationState = useRootNavigationState();
 
   useEffect(() => {
+    // Wait until the navigation is ready before navigating
+    if (!rootNavigationState?.key) return;
+
     const inAuthGroup = segments[0] === 'login';
 
     if (!isLoggedIn && !inAuthGroup) {
@@ -43,7 +47,7 @@ function AuthNavigator() {
     } else if (isLoggedIn && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [isLoggedIn, segments]);
+  }, [isLoggedIn, segments, rootNavigationState?.key]);
 
   return (
     <Stack>
