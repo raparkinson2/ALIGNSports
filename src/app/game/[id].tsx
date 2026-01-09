@@ -91,13 +91,19 @@ interface PlayerRowProps {
   isCheckedIn: boolean;
   onToggleCheckIn: () => void;
   index: number;
+  canToggle: boolean; // Whether the current user can toggle this player's check-in
+  isSelf: boolean; // Whether this is the current user's row
 }
 
-function PlayerRow({ player, isCheckedIn, onToggleCheckIn, index }: PlayerRowProps) {
+function PlayerRow({ player, isCheckedIn, onToggleCheckIn, index, canToggle, isSelf }: PlayerRowProps) {
   const sport = useTeamStore((s) => s.teamSettings.sport);
   const positionName = SPORT_POSITION_NAMES[sport][player.position] || player.position;
 
   const handlePress = () => {
+    if (!canToggle) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onToggleCheckIn();
   };
@@ -106,9 +112,11 @@ function PlayerRow({ player, isCheckedIn, onToggleCheckIn, index }: PlayerRowPro
     <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
       <Pressable
         onPress={handlePress}
+        disabled={!canToggle}
         className={cn(
           'flex-row items-center p-3 rounded-xl mb-2',
-          isCheckedIn ? 'bg-green-500/20' : 'bg-slate-800/60'
+          isCheckedIn ? 'bg-green-500/20' : 'bg-slate-800/60',
+          !canToggle && 'opacity-60'
         )}
       >
         <View className="relative">
@@ -122,6 +130,11 @@ function PlayerRow({ player, isCheckedIn, onToggleCheckIn, index }: PlayerRowPro
               <CheckCircle2 size={14} color="white" />
             </View>
           )}
+          {isSelf && (
+            <View className="absolute -top-1 -right-1 bg-cyan-500 rounded-full px-1.5 py-0.5">
+              <Text className="text-white text-[8px] font-bold">YOU</Text>
+            </View>
+          )}
         </View>
 
         <View className="flex-1 ml-3">
@@ -132,7 +145,7 @@ function PlayerRow({ player, isCheckedIn, onToggleCheckIn, index }: PlayerRowPro
         {isCheckedIn ? (
           <CheckCircle2 size={24} color="#22c55e" />
         ) : (
-          <Circle size={24} color="#475569" />
+          <Circle size={24} color={canToggle ? '#475569' : '#334155'} />
         )}
       </Pressable>
     </Animated.View>
@@ -578,15 +591,23 @@ export default function GameDetailScreen() {
             </View>
 
             <View className="bg-slate-800/50 rounded-2xl p-3 border border-slate-700/50">
-              {invitedPlayers.map((player, index) => (
-                <PlayerRow
-                  key={player.id}
-                  player={player}
-                  isCheckedIn={game.checkedInPlayers?.includes(player.id) ?? false}
-                  onToggleCheckIn={() => handleToggleCheckIn(player.id)}
-                  index={index}
-                />
-              ))}
+              {invitedPlayers.map((player, index) => {
+                const isSelf = player.id === currentPlayerId;
+                // Admins and captains can toggle anyone, regular players can only toggle themselves
+                const canToggle = canManageTeam() || isSelf;
+
+                return (
+                  <PlayerRow
+                    key={player.id}
+                    player={player}
+                    isCheckedIn={game.checkedInPlayers?.includes(player.id) ?? false}
+                    onToggleCheckIn={() => handleToggleCheckIn(player.id)}
+                    index={index}
+                    canToggle={canToggle}
+                    isSelf={isSelf}
+                  />
+                );
+              })}
               {invitedPlayers.length === 0 && (
                 <Text className="text-slate-400 text-center py-4">
                   No players invited yet
