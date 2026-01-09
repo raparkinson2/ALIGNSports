@@ -23,7 +23,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: '#67e8f9',
         tabBarInactiveTintColor: '#64748b',
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600',
         },
       }}
@@ -80,6 +80,23 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="photos"
+        options={{
+          title: 'Photos',
+          tabBarIcon: ({ color, focused }) => (
+            <View
+              style={{
+                backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
+                borderRadius: 10,
+                padding: 6,
+              }}
+            >
+              <ImageIcon size={22} color={color} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="payments"
         options={{
           title: 'Payments',
@@ -129,23 +146,6 @@ export default function TabLayout() {
               }}
             >
               <MoreHorizontal size={22} color={color} />
-            </View>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="photos"
-        options={{
-          title: 'Photos',
-          tabBarIcon: ({ color, focused }) => (
-            <View
-              style={{
-                backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
-                borderRadius: 10,
-                padding: 6,
-              }}
-            >
-              <ImageIcon size={22} color={color} />
             </View>
           ),
         }}
