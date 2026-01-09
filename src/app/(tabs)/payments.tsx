@@ -636,100 +636,30 @@ export default function PaymentsScreen() {
         visible={!!selectedPeriodId}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setSelectedPeriodId(null)}
+        onRequestClose={() => {
+          if (selectedPlayerId) {
+            setSelectedPlayerId(null);
+          } else {
+            setSelectedPeriodId(null);
+          }
+        }}
       >
         <View className="flex-1 bg-slate-900">
           <SafeAreaView className="flex-1">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setSelectedPeriodId(null)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">
-                {selectedPeriod?.title || 'Payment Period'}
-              </Text>
-              {isAdmin() && selectedPeriod && (
-                <Pressable
-                  onPress={() => {
-                    Alert.alert('Delete Period', 'Are you sure?', [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Delete',
-                        style: 'destructive',
-                        onPress: () => {
-                          removePaymentPeriod(selectedPeriod.id);
-                          setSelectedPeriodId(null);
-                        },
-                      },
-                    ]);
-                  }}
-                >
-                  <Trash2 size={20} color="#ef4444" />
-                </Pressable>
-              )}
-            </View>
-
-            {selectedPeriod && (
-              <ScrollView className="flex-1 px-5 pt-6">
-                <View className="bg-green-500/20 rounded-xl p-4 mb-6">
-                  <Text className="text-green-400 text-2xl font-bold">
-                    ${selectedPeriod.amount}
-                  </Text>
-                  <Text className="text-green-300 text-sm">per player</Text>
+            {/* Show Player Detail View OR Period List */}
+            {selectedPlayerId && selectedPlayer && selectedPeriod ? (
+              <>
+                {/* Player Detail Header */}
+                <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+                  <Pressable onPress={() => setSelectedPlayerId(null)} className="flex-row items-center">
+                    <ChevronLeft size={24} color="#64748b" />
+                    <Text className="text-slate-400 ml-1">Back</Text>
+                  </Pressable>
+                  <Text className="text-white text-lg font-semibold">Payment Details</Text>
+                  <View style={{ width: 60 }} />
                 </View>
 
-                <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-                  Tap a player to view/add payments
-                </Text>
-
-                {selectedPeriod.playerPayments.map((pp) => {
-                  const player = players.find((p) => p.id === pp.playerId);
-                  if (!player) return null;
-
-                  // Only show players the current user can view
-                  if (!canViewPlayerDetails(pp.playerId)) return null;
-
-                  return (
-                    <PlayerPaymentRow
-                      key={pp.playerId}
-                      player={player}
-                      status={pp.status}
-                      paidAmount={pp.amount}
-                      totalAmount={selectedPeriod.amount}
-                      onPress={() => {
-                        setSelectedPlayerId(pp.playerId);
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      }}
-                    />
-                  );
-                })}
-              </ScrollView>
-            )}
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      {/* Player Payment Detail Modal */}
-      <Modal
-        visible={!!selectedPlayerId && !!selectedPeriod}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setSelectedPlayerId(null)}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
-            {/* Header */}
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setSelectedPlayerId(null)} className="flex-row items-center">
-                <ChevronLeft size={24} color="#64748b" />
-                <Text className="text-slate-400 ml-1">Back</Text>
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Payment Details</Text>
-              <View style={{ width: 60 }} />
-            </View>
-
-            <ScrollView className="flex-1 px-5 pt-6">
-              {selectedPlayer && selectedPeriod && (
-                <>
+                <ScrollView className="flex-1 px-5 pt-6">
                   {/* Player Info */}
                   <View className="items-center mb-6">
                     <Image
@@ -880,9 +810,77 @@ export default function PaymentsScreen() {
                         ))
                     )}
                   </View>
-                </>
-              )}
-            </ScrollView>
+                </ScrollView>
+              </>
+            ) : (
+              <>
+                {/* Period Detail Header */}
+                <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+                  <Pressable onPress={() => setSelectedPeriodId(null)}>
+                    <X size={24} color="#64748b" />
+                  </Pressable>
+                  <Text className="text-white text-lg font-semibold">
+                    {selectedPeriod?.title || 'Payment Period'}
+                  </Text>
+                  {isAdmin() && selectedPeriod && (
+                    <Pressable
+                      onPress={() => {
+                        Alert.alert('Delete Period', 'Are you sure?', [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Delete',
+                            style: 'destructive',
+                            onPress: () => {
+                              removePaymentPeriod(selectedPeriod.id);
+                              setSelectedPeriodId(null);
+                            },
+                          },
+                        ]);
+                      }}
+                    >
+                      <Trash2 size={20} color="#ef4444" />
+                    </Pressable>
+                  )}
+                </View>
+
+                {selectedPeriod && (
+                  <ScrollView className="flex-1 px-5 pt-6">
+                    <View className="bg-green-500/20 rounded-xl p-4 mb-6">
+                      <Text className="text-green-400 text-2xl font-bold">
+                        ${selectedPeriod.amount}
+                      </Text>
+                      <Text className="text-green-300 text-sm">per player</Text>
+                    </View>
+
+                    <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                      Tap a player to view/add payments
+                    </Text>
+
+                    {selectedPeriod.playerPayments.map((pp) => {
+                      const player = players.find((p) => p.id === pp.playerId);
+                      if (!player) return null;
+
+                      // Only show players the current user can view
+                      if (!canViewPlayerDetails(pp.playerId)) return null;
+
+                      return (
+                        <PlayerPaymentRow
+                          key={pp.playerId}
+                          player={player}
+                          status={pp.status}
+                          paidAmount={pp.amount}
+                          totalAmount={selectedPeriod.amount}
+                          onPress={() => {
+                            setSelectedPlayerId(pp.playerId);
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          }}
+                        />
+                      );
+                    })}
+                  </ScrollView>
+                )}
+              </>
+            )}
           </SafeAreaView>
         </View>
       </Modal>
