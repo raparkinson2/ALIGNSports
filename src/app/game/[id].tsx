@@ -113,7 +113,13 @@ export default function GameDetailScreen() {
 
   const checkedInCount = game.checkedInPlayers?.length ?? 0;
   const invitedPlayers = players.filter((p) => game.invitedPlayers?.includes(p.id));
+  const activePlayers = players.filter((p) => p.status === 'active');
   const beerDutyPlayer = game.beerDutyPlayerId ? players.find((p) => p.id === game.beerDutyPlayerId) : null;
+
+  // Get jersey color info - handle both color name and hex code
+  const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === game.jerseyColor || c.color === game.jerseyColor);
+  const jerseyColorName = jerseyColorInfo?.name || game.jerseyColor;
+  const jerseyColorHex = jerseyColorInfo?.color || game.jerseyColor;
 
   const handleToggleCheckIn = (playerId: string) => {
     if (game.checkedInPlayers?.includes(playerId)) {
@@ -225,9 +231,6 @@ export default function GameDetailScreen() {
     setIsBeerDutyModalVisible(false);
   };
 
-  // Get jersey color info
-  const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === game.jerseyColor);
-
   return (
     <View className="flex-1 bg-slate-900">
       <LinearGradient
@@ -270,7 +273,7 @@ export default function GameDetailScreen() {
             className="mx-4 mb-4"
           >
             <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
-              <View style={{ backgroundColor: jerseyColorInfo?.color || '#ffffff', height: 6 }} />
+              <View style={{ backgroundColor: jerseyColorHex, height: 6 }} />
               <View className="p-5">
                 <Text className="text-white text-2xl font-bold mb-1">
                   vs {game.opponent}
@@ -289,10 +292,10 @@ export default function GameDetailScreen() {
                       <Shirt size={16} color="#67e8f9" />
                       <View
                         className="w-4 h-4 rounded-full ml-2 mr-2 border border-white/30"
-                        style={{ backgroundColor: jerseyColorInfo?.color || '#ffffff' }}
+                        style={{ backgroundColor: jerseyColorHex }}
                       />
                       <Text className="text-white font-medium">
-                        {game.jerseyColor}
+                        {jerseyColorName}
                       </Text>
                     </View>
                   </View>
@@ -560,7 +563,7 @@ export default function GameDetailScreen() {
             </View>
 
             <ScrollView className="flex-1 px-5 pt-4">
-              {invitedPlayers.map((player) => (
+              {activePlayers.map((player) => (
                 <Pressable
                   key={player.id}
                   onPress={() => handleSelectBeerDutyPlayer(player.id)}
