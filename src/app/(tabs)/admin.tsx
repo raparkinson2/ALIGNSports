@@ -16,10 +16,13 @@ import {
   UserCog,
   Mail,
   Phone,
+  ImageIcon,
+  Camera,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import Svg, { Path, Circle as SvgCircle, Line, Rect, Ellipse } from 'react-native-svg';
 import {
   useTeamStore,
@@ -313,6 +316,40 @@ export default function AdminScreen() {
     setIsSettingsModalVisible(false);
   };
 
+  const handlePickLogo = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setTeamSettings({ teamLogo: result.assets[0].uri });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    Alert.alert(
+      'Remove Team Logo',
+      'Are you sure you want to remove the team logo?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            setTeamSettings({ teamLogo: undefined });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
+        },
+      ]
+    );
+  };
+
   const COLOR_PRESETS = [
     '#ffffff', '#1a1a1a', '#1e40af', '#dc2626', '#16a34a',
     '#7c3aed', '#ea580c', '#ca8a04', '#0891b2', '#db2777',
@@ -369,6 +406,48 @@ export default function AdminScreen() {
                   </View>
                 </View>
                 <ChevronRight size={20} color="#64748b" />
+              </View>
+            </Pressable>
+
+            {/* Team Logo */}
+            <Pressable
+              onPress={handlePickLogo}
+              className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <View className="bg-amber-500/20 p-2 rounded-full">
+                    <ImageIcon size={20} color="#f59e0b" />
+                  </View>
+                  <View className="ml-3">
+                    <Text className="text-white font-semibold">Team Logo</Text>
+                    <Text className="text-slate-400 text-sm">
+                      {teamSettings.teamLogo ? 'Tap to change' : 'Tap to add logo'}
+                    </Text>
+                  </View>
+                </View>
+                <View className="flex-row items-center">
+                  {teamSettings.teamLogo ? (
+                    <>
+                      <Image
+                        source={{ uri: teamSettings.teamLogo }}
+                        style={{ width: 40, height: 40, borderRadius: 20, marginRight: 8 }}
+                        contentFit="cover"
+                      />
+                      <Pressable
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleRemoveLogo();
+                        }}
+                        className="p-2"
+                      >
+                        <Trash2 size={18} color="#ef4444" />
+                      </Pressable>
+                    </>
+                  ) : (
+                    <Plus size={20} color="#64748b" />
+                  )}
+                </View>
               </View>
             </Pressable>
 

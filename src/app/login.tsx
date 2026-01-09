@@ -6,7 +6,7 @@ import { User, ChevronRight } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { useTeamStore, Player } from '@/lib/store';
+import { useTeamStore, Player, SPORT_NAMES } from '@/lib/store';
 
 interface PlayerLoginCardProps {
   player: Player;
@@ -60,8 +60,20 @@ export default function LoginScreen() {
   const router = useRouter();
   const players = useTeamStore((s) => s.players);
   const teamName = useTeamStore((s) => s.teamName);
+  const teamSettings = useTeamStore((s) => s.teamSettings);
   const setCurrentPlayerId = useTeamStore((s) => s.setCurrentPlayerId);
   const setIsLoggedIn = useTeamStore((s) => s.setIsLoggedIn);
+
+  const teamLogo = teamSettings?.teamLogo;
+  const sport = teamSettings?.sport ?? 'hockey';
+
+  // Sport emoji fallbacks
+  const sportEmojis: Record<string, string> = {
+    hockey: '🏒',
+    baseball: '⚾',
+    basketball: '🏀',
+    soccer: '⚽',
+  };
 
   const handleSelectPlayer = (playerId: string) => {
     setCurrentPlayerId(playerId);
@@ -83,10 +95,18 @@ export default function LoginScreen() {
           entering={FadeInUp.delay(50).springify()}
           className="items-center pt-8 pb-6"
         >
-          <View className="w-20 h-20 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
-            <Text className="text-4xl">🏒</Text>
-          </View>
-          <Text className="text-cyan-400 text-sm font-medium uppercase tracking-wider mb-1">
+          {teamLogo ? (
+            <Image
+              source={{ uri: teamLogo }}
+              style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: 'rgba(103, 232, 249, 0.5)' }}
+              contentFit="cover"
+            />
+          ) : (
+            <View className="w-20 h-20 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
+              <Text className="text-4xl">{sportEmojis[sport]}</Text>
+            </View>
+          )}
+          <Text className="text-cyan-400 text-sm font-medium uppercase tracking-wider mb-1 mt-4">
             Welcome to
           </Text>
           <Text className="text-white text-3xl font-bold">{teamName}</Text>

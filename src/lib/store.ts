@@ -170,6 +170,7 @@ export interface TeamSettings {
   sport: Sport;
   jerseyColors: { name: string; color: string }[];
   paymentMethods: PaymentMethod[];
+  teamLogo?: string;
 }
 
 interface TeamStore {
