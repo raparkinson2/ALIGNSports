@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Alert, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert, Platform, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -11,12 +11,17 @@ import {
   Users,
   MessageSquare,
   Bell,
+  X,
+  Camera,
+  Pencil,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
-import { useTeamStore } from '@/lib/store';
+import * as ImagePicker from 'expo-image-picker';
+import { useState } from 'react';
+import { useTeamStore, Player } from '@/lib/store';
 
 interface MenuItemProps {
   icon: React.ReactNode;
@@ -58,6 +63,153 @@ function MenuItem({ icon, title, subtitle, onPress, index, variant = 'default' }
   );
 }
 
+interface EditProfileModalProps {
+  visible: boolean;
+  onClose: () => void;
+  player: Player;
+  onSave: (updates: Partial<Player>) => void;
+}
+
+function EditProfileModal({ visible, onClose, player, onSave }: EditProfileModalProps) {
+  const [avatar, setAvatar] = useState(player.avatar || '');
+  const [number, setNumber] = useState(player.number);
+  const [phone, setPhone] = useState(player.phone || '');
+  const [email, setEmail] = useState(player.email || '');
+
+  const handlePickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setAvatar(result.assets[0].uri);
+    }
+  };
+
+  const handleSave = () => {
+    if (!number.trim()) {
+      Alert.alert('Error', 'Jersey number is required');
+      return;
+    }
+    onSave({
+      avatar: avatar || undefined,
+      number: number.trim(),
+      phone: phone.trim() || undefined,
+      email: email.trim() || undefined,
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onClose();
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1"
+      >
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
+            {/* Header */}
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Text className="text-white text-lg font-bold">Edit Profile</Text>
+              <Pressable
+                onPress={onClose}
+                className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center"
+              >
+                <X size={18} color="#94a3b8" />
+              </Pressable>
+            </View>
+
+            <ScrollView className="px-5 py-4" showsVerticalScrollIndicator={false}>
+              {/* Avatar */}
+              <View className="items-center mb-6">
+                <Pressable onPress={handlePickImage} className="relative">
+                  {avatar ? (
+                    <Image
+                      source={{ uri: avatar }}
+                      style={{ width: 100, height: 100, borderRadius: 50 }}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <View className="w-24 h-24 rounded-full bg-slate-700 items-center justify-center">
+                      <User size={40} color="#94a3b8" />
+                    </View>
+                  )}
+                  <View className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-cyan-500 items-center justify-center">
+                    <Camera size={16} color="white" />
+                  </View>
+                </Pressable>
+                <Text className="text-slate-400 text-sm mt-2">Tap to change photo</Text>
+              </View>
+
+              {/* Player Name (read-only display) */}
+              <View className="mb-4">
+                <Text className="text-slate-400 text-sm mb-2">Name</Text>
+                <View className="bg-slate-800/50 rounded-xl px-4 py-3">
+                  <Text className="text-slate-300 text-base">{player.name}</Text>
+                </View>
+                <Text className="text-slate-500 text-xs mt-1">Contact an admin to change your name</Text>
+              </View>
+
+              {/* Jersey Number */}
+              <View className="mb-4">
+                <Text className="text-slate-400 text-sm mb-2">Jersey Number</Text>
+                <TextInput
+                  value={number}
+                  onChangeText={setNumber}
+                  placeholder="Enter jersey number"
+                  placeholderTextColor="#64748b"
+                  keyboardType="number-pad"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-base"
+                  maxLength={3}
+                />
+              </View>
+
+              {/* Phone */}
+              <View className="mb-4">
+                <Text className="text-slate-400 text-sm mb-2">Phone Number</Text>
+                <TextInput
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="Enter phone number"
+                  placeholderTextColor="#64748b"
+                  keyboardType="phone-pad"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-base"
+                />
+              </View>
+
+              {/* Email */}
+              <View className="mb-6">
+                <Text className="text-slate-400 text-sm mb-2">Email</Text>
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Enter email address"
+                  placeholderTextColor="#64748b"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-base"
+                />
+              </View>
+
+              {/* Save Button */}
+              <Pressable
+                onPress={handleSave}
+                className="bg-cyan-500 rounded-xl py-4 items-center mb-8 active:bg-cyan-600"
+              >
+                <Text className="text-white font-semibold text-base">Save Changes</Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
 export default function MoreScreen() {
   const router = useRouter();
   const players = useTeamStore((s) => s.players);
@@ -66,8 +218,29 @@ export default function MoreScreen() {
   const logout = useTeamStore((s) => s.logout);
   const games = useTeamStore((s) => s.games);
   const notifications = useTeamStore((s) => s.notifications);
+  const updatePlayer = useTeamStore((s) => s.updatePlayer);
 
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
+  const canManageTeam = currentPlayer?.roles?.includes('admin') || currentPlayer?.roles?.includes('captain');
+
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [playerToEdit, setPlayerToEdit] = useState<Player | null>(null);
+
+  const handleEditProfile = (player: Player) => {
+    // Can edit own profile, or any profile if admin/captain
+    const canEdit = player.id === currentPlayerId || canManageTeam;
+    if (canEdit) {
+      setPlayerToEdit(player);
+      setEditModalVisible(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const handleSaveProfile = (updates: Partial<Player>) => {
+    if (playerToEdit) {
+      updatePlayer(playerToEdit.id, updates);
+    }
+  };
   const unreadCount = notifications.filter((n) => n.toPlayerId === currentPlayerId && !n.read).length;
 
   const handleEmailTeam = () => {
@@ -168,30 +341,37 @@ export default function MoreScreen() {
           {currentPlayer && (
             <Animated.View
               entering={FadeInDown.delay(50).springify()}
-              className="bg-slate-800/80 rounded-2xl p-4 mb-6 border border-slate-700/50"
             >
-              <View className="flex-row items-center">
-                <View className="relative">
-                  {currentPlayer.avatar ? (
-                    <Image
-                      source={{ uri: currentPlayer.avatar }}
-                      style={{ width: 60, height: 60, borderRadius: 30 }}
-                      contentFit="cover"
-                    />
-                  ) : (
-                    <View className="w-15 h-15 rounded-full bg-cyan-500/20 items-center justify-center">
-                      <User size={30} color="#67e8f9" />
+              <Pressable
+                onPress={() => handleEditProfile(currentPlayer)}
+                className="bg-slate-800/80 rounded-2xl p-4 mb-6 border border-slate-700/50 active:bg-slate-700/80"
+              >
+                <View className="flex-row items-center">
+                  <View className="relative">
+                    {currentPlayer.avatar ? (
+                      <Image
+                        source={{ uri: currentPlayer.avatar }}
+                        style={{ width: 60, height: 60, borderRadius: 30 }}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <View className="w-15 h-15 rounded-full bg-cyan-500/20 items-center justify-center">
+                        <User size={30} color="#67e8f9" />
+                      </View>
+                    )}
+                    <View className="absolute -bottom-1 -right-1 bg-cyan-500 rounded-full px-2 py-0.5">
+                      <Text className="text-white text-xs font-bold">#{currentPlayer.number}</Text>
                     </View>
-                  )}
-                  <View className="absolute -bottom-1 -right-1 bg-cyan-500 rounded-full px-2 py-0.5">
-                    <Text className="text-white text-xs font-bold">#{currentPlayer.number}</Text>
+                  </View>
+                  <View className="flex-1 ml-4">
+                    <Text className="text-white text-xl font-bold">{currentPlayer.name}</Text>
+                    <Text className="text-cyan-400 text-sm">{currentPlayer.position} · {teamName}</Text>
+                  </View>
+                  <View className="w-8 h-8 rounded-full bg-slate-700 items-center justify-center">
+                    <Pencil size={16} color="#94a3b8" />
                   </View>
                 </View>
-                <View className="flex-1 ml-4">
-                  <Text className="text-white text-xl font-bold">{currentPlayer.name}</Text>
-                  <Text className="text-cyan-400 text-sm">{currentPlayer.position} · {teamName}</Text>
-                </View>
-              </View>
+              </Pressable>
             </Animated.View>
           )}
 
@@ -275,6 +455,19 @@ export default function MoreScreen() {
           />
         </ScrollView>
       </SafeAreaView>
+
+      {/* Edit Profile Modal */}
+      {playerToEdit && (
+        <EditProfileModal
+          visible={editModalVisible}
+          onClose={() => {
+            setEditModalVisible(false);
+            setPlayerToEdit(null);
+          }}
+          player={playerToEdit}
+          onSave={handleSaveProfile}
+        />
+      )}
     </View>
   );
 }
