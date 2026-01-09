@@ -33,6 +33,59 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification } from '@/lib/store';
 import { cn } from '@/lib/cn';
 
+// Helper to convert hex codes to readable color names
+const hexToColorName = (hex: string): string => {
+  const colorMap: Record<string, string> = {
+    '#ffffff': 'White',
+    '#000000': 'Black',
+    '#1a1a1a': 'Black',
+    '#ff0000': 'Red',
+    '#00ff00': 'Green',
+    '#0000ff': 'Blue',
+    '#1e40af': 'Blue',
+    '#ffff00': 'Yellow',
+    '#ff6600': 'Orange',
+    '#800080': 'Purple',
+    '#ffc0cb': 'Pink',
+    '#808080': 'Gray',
+    '#a52a2a': 'Brown',
+    '#00ffff': 'Cyan',
+    '#000080': 'Navy',
+    '#008000': 'Green',
+    '#c0c0c0': 'Silver',
+    '#ffd700': 'Gold',
+    '#8b0000': 'Maroon',
+    '#2563eb': 'Blue',
+    '#dc2626': 'Red',
+    '#16a34a': 'Green',
+    '#ca8a04': 'Yellow',
+    '#9333ea': 'Purple',
+    '#ea580c': 'Orange',
+  };
+
+  const lowerHex = hex.toLowerCase();
+  if (colorMap[lowerHex]) return colorMap[lowerHex];
+
+  // If hex starts with #, try to identify the color family
+  if (hex.startsWith('#') && hex.length === 7) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+
+    // Simple color detection
+    if (r > 200 && g > 200 && b > 200) return 'White';
+    if (r < 50 && g < 50 && b < 50) return 'Black';
+    if (r > g && r > b) return r > 150 ? 'Red' : 'Maroon';
+    if (g > r && g > b) return 'Green';
+    if (b > r && b > g) return 'Blue';
+    if (r > 200 && g > 200 && b < 100) return 'Yellow';
+    if (r > 200 && g < 150 && b < 100) return 'Orange';
+    return 'Gray';
+  }
+
+  return hex; // Return as-is if not a recognized format
+};
+
 interface PlayerRowProps {
   player: Player;
   isCheckedIn: boolean;
@@ -135,7 +188,8 @@ export default function GameDetailScreen() {
 
   // Get jersey color info - handle both color name and hex code
   const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === game.jerseyColor || c.color === game.jerseyColor);
-  const jerseyColorName = jerseyColorInfo?.name || game.jerseyColor;
+  // If found in settings, use the name. Otherwise, try to convert hex to color name
+  const jerseyColorName = jerseyColorInfo?.name || hexToColorName(game.jerseyColor);
   const jerseyColorHex = jerseyColorInfo?.color || game.jerseyColor;
 
   const handleToggleCheckIn = (playerId: string) => {
@@ -162,8 +216,8 @@ export default function GameDetailScreen() {
         type: type === 'invite' ? 'game_invite' : 'game_reminder',
         title: type === 'invite' ? 'Game Invite' : 'Game Reminder',
         message: type === 'invite'
-          ? `You're invited to play vs ${game.opponent} on ${dateStr} at ${game.time}. Wear your ${game.jerseyColor} jersey!`
-          : `Reminder: Game vs ${game.opponent} is coming up on ${dateStr} at ${game.time}. Don't forget your ${game.jerseyColor} jersey!`,
+          ? `You're invited to play vs ${game.opponent} on ${dateStr} at ${game.time}. Wear your ${jerseyColorName} jersey!`
+          : `Reminder: Game vs ${game.opponent} is coming up on ${dateStr} at ${game.time}. Don't forget your ${jerseyColorName} jersey!`,
         gameId: game.id,
         fromPlayerId: currentPlayerId ?? undefined,
         toPlayerId: player.id,
@@ -195,7 +249,7 @@ export default function GameDetailScreen() {
     message += `${dateStr} at ${game.time}\n`;
     message += `${game.location}\n`;
     message += `${game.address}\n\n`;
-    message += `Wear your ${game.jerseyColor} jersey!\n\n`;
+    message += `Wear your ${jerseyColorName} jersey!\n\n`;
     message += `Let me know if you can make it!`;
 
     const smsUrl = Platform.select({
@@ -226,7 +280,7 @@ export default function GameDetailScreen() {
     body += `${dateStr} at ${game.time}\n`;
     body += `${game.location}\n`;
     body += `${game.address}\n\n`;
-    body += `Wear your ${game.jerseyColor} jersey!\n\n`;
+    body += `Wear your ${jerseyColorName} jersey!\n\n`;
     body += `Let me know if you can make it!`;
 
     const mailtoUrl = `mailto:${emails}?subject=${subject}&body=${encodeURIComponent(body)}`;
