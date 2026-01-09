@@ -12,12 +12,13 @@ import {
   Mail,
   MessageSquare,
   Send,
+  Check,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
-import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 
@@ -102,6 +103,8 @@ export default function RosterScreen() {
   const [position, setPosition] = useState(positions[0]);
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [playerRoles, setPlayerRoles] = useState<PlayerRole[]>([]);
+  const [playerStatus, setPlayerStatus] = useState<PlayerStatus>('active');
 
   // Invite modal state
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
@@ -113,6 +116,8 @@ export default function RosterScreen() {
     setPosition(positions[0]);
     setPhone('');
     setEmail('');
+    setPlayerRoles([]);
+    setPlayerStatus('active');
     setEditingPlayer(null);
   };
 
@@ -136,6 +141,8 @@ export default function RosterScreen() {
     setPosition(player.position);
     setPhone(formatPhoneNumber(player.phone));
     setEmail(player.email || '');
+    setPlayerRoles(player.roles || []);
+    setPlayerStatus(player.status || 'active');
     setIsModalVisible(true);
   };
 
@@ -148,13 +155,21 @@ export default function RosterScreen() {
     const rawPhone = unformatPhone(phone);
 
     if (editingPlayer) {
-      updatePlayer(editingPlayer.id, {
+      const updates: Partial<Player> = {
         name: name.trim(),
         number: number.trim(),
         position,
         phone: rawPhone || undefined,
         email: email.trim() || undefined,
-      });
+      };
+
+      // Only admins can change roles and status
+      if (isAdmin()) {
+        updates.roles = playerRoles;
+        updates.status = playerStatus;
+      }
+
+      updatePlayer(editingPlayer.id, updates);
       setIsModalVisible(false);
       resetForm();
     } else {
@@ -432,6 +447,115 @@ export default function RosterScreen() {
                     autoCapitalize="none"
                     className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                   />
+                </View>
+              )}
+
+              {/* Status Selector - Admin Only, Edit Mode Only */}
+              {isAdmin() && editingPlayer && (
+                <View className="mb-5">
+                  <Text className="text-slate-400 text-sm mb-2">Player Status</Text>
+                  <View className="flex-row">
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setPlayerStatus('active');
+                      }}
+                      className={cn(
+                        'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                        playerStatus === 'active' ? 'bg-green-500' : 'bg-slate-800'
+                      )}
+                    >
+                      {playerStatus === 'active' && <Check size={16} color="white" className="mr-2" />}
+                      <Text
+                        className={cn(
+                          'font-semibold ml-1',
+                          playerStatus === 'active' ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Active
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setPlayerStatus('reserve');
+                      }}
+                      className={cn(
+                        'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
+                        playerStatus === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
+                      )}
+                    >
+                      {playerStatus === 'reserve' && <Check size={16} color="white" className="mr-2" />}
+                      <Text
+                        className={cn(
+                          'font-semibold ml-1',
+                          playerStatus === 'reserve' ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Reserve
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+
+              {/* Role Selector - Admin Only, Edit Mode Only */}
+              {isAdmin() && editingPlayer && (
+                <View className="mb-5">
+                  <Text className="text-slate-400 text-sm mb-2">Player Roles</Text>
+                  <View className="flex-row">
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        if (playerRoles.includes('captain')) {
+                          setPlayerRoles(playerRoles.filter((r) => r !== 'captain'));
+                        } else {
+                          setPlayerRoles([...playerRoles, 'captain']);
+                        }
+                      }}
+                      className={cn(
+                        'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                        playerRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
+                      )}
+                    >
+                      <Crown size={16} color={playerRoles.includes('captain') ? 'white' : '#f59e0b'} />
+                      <Text
+                        className={cn(
+                          'font-semibold ml-2',
+                          playerRoles.includes('captain') ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Captain
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        if (playerRoles.includes('admin')) {
+                          setPlayerRoles(playerRoles.filter((r) => r !== 'admin'));
+                        } else {
+                          setPlayerRoles([...playerRoles, 'admin']);
+                        }
+                      }}
+                      className={cn(
+                        'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
+                        playerRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
+                      )}
+                    >
+                      <Shield size={16} color={playerRoles.includes('admin') ? 'white' : '#a78bfa'} />
+                      <Text
+                        className={cn(
+                          'font-semibold ml-2',
+                          playerRoles.includes('admin') ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Admin
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <Text className="text-slate-500 text-xs mt-2">
+                    Tap to toggle roles. Players can have multiple roles.
+                  </Text>
                 </View>
               )}
             </ScrollView>

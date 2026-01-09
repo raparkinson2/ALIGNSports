@@ -57,6 +57,10 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - Captain and Admin badges displayed next to names
 - Add/edit players (Admin/Captain only)
 - **Player Invites**: When creating a new player with phone/email, you can immediately send them a text or email invite to register and join the team
+- **Role & Status Management** (Admin only): When editing a player, admins can:
+  - Set player status: Active or Reserve
+  - Toggle player roles: Captain and/or Admin
+  - Players can have multiple roles simultaneously
 
 ### Chat Tab (NEW)
 - Real-time team chat within the app
