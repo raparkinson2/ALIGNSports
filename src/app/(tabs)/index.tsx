@@ -344,7 +344,7 @@ export default function ScheduleScreen() {
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Date</Text>
                 <Pressable
-                  onPress={() => setShowDatePicker(true)}
+                  onPress={() => setShowDatePicker(!showDatePicker)}
                   className="bg-slate-800 rounded-xl px-4 py-3"
                 >
                   <Text className="text-white text-lg">
@@ -352,17 +352,20 @@ export default function ScheduleScreen() {
                   </Text>
                 </Pressable>
                 {showDatePicker && (
-                  <DateTimePicker
-                    value={gameDate}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(event, date) => {
-                      setShowDatePicker(Platform.OS === 'ios');
-                      if (date) setGameDate(date);
-                    }}
-                    minimumDate={new Date()}
-                    themeVariant="dark"
-                  />
+                  <View className="bg-slate-800 rounded-xl mt-2 overflow-hidden">
+                    <DateTimePicker
+                      value={gameDate}
+                      mode="date"
+                      display="inline"
+                      onChange={(event, date) => {
+                        if (date) setGameDate(date);
+                        if (Platform.OS === 'android') setShowDatePicker(false);
+                      }}
+                      minimumDate={new Date()}
+                      themeVariant="dark"
+                      accentColor="#67e8f9"
+                    />
+                  </View>
                 )}
               </View>
 

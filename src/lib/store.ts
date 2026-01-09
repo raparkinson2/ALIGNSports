@@ -286,7 +286,10 @@ const defaultTeamSettings: TeamSettings = {
     { name: 'White', color: '#ffffff' },
     { name: 'Black', color: '#1a1a1a' },
   ],
-  paymentMethods: [],
+  paymentMethods: [
+    { app: 'venmo', username: 'raparkinson2', displayName: 'Venmo' },
+    { app: 'paypal', username: 'raparkinson2@gmail.com', displayName: 'PayPal' },
+  ],
 };
 
 export const useTeamStore = create<TeamStore>()(
