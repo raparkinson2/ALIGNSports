@@ -218,7 +218,10 @@ export default function MoreScreen() {
             title="Group Message"
             subtitle="Quick text to the team"
             onPress={() => {
-              const phones = '';
+              const phones = players
+                .filter((p) => p.phone)
+                .map((p) => p.phone)
+                .join(',');
               const message = `Hey ${teamName}!\n\n`;
               const smsUrl = Platform.select({
                 ios: `sms:${phones}&body=${encodeURIComponent(message)}`,

@@ -117,6 +117,12 @@ export default function GameDetailScreen() {
     const gameDate = new Date(game.date);
     const dateStr = gameDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
+    // Get phone numbers of invited players
+    const phoneNumbers = invitedPlayers
+      .filter((p) => p.phone)
+      .map((p) => p.phone)
+      .join(',');
+
     let message = `Hey! You're invited to play with ${teamName}!\n\n`;
     message += `Game Details:\n`;
     message += `vs ${game.opponent}\n`;
@@ -127,9 +133,9 @@ export default function GameDetailScreen() {
     message += `Let me know if you can make it!`;
 
     const smsUrl = Platform.select({
-      ios: `sms:&body=${encodeURIComponent(message)}`,
-      android: `sms:?body=${encodeURIComponent(message)}`,
-      default: `sms:?body=${encodeURIComponent(message)}`,
+      ios: `sms:${phoneNumbers}&body=${encodeURIComponent(message)}`,
+      android: `sms:${phoneNumbers}?body=${encodeURIComponent(message)}`,
+      default: `sms:${phoneNumbers}?body=${encodeURIComponent(message)}`,
     });
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -142,6 +148,12 @@ export default function GameDetailScreen() {
     const gameDate = new Date(game.date);
     const dateStr = gameDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
+    // Get emails of invited players
+    const emails = invitedPlayers
+      .filter((p) => p.email)
+      .map((p) => p.email)
+      .join(',');
+
     const subject = encodeURIComponent(`Game Invite - ${teamName} vs ${game.opponent}`);
     let body = `Hey!\n\nYou're invited to play with ${teamName}!\n\n`;
     body += `Game Details:\n`;
@@ -152,7 +164,7 @@ export default function GameDetailScreen() {
     body += `Wear your ${game.jerseyColor} jersey!\n\n`;
     body += `Let me know if you can make it!`;
 
-    const mailtoUrl = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
+    const mailtoUrl = `mailto:${emails}?subject=${subject}&body=${encodeURIComponent(body)}`;
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Linking.openURL(mailtoUrl).catch(() => {
