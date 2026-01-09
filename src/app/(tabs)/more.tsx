@@ -243,27 +243,6 @@ export default function MoreScreen() {
             index={1}
           />
 
-          <MenuItem
-            icon={<MessageSquare size={20} color="#67e8f9" />}
-            title="Group Message"
-            subtitle="Quick text to the team"
-            onPress={() => {
-              const phones = players
-                .filter((p) => p.phone)
-                .map((p) => p.phone)
-                .join(',');
-              const message = `Hey ${teamName}!\n\n`;
-              const smsUrl = Platform.select({
-                ios: `sms:${phones}&body=${encodeURIComponent(message)}`,
-                android: `sms:${phones}?body=${encodeURIComponent(message)}`,
-                default: `sms:${phones}?body=${encodeURIComponent(message)}`,
-              });
-              Linking.openURL(smsUrl).catch(() => {
-                Alert.alert('Error', 'Could not open messaging app');
-              });
-            }}
-            index={2}
-          />
 
           {/* Team Info Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">

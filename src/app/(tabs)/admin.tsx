@@ -389,9 +389,9 @@ export default function AdminScreen() {
                   </View>
                 </View>
                 <View className="flex-row items-center">
-                  {teamSettings.jerseyColors.slice(0, 3).map((c) => (
+                  {teamSettings.jerseyColors.slice(0, 3).map((c, index) => (
                     <View
-                      key={c.name}
+                      key={`preview-${index}`}
                       className="w-6 h-6 rounded-full border-2 border-slate-700 -ml-2"
                       style={{ backgroundColor: c.color }}
                     />
@@ -666,9 +666,9 @@ export default function AdminScreen() {
                 Current Colors
               </Text>
 
-              {teamSettings.jerseyColors.map((color) => (
+              {teamSettings.jerseyColors.map((color, index) => (
                 <View
-                  key={color.name}
+                  key={`color-${index}`}
                   className="flex-row items-center bg-slate-800/80 rounded-xl p-4 mb-2 border border-slate-700/50"
                 >
                   <View

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
-import { Calendar, Users, MessageSquare, DollarSign, MoreHorizontal, Shield } from 'lucide-react-native';
+import { Calendar, Users, MessageSquare, DollarSign, MoreHorizontal, Shield, ImageIcon } from 'lucide-react-native';
 import { useTeamStore } from '@/lib/store';
 
 export default function TabLayout() {
@@ -136,7 +136,18 @@ export default function TabLayout() {
       <Tabs.Screen
         name="photos"
         options={{
-          href: null, // Hide photos tab for now
+          title: 'Photos',
+          tabBarIcon: ({ color, focused }) => (
+            <View
+              style={{
+                backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
+                borderRadius: 10,
+                padding: 6,
+              }}
+            >
+              <ImageIcon size={22} color={color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
