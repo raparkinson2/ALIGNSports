@@ -46,12 +46,12 @@ function PlayerCard({ player, index, onPress }: PlayerCardProps) {
           <View className="flex-1 ml-4">
             <View className="flex-row items-center">
               <Text className="text-white text-lg font-semibold">{player.name}</Text>
-              {player.role === 'captain' && (
+              {player.roles?.includes('captain') && (
                 <View className="ml-2 bg-amber-500/20 rounded-full p-1">
                   <Crown size={14} color="#f59e0b" />
                 </View>
               )}
-              {player.role === 'admin' && (
+              {player.roles?.includes('admin') && (
                 <View className="ml-2 bg-purple-500/20 rounded-full p-1">
                   <Shield size={14} color="#a78bfa" />
                 </View>
@@ -139,7 +139,7 @@ export default function RosterScreen() {
         number: number.trim(),
         position,
         avatar: `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150`,
-        role: 'player',
+        roles: [],
         status: 'active',
       };
       addPlayer(newPlayer);

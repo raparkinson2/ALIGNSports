@@ -55,7 +55,7 @@ export const SPORT_NAMES: Record<Sport, string> = {
 };
 
 // Role Types
-export type PlayerRole = 'admin' | 'captain' | 'player';
+export type PlayerRole = 'admin' | 'captain';
 
 // Player Status
 export type PlayerStatus = 'active' | 'reserve';
@@ -69,8 +69,8 @@ export interface Player {
   number: string;
   position: string;
   avatar?: string;
-  role: PlayerRole;
-  status: PlayerStatus;
+  roles: PlayerRole[]; // Array of roles - can be admin, captain, or both
+  status: PlayerStatus; // active or reserve (this is separate from roles)
 }
 
 export interface Game {
@@ -226,14 +226,14 @@ interface TeamStore {
 
 // Mock data
 const mockPlayers: Player[] = [
-  { id: '1', name: 'Mike Johnson', email: 'mike.johnson@email.com', phone: '555-0101', number: '12', position: 'C', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', role: 'admin', status: 'active' },
-  { id: '2', name: 'Dave Williams', email: 'dave.williams@email.com', phone: '555-0102', number: '7', position: 'LW', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', role: 'captain', status: 'active' },
-  { id: '3', name: 'Chris Brown', email: 'chris.brown@email.com', phone: '555-0103', number: '22', position: 'RW', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', role: 'player', status: 'active' },
-  { id: '4', name: 'Jake Miller', email: 'jake.miller@email.com', phone: '555-0104', number: '4', position: 'LD', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', role: 'player', status: 'active' },
-  { id: '5', name: 'Ryan Davis', email: 'ryan.davis@email.com', phone: '555-0105', number: '8', position: 'RD', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', role: 'player', status: 'active' },
-  { id: '6', name: 'Tom Wilson', email: 'tom.wilson@email.com', phone: '555-0106', number: '31', position: 'G', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150', role: 'player', status: 'active' },
-  { id: '7', name: 'Steve Anderson', email: 'steve.anderson@email.com', phone: '555-0107', number: '15', position: 'C', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150', role: 'player', status: 'reserve' },
-  { id: '8', name: 'Kevin Martinez', email: 'kevin.martinez@email.com', phone: '555-0108', number: '19', position: 'LW', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150', role: 'player', status: 'reserve' },
+  { id: '1', name: 'Mike Johnson', email: 'mike.johnson@email.com', phone: '555-0101', number: '12', position: 'C', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', roles: ['admin', 'captain'], status: 'active' },
+  { id: '2', name: 'Dave Williams', email: 'dave.williams@email.com', phone: '555-0102', number: '7', position: 'LW', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', roles: ['captain'], status: 'active' },
+  { id: '3', name: 'Chris Brown', email: 'chris.brown@email.com', phone: '555-0103', number: '22', position: 'RW', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', roles: [], status: 'active' },
+  { id: '4', name: 'Jake Miller', email: 'jake.miller@email.com', phone: '555-0104', number: '4', position: 'LD', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', roles: [], status: 'active' },
+  { id: '5', name: 'Ryan Davis', email: 'ryan.davis@email.com', phone: '555-0105', number: '8', position: 'RD', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', roles: [], status: 'active' },
+  { id: '6', name: 'Tom Wilson', email: 'tom.wilson@email.com', phone: '555-0106', number: '31', position: 'G', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150', roles: [], status: 'active' },
+  { id: '7', name: 'Steve Anderson', email: 'steve.anderson@email.com', phone: '555-0107', number: '15', position: 'C', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150', roles: [], status: 'reserve' },
+  { id: '8', name: 'Kevin Martinez', email: 'kevin.martinez@email.com', phone: '555-0108', number: '19', position: 'LW', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150', roles: [], status: 'reserve' },
 ];
 
 const mockGames: Game[] = [
@@ -437,25 +437,25 @@ export const useTeamStore = create<TeamStore>()(
       canManageTeam: () => {
         const state = get();
         const currentPlayer = state.players.find((p) => p.id === state.currentPlayerId);
-        return currentPlayer?.role === 'admin' || currentPlayer?.role === 'captain';
+        return currentPlayer?.roles?.includes('admin') || currentPlayer?.roles?.includes('captain') || false;
       },
       isAdmin: () => {
         const state = get();
         const currentPlayer = state.players.find((p) => p.id === state.currentPlayerId);
-        return currentPlayer?.role === 'admin';
+        return currentPlayer?.roles?.includes('admin') || false;
       },
     }),
     {
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 2, // Increment to force migration
+      version: 3, // Increment to force migration for roles array
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Partial<TeamStore>;
-        // Force update players to have correct roles
-        if (version < 2) {
+        // Force update players to have correct roles array
+        if (version < 3) {
           return {
             ...state,
-            players: mockPlayers, // Reset to mock data with correct roles
+            players: mockPlayers, // Reset to mock data with correct roles array
           };
         }
         return state as TeamStore;

@@ -39,6 +39,8 @@ interface PlayerManageCardProps {
 }
 
 function PlayerManageCard({ player, index, onPress, isCurrentUser }: PlayerManageCardProps) {
+  const roles = player.roles ?? [];
+
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
       <Pressable
@@ -60,14 +62,14 @@ function PlayerManageCard({ player, index, onPress, isCurrentUser }: PlayerManag
                 </View>
               )}
             </View>
-            <View className="flex-row items-center mt-1">
-              {player.role === 'admin' && (
+            <View className="flex-row items-center mt-1 flex-wrap">
+              {roles.includes('admin') && (
                 <View className="flex-row items-center bg-purple-500/20 rounded-full px-2 py-0.5 mr-2">
                   <Shield size={10} color="#a78bfa" />
                   <Text className="text-purple-400 text-xs ml-1">Admin</Text>
                 </View>
               )}
-              {player.role === 'captain' && (
+              {roles.includes('captain') && (
                 <View className="flex-row items-center bg-amber-500/20 rounded-full px-2 py-0.5 mr-2">
                   <Crown size={10} color="#f59e0b" />
                   <Text className="text-amber-400 text-xs ml-1">Captain</Text>
@@ -134,11 +136,23 @@ export default function AdminScreen() {
     setIsPlayerModalVisible(true);
   };
 
-  const handleUpdateRole = (role: PlayerRole) => {
+  const handleToggleRole = (role: PlayerRole) => {
     if (!selectedPlayer) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updatePlayer(selectedPlayer.id, { role });
-    setSelectedPlayer({ ...selectedPlayer, role });
+
+    const currentRoles = selectedPlayer.roles ?? [];
+    let newRoles: PlayerRole[];
+
+    if (currentRoles.includes(role)) {
+      // Remove the role
+      newRoles = currentRoles.filter((r) => r !== role);
+    } else {
+      // Add the role
+      newRoles = [...currentRoles, role];
+    }
+
+    updatePlayer(selectedPlayer.id, { roles: newRoles });
+    setSelectedPlayer({ ...selectedPlayer, roles: newRoles });
   };
 
   const handleUpdateStatus = (status: PlayerStatus) => {
@@ -192,6 +206,8 @@ export default function AdminScreen() {
     '#ffffff', '#1a1a1a', '#1e40af', '#dc2626', '#16a34a',
     '#7c3aed', '#ea580c', '#ca8a04', '#0891b2', '#db2777',
   ];
+
+  const selectedRoles = selectedPlayer?.roles ?? [];
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -262,7 +278,7 @@ export default function AdminScreen() {
                   </View>
                 </View>
                 <View className="flex-row items-center">
-                  {teamSettings.jerseyColors.slice(0, 3).map((c, i) => (
+                  {teamSettings.jerseyColors.slice(0, 3).map((c) => (
                     <View
                       key={c.name}
                       className="w-6 h-6 rounded-full border-2 border-slate-700 -ml-2"
@@ -383,47 +399,60 @@ export default function AdminScreen() {
                   </View>
                 </View>
 
-                {/* Role Selection */}
+                {/* Role Selection - Multi-select */}
                 <View className="mb-4">
-                  <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-                    Role
+                  <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                    Roles
+                  </Text>
+                  <Text className="text-slate-500 text-xs mb-3">
+                    Tap to toggle roles. Players can have multiple roles.
                   </Text>
                   <View className="flex-row">
-                    {(['player', 'captain', 'admin'] as PlayerRole[]).map((role) => (
-                      <Pressable
-                        key={role}
-                        onPress={() => handleUpdateRole(role)}
-                        className={cn(
-                          'flex-1 py-3 rounded-xl mr-2 items-center border',
-                          selectedPlayer.role === role
-                            ? role === 'admin'
-                              ? 'bg-purple-500/20 border-purple-500/50'
-                              : role === 'captain'
-                              ? 'bg-amber-500/20 border-amber-500/50'
-                              : 'bg-cyan-500/20 border-cyan-500/50'
-                            : 'bg-slate-800 border-slate-700'
-                        )}
-                      >
-                        {role === 'admin' && <Shield size={16} color={selectedPlayer.role === role ? '#a78bfa' : '#64748b'} />}
-                        {role === 'captain' && <Crown size={16} color={selectedPlayer.role === role ? '#f59e0b' : '#64748b'} />}
-                        {role === 'player' && <Users size={16} color={selectedPlayer.role === role ? '#67e8f9' : '#64748b'} />}
-                        <Text
+                    {(['admin', 'captain'] as PlayerRole[]).map((role) => {
+                      const isSelected = selectedRoles.includes(role);
+                      return (
+                        <Pressable
+                          key={role}
+                          onPress={() => handleToggleRole(role)}
                           className={cn(
-                            'mt-1 font-medium capitalize',
-                            selectedPlayer.role === role
+                            'flex-1 py-3 rounded-xl mr-2 items-center border',
+                            isSelected
                               ? role === 'admin'
-                                ? 'text-purple-400'
-                                : role === 'captain'
-                                ? 'text-amber-400'
-                                : 'text-cyan-400'
-                              : 'text-slate-400'
+                                ? 'bg-purple-500/20 border-purple-500/50'
+                                : 'bg-amber-500/20 border-amber-500/50'
+                              : 'bg-slate-800 border-slate-700'
                           )}
                         >
-                          {role}
-                        </Text>
-                      </Pressable>
-                    ))}
+                          <View className="flex-row items-center">
+                            {role === 'admin' && <Shield size={16} color={isSelected ? '#a78bfa' : '#64748b'} />}
+                            {role === 'captain' && <Crown size={16} color={isSelected ? '#f59e0b' : '#64748b'} />}
+                            {isSelected && (
+                              <View className="ml-2">
+                                <Check size={14} color={role === 'admin' ? '#a78bfa' : '#f59e0b'} />
+                              </View>
+                            )}
+                          </View>
+                          <Text
+                            className={cn(
+                              'mt-1 font-medium capitalize',
+                              isSelected
+                                ? role === 'admin'
+                                  ? 'text-purple-400'
+                                  : 'text-amber-400'
+                                : 'text-slate-400'
+                            )}
+                          >
+                            {role}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
                   </View>
+                  {selectedRoles.length === 0 && (
+                    <Text className="text-slate-500 text-sm mt-2 text-center">
+                      No special roles - regular player
+                    </Text>
+                  )}
                 </View>
 
                 {/* Status Selection */}
