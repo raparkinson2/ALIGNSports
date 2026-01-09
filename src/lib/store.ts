@@ -448,6 +448,18 @@ export const useTeamStore = create<TeamStore>()(
     {
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      version: 2, // Increment to force migration
+      migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as Partial<TeamStore>;
+        // Force update players to have correct roles
+        if (version < 2) {
+          return {
+            ...state,
+            players: mockPlayers, // Reset to mock data with correct roles
+          };
+        }
+        return state as TeamStore;
+      },
     }
   )
 );
