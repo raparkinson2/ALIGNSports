@@ -73,45 +73,31 @@ function PaymentMethodButton({ method, amount }: PaymentMethodButtonProps) {
         return;
       }
 
-      // For Venmo and Zelle, try the app scheme first
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else if (info.webFallback) {
-        // Use web fallback if available (Venmo)
-        await Linking.openURL(info.webFallback(method.username));
-      } else {
-        // Zelle has no web fallback - show helpful message
-        if (method.app === 'zelle') {
-          Alert.alert(
-            'Zelle Payment',
-            `Send payment to: ${method.username}\n\nOpen your bank app and use Zelle to send money to this recipient.`,
-            [{ text: 'OK' }]
-          );
-        } else {
-          Alert.alert(
-            `${info.name} Not Installed`,
-            `Please install ${info.name} to make payments, or contact the team admin for alternative payment methods.`
-          );
-        }
-      }
-    } catch (error) {
-      // If app scheme fails, try web fallback
-      if (info.webFallback) {
+      // For Venmo, try app first, then fall back to web
+      if (method.app === 'venmo') {
         try {
-          await Linking.openURL(info.webFallback(method.username));
+          // Try to open the Venmo app directly
+          await Linking.openURL(url);
         } catch {
-          Alert.alert('Error', `Could not open ${info.name}`);
+          // If app fails, use web fallback
+          if (info.webFallback) {
+            await Linking.openURL(info.webFallback(method.username));
+          }
         }
-      } else if (method.app === 'zelle') {
+        return;
+      }
+
+      // For Zelle, show helpful message with recipient info
+      if (method.app === 'zelle') {
         Alert.alert(
           'Zelle Payment',
           `Send payment to: ${method.username}\n\nOpen your bank app and use Zelle to send money to this recipient.`,
           [{ text: 'OK' }]
         );
-      } else {
-        Alert.alert('Error', `Could not open ${info.name}`);
+        return;
       }
+    } catch (error) {
+      Alert.alert('Error', `Could not open ${info.name}`);
     }
   };
 

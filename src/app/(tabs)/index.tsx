@@ -38,7 +38,9 @@ function GameCard({ game, index, onPress }: GameCardProps) {
   const checkedInCount = game.checkedInPlayers?.length ?? 0;
   const invitedCount = game.invitedPlayers?.length ?? 0;
 
-  const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === game.jerseyColor);
+  // Look up jersey color by name or hex code (handles both cases)
+  const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === game.jerseyColor || c.color === game.jerseyColor);
+  const jerseyColorName = jerseyColorInfo?.name || game.jerseyColor;
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 100).springify()}>
@@ -77,7 +79,7 @@ function GameCard({ game, index, onPress }: GameCardProps) {
                   style={{ backgroundColor: jerseyColorInfo?.color || '#ffffff' }}
                 />
                 <Text className="text-slate-300 text-sm">
-                  {game.jerseyColor} Jersey
+                  {jerseyColorName} Jersey
                 </Text>
               </View>
             </View>

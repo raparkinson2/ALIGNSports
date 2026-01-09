@@ -8,6 +8,8 @@ import {
   X,
   Shield,
   Crown,
+  Phone,
+  Mail,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -84,6 +86,7 @@ export default function RosterScreen() {
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
+  const isAdmin = useTeamStore((s) => s.isAdmin);
 
   const positions = SPORT_POSITIONS[teamSettings.sport];
 
@@ -92,11 +95,15 @@ export default function RosterScreen() {
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
   const [position, setPosition] = useState(positions[0]);
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
 
   const resetForm = () => {
     setName('');
     setNumber('');
     setPosition(positions[0]);
+    setPhone('');
+    setEmail('');
     setEditingPlayer(null);
   };
 
@@ -118,6 +125,8 @@ export default function RosterScreen() {
     setName(player.name);
     setNumber(player.number);
     setPosition(player.position);
+    setPhone(player.phone || '');
+    setEmail(player.email || '');
     setIsModalVisible(true);
   };
 
@@ -131,6 +140,8 @@ export default function RosterScreen() {
         name: name.trim(),
         number: number.trim(),
         position,
+        phone: phone.trim() || undefined,
+        email: email.trim() || undefined,
       });
     } else {
       const newPlayer: Player = {
@@ -138,6 +149,8 @@ export default function RosterScreen() {
         name: name.trim(),
         number: number.trim(),
         position,
+        phone: phone.trim() || undefined,
+        email: email.trim() || undefined,
         avatar: `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150`,
         roles: [],
         status: 'active',
@@ -315,6 +328,43 @@ export default function RosterScreen() {
                   ))}
                 </View>
               </View>
+
+              {/* Phone Input - Admin Only */}
+              {isAdmin() && (
+                <View className="mb-5">
+                  <View className="flex-row items-center mb-2">
+                    <Phone size={14} color="#a78bfa" />
+                    <Text className="text-slate-400 text-sm ml-2">Phone (Admin Only)</Text>
+                  </View>
+                  <TextInput
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="(555) 123-4567"
+                    placeholderTextColor="#64748b"
+                    keyboardType="phone-pad"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  />
+                </View>
+              )}
+
+              {/* Email Input - Admin Only */}
+              {isAdmin() && (
+                <View className="mb-5">
+                  <View className="flex-row items-center mb-2">
+                    <Mail size={14} color="#a78bfa" />
+                    <Text className="text-slate-400 text-sm ml-2">Email (Admin Only)</Text>
+                  </View>
+                  <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="player@example.com"
+                    placeholderTextColor="#64748b"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  />
+                </View>
+              )}
             </ScrollView>
           </SafeAreaView>
         </View>
