@@ -9,25 +9,17 @@ import * as Haptics from 'expo-haptics';
 import { useTeamStore, Photo } from '@/lib/store';
 
 const { width } = Dimensions.get('window');
-const imageSize = (width - 48) / 3;
-
-// Sample photos to show the gallery
-const SAMPLE_PHOTOS = [
-  'https://images.unsplash.com/photo-1515703407324-5f753afd8be8?w=400',
-  'https://images.unsplash.com/photo-1580748141549-71748dbe0bdc?w=400',
-  'https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=400',
-  'https://images.unsplash.com/photo-1552831388-6a0b3575b32a?w=400',
-  'https://images.unsplash.com/photo-1546608235-3310a2571c52?w=400',
-  'https://images.unsplash.com/photo-1570498839593-e565b39455fc?w=400',
-];
+const GAP = 4;
+const PADDING = 16;
+const imageSize = (width - PADDING * 2 - GAP * 2) / 3;
 
 export default function PhotosScreen() {
   const storePhotos = useTeamStore((s) => s.photos);
   const addPhoto = useTeamStore((s) => s.addPhoto);
   const games = useTeamStore((s) => s.games);
 
-  // Combine store photos with sample photos - store photos first (newest on top)
-  const allPhotos = [...storePhotos.map(p => p.uri), ...SAMPLE_PHOTOS];
+  // Only show photos from the store
+  const allPhotos = storePhotos.map(p => p.uri);
 
   const pickImage = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -132,17 +124,16 @@ export default function PhotosScreen() {
           </View>
         ) : (
           <ScrollView
-            className="flex-1 px-4"
+            className="flex-1"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 100 }}
+            contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: PADDING }}
           >
-            {/* Photo Grid */}
-            <View className="flex-row flex-wrap">
+            {/* Photo Grid - 3 columns */}
+            <View className="flex-row flex-wrap" style={{ gap: GAP }}>
               {allPhotos.map((uri: string, index: number) => (
                 <Animated.View
                   key={uri + index}
-                  entering={FadeInDown.delay(index * 50).springify()}
-                  className="p-1"
+                  entering={FadeInDown.delay(Math.min(index * 50, 300)).springify()}
                 >
                   <Pressable className="active:opacity-80">
                     <Image
