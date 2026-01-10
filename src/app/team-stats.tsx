@@ -20,6 +20,15 @@ function isGoalie(position: string): boolean {
   return position === 'G' || position === 'GK';
 }
 
+// Format name as "F. LastName"
+function formatName(fullName: string): string {
+  const parts = fullName.trim().split(' ');
+  if (parts.length < 2) return fullName;
+  const firstName = parts[0];
+  const lastName = parts.slice(1).join(' ');
+  return `${firstName.charAt(0)}. ${lastName}`;
+}
+
 interface StatCardProps {
   icon: React.ReactNode;
   label: string;
@@ -517,9 +526,9 @@ export default function TeamStatsScreen() {
           >
             {/* Table Header for Skaters */}
             <View className="flex-row items-center px-3 py-3 bg-slate-700/50 border-b border-slate-700">
-              <Text className="text-slate-300 font-semibold flex-1">Player</Text>
+              <Text className="text-slate-300 font-semibold w-24">Player</Text>
               {statHeaders.map((header) => (
-                <Text key={header} className="text-slate-300 font-semibold w-8 text-center text-xs">
+                <Text key={header} className="text-slate-300 font-semibold w-9 text-center text-xs">
                   {header}
                 </Text>
               ))}
@@ -538,12 +547,12 @@ export default function TeamStatsScreen() {
                     index !== arr.length - 1 || (sport === 'hockey' || sport === 'soccer') ? 'border-b border-slate-700/50' : ''
                   }`}
                 >
-                  <View className="flex-1 flex-row items-center">
-                    <Text className="text-cyan-400 font-medium w-8">#{player.number}</Text>
-                    <Text className="text-white flex-1 text-sm" numberOfLines={1}>{player.name}</Text>
+                  <View className="w-24 flex-row items-center">
+                    <Text className="text-cyan-400 font-medium text-xs w-7">#{player.number}</Text>
+                    <Text className="text-white text-sm flex-1" numberOfLines={1}>{formatName(player.name)}</Text>
                   </View>
                   {statValues.map((value, i) => (
-                    <Text key={i} className="text-slate-300 w-8 text-center text-xs">
+                    <Text key={i} className="text-slate-300 w-9 text-center text-sm">
                       {value}
                     </Text>
                   ))}
@@ -559,9 +568,9 @@ export default function TeamStatsScreen() {
               <>
                 {/* Goalie Header */}
                 <View className="flex-row items-center px-3 py-3 bg-slate-700/50 border-b border-slate-700">
-                  <Text className="text-slate-300 font-semibold flex-1">Goalies</Text>
+                  <Text className="text-slate-300 font-semibold w-24">Goalies</Text>
                   {getGoalieHeaders().map((header) => (
-                    <Text key={header} className="text-slate-300 font-semibold w-9 text-center text-xs">
+                    <Text key={header} className="text-slate-300 font-semibold w-11 text-center text-xs">
                       {header}
                     </Text>
                   ))}
@@ -579,12 +588,12 @@ export default function TeamStatsScreen() {
                         index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
                       }`}
                     >
-                      <View className="flex-1 flex-row items-center">
-                        <Text className="text-cyan-400 font-medium w-8">#{player.number}</Text>
-                        <Text className="text-white flex-1 text-sm" numberOfLines={1}>{player.name}</Text>
+                      <View className="w-24 flex-row items-center">
+                        <Text className="text-cyan-400 font-medium text-xs w-7">#{player.number}</Text>
+                        <Text className="text-white text-sm flex-1" numberOfLines={1}>{formatName(player.name)}</Text>
                       </View>
                       {statValues.map((value, i) => (
-                        <Text key={i} className="text-slate-300 w-9 text-center text-xs">
+                        <Text key={i} className="text-slate-300 w-11 text-center text-sm">
                           {value}
                         </Text>
                       ))}
