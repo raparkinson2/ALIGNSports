@@ -356,9 +356,12 @@ export default function TeamStatsScreen() {
   const wins = teamSettings.record?.wins ?? 0;
   const losses = teamSettings.record?.losses ?? 0;
   const ties = teamSettings.record?.ties ?? 0;
+  const otLosses = teamSettings.record?.otLosses ?? 0;
 
-  // Games played is the sum of wins + losses + ties
-  const gamesPlayed = wins + losses + ties;
+  // Games played is the sum of wins + losses + ties + OTL (for hockey)
+  const gamesPlayed = sport === 'hockey'
+    ? wins + losses + ties + otLosses
+    : wins + losses + ties;
 
   // Win percentage calculation - format as .XXX (three decimal places)
   const winPercentage = gamesPlayed > 0
@@ -499,6 +502,12 @@ export default function TeamStatsScreen() {
                 <Text className="text-amber-400 text-4xl font-bold">{ties}</Text>
                 <Text className="text-slate-400 text-sm">{sport === 'soccer' ? 'Draws' : 'Ties'}</Text>
               </View>
+              {sport === 'hockey' && (
+                <View className="items-center">
+                  <Text className="text-purple-400 text-4xl font-bold">{otLosses}</Text>
+                  <Text className="text-slate-400 text-sm">OTL</Text>
+                </View>
+              )}
             </View>
             <View className="mt-4 pt-4 border-t border-slate-700/50">
               <View className="flex-row items-center justify-between">
