@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
@@ -8,10 +8,13 @@ import {
   Calendar,
   Users,
   Award,
+  X,
+  ChevronRight,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { useTeamStore, Sport, HockeyStats, BaseballStats, BasketballStats, SoccerStats } from '@/lib/store';
+import { useState } from 'react';
+import { useTeamStore, Sport, HockeyStats, BaseballStats, BasketballStats, SoccerStats, Player, PlayerStats } from '@/lib/store';
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -90,13 +93,159 @@ function getStatValues(sport: Sport, stats: HockeyStats | BaseballStats | Basket
   }
 }
 
+// Calculate team totals based on sport
+function calculateTeamTotals(players: Player[], sport: Sport): { label: string; value: number }[] {
+  switch (sport) {
+    case 'hockey': {
+      let totalGoals = 0;
+      let totalAssists = 0;
+      let totalPim = 0;
+      players.forEach((p) => {
+        if (p.stats) {
+          const s = p.stats as HockeyStats;
+          totalGoals += s.goals ?? 0;
+          totalAssists += s.assists ?? 0;
+          totalPim += s.pim ?? 0;
+        }
+      });
+      return [
+        { label: 'Goals', value: totalGoals },
+        { label: 'Assists', value: totalAssists },
+        { label: 'PIM', value: totalPim },
+      ];
+    }
+    case 'baseball': {
+      let totalAB = 0;
+      let totalHits = 0;
+      let totalHR = 0;
+      let totalRBI = 0;
+      let totalK = 0;
+      players.forEach((p) => {
+        if (p.stats) {
+          const s = p.stats as BaseballStats;
+          totalAB += s.atBats ?? 0;
+          totalHits += s.hits ?? 0;
+          totalHR += s.homeRuns ?? 0;
+          totalRBI += s.rbi ?? 0;
+          totalK += s.strikeouts ?? 0;
+        }
+      });
+      return [
+        { label: 'Hits', value: totalHits },
+        { label: 'HRs', value: totalHR },
+        { label: 'RBIs', value: totalRBI },
+      ];
+    }
+    case 'basketball': {
+      let totalPts = 0;
+      let totalReb = 0;
+      let totalAst = 0;
+      let totalStl = 0;
+      let totalBlk = 0;
+      players.forEach((p) => {
+        if (p.stats) {
+          const s = p.stats as BasketballStats;
+          totalPts += s.points ?? 0;
+          totalReb += s.rebounds ?? 0;
+          totalAst += s.assists ?? 0;
+          totalStl += s.steals ?? 0;
+          totalBlk += s.blocks ?? 0;
+        }
+      });
+      return [
+        { label: 'Points', value: totalPts },
+        { label: 'Rebounds', value: totalReb },
+        { label: 'Assists', value: totalAst },
+      ];
+    }
+    case 'soccer': {
+      let totalGoals = 0;
+      let totalAssists = 0;
+      let totalYC = 0;
+      players.forEach((p) => {
+        if (p.stats) {
+          const s = p.stats as SoccerStats;
+          totalGoals += s.goals ?? 0;
+          totalAssists += s.assists ?? 0;
+          totalYC += s.yellowCards ?? 0;
+        }
+      });
+      return [
+        { label: 'Goals', value: totalGoals },
+        { label: 'Assists', value: totalAssists },
+        { label: 'Yellow Cards', value: totalYC },
+      ];
+    }
+    default:
+      return [];
+  }
+}
+
+// Get stat field definitions based on sport
+function getStatFields(sport: Sport): { key: string; label: string }[] {
+  switch (sport) {
+    case 'hockey':
+      return [
+        { key: 'goals', label: 'Goals' },
+        { key: 'assists', label: 'Assists' },
+        { key: 'pim', label: 'PIM' },
+      ];
+    case 'baseball':
+      return [
+        { key: 'atBats', label: 'At Bats' },
+        { key: 'hits', label: 'Hits' },
+        { key: 'homeRuns', label: 'Home Runs' },
+        { key: 'rbi', label: 'RBI' },
+        { key: 'strikeouts', label: 'Strikeouts' },
+      ];
+    case 'basketball':
+      return [
+        { key: 'points', label: 'Points' },
+        { key: 'rebounds', label: 'Rebounds' },
+        { key: 'assists', label: 'Assists' },
+        { key: 'steals', label: 'Steals' },
+        { key: 'blocks', label: 'Blocks' },
+      ];
+    case 'soccer':
+      return [
+        { key: 'goals', label: 'Goals' },
+        { key: 'assists', label: 'Assists' },
+        { key: 'yellowCards', label: 'Yellow Cards' },
+      ];
+    default:
+      return [];
+  }
+}
+
+// Get default stats for a sport
+function getDefaultStats(sport: Sport): PlayerStats {
+  switch (sport) {
+    case 'hockey':
+      return { goals: 0, assists: 0, pim: 0 };
+    case 'baseball':
+      return { atBats: 0, hits: 0, homeRuns: 0, rbi: 0, strikeouts: 0 };
+    case 'basketball':
+      return { points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0 };
+    case 'soccer':
+      return { goals: 0, assists: 0, yellowCards: 0 };
+    default:
+      return { goals: 0, assists: 0, pim: 0 };
+  }
+}
+
 export default function TeamStatsScreen() {
   const router = useRouter();
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const teamName = useTeamStore((s) => s.teamName);
+  const updatePlayer = useTeamStore((s) => s.updatePlayer);
 
   const sport = teamSettings.sport || 'hockey';
+
+  // Edit modal state
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [editStats, setEditStats] = useState<Record<string, string>>({});
 
   // Get record from team settings
   const wins = teamSettings.record?.wins ?? 0;
@@ -113,6 +262,38 @@ export default function TeamStatsScreen() {
 
   // Active players count
   const activePlayers = players.filter((p) => p.status === 'active').length;
+
+  // Calculate team totals
+  const teamTotals = calculateTeamTotals(players, sport);
+
+  // Get stat fields for edit modal
+  const statFields = getStatFields(sport);
+
+  // Open edit modal for a player
+  const openEditModal = (player: Player) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedPlayer(player);
+    const currentStats = player.stats || getDefaultStats(sport);
+    const statsObj: Record<string, string> = {};
+    statFields.forEach((field) => {
+      statsObj[field.key] = String((currentStats as unknown as Record<string, number>)[field.key] ?? 0);
+    });
+    setEditStats(statsObj);
+    setEditModalVisible(true);
+  };
+
+  // Save stats
+  const saveStats = () => {
+    if (!selectedPlayer) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const newStats: Record<string, number> = {};
+    statFields.forEach((field) => {
+      newStats[field.key] = parseInt(editStats[field.key] || '0', 10) || 0;
+    });
+    updatePlayer(selectedPlayer.id, { stats: newStats as unknown as PlayerStats });
+    setEditModalVisible(false);
+    setSelectedPlayer(null);
+  };
 
   // Sort players by points (goals + assists for hockey/soccer, points for basketball, hits for baseball)
   const sortedPlayers = [...players].sort((a, b) => {
@@ -222,19 +403,36 @@ export default function TeamStatsScreen() {
 
           {/* Stats Grid */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-            Game Statistics
+            Season Statistics
           </Text>
 
-          <View className="mb-6">
-            <StatCard
-              icon={<Calendar size={20} color="#67e8f9" />}
-              label="Games Played"
-              value={gamesPlayed}
-              subtitle="This season"
-              color="#67e8f9"
-              index={0}
-            />
-          </View>
+          <Animated.View
+            entering={FadeInDown.delay(100).springify()}
+            className="bg-slate-800/60 rounded-2xl p-4 border border-slate-700/50 mb-6"
+          >
+            <View className="flex-row items-center mb-3">
+              <View
+                className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                style={{ backgroundColor: '#67e8f920' }}
+              >
+                <Calendar size={20} color="#67e8f9" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-slate-400 text-sm">Games Played</Text>
+                <Text className="text-white text-2xl font-bold">{gamesPlayed}</Text>
+              </View>
+            </View>
+
+            {/* Team Totals */}
+            <View className="flex-row flex-wrap pt-3 border-t border-slate-700/50">
+              {teamTotals.map((total, index) => (
+                <View key={total.label} className={`w-1/3 ${index < 3 ? 'mb-2' : ''}`}>
+                  <Text className="text-cyan-400 text-xl font-bold">{total.value}</Text>
+                  <Text className="text-slate-500 text-xs">{total.label}</Text>
+                </View>
+              ))}
+            </View>
+          </Animated.View>
 
           {/* Roster Stats */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
@@ -287,9 +485,10 @@ export default function TeamStatsScreen() {
             {sortedPlayers.map((player, index) => {
               const statValues = getStatValues(sport, player.stats);
               return (
-                <View
+                <Pressable
                   key={player.id}
-                  className={`flex-row items-center px-4 py-3 ${
+                  onPress={() => openEditModal(player)}
+                  className={`flex-row items-center px-4 py-3 active:bg-slate-700/50 ${
                     index !== sortedPlayers.length - 1 ? 'border-b border-slate-700/50' : ''
                   }`}
                 >
@@ -302,12 +501,80 @@ export default function TeamStatsScreen() {
                       {value}
                     </Text>
                   ))}
-                </View>
+                  <ChevronRight size={16} color="#64748b" className="ml-1" />
+                </Pressable>
               );
             })}
           </Animated.View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Edit Stats Modal */}
+      <Modal
+        visible={editModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1"
+        >
+          <View className="flex-1 bg-slate-900">
+            <LinearGradient
+              colors={['#0f172a', '#1e293b', '#0f172a']}
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            />
+
+            <SafeAreaView className="flex-1" edges={['top']}>
+              {/* Modal Header */}
+              <View className="flex-row items-center justify-between px-5 pt-4 pb-4 border-b border-slate-700/50">
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setEditModalVisible(false);
+                  }}
+                  className="p-2 -ml-2"
+                >
+                  <X size={24} color="#94a3b8" />
+                </Pressable>
+                <Text className="text-white text-lg font-semibold">Edit Stats</Text>
+                <Pressable
+                  onPress={saveStats}
+                  className="px-4 py-2 bg-cyan-500 rounded-lg"
+                >
+                  <Text className="text-white font-semibold">Save</Text>
+                </Pressable>
+              </View>
+
+              <ScrollView className="flex-1 px-5 pt-4">
+                {/* Player Info */}
+                {selectedPlayer && (
+                  <View className="mb-6">
+                    <Text className="text-cyan-400 text-sm">#{selectedPlayer.number}</Text>
+                    <Text className="text-white text-2xl font-bold">{selectedPlayer.name}</Text>
+                  </View>
+                )}
+
+                {/* Stat Fields */}
+                {statFields.map((field) => (
+                  <View key={field.key} className="mb-4">
+                    <Text className="text-slate-400 text-sm mb-2">{field.label}</Text>
+                    <TextInput
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
+                      value={editStats[field.key]}
+                      onChangeText={(text) => setEditStats({ ...editStats, [field.key]: text.replace(/[^0-9]/g, '') })}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      placeholderTextColor="#64748b"
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
