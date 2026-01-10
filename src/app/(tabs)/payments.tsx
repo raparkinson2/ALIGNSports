@@ -461,7 +461,24 @@ export default function PaymentsScreen() {
                         <View className="flex-row items-center justify-between">
                           <View className="flex-1">
                             <Text className="text-white font-semibold text-lg">{period.title}</Text>
-                            <Text className="text-green-400 font-bold">${period.amount}</Text>
+                            <View className="flex-row items-center">
+                              <Text className="text-green-400 font-bold">${period.amount}</Text>
+                              {isAdmin() && (
+                                <Pressable
+                                  onPress={(e) => {
+                                    e.stopPropagation();
+                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    setEditingPeriodId(period.id);
+                                    setEditPeriodAmount(period.amount.toString());
+                                    setIsEditAmountModalVisible(true);
+                                  }}
+                                  className="ml-2 p-1"
+                                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                >
+                                  <Edit3 size={14} color="#22c55e" />
+                                </Pressable>
+                              )}
+                            </View>
                           </View>
                           <View className="items-end">
                             <View className="flex-row items-center">
