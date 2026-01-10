@@ -5,13 +5,9 @@ import { useRouter, Stack } from 'expo-router';
 import {
   ChevronLeft,
   Trophy,
-  Target,
-  TrendingUp,
   Calendar,
   Users,
-  Percent,
   Award,
-  Flame,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -51,63 +47,25 @@ function StatCard({ icon, label, value, subtitle, color, index }: StatCardProps)
 
 export default function TeamStatsScreen() {
   const router = useRouter();
-  const games = useTeamStore((s) => s.games);
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const teamName = useTeamStore((s) => s.teamName);
-
-  // Calculate stats
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const pastGames = games.filter((g) => {
-    const gameDate = new Date(g.date);
-    gameDate.setHours(0, 0, 0, 0);
-    return gameDate < today;
-  });
-
-  const upcomingGames = games.filter((g) => {
-    const gameDate = new Date(g.date);
-    gameDate.setHours(0, 0, 0, 0);
-    return gameDate >= today;
-  });
-
-  const totalGames = games.length;
-  const gamesPlayed = pastGames.length;
 
   // Get record from team settings
   const wins = teamSettings.record?.wins ?? 0;
   const losses = teamSettings.record?.losses ?? 0;
   const ties = teamSettings.record?.ties ?? 0;
 
+  // Games played is the sum of wins + losses + ties
+  const gamesPlayed = wins + losses + ties;
+
+  // Win percentage calculation - wins divided by total games
   const winPercentage = gamesPlayed > 0
-    ? Math.round((wins / (wins + losses + ties)) * 100)
-    : 0;
-
-  // Calculate check-in stats
-  const totalCheckIns = pastGames.reduce((sum, game) => {
-    return sum + (game.checkedInPlayers?.length ?? 0);
-  }, 0);
-
-  const avgAttendance = gamesPlayed > 0
-    ? Math.round(totalCheckIns / gamesPlayed)
+    ? Math.round((wins / gamesPlayed) * 100)
     : 0;
 
   // Active players count
   const activePlayers = players.filter((p) => p.status === 'active').length;
-
-  // Find player with most check-ins
-  const playerCheckIns: Record<string, number> = {};
-  pastGames.forEach((game) => {
-    game.checkedInPlayers?.forEach((playerId) => {
-      playerCheckIns[playerId] = (playerCheckIns[playerId] || 0) + 1;
-    });
-  });
-
-  const topAttendeeId = Object.entries(playerCheckIns)
-    .sort(([, a], [, b]) => b - a)[0]?.[0];
-  const topAttendee = players.find((p) => p.id === topAttendeeId);
-  const topAttendeeGames = topAttendeeId ? playerCheckIns[topAttendeeId] : 0;
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -174,17 +132,11 @@ export default function TeamStatsScreen() {
                 <Text className="text-slate-400 text-sm">Ties</Text>
               </View>
             </View>
-            {(wins + losses + ties) > 0 && (
+            {gamesPlayed > 0 && (
               <View className="mt-4 pt-4 border-t border-slate-700/50">
                 <View className="flex-row items-center justify-between">
                   <Text className="text-slate-400">Win Percentage</Text>
                   <Text className="text-white text-xl font-bold">{winPercentage}%</Text>
-                </View>
-                <View className="h-2 bg-slate-700 rounded-full mt-2 overflow-hidden">
-                  <View
-                    className="h-full bg-green-500 rounded-full"
-                    style={{ width: `${winPercentage}%` }}
-                  />
                 </View>
               </View>
             )}
@@ -195,84 +147,16 @@ export default function TeamStatsScreen() {
             Game Statistics
           </Text>
 
-          <View className="flex-row flex-wrap justify-between mb-6">
-            <View className="w-[48%] mb-3">
-              <StatCard
-                icon={<Calendar size={20} color="#67e8f9" />}
-                label="Games Played"
-                value={gamesPlayed}
-                subtitle={`${upcomingGames.length} upcoming`}
-                color="#67e8f9"
-                index={0}
-              />
-            </View>
-            <View className="w-[48%] mb-3">
-              <StatCard
-                icon={<Target size={20} color="#a78bfa" />}
-                label="Total Games"
-                value={totalGames}
-                subtitle="All scheduled"
-                color="#a78bfa"
-                index={1}
-              />
-            </View>
+          <View className="mb-6">
+            <StatCard
+              icon={<Calendar size={20} color="#67e8f9" />}
+              label="Games Played"
+              value={gamesPlayed}
+              subtitle="This season"
+              color="#67e8f9"
+              index={0}
+            />
           </View>
-
-          {/* Attendance Stats */}
-          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-            Attendance
-          </Text>
-
-          <View className="flex-row flex-wrap justify-between mb-6">
-            <View className="w-[48%] mb-3">
-              <StatCard
-                icon={<Users size={20} color="#22c55e" />}
-                label="Avg Attendance"
-                value={avgAttendance}
-                subtitle="Players per game"
-                color="#22c55e"
-                index={2}
-              />
-            </View>
-            <View className="w-[48%] mb-3">
-              <StatCard
-                icon={<TrendingUp size={20} color="#f59e0b" />}
-                label="Total Check-ins"
-                value={totalCheckIns}
-                subtitle="All games"
-                color="#f59e0b"
-                index={3}
-              />
-            </View>
-          </View>
-
-          {/* Top Attendee */}
-          {topAttendee && (
-            <>
-              <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-                Most Dedicated
-              </Text>
-
-              <Animated.View
-                entering={FadeInDown.delay(300).springify()}
-                className="bg-slate-800/60 rounded-2xl p-4 border border-amber-500/30 mb-6"
-              >
-                <View className="flex-row items-center">
-                  <View className="w-12 h-12 rounded-full bg-amber-500/20 items-center justify-center mr-4">
-                    <Flame size={24} color="#f59e0b" />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-white text-lg font-semibold">{topAttendee.name}</Text>
-                    <Text className="text-slate-400 text-sm">#{topAttendee.number} · {topAttendee.position}</Text>
-                  </View>
-                  <View className="items-end">
-                    <Text className="text-amber-400 text-2xl font-bold">{topAttendeeGames}</Text>
-                    <Text className="text-slate-500 text-xs">games attended</Text>
-                  </View>
-                </View>
-              </Animated.View>
-            </>
-          )}
 
           {/* Roster Stats */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
@@ -282,12 +166,12 @@ export default function TeamStatsScreen() {
           <View className="flex-row flex-wrap justify-between">
             <View className="w-[48%] mb-3">
               <StatCard
-                icon={<Users size={20} color="#67e8f9" />}
+                icon={<Users size={20} color="#22c55e" />}
                 label="Active Players"
                 value={activePlayers}
                 subtitle="On roster"
-                color="#67e8f9"
-                index={4}
+                color="#22c55e"
+                index={1}
               />
             </View>
             <View className="w-[48%] mb-3">
@@ -297,7 +181,7 @@ export default function TeamStatsScreen() {
                 value={players.length}
                 subtitle="Including reserves"
                 color="#a78bfa"
-                index={5}
+                index={2}
               />
             </View>
           </View>
