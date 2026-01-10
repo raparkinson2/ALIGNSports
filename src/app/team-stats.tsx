@@ -174,6 +174,7 @@ function calculateTeamTotals(players: Player[], sport: Sport): { label: string; 
       ];
     }
     case 'basketball': {
+      let totalGP = 0;
       let totalPts = 0;
       let totalReb = 0;
       let totalAst = 0;
@@ -182,6 +183,7 @@ function calculateTeamTotals(players: Player[], sport: Sport): { label: string; 
       players.forEach((p) => {
         if (p.stats) {
           const s = p.stats as BasketballStats;
+          totalGP += s.gamesPlayed ?? 0;
           totalPts += s.points ?? 0;
           totalReb += s.rebounds ?? 0;
           totalAst += s.assists ?? 0;
@@ -189,10 +191,14 @@ function calculateTeamTotals(players: Player[], sport: Sport): { label: string; 
           totalBlk += s.blocks ?? 0;
         }
       });
+      const ppg = totalGP > 0 ? Math.round((totalPts / totalGP) * 10) / 10 : 0;
       return [
         { label: 'Points', value: totalPts },
+        { label: 'PPG', value: ppg },
         { label: 'Rebounds', value: totalReb },
         { label: 'Assists', value: totalAst },
+        { label: 'Steals', value: totalStl },
+        { label: 'Blocks', value: totalBlk },
       ];
     }
     case 'soccer': {
