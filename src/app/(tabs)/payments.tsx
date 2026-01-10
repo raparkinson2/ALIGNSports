@@ -439,9 +439,9 @@ export default function PaymentsScreen() {
             ) : (
               <View className="bg-slate-800/50 rounded-xl p-4 mb-6">
                 <Text className="text-slate-400 text-sm mb-3">Tap to pay:</Text>
-                <View className="flex-row flex-wrap">
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
                   {paymentMethods.map((method, index) => (
-                    <View key={index} className="relative">
+                    <View key={index} className="relative mr-2">
                       <PaymentMethodButton method={method} />
                       {isAdmin() && (
                         <Pressable
@@ -453,7 +453,7 @@ export default function PaymentsScreen() {
                       )}
                     </View>
                   ))}
-                </View>
+                </ScrollView>
               </View>
             )}
           </Animated.View>
