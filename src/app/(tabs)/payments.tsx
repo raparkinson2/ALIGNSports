@@ -116,11 +116,11 @@ function PaymentMethodButton({ method, amount }: PaymentMethodButtonProps) {
   return (
     <Pressable
       onPress={handlePress}
-      className="flex-row items-center justify-center py-3 px-4 rounded-xl mr-2 mb-2 active:opacity-80"
+      className="flex-row items-center justify-center py-2 px-3 rounded-lg active:opacity-80"
       style={{ backgroundColor: info.color }}
     >
-      <ExternalLink size={16} color="white" />
-      <Text className="text-white font-semibold ml-2">{method.displayName || info.name}</Text>
+      <ExternalLink size={12} color="white" />
+      <Text className="text-white font-medium text-xs ml-1.5">{method.displayName || info.name}</Text>
     </Pressable>
   );
 }
@@ -437,28 +437,23 @@ export default function PaymentsScreen() {
                 </Text>
               </View>
             ) : (
-              <View className="bg-slate-800/50 rounded-xl pt-4 pb-4 pl-4 mb-6">
+              <View className="bg-slate-800/50 rounded-xl p-4 mb-6">
                 <Text className="text-slate-400 text-sm mb-3">Tap to pay:</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={{ flexGrow: 0 }}
-                  contentContainerStyle={{ paddingRight: 16 }}
-                >
+                <View className="flex-row flex-wrap">
                   {paymentMethods.map((method, index) => (
-                    <View key={index} className="relative mr-3" style={{ marginTop: 4 }}>
+                    <View key={index} className="relative mr-2 mb-2" style={{ marginTop: 4 }}>
                       <PaymentMethodButton method={method} />
                       {isAdmin() && (
                         <Pressable
                           onPress={() => handleRemovePaymentMethod(index)}
-                          className="absolute -top-1 -right-1 bg-red-500 rounded-full p-1"
+                          className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
                         >
-                          <X size={10} color="white" />
+                          <X size={8} color="white" />
                         </Pressable>
                       )}
                     </View>
                   ))}
-                </ScrollView>
+                </View>
               </View>
             )}
           </Animated.View>
