@@ -312,6 +312,7 @@ export interface TeamSettings {
   teamLogo?: string;
   record?: TeamRecord;
   showTeamStats?: boolean; // Toggle to show/hide team stats feature
+  showPayments?: boolean; // Toggle to show/hide payments tab
 }
 
 interface TeamStore {
@@ -455,6 +456,7 @@ const defaultTeamSettings: TeamSettings = {
     { app: 'paypal', username: 'raparkinson2@gmail.com', displayName: 'PayPal' },
   ],
   showTeamStats: true,
+  showPayments: true,
 };
 
 export const useTeamStore = create<TeamStore>()(

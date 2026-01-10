@@ -21,6 +21,7 @@ import {
   Send,
   UserPlus,
   BarChart3,
+  DollarSign,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -650,6 +651,32 @@ export default function AdminScreen() {
                     setTeamSettings({ showTeamStats: value });
                   }}
                   trackColor={{ false: '#334155', true: '#10b981' }}
+                  thumbColor="#ffffff"
+                />
+              </View>
+            </View>
+
+            {/* Payments Toggle */}
+            <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View className="bg-amber-500/20 p-2 rounded-full">
+                    <DollarSign size={20} color="#f59e0b" />
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-white font-semibold">Use Payments</Text>
+                    <Text className="text-slate-400 text-sm">
+                      Track team dues and payments
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={teamSettings.showPayments !== false}
+                  onValueChange={(value) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setTeamSettings({ showPayments: value });
+                  }}
+                  trackColor={{ false: '#334155', true: '#f59e0b' }}
                   thumbColor="#ffffff"
                 />
               </View>
