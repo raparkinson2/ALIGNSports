@@ -78,16 +78,17 @@ export function AddressSearch({
 
     setIsLoading(true);
     try {
+      // Use Nominatim with broader search - removed country restriction for better results
       const params = new URLSearchParams({
         q: query,
         format: 'json',
         addressdetails: '1',
-        limit: '6',
-        countrycodes: 'us,ca',
+        limit: '8',
       });
 
+      // Add user location for better local results if available
       if (userLocation) {
-        params.append('viewbox', `${userLocation.longitude - 1},${userLocation.latitude + 1},${userLocation.longitude + 1},${userLocation.latitude - 1}`);
+        params.append('viewbox', `${userLocation.longitude - 0.5},${userLocation.latitude + 0.5},${userLocation.longitude + 0.5},${userLocation.latitude - 0.5}`);
         params.append('bounded', '0');
       }
 
@@ -123,6 +124,7 @@ export function AddressSearch({
             village?: string;
             state?: string;
             postcode?: string;
+            country?: string;
           };
         }, index: number) => {
           const addr = result.address || {};
@@ -320,19 +322,34 @@ export function AddressSearch({
           </View>
 
           {/* Results */}
-          <ScrollView className="flex-1 px-4">
+          <ScrollView className="flex-1 px-4" keyboardShouldPersistTaps="handled">
+            {/* Always show "Use this text" option when user has typed something */}
+            {searchQuery.length >= 2 && (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onChangeText(searchQuery);
+                  if (onSelectLocation) {
+                    onSelectLocation(searchQuery, searchQuery);
+                  }
+                  setShowModal(false);
+                }}
+                className="flex-row items-center py-4 border-b border-slate-800 active:bg-slate-800/50"
+              >
+                <View className="w-12 h-12 rounded-full bg-green-500/20 items-center justify-center mr-4">
+                  <Search size={20} color="#22c55e" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-green-400 font-medium text-base">Use "{searchQuery}"</Text>
+                  <Text className="text-slate-400 text-sm mt-0.5">Enter location manually</Text>
+                </View>
+              </Pressable>
+            )}
+
             {isLoading && suggestions.length === 0 && (
               <View className="flex-row items-center justify-center py-8">
                 <ActivityIndicator size="small" color="#67e8f9" />
                 <Text className="text-slate-400 ml-3">Searching places...</Text>
-              </View>
-            )}
-
-            {!isLoading && searchQuery.length >= 2 && suggestions.length === 0 && (
-              <View className="items-center py-8">
-                <MapPin size={48} color="#64748b" />
-                <Text className="text-slate-400 mt-4">No results found</Text>
-                <Text className="text-slate-500 text-sm mt-1">Try a different search term</Text>
               </View>
             )}
 
