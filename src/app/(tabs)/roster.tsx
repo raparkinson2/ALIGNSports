@@ -53,8 +53,9 @@ function getStatHeaders(sport: Sport): string[] {
 
 // Get goalie stat headers (includes GAA for both hockey and soccer)
 function getGoalieHeaders(sport: Sport): string[] {
-  // Both hockey and soccer goalies get MP and GAA
-  return ['GP', 'W-L-T', 'MP', 'GAA', 'SA', 'SV', 'SV%'];
+  // Soccer uses W-L-D (Draws), hockey uses W-L-T (Ties)
+  const recordHeader = sport === 'soccer' ? 'W-L-D' : 'W-L-T';
+  return ['GP', recordHeader, 'MP', 'GAA', 'SA', 'SV', 'SV%'];
 }
 
 // Get stat values based on sport
