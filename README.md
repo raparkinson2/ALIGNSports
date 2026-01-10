@@ -58,9 +58,9 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - See player roles (Admin badge, Captain crown)
 - See player status (Active/Reserve)
 - Captain and Admin badges displayed next to names
-- **Player Statistics Table**: Each position group shows a stats table below the player cards
-  - Display-only stats (edit via Team Stats screen)
-  - Sport-specific columns matching the Team Stats format
+- **Player Stats on Cards**: Each player card shows their stats directly below their name and position
+  - Display-only (edit via Team Stats screen)
+  - Sport-specific stats shown for each player
   - Hockey: GP, G, A, P, PIM, +/- (goalies: GP, W-L-T, SA, SV, SV%)
   - Baseball: AB, H, HR, RBI, K
   - Basketball: PTS, REB, AST, STL, BLK

@@ -114,6 +114,13 @@ function PlayerCard({ player, index, onPress }: PlayerCardProps) {
   const sport = useTeamStore((s) => s.teamSettings.sport);
   const positionName = SPORT_POSITION_NAMES[sport][player.position] || player.position;
 
+  // Get stat headers and values for this player
+  const playerIsGoalie = isGoalie(player.position);
+  const headers = playerIsGoalie && (sport === 'hockey' || sport === 'soccer')
+    ? getGoalieHeaders()
+    : getStatHeaders(sport);
+  const statValues = getStatValues(sport, player.stats, player.position);
+
   return (
     <Animated.View entering={FadeInDown.delay(index * 60).springify()}>
       <Pressable
@@ -160,6 +167,18 @@ function PlayerCard({ player, index, onPress }: PlayerCardProps) {
             )}>
               {player.status === 'active' ? 'Active' : 'Reserve'}
             </Text>
+          </View>
+        </View>
+
+        {/* Player Stats */}
+        <View className="mt-3 pt-3 border-t border-slate-700/50">
+          <View className="flex-row justify-between">
+            {headers.map((header, i) => (
+              <View key={header} className="items-center flex-1">
+                <Text className="text-slate-500 text-xs mb-1">{header}</Text>
+                <Text className="text-white text-sm font-medium">{statValues[i]}</Text>
+              </View>
+            ))}
           </View>
         </View>
       </Pressable>
@@ -397,12 +416,6 @@ export default function RosterScreen() {
           {positionGroups.map((group) => {
             if (group.players.length === 0) return null;
 
-            // Determine if this is a goalie group
-            const isGoalieGroup = group.title === 'Goalies' || group.title === 'Goalkeepers';
-            const headers = isGoalieGroup && (teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer')
-              ? getGoalieHeaders()
-              : getStatHeaders(teamSettings.sport);
-
             return (
               <View key={group.title} className="mb-6">
                 <View className="flex-row items-center mb-3">
@@ -419,59 +432,6 @@ export default function RosterScreen() {
                     onPress={() => openEditModal(player)}
                   />
                 ))}
-
-                {/* Player Stats Table for this position group */}
-                <View className="mt-3 bg-slate-800/60 rounded-2xl border border-slate-700/50 overflow-hidden">
-                  {/* Table Header */}
-                  <View className="flex-row items-center px-3 py-2.5 bg-slate-700/50 border-b border-slate-700">
-                    <Text className="text-slate-300 font-semibold text-xs flex-1">Player</Text>
-                    <View className="flex-row">
-                      {headers.map((header) => (
-                        <Text
-                          key={header}
-                          className={cn(
-                            "text-slate-300 font-semibold text-center text-xs",
-                            isGoalieGroup ? "w-11" : "w-8"
-                          )}
-                        >
-                          {header}
-                        </Text>
-                      ))}
-                    </View>
-                  </View>
-
-                  {/* Table Rows */}
-                  {group.players.map((player, index, arr) => {
-                    const statValues = getStatValues(teamSettings.sport, player.stats, player.position);
-                    return (
-                      <View
-                        key={player.id}
-                        className={cn(
-                          "flex-row items-center px-3 py-2.5",
-                          index !== arr.length - 1 && "border-b border-slate-700/50"
-                        )}
-                      >
-                        <View className="flex-1 flex-row items-center">
-                          <Text className="text-cyan-400 font-medium text-xs mr-1">#{player.number}</Text>
-                          <Text className="text-white text-sm">{formatName(player.name)}</Text>
-                        </View>
-                        <View className="flex-row">
-                          {statValues.map((value, i) => (
-                            <Text
-                              key={i}
-                              className={cn(
-                                "text-slate-300 text-center text-sm",
-                                isGoalieGroup ? "w-11" : "w-8"
-                              )}
-                            >
-                              {value}
-                            </Text>
-                          ))}
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
               </View>
             );
           })}
