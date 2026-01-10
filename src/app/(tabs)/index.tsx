@@ -248,9 +248,16 @@ export default function ScheduleScreen() {
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
-  const upcomingGames = sortedGames.filter(
-    (g) => new Date(g.date) >= new Date(new Date().setHours(0, 0, 0, 0))
-  );
+  // Filter to only show upcoming games (today or future)
+  // Games are removed once their date has passed
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const upcomingGames = sortedGames.filter((g) => {
+    const gameDate = new Date(g.date);
+    gameDate.setHours(0, 0, 0, 0);
+    return gameDate >= today;
+  });
 
   const resetForm = () => {
     setOpponent('');
