@@ -98,6 +98,7 @@ export interface HockeyGoalieStats {
 }
 
 export interface BaseballStats {
+  gamesPlayed: number;
   atBats: number;
   hits: number;
   homeRuns: number;
@@ -106,6 +107,7 @@ export interface BaseballStats {
 }
 
 export interface BasketballStats {
+  gamesPlayed: number;
   points: number;
   rebounds: number;
   assists: number;
@@ -114,6 +116,7 @@ export interface BasketballStats {
 }
 
 export interface SoccerStats {
+  gamesPlayed: number;
   goals: number;
   assists: number;
   yellowCards: number;

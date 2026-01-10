@@ -41,11 +41,11 @@ function getStatHeaders(sport: Sport): string[] {
     case 'hockey':
       return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
     case 'baseball':
-      return ['AB', 'H', 'HR', 'RBI', 'K'];
+      return ['GP', 'AB', 'H', 'HR', 'RBI', 'K'];
     case 'basketball':
-      return ['PTS', 'REB', 'AST', 'STL', 'BLK'];
+      return ['GP', 'PTS', 'PPG', 'REB', 'AST', 'STL', 'BLK'];
     case 'soccer':
-      return ['G', 'A', 'YC'];
+      return ['GP', 'G', 'A', 'YC'];
     default:
       return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
   }
@@ -65,7 +65,9 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
       return [0, '0-0-0', 0, 0, '.000'];
     }
     if (sport === 'hockey') return [0, 0, 0, 0, 0, 0];
-    if (sport === 'baseball' || sport === 'basketball') return [0, 0, 0, 0, 0];
+    if (sport === 'baseball') return [0, 0, 0, 0, 0, 0];
+    if (sport === 'basketball') return [0, 0, '0.0', 0, 0, 0, 0];
+    if (sport === 'soccer') return [0, 0, 0, 0];
     return [0, 0, 0];
   }
 
@@ -89,15 +91,17 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
     }
     case 'baseball': {
       const s = stats as BaseballStats;
-      return [s.atBats ?? 0, s.hits ?? 0, s.homeRuns ?? 0, s.rbi ?? 0, s.strikeouts ?? 0];
+      return [s.gamesPlayed ?? 0, s.atBats ?? 0, s.hits ?? 0, s.homeRuns ?? 0, s.rbi ?? 0, s.strikeouts ?? 0];
     }
     case 'basketball': {
       const s = stats as BasketballStats;
-      return [s.points ?? 0, s.rebounds ?? 0, s.assists ?? 0, s.steals ?? 0, s.blocks ?? 0];
+      const gp = s.gamesPlayed ?? 0;
+      const ppg = gp > 0 ? ((s.points ?? 0) / gp).toFixed(1) : '0.0';
+      return [gp, s.points ?? 0, ppg, s.rebounds ?? 0, s.assists ?? 0, s.steals ?? 0, s.blocks ?? 0];
     }
     case 'soccer': {
       const s = stats as SoccerStats;
-      return [s.goals ?? 0, s.assists ?? 0, s.yellowCards ?? 0];
+      return [s.gamesPlayed ?? 0, s.goals ?? 0, s.assists ?? 0, s.yellowCards ?? 0];
     }
     default:
       return [0, 0, 0];

@@ -67,11 +67,11 @@ function getStatHeaders(sport: Sport): string[] {
     case 'hockey':
       return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
     case 'baseball':
-      return ['AB', 'H', 'HR', 'RBI', 'K'];
+      return ['GP', 'AB', 'H', 'HR', 'RBI', 'K'];
     case 'basketball':
-      return ['PTS', 'REB', 'AST', 'STL', 'BLK'];
+      return ['GP', 'PTS', 'PPG', 'REB', 'AST', 'STL', 'BLK'];
     case 'soccer':
-      return ['G', 'A', 'YC'];
+      return ['GP', 'G', 'A', 'YC'];
     default:
       return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
   }
@@ -83,11 +83,13 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
 
   if (!stats) {
     if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
-      return ['-', '-', '-', '-', '-'];
+      return [0, '0-0-0', 0, 0, '.000'];
     }
-    if (sport === 'hockey') return ['-', '-', '-', '-', '-', '-'];
-    if (sport === 'baseball' || sport === 'basketball') return ['-', '-', '-', '-', '-'];
-    return ['-', '-', '-'];
+    if (sport === 'hockey') return [0, 0, 0, 0, 0, 0];
+    if (sport === 'baseball') return [0, 0, 0, 0, 0, 0];
+    if (sport === 'basketball') return [0, 0, '0.0', 0, 0, 0, 0];
+    if (sport === 'soccer') return [0, 0, 0, 0];
+    return [0, 0, 0];
   }
 
   // Handle goalie stats for hockey/soccer
@@ -110,18 +112,20 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
     }
     case 'baseball': {
       const s = stats as BaseballStats;
-      return [s.atBats ?? 0, s.hits ?? 0, s.homeRuns ?? 0, s.rbi ?? 0, s.strikeouts ?? 0];
+      return [s.gamesPlayed ?? 0, s.atBats ?? 0, s.hits ?? 0, s.homeRuns ?? 0, s.rbi ?? 0, s.strikeouts ?? 0];
     }
     case 'basketball': {
       const s = stats as BasketballStats;
-      return [s.points ?? 0, s.rebounds ?? 0, s.assists ?? 0, s.steals ?? 0, s.blocks ?? 0];
+      const gp = s.gamesPlayed ?? 0;
+      const ppg = gp > 0 ? ((s.points ?? 0) / gp).toFixed(1) : '0.0';
+      return [gp, s.points ?? 0, ppg, s.rebounds ?? 0, s.assists ?? 0, s.steals ?? 0, s.blocks ?? 0];
     }
     case 'soccer': {
       const s = stats as SoccerStats;
-      return [s.goals ?? 0, s.assists ?? 0, s.yellowCards ?? 0];
+      return [s.gamesPlayed ?? 0, s.goals ?? 0, s.assists ?? 0, s.yellowCards ?? 0];
     }
     default:
-      return ['-', '-', '-'];
+      return [0, 0, 0];
   }
 }
 
@@ -242,6 +246,7 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
       ];
     case 'baseball':
       return [
+        { key: 'gamesPlayed', label: 'Games Played' },
         { key: 'atBats', label: 'At Bats' },
         { key: 'hits', label: 'Hits' },
         { key: 'homeRuns', label: 'Home Runs' },
@@ -250,6 +255,7 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
       ];
     case 'basketball':
       return [
+        { key: 'gamesPlayed', label: 'Games Played' },
         { key: 'points', label: 'Points' },
         { key: 'rebounds', label: 'Rebounds' },
         { key: 'assists', label: 'Assists' },
@@ -258,6 +264,7 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
       ];
     case 'soccer':
       return [
+        { key: 'gamesPlayed', label: 'Games Played' },
         { key: 'goals', label: 'Goals' },
         { key: 'assists', label: 'Assists' },
         { key: 'yellowCards', label: 'Yellow Cards' },
@@ -279,11 +286,11 @@ function getDefaultStats(sport: Sport, position: string): PlayerStats {
     case 'hockey':
       return { gamesPlayed: 0, goals: 0, assists: 0, pim: 0, plusMinus: 0 };
     case 'baseball':
-      return { atBats: 0, hits: 0, homeRuns: 0, rbi: 0, strikeouts: 0 };
+      return { gamesPlayed: 0, atBats: 0, hits: 0, homeRuns: 0, rbi: 0, strikeouts: 0 };
     case 'basketball':
-      return { points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0 };
+      return { gamesPlayed: 0, points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0 };
     case 'soccer':
-      return { goals: 0, assists: 0, yellowCards: 0 };
+      return { gamesPlayed: 0, goals: 0, assists: 0, yellowCards: 0 };
     default:
       return { gamesPlayed: 0, goals: 0, assists: 0, pim: 0, plusMinus: 0 };
   }
