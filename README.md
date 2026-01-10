@@ -131,6 +131,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - Email the entire team at once
 - Send game invites to potential subs
 - **Feature Request**: Submit suggestions for new app features via email
+- **Report Bug**: Report issues and bugs via email
 - Log out to switch players
 
 ### Photos Tab

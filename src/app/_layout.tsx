@@ -139,6 +139,13 @@ function AuthNavigator() {
           presentation: 'card',
         }}
       />
+      <Stack.Screen
+        name="report-bug"
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
       <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
     </Stack>
   );

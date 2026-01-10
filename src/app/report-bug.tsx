@@ -1,0 +1,292 @@
+import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { ArrowLeft, Bug, Send, CheckCircle } from 'lucide-react-native';
+import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import * as Linking from 'expo-linking';
+import { useState } from 'react';
+import { useTeamStore } from '@/lib/store';
+
+const FEEDBACK_EMAIL = 'raparkinson2@gmail.com';
+
+export default function ReportBugScreen() {
+  const router = useRouter();
+  const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
+  const players = useTeamStore((s) => s.players);
+  const teamName = useTeamStore((s) => s.teamName);
+
+  const currentPlayer = players.find((p) => p.id === currentPlayerId);
+
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [stepsToReproduce, setStepsToReproduce] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!title.trim()) {
+      Alert.alert('Missing Title', 'Please enter a title for the bug report.');
+      return;
+    }
+
+    if (!description.trim()) {
+      Alert.alert('Missing Description', 'Please describe the bug you encountered.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // Build the email
+    const subject = encodeURIComponent(`Bug Report: ${title.trim()}`);
+    const body = encodeURIComponent(
+      `Bug Report\n` +
+      `================\n\n` +
+      `Title: ${title.trim()}\n\n` +
+      `Description:\n${description.trim()}\n\n` +
+      `Steps to Reproduce:\n${stepsToReproduce.trim() || 'Not provided'}\n\n` +
+      `---\n` +
+      `Reported by: ${currentPlayer?.name || 'Unknown'}\n` +
+      `Team: ${teamName}\n` +
+      `Platform: ${Platform.OS}\n` +
+      `Date: ${new Date().toLocaleDateString()}`
+    );
+
+    const mailtoUrl = `mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`;
+
+    try {
+      const canOpen = await Linking.canOpenURL(mailtoUrl);
+      if (canOpen) {
+        await Linking.openURL(mailtoUrl);
+        setIsSubmitted(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        Alert.alert('Error', 'Could not open email app. Please make sure you have an email app installed.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleNewReport = () => {
+    setTitle('');
+    setDescription('');
+    setStepsToReproduce('');
+    setIsSubmitted(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  if (isSubmitted) {
+    return (
+      <View className="flex-1 bg-slate-900">
+        <LinearGradient
+          colors={['#0f172a', '#1e293b', '#0f172a']}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
+        <SafeAreaView className="flex-1" edges={['top']}>
+          {/* Header */}
+          <Animated.View
+            entering={FadeIn.delay(50)}
+            className="flex-row items-center px-5 pt-2 pb-4"
+          >
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.back();
+              }}
+              className="w-10 h-10 rounded-full bg-slate-800/80 items-center justify-center mr-3"
+            >
+              <ArrowLeft size={20} color="#67e8f9" />
+            </Pressable>
+            <View className="flex-1">
+              <Text className="text-slate-400 text-sm font-medium">Settings</Text>
+              <Text className="text-white text-2xl font-bold">Report Bug</Text>
+            </View>
+          </Animated.View>
+
+          <View className="flex-1 items-center justify-center px-8">
+            <Animated.View
+              entering={FadeInUp.delay(100).springify()}
+              className="items-center"
+            >
+              <View className="w-20 h-20 rounded-full bg-green-500/20 items-center justify-center mb-6">
+                <CheckCircle size={40} color="#22c55e" />
+              </View>
+              <Text className="text-white text-2xl font-bold text-center mb-3">
+                Email Ready!
+              </Text>
+              <Text className="text-slate-400 text-center text-base mb-8">
+                Your email app should have opened with your bug report. Just hit send to submit it!
+              </Text>
+
+              <Pressable
+                onPress={handleNewReport}
+                className="bg-slate-800 rounded-xl py-4 px-8 mb-4 active:bg-slate-700"
+              >
+                <Text className="text-cyan-400 font-semibold text-base">Report Another Bug</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.back();
+                }}
+                className="py-3"
+              >
+                <Text className="text-slate-400 font-medium">Go Back</Text>
+              </Pressable>
+            </Animated.View>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  return (
+    <View className="flex-1 bg-slate-900">
+      <LinearGradient
+        colors={['#0f172a', '#1e293b', '#0f172a']}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+      />
+
+      <SafeAreaView className="flex-1" edges={['top']}>
+        {/* Header */}
+        <Animated.View
+          entering={FadeIn.delay(50)}
+          className="flex-row items-center px-5 pt-2 pb-4"
+        >
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            }}
+            className="w-10 h-10 rounded-full bg-slate-800/80 items-center justify-center mr-3"
+          >
+            <ArrowLeft size={20} color="#67e8f9" />
+          </Pressable>
+          <View className="flex-1">
+            <Text className="text-slate-400 text-sm font-medium">Settings</Text>
+            <Text className="text-white text-2xl font-bold">Report Bug</Text>
+          </View>
+        </Animated.View>
+
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1"
+        >
+          <ScrollView
+            className="flex-1 px-5"
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 40 }}
+          >
+            {/* Info Card */}
+            <Animated.View
+              entering={FadeInDown.delay(100).springify()}
+              className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 mb-6"
+            >
+              <View className="flex-row items-center mb-2">
+                <View className="w-10 h-10 rounded-full bg-red-500/20 items-center justify-center mr-3">
+                  <Bug size={20} color="#f87171" />
+                </View>
+                <Text className="text-red-400 font-semibold text-lg">Found a bug?</Text>
+              </View>
+              <Text className="text-slate-300 text-sm leading-5">
+                Help us improve the app by reporting any issues you encounter. The more detail you provide, the faster we can fix it!
+              </Text>
+            </Animated.View>
+
+            {/* Title Input */}
+            <Animated.View
+              entering={FadeInDown.delay(150).springify()}
+              className="mb-4"
+            >
+              <Text className="text-slate-400 text-sm font-medium mb-2">Bug Title</Text>
+              <TextInput
+                value={title}
+                onChangeText={setTitle}
+                placeholder="e.g., App crashes when opening photos"
+                placeholderTextColor="#64748b"
+                className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
+                maxLength={100}
+              />
+              <Text className="text-slate-500 text-xs mt-1 text-right">{title.length}/100</Text>
+            </Animated.View>
+
+            {/* Description Input */}
+            <Animated.View
+              entering={FadeInDown.delay(200).springify()}
+              className="mb-4"
+            >
+              <Text className="text-slate-400 text-sm font-medium mb-2">What happened?</Text>
+              <TextInput
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Describe what went wrong. What did you expect to happen vs what actually happened?"
+                placeholderTextColor="#64748b"
+                className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                style={{ minHeight: 100 }}
+                maxLength={1000}
+              />
+              <Text className="text-slate-500 text-xs mt-1 text-right">{description.length}/1000</Text>
+            </Animated.View>
+
+            {/* Steps to Reproduce Input */}
+            <Animated.View
+              entering={FadeInDown.delay(250).springify()}
+              className="mb-6"
+            >
+              <Text className="text-slate-400 text-sm font-medium mb-2">Steps to reproduce (optional)</Text>
+              <TextInput
+                value={stepsToReproduce}
+                onChangeText={setStepsToReproduce}
+                placeholder="1. Go to Photos tab&#10;2. Tap on a photo&#10;3. App crashes"
+                placeholderTextColor="#64748b"
+                className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                style={{ minHeight: 100 }}
+                maxLength={500}
+              />
+              <Text className="text-slate-500 text-xs mt-1 text-right">{stepsToReproduce.length}/500</Text>
+            </Animated.View>
+
+            {/* Submit Button */}
+            <Animated.View entering={FadeInDown.delay(300).springify()}>
+              <Pressable
+                onPress={handleSubmit}
+                disabled={isSubmitting}
+                className={`rounded-xl py-4 items-center flex-row justify-center ${
+                  isSubmitting ? 'bg-red-600/50' : 'bg-red-500 active:bg-red-600'
+                }`}
+              >
+                <Send size={20} color="white" />
+                <Text className="text-white font-semibold text-base ml-2">
+                  {isSubmitting ? 'Opening Email...' : 'Submit Bug Report'}
+                </Text>
+              </Pressable>
+            </Animated.View>
+
+            {/* Note */}
+            <Animated.View
+              entering={FadeInDown.delay(350).springify()}
+              className="mt-6"
+            >
+              <Text className="text-slate-500 text-sm text-center">
+                Your report will be sent via email. Make sure to hit send in your email app to complete the submission.
+              </Text>
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
+  );
+}

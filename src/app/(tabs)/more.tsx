@@ -18,6 +18,7 @@ import {
   BellOff,
   Play,
   Lightbulb,
+  Bug,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -697,11 +698,19 @@ export default function MoreScreen() {
           />
 
           <MenuItem
+            icon={<Bug size={20} color="#f87171" />}
+            title="Report Bug"
+            subtitle="Let us know about issues"
+            onPress={() => router.push('/report-bug')}
+            index={5}
+          />
+
+          <MenuItem
             icon={<LogOut size={20} color="#f87171" />}
             title="Log Out"
             subtitle="Switch to a different player"
             onPress={handleLogout}
-            index={5}
+            index={6}
             variant="danger"
           />
         </ScrollView>
