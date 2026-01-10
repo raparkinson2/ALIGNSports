@@ -192,13 +192,16 @@ function calculateTeamTotals(players: Player[], sport: Sport): { label: string; 
         }
       });
       const ppg = totalGP > 0 ? Math.round((totalPts / totalGP) * 10) / 10 : 0;
+      const rpg = totalGP > 0 ? Math.round((totalReb / totalGP) * 10) / 10 : 0;
+      const apg = totalGP > 0 ? Math.round((totalAst / totalGP) * 10) / 10 : 0;
+      const spg = totalGP > 0 ? Math.round((totalStl / totalGP) * 10) / 10 : 0;
+      const bpg = totalGP > 0 ? Math.round((totalBlk / totalGP) * 10) / 10 : 0;
       return [
-        { label: 'Points', value: totalPts },
         { label: 'PPG', value: ppg },
-        { label: 'Rebounds', value: totalReb },
-        { label: 'Assists', value: totalAst },
-        { label: 'Steals', value: totalStl },
-        { label: 'Blocks', value: totalBlk },
+        { label: 'RPG', value: rpg },
+        { label: 'APG', value: apg },
+        { label: 'SPG', value: spg },
+        { label: 'BPG', value: bpg },
       ];
     }
     case 'soccer': {
