@@ -15,12 +15,13 @@ import {
   Check,
   Beer,
   ChevronDown,
+  Edit3,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { useTeamStore, Game } from '@/lib/store';
+import { useTeamStore, Game, TeamRecord, Sport } from '@/lib/store';
 import { cn } from '@/lib/cn';
 
 const getDateLabel = (dateString: string): string => {
@@ -28,6 +29,43 @@ const getDateLabel = (dateString: string): string => {
   if (isToday(date)) return 'Today';
   if (isTomorrow(date)) return 'Tomorrow';
   return format(date, 'EEE, MMM d');
+};
+
+// Format team record based on sport
+const formatTeamRecord = (record: TeamRecord | undefined, sport: Sport): string => {
+  if (!record) return '';
+
+  switch (sport) {
+    case 'hockey':
+      // Hockey: W-L-T-OTL
+      return `${record.wins}-${record.losses}-${record.ties ?? 0}-${record.otLosses ?? 0}`;
+    case 'basketball':
+      // Basketball: W-L
+      return `${record.wins}-${record.losses}`;
+    case 'soccer':
+      // Soccer: W-L-T
+      return `${record.wins}-${record.losses}-${record.ties ?? 0}`;
+    case 'baseball':
+      // Baseball: W-L
+      return `${record.wins}-${record.losses}`;
+    default:
+      return `${record.wins}-${record.losses}`;
+  }
+};
+
+// Get record label based on sport
+const getRecordLabel = (sport: Sport): string => {
+  switch (sport) {
+    case 'hockey':
+      return 'W-L-T-OTL';
+    case 'basketball':
+    case 'baseball':
+      return 'W-L';
+    case 'soccer':
+      return 'W-L-T';
+    default:
+      return 'W-L';
+  }
 };
 
 // Helper to convert hex codes to readable color names
@@ -171,9 +209,11 @@ export default function ScheduleScreen() {
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const addGame = useTeamStore((s) => s.addGame);
+  const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isRecordModalVisible, setIsRecordModalVisible] = useState(false);
   const [opponent, setOpponent] = useState('');
   const [location, setLocation] = useState('');
   const [address, setAddress] = useState('');
@@ -186,6 +226,14 @@ export default function ScheduleScreen() {
   const [selectedBeerDutyPlayer, setSelectedBeerDutyPlayer] = useState<string | null>(null);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [showPlayerSelection, setShowPlayerSelection] = useState(false);
+
+  // Record editing state
+  const [recordWins, setRecordWins] = useState(teamSettings.record?.wins?.toString() ?? '0');
+  const [recordLosses, setRecordLosses] = useState(teamSettings.record?.losses?.toString() ?? '0');
+  const [recordTies, setRecordTies] = useState(teamSettings.record?.ties?.toString() ?? '0');
+  const [recordOtLosses, setRecordOtLosses] = useState(teamSettings.record?.otLosses?.toString() ?? '0');
+
+  const sport = teamSettings.sport;
 
   const activePlayers = players.filter((p) => p.status === 'active');
   const reservePlayers = players.filter((p) => p.status === 'reserve');
@@ -316,7 +364,45 @@ export default function ScheduleScreen() {
           className="px-5 pt-2 pb-4"
         >
           <Text className="text-slate-400 text-sm font-medium">Your Team</Text>
-          <Text className="text-white text-3xl font-bold">{teamName}</Text>
+          <View className="flex-row items-center justify-between">
+            <Text className="text-white text-3xl font-bold">{teamName}</Text>
+          </View>
+          {/* Team Record */}
+          <Pressable
+            onPress={() => {
+              if (canManageTeam()) {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                // Reset form values to current record
+                setRecordWins(teamSettings.record?.wins?.toString() ?? '0');
+                setRecordLosses(teamSettings.record?.losses?.toString() ?? '0');
+                setRecordTies(teamSettings.record?.ties?.toString() ?? '0');
+                setRecordOtLosses(teamSettings.record?.otLosses?.toString() ?? '0');
+                setIsRecordModalVisible(true);
+              }
+            }}
+            className="flex-row items-center mt-1"
+          >
+            {teamSettings.record ? (
+              <View className="flex-row items-center">
+                <View className="bg-slate-800/80 rounded-lg px-3 py-1.5 flex-row items-center">
+                  <Text className="text-cyan-400 text-lg font-bold">
+                    {formatTeamRecord(teamSettings.record, sport)}
+                  </Text>
+                  {canManageTeam() && (
+                    <Edit3 size={14} color="#67e8f9" style={{ marginLeft: 8 }} />
+                  )}
+                </View>
+                <Text className="text-slate-500 text-xs ml-2">
+                  {getRecordLabel(sport)}
+                </Text>
+              </View>
+            ) : canManageTeam() ? (
+              <View className="flex-row items-center bg-slate-800/60 rounded-lg px-3 py-1.5">
+                <Plus size={14} color="#67e8f9" />
+                <Text className="text-slate-400 text-sm ml-1">Add Record</Text>
+              </View>
+            ) : null}
+          </Pressable>
         </Animated.View>
 
         {/* Schedule Section */}
@@ -760,6 +846,118 @@ export default function ScheduleScreen() {
                 />
               </View>
             </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Edit Record Modal */}
+      <Modal
+        visible={isRecordModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsRecordModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsRecordModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Team Record</Text>
+              <Pressable
+                onPress={() => {
+                  const newRecord: TeamRecord = {
+                    wins: parseInt(recordWins, 10) || 0,
+                    losses: parseInt(recordLosses, 10) || 0,
+                    ties: (sport === 'hockey' || sport === 'soccer') ? (parseInt(recordTies, 10) || 0) : undefined,
+                    otLosses: sport === 'hockey' ? (parseInt(recordOtLosses, 10) || 0) : undefined,
+                  };
+                  setTeamSettings({ record: newRecord });
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  setIsRecordModalVisible(false);
+                }}
+              >
+                <Text className="text-cyan-400 font-semibold">Save</Text>
+              </Pressable>
+            </View>
+
+            <View className="px-5 pt-6">
+              <Text className="text-slate-400 text-sm mb-4">
+                Format: {getRecordLabel(sport)}
+              </Text>
+
+              <View className="flex-row flex-wrap">
+                {/* Wins */}
+                <View className="w-1/2 pr-2 mb-4">
+                  <Text className="text-slate-400 text-sm mb-2">Wins</Text>
+                  <TextInput
+                    value={recordWins}
+                    onChangeText={setRecordWins}
+                    keyboardType="number-pad"
+                    placeholder="0"
+                    placeholderTextColor="#64748b"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-xl text-center font-bold"
+                  />
+                </View>
+
+                {/* Losses */}
+                <View className="w-1/2 pl-2 mb-4">
+                  <Text className="text-slate-400 text-sm mb-2">Losses</Text>
+                  <TextInput
+                    value={recordLosses}
+                    onChangeText={setRecordLosses}
+                    keyboardType="number-pad"
+                    placeholder="0"
+                    placeholderTextColor="#64748b"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-xl text-center font-bold"
+                  />
+                </View>
+
+                {/* Ties (Hockey, Soccer) */}
+                {(sport === 'hockey' || sport === 'soccer') && (
+                  <View className="w-1/2 pr-2 mb-4">
+                    <Text className="text-slate-400 text-sm mb-2">Ties</Text>
+                    <TextInput
+                      value={recordTies}
+                      onChangeText={setRecordTies}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      placeholderTextColor="#64748b"
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-xl text-center font-bold"
+                    />
+                  </View>
+                )}
+
+                {/* OT Losses (Hockey only) */}
+                {sport === 'hockey' && (
+                  <View className="w-1/2 pl-2 mb-4">
+                    <Text className="text-slate-400 text-sm mb-2">OT Losses</Text>
+                    <TextInput
+                      value={recordOtLosses}
+                      onChangeText={setRecordOtLosses}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      placeholderTextColor="#64748b"
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-xl text-center font-bold"
+                    />
+                  </View>
+                )}
+              </View>
+
+              {/* Clear record button */}
+              {teamSettings.record && (
+                <Pressable
+                  onPress={() => {
+                    setTeamSettings({ record: undefined });
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    setIsRecordModalVisible(false);
+                  }}
+                  className="mt-4 py-3 rounded-xl border border-red-500/30 bg-red-500/10"
+                >
+                  <Text className="text-red-400 text-center font-medium">Clear Record</Text>
+                </Pressable>
+              )}
+            </View>
           </SafeAreaView>
         </View>
       </Modal>

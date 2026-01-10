@@ -185,11 +185,20 @@ export interface Photo {
   uploadedAt: string;
 }
 
+// Team Record based on sport
+export interface TeamRecord {
+  wins: number;
+  losses: number;
+  ties?: number; // Hockey, Soccer
+  otLosses?: number; // Hockey only (Overtime losses)
+}
+
 export interface TeamSettings {
   sport: Sport;
   jerseyColors: { name: string; color: string }[];
   paymentMethods: PaymentMethod[];
   teamLogo?: string;
+  record?: TeamRecord;
 }
 
 interface TeamStore {
