@@ -17,6 +17,7 @@ import {
   BellRing,
   BellOff,
   Play,
+  Lightbulb,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -688,11 +689,19 @@ export default function MoreScreen() {
           </Text>
 
           <MenuItem
+            icon={<Lightbulb size={20} color="#67e8f9" />}
+            title="Feature Request"
+            subtitle="Suggest a new feature"
+            onPress={() => router.push('/feature-request')}
+            index={4}
+          />
+
+          <MenuItem
             icon={<LogOut size={20} color="#f87171" />}
             title="Log Out"
             subtitle="Switch to a different player"
             onPress={handleLogout}
-            index={4}
+            index={5}
             variant="danger"
           />
         </ScrollView>
