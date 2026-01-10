@@ -767,14 +767,15 @@ export const useTeamStore = create<TeamStore>()(
     {
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 3, // Increment to force migration for roles array
+      version: 4, // Increment to fix corrupted player positions and stats
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Partial<TeamStore>;
-        // Force update players to have correct roles array
-        if (version < 3) {
+        // Force update players to have correct positions and stats
+        if (version < 4) {
           return {
             ...state,
-            players: mockPlayers, // Reset to mock data with correct roles array
+            players: mockPlayers, // Reset to mock data with correct positions
+            teamSettings: defaultTeamSettings, // Reset to hockey
           };
         }
         return state as TeamStore;
