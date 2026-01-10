@@ -19,6 +19,7 @@ import {
   Play,
   Lightbulb,
   Bug,
+  BarChart3,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -684,6 +685,16 @@ export default function MoreScreen() {
             index={3}
           />
 
+          <MenuItem
+            icon={<BarChart3 size={20} color="#67e8f9" />}
+            title="Team Stats"
+            subtitle="View team statistics"
+            onPress={() => {
+              router.push('/team-stats');
+            }}
+            index={4}
+          />
+
           {/* Account Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
             Account
@@ -694,7 +705,7 @@ export default function MoreScreen() {
             title="Feature Request"
             subtitle="Suggest a new feature"
             onPress={() => router.push('/feature-request')}
-            index={4}
+            index={5}
           />
 
           <MenuItem
@@ -702,7 +713,7 @@ export default function MoreScreen() {
             title="Report Bug"
             subtitle="Let us know about issues"
             onPress={() => router.push('/report-bug')}
-            index={5}
+            index={6}
           />
 
           <MenuItem
@@ -710,7 +721,7 @@ export default function MoreScreen() {
             title="Log Out"
             subtitle="Switch to a different player"
             onPress={handleLogout}
-            index={6}
+            index={7}
             variant="danger"
           />
         </ScrollView>

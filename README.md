@@ -133,6 +133,13 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Notification Settings**: Manage push notification preferences
 - Email the entire team at once
 - Send game invites to potential subs
+- **Team Stats**: View comprehensive team statistics
+  - Season record (Wins/Losses/Ties)
+  - Win percentage with progress bar
+  - Games played and upcoming
+  - Average attendance per game
+  - Most dedicated player (most games attended)
+  - Roster breakdown (active vs total)
 - **Feature Request**: Submit suggestions for new app features via email
 - **Report Bug**: Report issues and bugs via email
 - Log out to switch players
