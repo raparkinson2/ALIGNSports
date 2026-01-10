@@ -1119,34 +1119,32 @@ export default function AdminScreen() {
               {/* Position */}
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Position</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
-                  <View className="flex-row">
-                    {positions.map((pos) => (
-                      <Pressable
-                        key={pos}
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          setNewPlayerPosition(pos);
-                        }}
+                <View className="flex-row flex-wrap">
+                  {positions.map((pos) => (
+                    <Pressable
+                      key={pos}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setNewPlayerPosition(pos);
+                      }}
+                      className={cn(
+                        'px-3 py-2 rounded-xl mr-2 mb-2 border',
+                        newPlayerPosition === pos
+                          ? 'bg-cyan-500/20 border-cyan-500/50'
+                          : 'bg-slate-800 border-slate-700'
+                      )}
+                    >
+                      <Text
                         className={cn(
-                          'px-4 py-2 rounded-xl mr-2 border',
-                          newPlayerPosition === pos
-                            ? 'bg-cyan-500/20 border-cyan-500/50'
-                            : 'bg-slate-800 border-slate-700'
+                          'font-medium text-sm',
+                          newPlayerPosition === pos ? 'text-cyan-400' : 'text-slate-400'
                         )}
                       >
-                        <Text
-                          className={cn(
-                            'font-medium',
-                            newPlayerPosition === pos ? 'text-cyan-400' : 'text-slate-400'
-                          )}
-                        >
-                          {SPORT_POSITION_NAMES[teamSettings.sport][pos] || pos}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </ScrollView>
+                        {pos}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
 
               {/* Phone */}
