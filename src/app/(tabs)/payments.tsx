@@ -17,6 +17,7 @@ import {
   ExternalLink,
   Calendar,
   ChevronLeft,
+  Edit3,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -184,6 +185,7 @@ export default function PaymentsScreen() {
   const removePaymentPeriod = useTeamStore((s) => s.removePaymentPeriod);
   const addPaymentEntry = useTeamStore((s) => s.addPaymentEntry);
   const removePaymentEntry = useTeamStore((s) => s.removePaymentEntry);
+  const updatePaymentPeriod = useTeamStore((s) => s.updatePaymentPeriod);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
 
@@ -208,6 +210,11 @@ export default function PaymentsScreen() {
   const [periodTitle, setPeriodTitle] = useState('');
   const [periodAmount, setPeriodAmount] = useState('');
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+
+  // Edit period amount
+  const [isEditAmountModalVisible, setIsEditAmountModalVisible] = useState(false);
+  const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null);
+  const [editPeriodAmount, setEditPeriodAmount] = useState('');
 
   const paymentMethods = teamSettings.paymentMethods ?? [];
 
@@ -270,6 +277,18 @@ export default function PaymentsScreen() {
     setPeriodAmount('');
     setSelectedPlayerIds([]);
     setIsNewPeriodModalVisible(false);
+  };
+
+  const handleUpdatePeriodAmount = () => {
+    if (!editingPeriodId || !editPeriodAmount.trim()) return;
+    const amount = parseFloat(editPeriodAmount);
+    if (isNaN(amount) || amount <= 0) return;
+
+    updatePaymentPeriod(editingPeriodId, { amount });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsEditAmountModalVisible(false);
+    setEditingPeriodId(null);
+    setEditPeriodAmount('');
   };
 
   const handleAddPaymentEntry = () => {
@@ -970,12 +989,29 @@ export default function PaymentsScreen() {
 
                 {selectedPeriod && (
                   <ScrollView className="flex-1 px-5 pt-6">
-                    <View className="bg-green-500/20 rounded-xl p-4 mb-6">
-                      <Text className="text-green-400 text-2xl font-bold">
-                        ${selectedPeriod.amount}
-                      </Text>
-                      <Text className="text-green-300 text-sm">per player</Text>
-                    </View>
+                    <Pressable
+                      onPress={() => {
+                        if (isAdmin()) {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setEditingPeriodId(selectedPeriod.id);
+                          setEditPeriodAmount(selectedPeriod.amount.toString());
+                          setIsEditAmountModalVisible(true);
+                        }
+                      }}
+                      className="bg-green-500/20 rounded-xl p-4 mb-6 flex-row items-center justify-between"
+                    >
+                      <View>
+                        <Text className="text-green-400 text-2xl font-bold">
+                          ${selectedPeriod.amount}
+                        </Text>
+                        <Text className="text-green-300 text-sm">per player</Text>
+                      </View>
+                      {isAdmin() && (
+                        <View className="bg-green-500/30 rounded-lg p-2">
+                          <Edit3 size={18} color="#22c55e" />
+                        </View>
+                      )}
+                    </Pressable>
 
                     <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
                       Tap a player to view/add payments
@@ -1006,6 +1042,55 @@ export default function PaymentsScreen() {
                 )}
               </>
             )}
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Edit Period Amount Modal */}
+      <Modal
+        visible={isEditAmountModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => {
+          setIsEditAmountModalVisible(false);
+          setEditingPeriodId(null);
+          setEditPeriodAmount('');
+        }}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => {
+                setIsEditAmountModalVisible(false);
+                setEditingPeriodId(null);
+                setEditPeriodAmount('');
+              }}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Edit Amount Due</Text>
+              <Pressable onPress={handleUpdatePeriodAmount}>
+                <Text className="text-cyan-400 font-semibold">Save</Text>
+              </Pressable>
+            </View>
+
+            <View className="px-5 pt-6">
+              <Text className="text-slate-400 text-sm mb-2">Amount ($)</Text>
+              <View className="flex-row items-center bg-slate-800 rounded-xl px-4 py-3">
+                <Text className="text-white text-2xl font-bold mr-1">$</Text>
+                <TextInput
+                  value={editPeriodAmount}
+                  onChangeText={setEditPeriodAmount}
+                  placeholder="0.00"
+                  placeholderTextColor="#64748b"
+                  keyboardType="decimal-pad"
+                  autoFocus
+                  className="flex-1 text-white text-2xl font-bold"
+                />
+              </View>
+              <Text className="text-slate-500 text-sm mt-3">
+                This will update the amount due for all players in this period.
+              </Text>
+            </View>
           </SafeAreaView>
         </View>
       </Modal>
