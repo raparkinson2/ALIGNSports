@@ -47,6 +47,56 @@ export const SPORT_POSITION_NAMES: Record<Sport, Record<string, string>> = {
   },
 };
 
+// Map positions from one sport to another based on role similarity
+export const POSITION_MAPPING: Record<Sport, Record<string, Record<Sport, string>>> = {
+  hockey: {
+    G: { hockey: 'G', baseball: 'C', basketball: 'C', soccer: 'GK' },
+    LD: { hockey: 'LD', baseball: '3B', basketball: 'PF', soccer: 'DEF' },
+    RD: { hockey: 'RD', baseball: 'SS', basketball: 'C', soccer: 'DEF' },
+    C: { hockey: 'C', baseball: 'SS', basketball: 'PG', soccer: 'MID' },
+    LW: { hockey: 'LW', baseball: 'LF', basketball: 'SG', soccer: 'FWD' },
+    RW: { hockey: 'RW', baseball: 'RF', basketball: 'SF', soccer: 'FWD' },
+  },
+  baseball: {
+    P: { hockey: 'G', baseball: 'P', basketball: 'C', soccer: 'GK' },
+    C: { hockey: 'G', baseball: 'C', basketball: 'C', soccer: 'GK' },
+    '1B': { hockey: 'LD', baseball: '1B', basketball: 'PF', soccer: 'DEF' },
+    '2B': { hockey: 'C', baseball: '2B', basketball: 'PG', soccer: 'MID' },
+    '3B': { hockey: 'LD', baseball: '3B', basketball: 'PF', soccer: 'DEF' },
+    SS: { hockey: 'C', baseball: 'SS', basketball: 'PG', soccer: 'MID' },
+    LF: { hockey: 'LW', baseball: 'LF', basketball: 'SG', soccer: 'FWD' },
+    RF: { hockey: 'RW', baseball: 'RF', basketball: 'SF', soccer: 'FWD' },
+    CF: { hockey: 'C', baseball: 'CF', basketball: 'SF', soccer: 'MID' },
+  },
+  basketball: {
+    PG: { hockey: 'C', baseball: 'SS', basketball: 'PG', soccer: 'MID' },
+    SG: { hockey: 'LW', baseball: 'LF', basketball: 'SG', soccer: 'FWD' },
+    SF: { hockey: 'RW', baseball: 'RF', basketball: 'SF', soccer: 'FWD' },
+    PF: { hockey: 'LD', baseball: '3B', basketball: 'PF', soccer: 'DEF' },
+    C: { hockey: 'G', baseball: 'C', basketball: 'C', soccer: 'GK' },
+  },
+  soccer: {
+    GK: { hockey: 'G', baseball: 'C', basketball: 'C', soccer: 'GK' },
+    DEF: { hockey: 'LD', baseball: '3B', basketball: 'PF', soccer: 'DEF' },
+    MID: { hockey: 'C', baseball: 'SS', basketball: 'PG', soccer: 'MID' },
+    FWD: { hockey: 'LW', baseball: 'LF', basketball: 'SG', soccer: 'FWD' },
+  },
+};
+
+// Helper to map a position from one sport to another
+export const mapPosition = (currentPosition: string, fromSport: Sport, toSport: Sport): string => {
+  if (fromSport === toSport) return currentPosition;
+
+  // Check if we have a mapping for this position
+  const sportMapping = POSITION_MAPPING[fromSport];
+  if (sportMapping && sportMapping[currentPosition]) {
+    return sportMapping[currentPosition][toSport];
+  }
+
+  // Fallback: return first position of the target sport
+  return SPORT_POSITIONS[toSport][0];
+};
+
 export const SPORT_NAMES: Record<Sport, string> = {
   hockey: 'Hockey',
   baseball: 'Baseball',
@@ -412,9 +462,26 @@ export const useTeamStore = create<TeamStore>()(
       setTeamName: (name) => set({ teamName: name }),
 
       teamSettings: defaultTeamSettings,
-      setTeamSettings: (settings) => set((state) => ({
-        teamSettings: { ...state.teamSettings, ...settings },
-      })),
+      setTeamSettings: (settings) => set((state) => {
+        const newSettings = { ...state.teamSettings, ...settings };
+
+        // If sport is changing, remap all player positions
+        if (settings.sport && settings.sport !== state.teamSettings.sport) {
+          const fromSport = state.teamSettings.sport;
+          const toSport = settings.sport;
+          const updatedPlayers = state.players.map((player) => ({
+            ...player,
+            position: mapPosition(player.position, fromSport, toSport),
+            stats: undefined, // Clear stats when changing sports
+          }));
+          return {
+            teamSettings: newSettings,
+            players: updatedPlayers,
+          };
+        }
+
+        return { teamSettings: newSettings };
+      }),
 
       players: mockPlayers,
       addPlayer: (player) => set((state) => ({ players: [...state.players, player] })),

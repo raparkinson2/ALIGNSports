@@ -122,7 +122,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 
 ### Admin Panel (Admin only)
 - **Team Settings**: Edit team name
-- **Sport Selection**: Change sport type (updates positions)
+- **Sport Selection**: Change sport type (automatically remaps all player positions to equivalent positions in the new sport and clears stats)
 - **Jersey Colors**: Add/remove team jersey colors
 - **Payment Methods**: Configure Venmo/PayPal/Zelle/Cash App for the team
 - **Refreshment Duty Toggle**: Enable/disable per game
