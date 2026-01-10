@@ -439,14 +439,14 @@ export default function PaymentsScreen() {
             ) : (
               <View className="bg-slate-800/50 rounded-xl p-4 mb-6">
                 <Text className="text-slate-400 text-sm mb-3">Tap to pay:</Text>
-                <View className="flex-row flex-wrap">
+                <View className="flex-row" style={{ gap: 8 }}>
                   {paymentMethods.map((method, index) => (
-                    <View key={index} className="relative mr-2 mb-2" style={{ marginTop: 4 }}>
+                    <View key={index} className="relative flex-1" style={{ marginTop: 4 }}>
                       <PaymentMethodButton method={method} />
                       {isAdmin() && (
                         <Pressable
                           onPress={() => handleRemovePaymentMethod(index)}
-                          className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
+                          className="absolute -top-2 -right-1 bg-red-500 rounded-full p-1"
                         >
                           <X size={8} color="white" />
                         </Pressable>
