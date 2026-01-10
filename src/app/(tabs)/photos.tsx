@@ -1,7 +1,6 @@
 import { View, Text, ScrollView, Pressable, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState } from 'react';
 import { Camera, Plus, ImageIcon } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -23,12 +22,12 @@ const SAMPLE_PHOTOS = [
 ];
 
 export default function PhotosScreen() {
-  const photos = useTeamStore((s) => s.photos);
+  const storePhotos = useTeamStore((s) => s.photos);
   const addPhoto = useTeamStore((s) => s.addPhoto);
   const games = useTeamStore((s) => s.games);
 
-  // Combine store photos with sample photos for demo
-  const [localPhotos, setLocalPhotos] = useState<string[]>(SAMPLE_PHOTOS);
+  // Combine store photos with sample photos - store photos first (newest on top)
+  const allPhotos = [...storePhotos.map(p => p.uri), ...SAMPLE_PHOTOS];
 
   const pickImage = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -42,9 +41,6 @@ export default function PhotosScreen() {
 
     if (!result.canceled && result.assets[0]) {
       const uri = result.assets[0].uri;
-      setLocalPhotos([uri, ...localPhotos]);
-
-      // Also add to store
       const newPhoto: Photo = {
         id: Date.now().toString(),
         gameId: games[0]?.id || '',
@@ -72,9 +68,6 @@ export default function PhotosScreen() {
 
     if (!result.canceled && result.assets[0]) {
       const uri = result.assets[0].uri;
-      setLocalPhotos([uri, ...localPhotos]);
-
-      // Also add to store
       const newPhoto: Photo = {
         id: Date.now().toString(),
         gameId: games[0]?.id || '',
@@ -121,7 +114,7 @@ export default function PhotosScreen() {
           </View>
         </Animated.View>
 
-        {localPhotos.length === 0 ? (
+        {allPhotos.length === 0 ? (
           <View className="flex-1 items-center justify-center px-8">
             <View className="bg-slate-800/50 rounded-full p-6 mb-4">
               <ImageIcon size={48} color="#475569" />
@@ -145,7 +138,7 @@ export default function PhotosScreen() {
           >
             {/* Photo Grid */}
             <View className="flex-row flex-wrap">
-              {localPhotos.map((uri, index) => (
+              {allPhotos.map((uri: string, index: number) => (
                 <Animated.View
                   key={uri + index}
                   entering={FadeInDown.delay(index * 50).springify()}
