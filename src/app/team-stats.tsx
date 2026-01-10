@@ -526,13 +526,14 @@ export default function TeamStatsScreen() {
           >
             {/* Table Header for Skaters */}
             <View className="flex-row items-center px-3 py-3 bg-slate-700/50 border-b border-slate-700">
-              <Text className="text-slate-300 font-semibold w-24">Player</Text>
-              {statHeaders.map((header) => (
-                <Text key={header} className="text-slate-300 font-semibold w-9 text-center text-xs">
-                  {header}
-                </Text>
-              ))}
-              {/* Spacer for chevron alignment */}
+              <Text className="text-slate-300 font-semibold flex-1">Player</Text>
+              <View className="flex-row ml-2">
+                {statHeaders.map((header) => (
+                  <Text key={header} className="text-slate-300 font-semibold w-9 text-center text-xs">
+                    {header}
+                  </Text>
+                ))}
+              </View>
               <View className="w-4" />
             </View>
 
@@ -547,15 +548,17 @@ export default function TeamStatsScreen() {
                     index !== arr.length - 1 || (sport === 'hockey' || sport === 'soccer') ? 'border-b border-slate-700/50' : ''
                   }`}
                 >
-                  <View className="w-24 flex-row items-center">
-                    <Text className="text-cyan-400 font-medium text-xs w-7">#{player.number}</Text>
-                    <Text className="text-white text-sm flex-1" numberOfLines={1}>{formatName(player.name)}</Text>
+                  <View className="flex-1 flex-row items-center">
+                    <Text className="text-cyan-400 font-medium text-xs mr-1">#{player.number}</Text>
+                    <Text className="text-white text-sm">{formatName(player.name)}</Text>
                   </View>
-                  {statValues.map((value, i) => (
-                    <Text key={i} className="text-slate-300 w-9 text-center text-sm">
-                      {value}
-                    </Text>
-                  ))}
+                  <View className="flex-row ml-2">
+                    {statValues.map((value, i) => (
+                      <Text key={i} className="text-slate-300 w-9 text-center text-sm">
+                        {value}
+                      </Text>
+                    ))}
+                  </View>
                   <View className="w-4 items-center">
                     <ChevronRight size={14} color="#64748b" />
                   </View>
@@ -568,12 +571,14 @@ export default function TeamStatsScreen() {
               <>
                 {/* Goalie Header */}
                 <View className="flex-row items-center px-3 py-3 bg-slate-700/50 border-b border-slate-700">
-                  <Text className="text-slate-300 font-semibold w-24">Goalies</Text>
-                  {getGoalieHeaders().map((header) => (
-                    <Text key={header} className="text-slate-300 font-semibold w-11 text-center text-xs">
-                      {header}
-                    </Text>
-                  ))}
+                  <Text className="text-slate-300 font-semibold flex-1">Goalies</Text>
+                  <View className="flex-row ml-2">
+                    {getGoalieHeaders().map((header) => (
+                      <Text key={header} className="text-slate-300 font-semibold w-11 text-center text-xs">
+                        {header}
+                      </Text>
+                    ))}
+                  </View>
                   <View className="w-4" />
                 </View>
 
@@ -588,15 +593,17 @@ export default function TeamStatsScreen() {
                         index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
                       }`}
                     >
-                      <View className="w-24 flex-row items-center">
-                        <Text className="text-cyan-400 font-medium text-xs w-7">#{player.number}</Text>
-                        <Text className="text-white text-sm flex-1" numberOfLines={1}>{formatName(player.name)}</Text>
+                      <View className="flex-1 flex-row items-center">
+                        <Text className="text-cyan-400 font-medium text-xs mr-1">#{player.number}</Text>
+                        <Text className="text-white text-sm">{formatName(player.name)}</Text>
                       </View>
-                      {statValues.map((value, i) => (
-                        <Text key={i} className="text-slate-300 w-11 text-center text-sm">
-                          {value}
-                        </Text>
-                      ))}
+                      <View className="flex-row ml-2">
+                        {statValues.map((value, i) => (
+                          <Text key={i} className="text-slate-300 w-11 text-center text-sm">
+                            {value}
+                          </Text>
+                        ))}
+                      </View>
                       <View className="w-4 items-center">
                         <ChevronRight size={14} color="#64748b" />
                       </View>
