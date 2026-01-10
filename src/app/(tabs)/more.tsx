@@ -15,6 +15,8 @@ import {
   Camera,
   Pencil,
   BellRing,
+  BellOff,
+  Play,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -24,6 +26,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences } from '@/lib/store';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
+import { sendTestNotification, registerForPushNotificationsAsync } from '@/lib/notifications';
 
 interface MenuItemProps {
   icon: React.ReactNode;
@@ -250,6 +253,8 @@ function PreferenceToggle({ label, description, value, onToggle }: PreferenceTog
 
 function NotificationPreferencesModal({ visible, onClose, preferences, onSave }: NotificationPreferencesModalProps) {
   const [prefs, setPrefs] = useState<NotificationPreferences>(preferences);
+  const [isTestingNotif, setIsTestingNotif] = useState(false);
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
 
   const handleToggle = (key: keyof NotificationPreferences, value: boolean) => {
     setPrefs((prev) => ({ ...prev, [key]: value }));
@@ -259,6 +264,39 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave }:
     onSave(prefs);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     onClose();
+  };
+
+  const handleTestNotification = async () => {
+    setIsTestingNotif(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      await sendTestNotification();
+      Alert.alert('Success', 'Test notification sent! You should see it shortly.');
+    } catch (error) {
+      Alert.alert('Error', 'Could not send test notification. Make sure you have granted permissions.');
+    } finally {
+      setIsTestingNotif(false);
+    }
+  };
+
+  const handleRequestPermission = async () => {
+    setIsRequestingPermission(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        Alert.alert('Success', 'Push notifications are now enabled!');
+      } else {
+        Alert.alert(
+          'Permission Required',
+          'Please enable notifications in your device settings to receive game reminders and updates.'
+        );
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Could not request notification permissions.');
+    } finally {
+      setIsRequestingPermission(false);
+    }
   };
 
   return (
@@ -277,6 +315,23 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave }:
           </View>
 
           <ScrollView className="px-5" showsVerticalScrollIndicator={false}>
+            {/* Enable Notifications Button */}
+            <Pressable
+              onPress={handleRequestPermission}
+              disabled={isRequestingPermission}
+              className="bg-cyan-500/20 border border-cyan-500/30 rounded-xl p-4 mt-4 mb-2 flex-row items-center active:bg-cyan-500/30"
+            >
+              <View className="w-10 h-10 rounded-full bg-cyan-500/30 items-center justify-center mr-3">
+                <Bell size={20} color="#67e8f9" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-cyan-400 font-semibold">
+                  {isRequestingPermission ? 'Requesting...' : 'Enable Push Notifications'}
+                </Text>
+                <Text className="text-slate-400 text-sm">Tap to grant notification permissions</Text>
+              </View>
+            </Pressable>
+
             {/* Game Notifications Section */}
             <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-4 mb-2">
               Game Notifications
@@ -327,8 +382,25 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave }:
               onToggle={(v) => handleToggle('paymentReminders', v)}
             />
 
+            {/* Test Notification Button */}
+            <Pressable
+              onPress={handleTestNotification}
+              disabled={isTestingNotif}
+              className="bg-slate-800 border border-slate-700 rounded-xl p-4 mt-6 flex-row items-center active:bg-slate-700"
+            >
+              <View className="w-10 h-10 rounded-full bg-green-500/20 items-center justify-center mr-3">
+                <Play size={20} color="#22c55e" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-white font-semibold">
+                  {isTestingNotif ? 'Sending...' : 'Send Test Notification'}
+                </Text>
+                <Text className="text-slate-400 text-sm">Verify notifications are working</Text>
+              </View>
+            </Pressable>
+
             {/* Info Note */}
-            <View className="bg-slate-800/50 rounded-xl p-4 mt-6 mb-4">
+            <View className="bg-slate-800/50 rounded-xl p-4 mt-4 mb-4">
               <Text className="text-cyan-400 font-medium mb-1">About Push Notifications</Text>
               <Text className="text-slate-400 text-sm">
                 Push notifications let you know about important team updates even when the app is closed.

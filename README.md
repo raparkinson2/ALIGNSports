@@ -98,12 +98,17 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - View notifications in More > Notifications
 - Unread badge shows count
 - Tap notification to go to game details
+- **Push Notifications**: Get notified even when the app is closed
+  - Enable via More > Notification Settings > "Enable Push Notifications"
+  - Send a test notification to verify it's working
+  - Requires a physical device (not available in simulator)
 - **Notification Preferences**: Customize which notifications you receive
   - Game Invites: Get notified when invited to games
   - Day Before Reminder: 24 hours before game time
   - Hours Before Reminder: 2 hours before game time
   - Chat Messages: Team chat notifications
   - Payment Reminders: Outstanding payment alerts
+- **Local Scheduled Reminders**: Game reminders are scheduled on your device
 
 ### Admin Panel (Admin only)
 - **Team Settings**: Edit team name
