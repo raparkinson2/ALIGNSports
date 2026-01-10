@@ -51,8 +51,11 @@ function getStatHeaders(sport: Sport): string[] {
   }
 }
 
-// Get goalie stat headers
-function getGoalieHeaders(): string[] {
+// Get goalie stat headers (hockey only - includes GAA)
+function getGoalieHeaders(sport: Sport): string[] {
+  if (sport === 'hockey') {
+    return ['GP', 'W-L-T', 'MP', 'GAA', 'SV%'];
+  }
   return ['GP', 'W-L-T', 'SA', 'SV', 'SV%'];
 }
 
@@ -62,6 +65,9 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
 
   if (!stats) {
     if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
+      if (sport === 'hockey') {
+        return [0, '0-0-0', 0, '0.00', '.000'];
+      }
       return [0, '0-0-0', 0, 0, '.000'];
     }
     if (sport === 'hockey') return [0, 0, 0, 0, 0, 0];
@@ -78,6 +84,16 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
     const savePercentage = s.shotsAgainst > 0
       ? (s.saves / s.shotsAgainst).toFixed(3)
       : '.000';
+
+    // Hockey goalies get MP and GAA
+    if (sport === 'hockey') {
+      const hs = s as HockeyGoalieStats;
+      const mp = hs.minutesPlayed ?? 0;
+      // GAA = (Goals Against x 60) / Minutes Played
+      const gaa = mp > 0 ? ((hs.goalsAgainst ?? 0) * 60 / mp).toFixed(2) : '0.00';
+      return [s.games ?? 0, record, mp, gaa, savePercentage];
+    }
+
     return [s.games ?? 0, record, s.shotsAgainst ?? 0, s.saves ?? 0, savePercentage];
   }
 
@@ -121,7 +137,7 @@ function PlayerCard({ player, index, onPress }: PlayerCardProps) {
   // Get stat headers and values for this player
   const playerIsGoalie = isGoalie(player.position);
   const headers = playerIsGoalie && (sport === 'hockey' || sport === 'soccer')
-    ? getGoalieHeaders()
+    ? getGoalieHeaders(sport)
     : getStatHeaders(sport);
   const statValues = getStatValues(sport, player.stats, player.position);
 

@@ -83,6 +83,9 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
 
   if (!stats) {
     if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
+      if (sport === 'hockey') {
+        return [0, '0-0-0', 0, '0.00', '.000'];
+      }
       return [0, '0-0-0', 0, 0, '.000'];
     }
     if (sport === 'hockey') return [0, 0, 0, 0, 0, 0];
@@ -99,6 +102,16 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
     const savePercentage = s.shotsAgainst > 0
       ? (s.saves / s.shotsAgainst).toFixed(3)
       : '.000';
+
+    // Hockey goalies get MP and GAA
+    if (sport === 'hockey') {
+      const hs = s as HockeyGoalieStats;
+      const mp = hs.minutesPlayed ?? 0;
+      // GAA = (Goals Against x 60) / Minutes Played
+      const gaa = mp > 0 ? ((hs.goalsAgainst ?? 0) * 60 / mp).toFixed(2) : '0.00';
+      return [s.games ?? 0, record, mp, gaa, savePercentage];
+    }
+
     return [s.games ?? 0, record, s.shotsAgainst ?? 0, s.saves ?? 0, savePercentage];
   }
 
@@ -233,6 +246,18 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
 
   // Goalie stats for hockey/soccer
   if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
+    if (sport === 'hockey') {
+      return [
+        { key: 'games', label: 'Games Played' },
+        { key: 'wins', label: 'Wins' },
+        { key: 'losses', label: 'Losses' },
+        { key: 'ties', label: 'Ties' },
+        { key: 'minutesPlayed', label: 'Minutes Played' },
+        { key: 'shotsAgainst', label: 'Shots Against' },
+        { key: 'saves', label: 'Saves' },
+        { key: 'goalsAgainst', label: 'Goals Against' },
+      ];
+    }
     return [
       { key: 'games', label: 'Games Played' },
       { key: 'wins', label: 'Wins' },
@@ -288,6 +313,9 @@ function getDefaultStats(sport: Sport, position: string): PlayerStats {
   const playerIsGoalie = isGoalie(position);
 
   if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
+    if (sport === 'hockey') {
+      return { games: 0, wins: 0, losses: 0, ties: 0, minutesPlayed: 0, shotsAgainst: 0, saves: 0, goalsAgainst: 0 };
+    }
     return { games: 0, wins: 0, losses: 0, ties: 0, shotsAgainst: 0, saves: 0, goalsAgainst: 0 };
   }
 
@@ -305,8 +333,11 @@ function getDefaultStats(sport: Sport, position: string): PlayerStats {
   }
 }
 
-// Get goalie stat headers
-function getGoalieHeaders(): string[] {
+// Get goalie stat headers (hockey includes GAA)
+function getGoalieHeaders(sport: Sport): string[] {
+  if (sport === 'hockey') {
+    return ['GP', 'W-L-T', 'MP', 'GAA', 'SV%'];
+  }
   return ['GP', 'W-L-T', 'SA', 'SV', 'SV%'];
 }
 
@@ -589,7 +620,7 @@ export default function TeamStatsScreen() {
                 <View className="flex-row items-center px-3 py-3 bg-slate-700/50 border-b border-slate-700">
                   <Text className="text-slate-300 font-semibold flex-1">Goalies</Text>
                   <View className="flex-row ml-2">
-                    {getGoalieHeaders().map((header) => (
+                    {getGoalieHeaders(sport).map((header) => (
                       <Text key={header} className="text-slate-300 font-semibold w-11 text-center text-xs">
                         {header}
                       </Text>

@@ -92,6 +92,7 @@ export interface HockeyGoalieStats {
   wins: number;
   losses: number;
   ties: number;
+  minutesPlayed: number;
   shotsAgainst: number;
   saves: number;
   goalsAgainst: number;
