@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, Keyboard } from 'react-native';
+import { View, Text, TextInput, Pressable, ActivityIndicator, Keyboard, TouchableOpacity } from 'react-native';
 import { MapPin, Search, X, Navigation } from 'lucide-react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import * as Location from 'expo-location';
@@ -227,7 +227,9 @@ export function AddressSearch({
   };
 
   const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
+    // Prevent blur from hiding dropdown
     isTappingSuggestionRef.current = true;
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     // Build a display value that includes venue name if available
@@ -235,22 +237,25 @@ export function AddressSearch({
       ? `${suggestion.name}, ${suggestion.fullAddress}`
       : suggestion.fullAddress;
 
-    onChangeText(displayValue);
+    // Hide suggestions first
+    setShowSuggestions(false);
+    setSuggestions([]);
+
+    // Then update the values
     setSearchQuery(displayValue);
+    onChangeText(displayValue);
 
     // Also pass the venue name if callback is provided
     if (onSelectLocation) {
       onSelectLocation(suggestion.name, suggestion.fullAddress);
     }
 
-    setShowSuggestions(false);
-    setSuggestions([]);
     Keyboard.dismiss();
 
-    // Reset the ref after a short delay
+    // Reset the ref after a delay
     setTimeout(() => {
       isTappingSuggestionRef.current = false;
-    }, 100);
+    }, 500);
   };
 
   const handleChangeText = (text: string) => {
@@ -279,12 +284,12 @@ export function AddressSearch({
   const handleBlur = () => {
     setIsFocused(false);
     // Only hide suggestions if we're not tapping on one
-    // Use a longer delay to allow the tap to register
+    // Use a longer delay to allow the tap to fully register
     setTimeout(() => {
       if (!isTappingSuggestionRef.current) {
         setShowSuggestions(false);
       }
-    }, 300);
+    }, 500);
   };
 
   return (
@@ -323,20 +328,21 @@ export function AddressSearch({
           entering={FadeIn.duration(150)}
           exiting={FadeOut.duration(100)}
           className="absolute top-full left-0 right-0 mt-2 bg-slate-800 rounded-xl border border-slate-700 overflow-hidden"
-          style={{ zIndex: 100 }}
+          style={{ zIndex: 100, elevation: 10 }}
         >
           {suggestions.map((suggestion, index) => (
-            <Pressable
+            <TouchableOpacity
               key={suggestion.id}
-              onPressIn={() => {
-                // Set flag before onBlur fires to prevent hiding suggestions
-                isTappingSuggestionRef.current = true;
-              }}
+              activeOpacity={0.7}
               onPress={() => handleSelectSuggestion(suggestion)}
-              className={cn(
-                'flex-row items-center px-4 py-3 active:bg-slate-700',
-                index !== suggestions.length - 1 && 'border-b border-slate-700/50'
-              )}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                borderBottomWidth: index !== suggestions.length - 1 ? 1 : 0,
+                borderBottomColor: 'rgba(51, 65, 85, 0.5)',
+              }}
             >
               <View className="w-10 h-10 rounded-full bg-cyan-500/20 items-center justify-center mr-3">
                 <MapPin size={18} color="#67e8f9" />
@@ -350,7 +356,7 @@ export function AddressSearch({
                 </Text>
               </View>
               <Navigation size={16} color="#64748b" />
-            </Pressable>
+            </TouchableOpacity>
           ))}
         </Animated.View>
       )}
