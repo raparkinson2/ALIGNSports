@@ -124,9 +124,10 @@ interface PlayerCardProps {
   player: Player;
   index: number;
   onPress: () => void;
+  showStats?: boolean;
 }
 
-function PlayerCard({ player, index, onPress }: PlayerCardProps) {
+function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProps) {
   const sport = useTeamStore((s) => s.teamSettings.sport);
   const positionName = SPORT_POSITION_NAMES[sport][player.position] || player.position;
 
@@ -187,16 +188,18 @@ function PlayerCard({ player, index, onPress }: PlayerCardProps) {
         </View>
 
         {/* Player Stats */}
-        <View className="mt-3 pt-3 border-t border-slate-700/50">
-          <View className="flex-row justify-between">
-            {headers.map((header, i) => (
-              <View key={header} className="items-center flex-1">
-                <Text className="text-slate-500 text-xs mb-1">{header}</Text>
-                <Text className="text-white text-sm font-medium">{statValues[i]}</Text>
-              </View>
-            ))}
+        {showStats && (
+          <View className="mt-3 pt-3 border-t border-slate-700/50">
+            <View className="flex-row justify-between">
+              {headers.map((header, i) => (
+                <View key={header} className="items-center flex-1">
+                  <Text className="text-slate-500 text-xs mb-1">{header}</Text>
+                  <Text className="text-white text-sm font-medium">{statValues[i]}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
       </Pressable>
     </Animated.View>
   );
@@ -210,6 +213,7 @@ export default function RosterScreen() {
   const teamName = useTeamStore((s) => s.teamName);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const isAdmin = useTeamStore((s) => s.isAdmin);
+  const showTeamStats = teamSettings.showTeamStats !== false;
 
   const positions = SPORT_POSITIONS[teamSettings.sport];
 
@@ -446,6 +450,7 @@ export default function RosterScreen() {
                     player={player}
                     index={index}
                     onPress={() => openEditModal(player)}
+                    showStats={showTeamStats}
                   />
                 ))}
               </View>

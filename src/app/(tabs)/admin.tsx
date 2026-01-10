@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert, Platform, Switch } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
@@ -20,6 +20,7 @@ import {
   MessageSquare,
   Send,
   UserPlus,
+  BarChart3,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -627,6 +628,32 @@ export default function AdminScreen() {
                 </View>
               </View>
             </Pressable>
+
+            {/* Team Stats Toggle */}
+            <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View className="bg-emerald-500/20 p-2 rounded-full">
+                    <BarChart3 size={20} color="#10b981" />
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-white font-semibold">Team Stats</Text>
+                    <Text className="text-slate-400 text-sm">
+                      Track player and team statistics
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={teamSettings.showTeamStats !== false}
+                  onValueChange={(value) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setTeamSettings({ showTeamStats: value });
+                  }}
+                  trackColor={{ false: '#334155', true: '#10b981' }}
+                  thumbColor="#ffffff"
+                />
+              </View>
+            </View>
           </Animated.View>
 
           {/* Sport Selection */}
