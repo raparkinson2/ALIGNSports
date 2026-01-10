@@ -180,7 +180,6 @@ export default function GameDetailScreen() {
   // Edit form state
   const [editOpponent, setEditOpponent] = useState('');
   const [editLocation, setEditLocation] = useState('');
-  const [editAddress, setEditAddress] = useState('');
   const [editDate, setEditDate] = useState(new Date());
   const [editTime, setEditTime] = useState(new Date());
   const [editJersey, setEditJersey] = useState('');
@@ -222,8 +221,11 @@ export default function GameDetailScreen() {
   };
 
   const handleOpenMaps = () => {
-    const address = encodeURIComponent(`${game.location}, ${game.address}`);
-    Linking.openURL(`https://maps.apple.com/?q=${address}`);
+    const locationQuery = game.address
+      ? `${game.location}, ${game.address}`
+      : game.location;
+    const encodedAddress = encodeURIComponent(locationQuery);
+    Linking.openURL(`https://maps.apple.com/?q=${encodedAddress}`);
   };
 
   const handleSendInAppNotification = (type: 'invite' | 'reminder') => {
@@ -380,8 +382,11 @@ export default function GameDetailScreen() {
   const openEditModal = () => {
     // Populate form with current game data
     setEditOpponent(game.opponent);
-    setEditLocation(game.location);
-    setEditAddress(game.address || '');
+    // Combine location and address into single field for editing
+    const combinedLocation = game.address
+      ? `${game.location}, ${game.address}`
+      : game.location;
+    setEditLocation(combinedLocation);
     setEditDate(parseISO(game.date));
     // Parse time string to Date
     const [time, period] = game.time.split(' ');
@@ -409,7 +414,7 @@ export default function GameDetailScreen() {
     updateGame(game.id, {
       opponent: editOpponent.trim(),
       location: editLocation.trim(),
-      address: editAddress.trim(),
+      address: '', // Address is now part of location field
       date: editDate.toISOString(),
       time: timeString,
       jerseyColor: editJersey,
@@ -571,7 +576,9 @@ export default function GameDetailScreen() {
                     <Text className="text-cyan-400 font-semibold ml-2">Location</Text>
                   </View>
                   <Text className="text-white font-medium text-lg">{game.location}</Text>
-                  <Text className="text-slate-400">{game.address}</Text>
+                  {game.address ? (
+                    <Text className="text-slate-400">{game.address}</Text>
+                  ) : null}
                 </View>
                 <View className="bg-cyan-500/20 p-3 rounded-full">
                   <Navigation size={20} color="#67e8f9" />
@@ -886,30 +893,12 @@ export default function GameDetailScreen() {
               </View>
 
               {/* Location */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Location Name</Text>
-                <TextInput
+              <View className="mb-5" style={{ zIndex: 50 }}>
+                <Text className="text-slate-400 text-sm mb-2">Location</Text>
+                <AddressSearch
                   value={editLocation}
                   onChangeText={setEditLocation}
-                  placeholder="e.g., Glacier Ice Arena"
-                  placeholderTextColor="#64748b"
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                />
-              </View>
-
-              {/* Address */}
-              <View className="mb-5" style={{ zIndex: 50 }}>
-                <Text className="text-slate-400 text-sm mb-2">Address</Text>
-                <AddressSearch
-                  value={editAddress}
-                  onChangeText={setEditAddress}
-                  onSelectLocation={(name, address) => {
-                    // If location name is empty, auto-fill it with venue name
-                    if (!editLocation.trim() && name) {
-                      setEditLocation(name);
-                    }
-                  }}
-                  placeholder="Search for a place or address..."
+                  placeholder="Search for a venue or address..."
                 />
               </View>
 

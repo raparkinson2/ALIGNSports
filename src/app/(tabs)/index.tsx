@@ -215,7 +215,6 @@ export default function ScheduleScreen() {
   const [isRecordModalVisible, setIsRecordModalVisible] = useState(false);
   const [opponent, setOpponent] = useState('');
   const [location, setLocation] = useState('');
-  const [address, setAddress] = useState('');
   const [gameDate, setGameDate] = useState(new Date());
   const [gameTime, setGameTime] = useState('7:00 PM');
   const [selectedJersey, setSelectedJersey] = useState(teamSettings.jerseyColors[0]?.name || '');
@@ -261,7 +260,6 @@ export default function ScheduleScreen() {
   const resetForm = () => {
     setOpponent('');
     setLocation('');
-    setAddress('');
     setGameDate(new Date());
     setGameTime('7:00 PM');
     setSelectedJersey(teamSettings.jerseyColors[0]?.name || '');
@@ -289,7 +287,7 @@ export default function ScheduleScreen() {
       date: gameDate.toISOString(),
       time: gameTime.trim() || '7:00 PM',
       location: location.trim(),
-      address: address.trim(),
+      address: '', // Address is now part of location field
       jerseyColor: selectedJersey,
       notes: notes.trim() || undefined,
       checkedInPlayers: [],
@@ -547,30 +545,12 @@ export default function ScheduleScreen() {
               </View>
 
               {/* Location */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Location Name</Text>
-                <TextInput
+              <View className="mb-5" style={{ zIndex: 50 }}>
+                <Text className="text-slate-400 text-sm mb-2">Location</Text>
+                <AddressSearch
                   value={location}
                   onChangeText={setLocation}
-                  placeholder="e.g., Glacier Ice Arena"
-                  placeholderTextColor="#64748b"
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                />
-              </View>
-
-              {/* Address */}
-              <View className="mb-5" style={{ zIndex: 50 }}>
-                <Text className="text-slate-400 text-sm mb-2">Address</Text>
-                <AddressSearch
-                  value={address}
-                  onChangeText={setAddress}
-                  onSelectLocation={(name, addr) => {
-                    // If location name is empty, auto-fill it with venue name
-                    if (!location.trim() && name) {
-                      setLocation(name);
-                    }
-                  }}
-                  placeholder="Search for a place or address..."
+                  placeholder="Search for a venue or address..."
                 />
               </View>
 

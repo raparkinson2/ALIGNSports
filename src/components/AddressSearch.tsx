@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, Pressable, ActivityIndicator, Keyboard } from 'react-native';
 import { MapPin, Search, X, Navigation } from 'lucide-react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -32,6 +32,7 @@ export function AddressSearch({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchQuery, setSearchQuery] = useState(value);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const isTappingSuggestionRef = useRef(false);
 
   // Get user location on mount for better search results
   useEffect(() => {
@@ -226,9 +227,16 @@ export function AddressSearch({
   };
 
   const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
+    isTappingSuggestionRef.current = true;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onChangeText(suggestion.fullAddress);
-    setSearchQuery(suggestion.fullAddress);
+
+    // Build a display value that includes venue name if available
+    const displayValue = suggestion.name && suggestion.name !== suggestion.fullAddress.split(',')[0]
+      ? `${suggestion.name}, ${suggestion.fullAddress}`
+      : suggestion.fullAddress;
+
+    onChangeText(displayValue);
+    setSearchQuery(displayValue);
 
     // Also pass the venue name if callback is provided
     if (onSelectLocation) {
@@ -238,6 +246,11 @@ export function AddressSearch({
     setShowSuggestions(false);
     setSuggestions([]);
     Keyboard.dismiss();
+
+    // Reset the ref after a short delay
+    setTimeout(() => {
+      isTappingSuggestionRef.current = false;
+    }, 100);
   };
 
   const handleChangeText = (text: string) => {
@@ -265,10 +278,13 @@ export function AddressSearch({
 
   const handleBlur = () => {
     setIsFocused(false);
-    // Delay hiding suggestions to allow tap to register
+    // Only hide suggestions if we're not tapping on one
+    // Use a longer delay to allow the tap to register
     setTimeout(() => {
-      setShowSuggestions(false);
-    }, 250);
+      if (!isTappingSuggestionRef.current) {
+        setShowSuggestions(false);
+      }
+    }, 300);
   };
 
   return (
@@ -312,6 +328,10 @@ export function AddressSearch({
           {suggestions.map((suggestion, index) => (
             <Pressable
               key={suggestion.id}
+              onPressIn={() => {
+                // Set flag before onBlur fires to prevent hiding suggestions
+                isTappingSuggestionRef.current = true;
+              }}
               onPress={() => handleSelectSuggestion(suggestion)}
               className={cn(
                 'flex-row items-center px-4 py-3 active:bg-slate-700',

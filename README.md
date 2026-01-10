@@ -41,7 +41,10 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 
 ### Game Creation (Admin/Captain)
 - Set opponent, date, time
-- Choose location with address
+- **Location Search**: Search for venues and addresses with autocomplete
+  - Type venue names (e.g., "Winterhurst") or addresses
+  - Suggestions appear as you type
+  - Tap a suggestion to select it
 - Select jersey color from team's configured colors
 - Add optional notes
 - **Player Selection**:
