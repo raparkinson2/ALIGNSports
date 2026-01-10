@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, Keyboard, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Pressable, ActivityIndicator, Keyboard, Modal, TouchableWithoutFeedback, ScrollView } from 'react-native';
 import { MapPin, Search, X, Navigation } from 'lucide-react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { cn } from '@/lib/cn';
@@ -26,13 +25,12 @@ export function AddressSearch({
   onSelectLocation,
   placeholder = 'Search for a place or address...'
 }: AddressSearchProps) {
-  const [isFocused, setIsFocused] = useState(false);
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState(value);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const isTappingSuggestionRef = useRef(false);
+  const inputRef = useRef<TextInput>(null);
 
   // Get user location on mount for better search results
   useEffect(() => {
@@ -56,16 +54,15 @@ export function AddressSearch({
 
   // Sync with external value changes
   useEffect(() => {
-    if (value !== searchQuery && !isFocused) {
+    if (value !== searchQuery && !showModal) {
       setSearchQuery(value);
     }
-  }, [value]);
+  }, [value, showModal, searchQuery]);
 
   // Debounced search
   useEffect(() => {
     if (!searchQuery || searchQuery.length < 2) {
       setSuggestions([]);
-      setShowSuggestions(false);
       return;
     }
 
@@ -81,20 +78,17 @@ export function AddressSearch({
 
     setIsLoading(true);
     try {
-      // Use Nominatim OpenStreetMap API for place search (free, no API key required)
-      // This supports venue names, addresses, and POIs
       const params = new URLSearchParams({
         q: query,
         format: 'json',
         addressdetails: '1',
         limit: '6',
-        countrycodes: 'us,ca', // Limit to US and Canada for sports venues
+        countrycodes: 'us,ca',
       });
 
-      // Add user location for better results if available
       if (userLocation) {
         params.append('viewbox', `${userLocation.longitude - 1},${userLocation.latitude + 1},${userLocation.longitude + 1},${userLocation.latitude - 1}`);
-        params.append('bounded', '0'); // Prefer but don't limit to viewbox
+        params.append('bounded', '0');
       }
 
       const response = await fetch(
@@ -132,20 +126,12 @@ export function AddressSearch({
           };
         }, index: number) => {
           const addr = result.address || {};
-
-          // Get venue/place name
           const venueName = result.name || addr.amenity || addr.building || addr.leisure || '';
-
-          // Build street address
           const streetParts = [addr.house_number, addr.road].filter(Boolean);
           const street = streetParts.join(' ');
-
-          // Build city/state
           const city = addr.city || addr.town || addr.village || '';
           const state = addr.state || '';
           const cityState = [city, state].filter(Boolean).join(', ');
-
-          // Full address for display
           const fullAddress = [street, cityState, addr.postcode].filter(Boolean).join(', ');
 
           return {
@@ -156,16 +142,13 @@ export function AddressSearch({
           };
         });
 
-        // Remove duplicates
         const uniqueResults = formattedResults.filter(
           (result, index, self) =>
             index === self.findIndex(r => r.fullAddress === result.fullAddress)
         );
 
         setSuggestions(uniqueResults);
-        setShowSuggestions(uniqueResults.length > 0);
       } else {
-        // Fallback to expo-location geocoding
         await fallbackGeocode(query);
       }
     } catch (error) {
@@ -217,53 +200,34 @@ export function AddressSearch({
         );
 
         setSuggestions(uniqueResults);
-        setShowSuggestions(uniqueResults.length > 0);
       }
     } catch (error) {
       console.log('Fallback geocode error:', error);
       setSuggestions([]);
-      setShowSuggestions(false);
     }
   };
 
   const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
-    // Prevent blur from hiding dropdown
-    isTappingSuggestionRef.current = true;
-
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    // Build a display value that includes venue name if available
     const displayValue = suggestion.name && suggestion.name !== suggestion.fullAddress.split(',')[0]
       ? `${suggestion.name}, ${suggestion.fullAddress}`
       : suggestion.fullAddress;
 
-    // Hide suggestions first
-    setShowSuggestions(false);
-    setSuggestions([]);
-
-    // Then update the values
     setSearchQuery(displayValue);
     onChangeText(displayValue);
 
-    // Also pass the venue name if callback is provided
     if (onSelectLocation) {
       onSelectLocation(suggestion.name, suggestion.fullAddress);
     }
 
-    Keyboard.dismiss();
-
-    // Reset the ref after a delay
-    setTimeout(() => {
-      isTappingSuggestionRef.current = false;
-    }, 500);
+    setShowModal(false);
+    setSuggestions([]);
   };
 
   const handleChangeText = (text: string) => {
     setSearchQuery(text);
     onChangeText(text);
-    if (text.length >= 2) {
-      setShowSuggestions(true);
-    }
   };
 
   const handleClear = () => {
@@ -271,108 +235,138 @@ export function AddressSearch({
     setSearchQuery('');
     onChangeText('');
     setSuggestions([]);
-    setShowSuggestions(false);
   };
 
-  const handleFocus = () => {
-    setIsFocused(true);
-    if (suggestions.length > 0) {
-      setShowSuggestions(true);
-    }
+  const openSearch = () => {
+    setShowModal(true);
   };
 
-  const handleBlur = () => {
-    setIsFocused(false);
-    // Only hide suggestions if we're not tapping on one
-    // Use a longer delay to allow the tap to fully register
-    setTimeout(() => {
-      if (!isTappingSuggestionRef.current) {
-        setShowSuggestions(false);
-      }
-    }, 500);
+  const closeSearch = () => {
+    setShowModal(false);
+    Keyboard.dismiss();
   };
 
   return (
-    <View className="relative z-50">
-      {/* Input Container */}
-      <View
-        className={cn(
-          'flex-row items-center bg-slate-800 rounded-xl px-4 border',
-          isFocused ? 'border-cyan-500/50' : 'border-transparent'
-        )}
+    <View>
+      {/* Display Field - Tap to open search modal */}
+      <Pressable
+        onPress={openSearch}
+        className="flex-row items-center bg-slate-800 rounded-xl px-4 py-3 border border-transparent"
       >
-        <Search size={18} color={isFocused ? '#67e8f9' : '#64748b'} />
-        <TextInput
-          value={searchQuery}
-          onChangeText={handleChangeText}
-          placeholder={placeholder}
-          placeholderTextColor="#64748b"
-          className="flex-1 py-3 px-3 text-white text-lg"
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          autoCorrect={false}
-          autoCapitalize="words"
-        />
-        {isLoading ? (
-          <ActivityIndicator size="small" color="#67e8f9" />
-        ) : searchQuery.length > 0 ? (
-          <Pressable onPress={handleClear} hitSlop={8}>
+        <Search size={18} color="#64748b" />
+        <Text
+          className={cn(
+            'flex-1 ml-3 text-lg',
+            searchQuery ? 'text-white' : 'text-slate-500'
+          )}
+          numberOfLines={1}
+        >
+          {searchQuery || placeholder}
+        </Text>
+        {searchQuery.length > 0 && (
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation();
+              handleClear();
+            }}
+            hitSlop={8}
+          >
             <X size={18} color="#64748b" />
           </Pressable>
-        ) : null}
-      </View>
+        )}
+      </Pressable>
 
-      {/* Suggestions Dropdown */}
-      {showSuggestions && suggestions.length > 0 && (
-        <Animated.View
-          entering={FadeIn.duration(150)}
-          exiting={FadeOut.duration(100)}
-          className="absolute top-full left-0 right-0 mt-2 bg-slate-800 rounded-xl border border-slate-700 overflow-hidden"
-          style={{ zIndex: 100, elevation: 10 }}
-        >
-          {suggestions.map((suggestion, index) => (
-            <TouchableOpacity
-              key={suggestion.id}
-              activeOpacity={0.7}
-              onPress={() => handleSelectSuggestion(suggestion)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                borderBottomWidth: index !== suggestions.length - 1 ? 1 : 0,
-                borderBottomColor: 'rgba(51, 65, 85, 0.5)',
-              }}
-            >
-              <View className="w-10 h-10 rounded-full bg-cyan-500/20 items-center justify-center mr-3">
-                <MapPin size={18} color="#67e8f9" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-white font-medium" numberOfLines={1}>
-                  {suggestion.name}
-                </Text>
-                <Text className="text-slate-400 text-sm" numberOfLines={1}>
-                  {suggestion.address}
-                </Text>
-              </View>
-              <Navigation size={16} color="#64748b" />
-            </TouchableOpacity>
-          ))}
-        </Animated.View>
-      )}
-
-      {/* Loading indicator when searching */}
-      {isLoading && searchQuery.length >= 2 && !showSuggestions && (
-        <Animated.View
-          entering={FadeIn.duration(150)}
-          className="absolute top-full left-0 right-0 mt-2 bg-slate-800 rounded-xl border border-slate-700 p-4"
-        >
-          <View className="flex-row items-center justify-center">
-            <ActivityIndicator size="small" color="#67e8f9" />
-            <Text className="text-slate-400 ml-3">Searching places...</Text>
+      {/* Full Screen Search Modal */}
+      <Modal
+        visible={showModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeSearch}
+      >
+        <View className="flex-1 bg-slate-900">
+          {/* Header */}
+          <View className="flex-row items-center px-4 pt-4 pb-2 border-b border-slate-800">
+            <Pressable onPress={closeSearch} className="p-2 -ml-2">
+              <X size={24} color="#64748b" />
+            </Pressable>
+            <Text className="flex-1 text-white text-lg font-semibold text-center mr-8">
+              Search Location
+            </Text>
           </View>
-        </Animated.View>
-      )}
+
+          {/* Search Input */}
+          <View className="px-4 py-3">
+            <View className="flex-row items-center bg-slate-800 rounded-xl px-4 border border-cyan-500/50">
+              <Search size={18} color="#67e8f9" />
+              <TextInput
+                ref={inputRef}
+                value={searchQuery}
+                onChangeText={handleChangeText}
+                placeholder={placeholder}
+                placeholderTextColor="#64748b"
+                className="flex-1 py-3 px-3 text-white text-lg"
+                autoFocus
+                autoCorrect={false}
+                autoCapitalize="words"
+              />
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#67e8f9" />
+              ) : searchQuery.length > 0 ? (
+                <Pressable onPress={handleClear} hitSlop={8}>
+                  <X size={18} color="#64748b" />
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+
+          {/* Results */}
+          <ScrollView className="flex-1 px-4">
+            {isLoading && suggestions.length === 0 && (
+              <View className="flex-row items-center justify-center py-8">
+                <ActivityIndicator size="small" color="#67e8f9" />
+                <Text className="text-slate-400 ml-3">Searching places...</Text>
+              </View>
+            )}
+
+            {!isLoading && searchQuery.length >= 2 && suggestions.length === 0 && (
+              <View className="items-center py-8">
+                <MapPin size={48} color="#64748b" />
+                <Text className="text-slate-400 mt-4">No results found</Text>
+                <Text className="text-slate-500 text-sm mt-1">Try a different search term</Text>
+              </View>
+            )}
+
+            {suggestions.map((suggestion) => (
+              <Pressable
+                key={suggestion.id}
+                onPress={() => handleSelectSuggestion(suggestion)}
+                className="flex-row items-center py-4 border-b border-slate-800 active:bg-slate-800/50"
+              >
+                <View className="w-12 h-12 rounded-full bg-cyan-500/20 items-center justify-center mr-4">
+                  <MapPin size={20} color="#67e8f9" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-white font-medium text-base" numberOfLines={1}>
+                    {suggestion.name}
+                  </Text>
+                  <Text className="text-slate-400 text-sm mt-0.5" numberOfLines={2}>
+                    {suggestion.fullAddress}
+                  </Text>
+                </View>
+                <Navigation size={18} color="#64748b" />
+              </Pressable>
+            ))}
+
+            {searchQuery.length < 2 && (
+              <View className="items-center py-8">
+                <Search size={48} color="#64748b" />
+                <Text className="text-slate-400 mt-4">Search for a location</Text>
+                <Text className="text-slate-500 text-sm mt-1">Type at least 2 characters</Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
