@@ -410,23 +410,21 @@ export default function TeamStatsScreen() {
             entering={FadeInDown.delay(100).springify()}
             className="bg-slate-800/60 rounded-2xl p-4 border border-slate-700/50 mb-6"
           >
-            <View className="flex-row items-center mb-3">
+            <View className="flex-row items-center">
               <View
                 className="w-10 h-10 rounded-full items-center justify-center mr-3"
                 style={{ backgroundColor: '#67e8f920' }}
               >
                 <Calendar size={20} color="#67e8f9" />
               </View>
-              <View className="flex-1">
+              <View className="mr-4">
                 <Text className="text-slate-400 text-sm">Games Played</Text>
                 <Text className="text-white text-2xl font-bold">{gamesPlayed}</Text>
               </View>
-            </View>
 
-            {/* Team Totals */}
-            <View className="flex-row flex-wrap pt-3 border-t border-slate-700/50">
-              {teamTotals.map((total, index) => (
-                <View key={total.label} className={`w-1/3 ${index < 3 ? 'mb-2' : ''}`}>
+              {/* Team Totals - inline */}
+              {teamTotals.map((total) => (
+                <View key={total.label} className="mx-3 items-center">
                   <Text className="text-cyan-400 text-xl font-bold">{total.value}</Text>
                   <Text className="text-slate-500 text-xs">{total.label}</Text>
                 </View>
@@ -479,6 +477,8 @@ export default function TeamStatsScreen() {
                   {header}
                 </Text>
               ))}
+              {/* Spacer for chevron alignment */}
+              <View className="w-5" />
             </View>
 
             {/* Table Rows */}
@@ -501,7 +501,9 @@ export default function TeamStatsScreen() {
                       {value}
                     </Text>
                   ))}
-                  <ChevronRight size={16} color="#64748b" className="ml-1" />
+                  <View className="w-5 items-center">
+                    <ChevronRight size={16} color="#64748b" />
+                  </View>
                 </Pressable>
               );
             })}
