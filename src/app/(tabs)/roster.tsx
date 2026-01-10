@@ -7,7 +7,6 @@ import {
   Plus,
   X,
   Shield,
-  Crown,
   Phone,
   Mail,
   MessageSquare,
@@ -54,8 +53,8 @@ function PlayerCard({ player, index, onPress }: PlayerCardProps) {
             <View className="flex-row items-center">
               <Text className="text-white text-lg font-semibold">{player.name}</Text>
               {player.roles?.includes('captain') && (
-                <View className="ml-2 bg-amber-500/20 rounded-full p-1">
-                  <Crown size={14} color="#f59e0b" />
+                <View className="ml-2 bg-amber-500/20 rounded-full w-6 h-6 items-center justify-center">
+                  <Text className="text-amber-500 text-sm font-black">C</Text>
                 </View>
               )}
               {player.roles?.includes('admin') && (
@@ -518,7 +517,12 @@ export default function RosterScreen() {
                         playerRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
                       )}
                     >
-                      <Crown size={16} color={playerRoles.includes('captain') ? 'white' : '#f59e0b'} />
+                      <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center">
+                        <Text className={cn(
+                          'text-xs font-black',
+                          playerRoles.includes('captain') ? 'text-white' : 'text-amber-500'
+                        )}>C</Text>
+                      </View>
                       <Text
                         className={cn(
                           'font-semibold ml-2',
