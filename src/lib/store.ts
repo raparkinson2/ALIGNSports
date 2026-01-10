@@ -472,7 +472,7 @@ export const useTeamStore = create<TeamStore>()(
           const updatedPlayers = state.players.map((player) => ({
             ...player,
             position: mapPosition(player.position, fromSport, toSport),
-            stats: undefined, // Clear stats when changing sports
+            // Keep stats - user can manually update them if needed
           }));
           return {
             teamSettings: newSettings,
