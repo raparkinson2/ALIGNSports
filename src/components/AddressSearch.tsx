@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ActivityIndicator, Keyboard } from 'react-native';
 import { MapPin, Search, X, Navigation } from 'lucide-react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -9,6 +9,7 @@ import { cn } from '@/lib/cn';
 interface AddressSearchProps {
   value: string;
   onChangeText: (text: string) => void;
+  onSelectLocation?: (name: string, address: string) => void;
   placeholder?: string;
 }
 
@@ -19,47 +20,166 @@ interface AddressSuggestion {
   fullAddress: string;
 }
 
-export function AddressSearch({ value, onChangeText, placeholder = 'Search for an address...' }: AddressSearchProps) {
+export function AddressSearch({
+  value,
+  onChangeText,
+  onSelectLocation,
+  placeholder = 'Search for a place or address...'
+}: AddressSearchProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchQuery, setSearchQuery] = useState(value);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  // Get user location on mount for better search results
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          setUserLocation({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          });
+        }
+      } catch (error) {
+        console.log('Could not get user location:', error);
+      }
+    })();
+  }, []);
+
+  // Sync with external value changes
+  useEffect(() => {
+    if (value !== searchQuery && !isFocused) {
+      setSearchQuery(value);
+    }
+  }, [value]);
 
   // Debounced search
   useEffect(() => {
-    if (!searchQuery || searchQuery.length < 3) {
+    if (!searchQuery || searchQuery.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
     }
 
     const timer = setTimeout(() => {
-      searchAddresses(searchQuery);
-    }, 400);
+      searchPlaces(searchQuery);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const searchAddresses = async (query: string) => {
-    if (query.length < 3) return;
+  const searchPlaces = async (query: string) => {
+    if (query.length < 2) return;
 
     setIsLoading(true);
     try {
-      // Request location permission first (needed for geocoding)
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      // Use Nominatim OpenStreetMap API for place search (free, no API key required)
+      // This supports venue names, addresses, and POIs
+      const params = new URLSearchParams({
+        q: query,
+        format: 'json',
+        addressdetails: '1',
+        limit: '6',
+        countrycodes: 'us,ca', // Limit to US and Canada for sports venues
+      });
 
-      if (status !== 'granted') {
-        // If no permission, just allow manual entry
-        setIsLoading(false);
-        return;
+      // Add user location for better results if available
+      if (userLocation) {
+        params.append('viewbox', `${userLocation.longitude - 1},${userLocation.latitude + 1},${userLocation.longitude + 1},${userLocation.latitude - 1}`);
+        params.append('bounded', '0'); // Prefer but don't limit to viewbox
       }
 
-      // Use geocoding to find addresses
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+        {
+          headers: {
+            'User-Agent': 'TeamScheduleApp/1.0',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Search failed');
+      }
+
+      const results = await response.json();
+
+      if (results && results.length > 0) {
+        const formattedResults: AddressSuggestion[] = results.map((result: {
+          place_id: number;
+          display_name: string;
+          name?: string;
+          address?: {
+            amenity?: string;
+            building?: string;
+            leisure?: string;
+            sport?: string;
+            house_number?: string;
+            road?: string;
+            city?: string;
+            town?: string;
+            village?: string;
+            state?: string;
+            postcode?: string;
+          };
+        }, index: number) => {
+          const addr = result.address || {};
+
+          // Get venue/place name
+          const venueName = result.name || addr.amenity || addr.building || addr.leisure || '';
+
+          // Build street address
+          const streetParts = [addr.house_number, addr.road].filter(Boolean);
+          const street = streetParts.join(' ');
+
+          // Build city/state
+          const city = addr.city || addr.town || addr.village || '';
+          const state = addr.state || '';
+          const cityState = [city, state].filter(Boolean).join(', ');
+
+          // Full address for display
+          const fullAddress = [street, cityState, addr.postcode].filter(Boolean).join(', ');
+
+          return {
+            id: `${result.place_id}-${index}`,
+            name: venueName || street || result.display_name.split(',')[0],
+            address: cityState || result.display_name,
+            fullAddress: fullAddress || result.display_name,
+          };
+        });
+
+        // Remove duplicates
+        const uniqueResults = formattedResults.filter(
+          (result, index, self) =>
+            index === self.findIndex(r => r.fullAddress === result.fullAddress)
+        );
+
+        setSuggestions(uniqueResults);
+        setShowSuggestions(uniqueResults.length > 0);
+      } else {
+        // Fallback to expo-location geocoding
+        await fallbackGeocode(query);
+      }
+    } catch (error) {
+      console.log('Place search error, trying fallback:', error);
+      await fallbackGeocode(query);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fallbackGeocode = async (query: string) => {
+    try {
       const results = await Location.geocodeAsync(query);
 
       if (results.length > 0) {
-        // Get reverse geocode for each result to get formatted addresses
         const addressPromises = results.slice(0, 5).map(async (result, index) => {
           try {
             const reverseResults = await Location.reverseGeocodeAsync({
@@ -75,7 +195,7 @@ export function AddressSearch({ value, onChangeText, placeholder = 'Search for a
               const fullAddress = [streetAddress, cityState, addr.postalCode].filter(Boolean).join(', ');
 
               return {
-                id: `${index}-${result.latitude}-${result.longitude}`,
+                id: `fallback-${index}-${result.latitude}-${result.longitude}`,
                 name: name,
                 address: cityState,
                 fullAddress: fullAddress || query,
@@ -90,7 +210,6 @@ export function AddressSearch({ value, onChangeText, placeholder = 'Search for a
         const addressResults = await Promise.all(addressPromises);
         const validResults = addressResults.filter((r): r is AddressSuggestion => r !== null);
 
-        // Remove duplicates based on fullAddress
         const uniqueResults = validResults.filter(
           (result, index, self) =>
             index === self.findIndex(r => r.fullAddress === result.fullAddress)
@@ -98,15 +217,11 @@ export function AddressSearch({ value, onChangeText, placeholder = 'Search for a
 
         setSuggestions(uniqueResults);
         setShowSuggestions(uniqueResults.length > 0);
-      } else {
-        setSuggestions([]);
-        setShowSuggestions(false);
       }
     } catch (error) {
-      console.log('Address search error:', error);
+      console.log('Fallback geocode error:', error);
       setSuggestions([]);
-    } finally {
-      setIsLoading(false);
+      setShowSuggestions(false);
     }
   };
 
@@ -114,6 +229,12 @@ export function AddressSearch({ value, onChangeText, placeholder = 'Search for a
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onChangeText(suggestion.fullAddress);
     setSearchQuery(suggestion.fullAddress);
+
+    // Also pass the venue name if callback is provided
+    if (onSelectLocation) {
+      onSelectLocation(suggestion.name, suggestion.fullAddress);
+    }
+
     setShowSuggestions(false);
     setSuggestions([]);
     Keyboard.dismiss();
@@ -122,7 +243,7 @@ export function AddressSearch({ value, onChangeText, placeholder = 'Search for a
   const handleChangeText = (text: string) => {
     setSearchQuery(text);
     onChangeText(text);
-    if (text.length >= 3) {
+    if (text.length >= 2) {
       setShowSuggestions(true);
     }
   };
@@ -147,7 +268,7 @@ export function AddressSearch({ value, onChangeText, placeholder = 'Search for a
     // Delay hiding suggestions to allow tap to register
     setTimeout(() => {
       setShowSuggestions(false);
-    }, 200);
+    }, 250);
   };
 
   return (
@@ -202,10 +323,10 @@ export function AddressSearch({ value, onChangeText, placeholder = 'Search for a
               </View>
               <View className="flex-1">
                 <Text className="text-white font-medium" numberOfLines={1}>
-                  {suggestion.name || suggestion.fullAddress.split(',')[0]}
+                  {suggestion.name}
                 </Text>
                 <Text className="text-slate-400 text-sm" numberOfLines={1}>
-                  {suggestion.address || suggestion.fullAddress}
+                  {suggestion.address}
                 </Text>
               </View>
               <Navigation size={16} color="#64748b" />
@@ -215,23 +336,16 @@ export function AddressSearch({ value, onChangeText, placeholder = 'Search for a
       )}
 
       {/* Loading indicator when searching */}
-      {isLoading && searchQuery.length >= 3 && (
+      {isLoading && searchQuery.length >= 2 && !showSuggestions && (
         <Animated.View
           entering={FadeIn.duration(150)}
           className="absolute top-full left-0 right-0 mt-2 bg-slate-800 rounded-xl border border-slate-700 p-4"
         >
           <View className="flex-row items-center justify-center">
             <ActivityIndicator size="small" color="#67e8f9" />
-            <Text className="text-slate-400 ml-3">Searching addresses...</Text>
+            <Text className="text-slate-400 ml-3">Searching places...</Text>
           </View>
         </Animated.View>
-      )}
-
-      {/* Helper text */}
-      {isFocused && searchQuery.length > 0 && searchQuery.length < 3 && (
-        <Text className="text-slate-500 text-xs mt-2">
-          Type at least 3 characters to search
-        </Text>
       )}
     </View>
   );

@@ -34,6 +34,7 @@ import * as Linking from 'expo-linking';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { AddressSearch } from '@/components/AddressSearch';
 
 // Helper to convert hex codes to readable color names
 const hexToColorName = (hex: string): string => {
@@ -897,14 +898,18 @@ export default function GameDetailScreen() {
               </View>
 
               {/* Address */}
-              <View className="mb-5">
+              <View className="mb-5" style={{ zIndex: 50 }}>
                 <Text className="text-slate-400 text-sm mb-2">Address</Text>
-                <TextInput
+                <AddressSearch
                   value={editAddress}
                   onChangeText={setEditAddress}
-                  placeholder="e.g., 1234 Main Street"
-                  placeholderTextColor="#64748b"
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  onSelectLocation={(name, address) => {
+                    // If location name is empty, auto-fill it with venue name
+                    if (!editLocation.trim() && name) {
+                      setEditLocation(name);
+                    }
+                  }}
+                  placeholder="Search for a place or address..."
                 />
               </View>
 

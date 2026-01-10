@@ -564,7 +564,13 @@ export default function ScheduleScreen() {
                 <AddressSearch
                   value={address}
                   onChangeText={setAddress}
-                  placeholder="Search for an address..."
+                  onSelectLocation={(name, addr) => {
+                    // If location name is empty, auto-fill it with venue name
+                    if (!location.trim() && name) {
+                      setLocation(name);
+                    }
+                  }}
+                  placeholder="Search for a place or address..."
                 />
               </View>
 
