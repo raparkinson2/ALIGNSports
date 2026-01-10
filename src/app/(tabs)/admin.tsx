@@ -6,7 +6,6 @@ import {
   Shield,
   Settings,
   Users,
-  Crown,
   X,
   Check,
   Plus,
@@ -187,7 +186,9 @@ function PlayerManageCard({ player, index, onPress, isCurrentUser }: PlayerManag
               )}
               {roles.includes('captain') && (
                 <View className="flex-row items-center bg-amber-500/20 rounded-full px-2 py-0.5 mr-2">
-                  <Crown size={10} color="#f59e0b" />
+                  <View className="w-3 h-3 rounded-full bg-amber-500/30 items-center justify-center">
+                    <Text className="text-amber-500 text-[8px] font-black">C</Text>
+                  </View>
                   <Text className="text-amber-400 text-xs ml-1">Captain</Text>
                 </View>
               )}
@@ -835,7 +836,11 @@ export default function AdminScreen() {
                         >
                           <View className="flex-row items-center">
                             {role === 'admin' && <Shield size={16} color={isSelected ? '#a78bfa' : '#64748b'} />}
-                            {role === 'captain' && <Crown size={16} color={isSelected ? '#f59e0b' : '#64748b'} />}
+                            {role === 'captain' && (
+                              <View className="w-5 h-5 rounded-full items-center justify-center" style={{ backgroundColor: isSelected ? '#f59e0b40' : '#64748b30' }}>
+                                <Text style={{ color: isSelected ? '#f59e0b' : '#64748b', fontSize: 11, fontWeight: '900' }}>C</Text>
+                              </View>
+                            )}
                             {isSelected && (
                               <View className="ml-2">
                                 <Check size={14} color={role === 'admin' ? '#a78bfa' : '#f59e0b'} />
