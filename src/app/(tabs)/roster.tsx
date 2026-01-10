@@ -17,9 +17,92 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
-import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BasketballStats, SoccerStats, SoccerGoalieStats, PlayerStats } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
+
+// Check if player is a goalie
+function isGoalie(position: string): boolean {
+  return position === 'G' || position === 'GK';
+}
+
+// Format name as "F. LastName"
+function formatName(fullName: string): string {
+  const parts = fullName.trim().split(' ');
+  if (parts.length < 2) return fullName;
+  const firstName = parts[0];
+  const lastName = parts.slice(1).join(' ');
+  return `${firstName.charAt(0)}. ${lastName}`;
+}
+
+// Get stat column headers based on sport
+function getStatHeaders(sport: Sport): string[] {
+  switch (sport) {
+    case 'hockey':
+      return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
+    case 'baseball':
+      return ['AB', 'H', 'HR', 'RBI', 'K'];
+    case 'basketball':
+      return ['PTS', 'REB', 'AST', 'STL', 'BLK'];
+    case 'soccer':
+      return ['G', 'A', 'YC'];
+    default:
+      return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
+  }
+}
+
+// Get goalie stat headers
+function getGoalieHeaders(): string[] {
+  return ['GP', 'W-L-T', 'SA', 'SV', 'SV%'];
+}
+
+// Get stat values based on sport
+function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: string): (number | string)[] {
+  const playerIsGoalie = isGoalie(position);
+
+  if (!stats) {
+    if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
+      return ['-', '-', '-', '-', '-'];
+    }
+    if (sport === 'hockey') return ['-', '-', '-', '-', '-', '-'];
+    if (sport === 'baseball' || sport === 'basketball') return ['-', '-', '-', '-', '-'];
+    return ['-', '-', '-'];
+  }
+
+  // Handle goalie stats for hockey/soccer
+  if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
+    const s = stats as HockeyGoalieStats | SoccerGoalieStats;
+    const record = `${s.wins ?? 0}-${s.losses ?? 0}-${s.ties ?? 0}`;
+    const savePercentage = s.shotsAgainst > 0
+      ? (s.saves / s.shotsAgainst).toFixed(3)
+      : '.000';
+    return [s.games ?? 0, record, s.shotsAgainst ?? 0, s.saves ?? 0, savePercentage];
+  }
+
+  switch (sport) {
+    case 'hockey': {
+      const s = stats as HockeyStats;
+      const points = (s.goals ?? 0) + (s.assists ?? 0);
+      const plusMinus = s.plusMinus ?? 0;
+      const plusMinusStr = plusMinus > 0 ? `+${plusMinus}` : `${plusMinus}`;
+      return [s.gamesPlayed ?? 0, s.goals ?? 0, s.assists ?? 0, points, s.pim ?? 0, plusMinusStr];
+    }
+    case 'baseball': {
+      const s = stats as BaseballStats;
+      return [s.atBats ?? 0, s.hits ?? 0, s.homeRuns ?? 0, s.rbi ?? 0, s.strikeouts ?? 0];
+    }
+    case 'basketball': {
+      const s = stats as BasketballStats;
+      return [s.points ?? 0, s.rebounds ?? 0, s.assists ?? 0, s.steals ?? 0, s.blocks ?? 0];
+    }
+    case 'soccer': {
+      const s = stats as SoccerStats;
+      return [s.goals ?? 0, s.assists ?? 0, s.yellowCards ?? 0];
+    }
+    default:
+      return ['-', '-', '-'];
+  }
+}
 
 interface PlayerCardProps {
   player: Player;
@@ -311,8 +394,16 @@ export default function RosterScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {positionGroups.map((group) => (
-            group.players.length > 0 && (
+          {positionGroups.map((group) => {
+            if (group.players.length === 0) return null;
+
+            // Determine if this is a goalie group
+            const isGoalieGroup = group.title === 'Goalies' || group.title === 'Goalkeepers';
+            const headers = isGoalieGroup && (teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer')
+              ? getGoalieHeaders()
+              : getStatHeaders(teamSettings.sport);
+
+            return (
               <View key={group.title} className="mb-6">
                 <View className="flex-row items-center mb-3">
                   <Users size={16} color="#67e8f9" />
@@ -328,9 +419,62 @@ export default function RosterScreen() {
                     onPress={() => openEditModal(player)}
                   />
                 ))}
+
+                {/* Player Stats Table for this position group */}
+                <View className="mt-3 bg-slate-800/60 rounded-2xl border border-slate-700/50 overflow-hidden">
+                  {/* Table Header */}
+                  <View className="flex-row items-center px-3 py-2.5 bg-slate-700/50 border-b border-slate-700">
+                    <Text className="text-slate-300 font-semibold text-xs flex-1">Player</Text>
+                    <View className="flex-row">
+                      {headers.map((header) => (
+                        <Text
+                          key={header}
+                          className={cn(
+                            "text-slate-300 font-semibold text-center text-xs",
+                            isGoalieGroup ? "w-11" : "w-8"
+                          )}
+                        >
+                          {header}
+                        </Text>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* Table Rows */}
+                  {group.players.map((player, index, arr) => {
+                    const statValues = getStatValues(teamSettings.sport, player.stats, player.position);
+                    return (
+                      <View
+                        key={player.id}
+                        className={cn(
+                          "flex-row items-center px-3 py-2.5",
+                          index !== arr.length - 1 && "border-b border-slate-700/50"
+                        )}
+                      >
+                        <View className="flex-1 flex-row items-center">
+                          <Text className="text-cyan-400 font-medium text-xs mr-1">#{player.number}</Text>
+                          <Text className="text-white text-sm">{formatName(player.name)}</Text>
+                        </View>
+                        <View className="flex-row">
+                          {statValues.map((value, i) => (
+                            <Text
+                              key={i}
+                              className={cn(
+                                "text-slate-300 text-center text-sm",
+                                isGoalieGroup ? "w-11" : "w-8"
+                              )}
+                            >
+                              {value}
+                            </Text>
+                          ))}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
               </View>
-            )
-          ))}
+            );
+          })}
         </ScrollView>
       </SafeAreaView>
 

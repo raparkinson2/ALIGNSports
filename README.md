@@ -58,6 +58,13 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - See player roles (Admin badge, Captain crown)
 - See player status (Active/Reserve)
 - Captain and Admin badges displayed next to names
+- **Player Statistics Table**: Each position group shows a stats table below the player cards
+  - Display-only stats (edit via Team Stats screen)
+  - Sport-specific columns matching the Team Stats format
+  - Hockey: GP, G, A, P, PIM, +/- (goalies: GP, W-L-T, SA, SV, SV%)
+  - Baseball: AB, H, HR, RBI, K
+  - Basketball: PTS, REB, AST, STL, BLK
+  - Soccer: G, A, YC (goalies: GP, W-L-T, SA, SV, SV%)
 - Add/edit players (Admin/Captain only)
 - **Player Invites**: When creating a new player with phone/email, you can immediately send them a text or email invite to register and join the team
 - **Role & Status Management** (Admin only): When editing a player, admins can:
