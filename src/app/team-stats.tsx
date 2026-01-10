@@ -571,6 +571,7 @@ export default function TeamStatsScreen() {
             {/* Table Header for Skaters */}
             <View className="flex-row items-center px-3 py-3 bg-slate-700/50 border-b border-slate-700">
               <Text className="text-slate-300 font-semibold flex-1">Player</Text>
+              <Text className="text-slate-300 font-semibold w-10 text-center text-xs">Pos</Text>
               <View className="flex-row ml-2">
                 {statHeaders.map((header) => (
                   <Text key={header} className="text-slate-300 font-semibold w-9 text-center text-xs">
@@ -596,6 +597,7 @@ export default function TeamStatsScreen() {
                     <Text className="text-cyan-400 font-medium text-xs mr-1">#{player.number}</Text>
                     <Text className="text-white text-sm">{formatName(player.name)}</Text>
                   </View>
+                  <Text className="text-slate-400 w-10 text-center text-xs">{player.position}</Text>
                   <View className="flex-row ml-2">
                     {statValues.map((value, i) => (
                       <Text key={i} className="text-slate-300 w-9 text-center text-sm">
