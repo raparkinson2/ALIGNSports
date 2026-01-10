@@ -23,6 +23,7 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useTeamStore, Game, TeamRecord, Sport } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { JerseyIcon } from '@/components/JerseyIcon';
 
 const getDateLabel = (dateString: string): string => {
   const date = parseISO(dateString);
@@ -170,11 +171,8 @@ function GameCard({ game, index, onPress }: GameCardProps) {
                 <Text className="text-slate-300 text-sm ml-2">{game.time}</Text>
               </View>
               <View className="flex-1 flex-row items-center">
-                <View
-                  className="w-3 h-3 rounded-full mr-2 border border-white/30"
-                  style={{ backgroundColor: jerseyColorHex }}
-                />
-                <Text className="text-slate-300 text-sm">
+                <JerseyIcon size={16} color={jerseyColorHex} />
+                <Text className="text-slate-300 text-sm ml-2">
                   {jerseyColorName} Jersey
                 </Text>
               </View>
