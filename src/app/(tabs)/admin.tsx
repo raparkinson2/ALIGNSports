@@ -637,7 +637,7 @@ export default function AdminScreen() {
                     <BarChart3 size={20} color="#10b981" />
                   </View>
                   <View className="ml-3 flex-1">
-                    <Text className="text-white font-semibold">Team Stats</Text>
+                    <Text className="text-white font-semibold">Use Team Stats</Text>
                     <Text className="text-slate-400 text-sm">
                       Track player and team statistics
                     </Text>
