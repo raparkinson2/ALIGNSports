@@ -437,11 +437,16 @@ export default function PaymentsScreen() {
                 </Text>
               </View>
             ) : (
-              <View className="bg-slate-800/50 rounded-xl p-4 mb-6">
+              <View className="bg-slate-800/50 rounded-xl pt-4 pb-4 pl-4 mb-6">
                 <Text className="text-slate-400 text-sm mb-3">Tap to pay:</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ flexGrow: 0 }}
+                  contentContainerStyle={{ paddingRight: 16 }}
+                >
                   {paymentMethods.map((method, index) => (
-                    <View key={index} className="relative mr-2">
+                    <View key={index} className="relative mr-3" style={{ marginTop: 4 }}>
                       <PaymentMethodButton method={method} />
                       {isAdmin() && (
                         <Pressable
