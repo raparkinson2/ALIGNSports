@@ -35,6 +35,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
+import { JerseyIcon } from '@/components/JerseyIcon';
 
 // Helper to convert hex codes to readable color names
 const hexToColorName = (hex: string): string => {
@@ -502,12 +503,8 @@ export default function GameDetailScreen() {
                       <Text className="text-white ml-2 font-medium">{game.time}</Text>
                     </View>
                     <View className="flex-row items-center">
-                      <Shirt size={16} color="#67e8f9" />
-                      <View
-                        className="w-4 h-4 rounded-full ml-2 mr-2 border border-white/30"
-                        style={{ backgroundColor: jerseyColorHex }}
-                      />
-                      <Text className="text-white font-medium">
+                      <JerseyIcon size={18} color={jerseyColorHex} strokeColor="rgba(255,255,255,0.4)" />
+                      <Text className="text-white font-medium ml-2">
                         {jerseyColorName}
                       </Text>
                     </View>
