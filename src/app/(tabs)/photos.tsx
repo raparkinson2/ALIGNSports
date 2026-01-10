@@ -1,7 +1,8 @@
-import { View, Text, ScrollView, Pressable, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Pressable, Dimensions, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Camera, Plus, ImageIcon } from 'lucide-react-native';
+import { useState } from 'react';
+import { Camera, Plus, ImageIcon, Trash2 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -16,10 +17,26 @@ const imageSize = (width - PADDING * 2 - GAP * 2) / 3;
 export default function PhotosScreen() {
   const storePhotos = useTeamStore((s) => s.photos);
   const addPhoto = useTeamStore((s) => s.addPhoto);
+  const removePhoto = useTeamStore((s) => s.removePhoto);
   const games = useTeamStore((s) => s.games);
 
-  // Only show photos from the store
-  const allPhotos = storePhotos.map(p => p.uri);
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const handleLongPress = (photo: Photo) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setSelectedPhoto(photo);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = () => {
+    if (selectedPhoto) {
+      removePhoto(selectedPhoto.id);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    setShowDeleteModal(false);
+    setSelectedPhoto(null);
+  };
 
   const pickImage = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -106,7 +123,7 @@ export default function PhotosScreen() {
           </View>
         </Animated.View>
 
-        {allPhotos.length === 0 ? (
+        {storePhotos.length === 0 ? (
           <View className="flex-1 items-center justify-center px-8">
             <View className="bg-slate-800/50 rounded-full p-6 mb-4">
               <ImageIcon size={48} color="#475569" />
@@ -130,14 +147,18 @@ export default function PhotosScreen() {
           >
             {/* Photo Grid - 3 columns */}
             <View className="flex-row flex-wrap" style={{ gap: GAP }}>
-              {allPhotos.map((uri: string, index: number) => (
+              {storePhotos.map((photo, index) => (
                 <Animated.View
-                  key={uri + index}
+                  key={photo.id}
                   entering={FadeInDown.delay(Math.min(index * 50, 300)).springify()}
                 >
-                  <Pressable className="active:opacity-80">
+                  <Pressable
+                    className="active:opacity-80"
+                    onLongPress={() => handleLongPress(photo)}
+                    delayLongPress={300}
+                  >
                     <Image
-                      source={{ uri }}
+                      source={{ uri: photo.uri }}
                       style={{
                         width: imageSize,
                         height: imageSize,
@@ -151,6 +172,46 @@ export default function PhotosScreen() {
             </View>
           </ScrollView>
         )}
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          visible={showDeleteModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowDeleteModal(false)}
+        >
+          <Pressable
+            className="flex-1 bg-black/70 items-center justify-center"
+            onPress={() => setShowDeleteModal(false)}
+          >
+            <Pressable className="bg-slate-800 rounded-2xl p-6 mx-8 w-72">
+              <View className="items-center mb-4">
+                <View className="bg-red-500/20 rounded-full p-3 mb-3">
+                  <Trash2 size={28} color="#ef4444" />
+                </View>
+                <Text className="text-white text-lg font-semibold">Delete Photo?</Text>
+                <Text className="text-slate-400 text-center mt-2">
+                  This action cannot be undone.
+                </Text>
+              </View>
+
+              <View className="flex-row gap-3">
+                <Pressable
+                  onPress={() => setShowDeleteModal(false)}
+                  className="flex-1 bg-slate-700 py-3 rounded-xl active:bg-slate-600"
+                >
+                  <Text className="text-white text-center font-semibold">Cancel</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleDelete}
+                  className="flex-1 bg-red-500 py-3 rounded-xl active:bg-red-600"
+                >
+                  <Text className="text-white text-center font-semibold">Delete</Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </SafeAreaView>
     </View>
   );
