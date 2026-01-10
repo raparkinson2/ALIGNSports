@@ -1006,7 +1006,7 @@ export default function PaymentsScreen() {
 
                 {selectedPeriod && (
                   <ScrollView className="flex-1 px-5 pt-6">
-                    {isAdmin() && (
+                    {isAdmin() && !isEditAmountModalVisible && (
                       <Pressable
                         onPress={() => {
                           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1027,6 +1027,41 @@ export default function PaymentsScreen() {
                           <Text className="text-green-400 text-sm font-medium ml-1.5">Edit</Text>
                         </View>
                       </Pressable>
+                    )}
+                    {isAdmin() && isEditAmountModalVisible && editingPeriodId === selectedPeriod.id && (
+                      <View className="bg-green-500/20 rounded-xl p-4 mb-6 border border-green-500/50">
+                        <Text className="text-green-300 text-sm mb-2">Edit Amount Due</Text>
+                        <View className="flex-row items-center bg-slate-800 rounded-xl px-4 py-3 mb-3">
+                          <Text className="text-white text-2xl font-bold mr-1">$</Text>
+                          <TextInput
+                            value={editPeriodAmount}
+                            onChangeText={setEditPeriodAmount}
+                            placeholder="0.00"
+                            placeholderTextColor="#64748b"
+                            keyboardType="decimal-pad"
+                            autoFocus
+                            className="flex-1 text-white text-2xl font-bold"
+                          />
+                        </View>
+                        <View className="flex-row">
+                          <Pressable
+                            onPress={() => {
+                              setIsEditAmountModalVisible(false);
+                              setEditingPeriodId(null);
+                              setEditPeriodAmount('');
+                            }}
+                            className="flex-1 bg-slate-700 rounded-xl py-3 mr-2"
+                          >
+                            <Text className="text-slate-300 text-center font-semibold">Cancel</Text>
+                          </Pressable>
+                          <Pressable
+                            onPress={handleUpdatePeriodAmount}
+                            className="flex-1 bg-green-500 rounded-xl py-3 ml-2"
+                          >
+                            <Text className="text-white text-center font-semibold">Save</Text>
+                          </Pressable>
+                        </View>
+                      </View>
                     )}
                     {!isAdmin() && (
                       <View className="bg-green-500/20 rounded-xl p-4 mb-6">
