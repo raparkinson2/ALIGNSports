@@ -9,7 +9,7 @@ import * as Linking from 'expo-linking';
 import { useState } from 'react';
 import { useTeamStore } from '@/lib/store';
 
-const FEEDBACK_EMAIL = 'feedback@example.com'; // User should update this
+const FEEDBACK_EMAIL = 'raparkinson2@gmail.com';
 
 export default function FeatureRequestScreen() {
   const router = useRouter();
