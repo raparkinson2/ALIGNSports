@@ -11,7 +11,7 @@ import {
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { useTeamStore } from '@/lib/store';
+import { useTeamStore, Sport, HockeyStats, BaseballStats, BasketballStats, SoccerStats } from '@/lib/store';
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -45,11 +45,55 @@ function StatCard({ icon, label, value, subtitle, color, index }: StatCardProps)
   );
 }
 
+// Get stat column headers based on sport
+function getStatHeaders(sport: Sport): string[] {
+  switch (sport) {
+    case 'hockey':
+      return ['G', 'A', 'PIM'];
+    case 'baseball':
+      return ['AB', 'H', 'RBI'];
+    case 'basketball':
+      return ['PTS', 'REB', 'AST'];
+    case 'soccer':
+      return ['G', 'A', 'YC'];
+    default:
+      return ['G', 'A', 'PIM'];
+  }
+}
+
+// Get stat values based on sport
+function getStatValues(sport: Sport, stats: HockeyStats | BaseballStats | BasketballStats | SoccerStats | undefined): (number | string)[] {
+  if (!stats) return ['-', '-', '-'];
+
+  switch (sport) {
+    case 'hockey': {
+      const s = stats as HockeyStats;
+      return [s.goals ?? 0, s.assists ?? 0, s.pim ?? 0];
+    }
+    case 'baseball': {
+      const s = stats as BaseballStats;
+      return [s.atBats ?? 0, s.hits ?? 0, s.rbi ?? 0];
+    }
+    case 'basketball': {
+      const s = stats as BasketballStats;
+      return [s.points ?? 0, s.rebounds ?? 0, s.assists ?? 0];
+    }
+    case 'soccer': {
+      const s = stats as SoccerStats;
+      return [s.goals ?? 0, s.assists ?? 0, s.yellowCards ?? 0];
+    }
+    default:
+      return ['-', '-', '-'];
+  }
+}
+
 export default function TeamStatsScreen() {
   const router = useRouter();
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const teamName = useTeamStore((s) => s.teamName);
+
+  const sport = teamSettings.sport || 'hockey';
 
   // Get record from team settings
   const wins = teamSettings.record?.wins ?? 0;
@@ -59,13 +103,46 @@ export default function TeamStatsScreen() {
   // Games played is the sum of wins + losses + ties
   const gamesPlayed = wins + losses + ties;
 
-  // Win percentage calculation - wins divided by total games
+  // Win percentage calculation - format as .XXX (three decimal places)
   const winPercentage = gamesPlayed > 0
-    ? Math.round((wins / gamesPlayed) * 100)
-    : 0;
+    ? (wins / gamesPlayed).toFixed(3)
+    : '.000';
 
   // Active players count
   const activePlayers = players.filter((p) => p.status === 'active').length;
+
+  // Sort players by points (goals + assists for hockey/soccer, points for basketball, hits for baseball)
+  const sortedPlayers = [...players].sort((a, b) => {
+    const aStats = a.stats;
+    const bStats = b.stats;
+
+    if (!aStats && !bStats) return 0;
+    if (!aStats) return 1;
+    if (!bStats) return -1;
+
+    switch (sport) {
+      case 'hockey': {
+        const aTotal = (aStats as HockeyStats).goals + (aStats as HockeyStats).assists;
+        const bTotal = (bStats as HockeyStats).goals + (bStats as HockeyStats).assists;
+        return bTotal - aTotal;
+      }
+      case 'baseball': {
+        return (bStats as BaseballStats).hits - (aStats as BaseballStats).hits;
+      }
+      case 'basketball': {
+        return (bStats as BasketballStats).points - (aStats as BasketballStats).points;
+      }
+      case 'soccer': {
+        const aTotal = (aStats as SoccerStats).goals + (aStats as SoccerStats).assists;
+        const bTotal = (bStats as SoccerStats).goals + (bStats as SoccerStats).assists;
+        return bTotal - aTotal;
+      }
+      default:
+        return 0;
+    }
+  });
+
+  const statHeaders = getStatHeaders(sport);
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -132,14 +209,12 @@ export default function TeamStatsScreen() {
                 <Text className="text-slate-400 text-sm">Ties</Text>
               </View>
             </View>
-            {gamesPlayed > 0 && (
-              <View className="mt-4 pt-4 border-t border-slate-700/50">
-                <View className="flex-row items-center justify-between">
-                  <Text className="text-slate-400">Win Percentage</Text>
-                  <Text className="text-white text-xl font-bold">{winPercentage}%</Text>
-                </View>
+            <View className="mt-4 pt-4 border-t border-slate-700/50">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-slate-400">Win Percentage</Text>
+                <Text className="text-white text-xl font-bold">{winPercentage}</Text>
               </View>
-            )}
+            </View>
           </Animated.View>
 
           {/* Stats Grid */}
@@ -163,7 +238,7 @@ export default function TeamStatsScreen() {
             Roster
           </Text>
 
-          <View className="flex-row flex-wrap justify-between">
+          <View className="flex-row flex-wrap justify-between mb-6">
             <View className="w-[48%] mb-3">
               <StatCard
                 icon={<Users size={20} color="#22c55e" />}
@@ -185,6 +260,49 @@ export default function TeamStatsScreen() {
               />
             </View>
           </View>
+
+          {/* Player Stats Table */}
+          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+            Player Statistics
+          </Text>
+
+          <Animated.View
+            entering={FadeInDown.delay(200).springify()}
+            className="bg-slate-800/60 rounded-2xl border border-slate-700/50 overflow-hidden"
+          >
+            {/* Table Header */}
+            <View className="flex-row items-center px-4 py-3 bg-slate-700/50 border-b border-slate-700">
+              <Text className="text-slate-300 font-semibold flex-1">Player</Text>
+              {statHeaders.map((header) => (
+                <Text key={header} className="text-slate-300 font-semibold w-12 text-center">
+                  {header}
+                </Text>
+              ))}
+            </View>
+
+            {/* Table Rows */}
+            {sortedPlayers.map((player, index) => {
+              const statValues = getStatValues(sport, player.stats);
+              return (
+                <View
+                  key={player.id}
+                  className={`flex-row items-center px-4 py-3 ${
+                    index !== sortedPlayers.length - 1 ? 'border-b border-slate-700/50' : ''
+                  }`}
+                >
+                  <View className="flex-1 flex-row items-center">
+                    <Text className="text-cyan-400 font-medium w-8">#{player.number}</Text>
+                    <Text className="text-white flex-1" numberOfLines={1}>{player.name}</Text>
+                  </View>
+                  {statValues.map((value, i) => (
+                    <Text key={i} className="text-slate-300 w-12 text-center">
+                      {value}
+                    </Text>
+                  ))}
+                </View>
+              );
+            })}
+          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     </View>
