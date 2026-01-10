@@ -472,10 +472,10 @@ export default function PaymentsScreen() {
                                     setEditPeriodAmount(period.amount.toString());
                                     setIsEditAmountModalVisible(true);
                                   }}
-                                  className="ml-2 p-1"
-                                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                  className="ml-3 bg-green-500/20 rounded-lg px-2.5 py-1.5 flex-row items-center"
                                 >
                                   <Edit3 size={14} color="#22c55e" />
+                                  <Text className="text-green-400 text-xs font-medium ml-1">Edit</Text>
                                 </Pressable>
                               )}
                             </View>
@@ -1006,29 +1006,36 @@ export default function PaymentsScreen() {
 
                 {selectedPeriod && (
                   <ScrollView className="flex-1 px-5 pt-6">
-                    <Pressable
-                      onPress={() => {
-                        if (isAdmin()) {
+                    {isAdmin() && (
+                      <Pressable
+                        onPress={() => {
                           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                           setEditingPeriodId(selectedPeriod.id);
                           setEditPeriodAmount(selectedPeriod.amount.toString());
                           setIsEditAmountModalVisible(true);
-                        }
-                      }}
-                      className="bg-green-500/20 rounded-xl p-4 mb-6 flex-row items-center justify-between"
-                    >
-                      <View>
+                        }}
+                        className="bg-green-500/20 rounded-xl p-4 mb-6 flex-row items-center justify-between active:bg-green-500/30"
+                      >
+                        <View>
+                          <Text className="text-green-400 text-2xl font-bold">
+                            ${selectedPeriod.amount}
+                          </Text>
+                          <Text className="text-green-300 text-sm">per player</Text>
+                        </View>
+                        <View className="bg-green-500/30 rounded-lg px-3 py-2 flex-row items-center">
+                          <Edit3 size={16} color="#22c55e" />
+                          <Text className="text-green-400 text-sm font-medium ml-1.5">Edit</Text>
+                        </View>
+                      </Pressable>
+                    )}
+                    {!isAdmin() && (
+                      <View className="bg-green-500/20 rounded-xl p-4 mb-6">
                         <Text className="text-green-400 text-2xl font-bold">
                           ${selectedPeriod.amount}
                         </Text>
                         <Text className="text-green-300 text-sm">per player</Text>
                       </View>
-                      {isAdmin() && (
-                        <View className="bg-green-500/30 rounded-lg p-2">
-                          <Edit3 size={18} color="#22c55e" />
-                        </View>
-                      )}
-                    </Pressable>
+                    )}
 
                     <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
                       Tap a player to view/add payments
