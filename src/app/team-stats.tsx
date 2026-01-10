@@ -56,7 +56,7 @@ function StatCard({ icon, label, value, subtitle, color, index }: StatCardProps)
 function getStatHeaders(sport: Sport): string[] {
   switch (sport) {
     case 'hockey':
-      return ['G', 'A', 'PIM'];
+      return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
     case 'baseball':
       return ['AB', 'H', 'HR', 'RBI', 'K'];
     case 'basketball':
@@ -64,7 +64,7 @@ function getStatHeaders(sport: Sport): string[] {
     case 'soccer':
       return ['G', 'A', 'YC'];
     default:
-      return ['G', 'A', 'PIM'];
+      return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
   }
 }
 
@@ -74,8 +74,9 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
 
   if (!stats) {
     if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
-      return ['-', '-', '-', '-'];
+      return ['-', '-', '-', '-', '-'];
     }
+    if (sport === 'hockey') return ['-', '-', '-', '-', '-', '-'];
     if (sport === 'baseball' || sport === 'basketball') return ['-', '-', '-', '-', '-'];
     return ['-', '-', '-'];
   }
@@ -83,16 +84,20 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
   // Handle goalie stats for hockey/soccer
   if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
     const s = stats as HockeyGoalieStats | SoccerGoalieStats;
+    const record = `${s.wins ?? 0}-${s.losses ?? 0}-${s.ties ?? 0}`;
     const savePercentage = s.shotsAgainst > 0
       ? (s.saves / s.shotsAgainst).toFixed(3)
       : '.000';
-    return [s.games ?? 0, s.shotsAgainst ?? 0, s.saves ?? 0, savePercentage];
+    return [s.games ?? 0, record, s.shotsAgainst ?? 0, s.saves ?? 0, savePercentage];
   }
 
   switch (sport) {
     case 'hockey': {
       const s = stats as HockeyStats;
-      return [s.goals ?? 0, s.assists ?? 0, s.pim ?? 0];
+      const points = (s.goals ?? 0) + (s.assists ?? 0);
+      const plusMinus = s.plusMinus ?? 0;
+      const plusMinusStr = plusMinus > 0 ? `+${plusMinus}` : `${plusMinus}`;
+      return [s.gamesPlayed ?? 0, s.goals ?? 0, s.assists ?? 0, points, s.pim ?? 0, plusMinusStr];
     }
     case 'baseball': {
       const s = stats as BaseballStats;
@@ -119,17 +124,18 @@ function calculateTeamTotals(players: Player[], sport: Sport): { label: string; 
       let totalAssists = 0;
       let totalPim = 0;
       players.forEach((p) => {
-        if (p.stats) {
+        if (p.stats && !isGoalie(p.position)) {
           const s = p.stats as HockeyStats;
           totalGoals += s.goals ?? 0;
           totalAssists += s.assists ?? 0;
           totalPim += s.pim ?? 0;
         }
       });
+      const totalPoints = totalGoals + totalAssists;
       return [
         { label: 'Goals', value: totalGoals },
         { label: 'Assists', value: totalAssists },
-        { label: 'PIM', value: totalPim },
+        { label: 'Points', value: totalPoints },
       ];
     }
     case 'baseball': {
@@ -206,7 +212,10 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
   // Goalie stats for hockey/soccer
   if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
     return [
-      { key: 'games', label: 'Games' },
+      { key: 'games', label: 'Games Played' },
+      { key: 'wins', label: 'Wins' },
+      { key: 'losses', label: 'Losses' },
+      { key: 'ties', label: 'Ties' },
       { key: 'shotsAgainst', label: 'Shots Against' },
       { key: 'saves', label: 'Saves' },
       { key: 'goalsAgainst', label: 'Goals Against' },
@@ -216,9 +225,11 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
   switch (sport) {
     case 'hockey':
       return [
+        { key: 'gamesPlayed', label: 'Games Played' },
         { key: 'goals', label: 'Goals' },
         { key: 'assists', label: 'Assists' },
         { key: 'pim', label: 'PIM' },
+        { key: 'plusMinus', label: '+/-' },
       ];
     case 'baseball':
       return [
@@ -252,12 +263,12 @@ function getDefaultStats(sport: Sport, position: string): PlayerStats {
   const playerIsGoalie = isGoalie(position);
 
   if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
-    return { games: 0, shotsAgainst: 0, saves: 0, goalsAgainst: 0 };
+    return { games: 0, wins: 0, losses: 0, ties: 0, shotsAgainst: 0, saves: 0, goalsAgainst: 0 };
   }
 
   switch (sport) {
     case 'hockey':
-      return { goals: 0, assists: 0, pim: 0 };
+      return { gamesPlayed: 0, goals: 0, assists: 0, pim: 0, plusMinus: 0 };
     case 'baseball':
       return { atBats: 0, hits: 0, homeRuns: 0, rbi: 0, strikeouts: 0 };
     case 'basketball':
@@ -265,13 +276,13 @@ function getDefaultStats(sport: Sport, position: string): PlayerStats {
     case 'soccer':
       return { goals: 0, assists: 0, yellowCards: 0 };
     default:
-      return { goals: 0, assists: 0, pim: 0 };
+      return { gamesPlayed: 0, goals: 0, assists: 0, pim: 0, plusMinus: 0 };
   }
 }
 
 // Get goalie stat headers
 function getGoalieHeaders(): string[] {
-  return ['GP', 'SA', 'SV', 'SV%'];
+  return ['GP', 'W-L-T', 'SA', 'SV', 'SV%'];
 }
 
 export default function TeamStatsScreen() {
@@ -505,15 +516,15 @@ export default function TeamStatsScreen() {
             className="bg-slate-800/60 rounded-2xl border border-slate-700/50 overflow-hidden"
           >
             {/* Table Header for Skaters */}
-            <View className="flex-row items-center px-4 py-3 bg-slate-700/50 border-b border-slate-700">
+            <View className="flex-row items-center px-3 py-3 bg-slate-700/50 border-b border-slate-700">
               <Text className="text-slate-300 font-semibold flex-1">Player</Text>
               {statHeaders.map((header) => (
-                <Text key={header} className="text-slate-300 font-semibold w-10 text-center">
+                <Text key={header} className="text-slate-300 font-semibold w-8 text-center text-xs">
                   {header}
                 </Text>
               ))}
               {/* Spacer for chevron alignment */}
-              <View className="w-5" />
+              <View className="w-4" />
             </View>
 
             {/* Table Rows - Non-Goalies */}
@@ -523,21 +534,21 @@ export default function TeamStatsScreen() {
                 <Pressable
                   key={player.id}
                   onPress={() => openEditModal(player)}
-                  className={`flex-row items-center px-4 py-3 active:bg-slate-700/50 ${
+                  className={`flex-row items-center px-3 py-3 active:bg-slate-700/50 ${
                     index !== arr.length - 1 || (sport === 'hockey' || sport === 'soccer') ? 'border-b border-slate-700/50' : ''
                   }`}
                 >
                   <View className="flex-1 flex-row items-center">
                     <Text className="text-cyan-400 font-medium w-8">#{player.number}</Text>
-                    <Text className="text-white flex-1" numberOfLines={1}>{player.name}</Text>
+                    <Text className="text-white flex-1 text-sm" numberOfLines={1}>{player.name}</Text>
                   </View>
                   {statValues.map((value, i) => (
-                    <Text key={i} className="text-slate-300 w-10 text-center">
+                    <Text key={i} className="text-slate-300 w-8 text-center text-xs">
                       {value}
                     </Text>
                   ))}
-                  <View className="w-5 items-center">
-                    <ChevronRight size={16} color="#64748b" />
+                  <View className="w-4 items-center">
+                    <ChevronRight size={14} color="#64748b" />
                   </View>
                 </Pressable>
               );
@@ -547,14 +558,14 @@ export default function TeamStatsScreen() {
             {(sport === 'hockey' || sport === 'soccer') && sortedPlayers.some(p => isGoalie(p.position)) && (
               <>
                 {/* Goalie Header */}
-                <View className="flex-row items-center px-4 py-3 bg-slate-700/50 border-b border-slate-700">
+                <View className="flex-row items-center px-3 py-3 bg-slate-700/50 border-b border-slate-700">
                   <Text className="text-slate-300 font-semibold flex-1">Goalies</Text>
                   {getGoalieHeaders().map((header) => (
-                    <Text key={header} className="text-slate-300 font-semibold w-10 text-center">
+                    <Text key={header} className="text-slate-300 font-semibold w-9 text-center text-xs">
                       {header}
                     </Text>
                   ))}
-                  <View className="w-5" />
+                  <View className="w-4" />
                 </View>
 
                 {/* Goalie Rows */}
@@ -564,21 +575,21 @@ export default function TeamStatsScreen() {
                     <Pressable
                       key={player.id}
                       onPress={() => openEditModal(player)}
-                      className={`flex-row items-center px-4 py-3 active:bg-slate-700/50 ${
+                      className={`flex-row items-center px-3 py-3 active:bg-slate-700/50 ${
                         index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
                       }`}
                     >
                       <View className="flex-1 flex-row items-center">
                         <Text className="text-cyan-400 font-medium w-8">#{player.number}</Text>
-                        <Text className="text-white flex-1" numberOfLines={1}>{player.name}</Text>
+                        <Text className="text-white flex-1 text-sm" numberOfLines={1}>{player.name}</Text>
                       </View>
                       {statValues.map((value, i) => (
-                        <Text key={i} className="text-slate-300 w-10 text-center">
+                        <Text key={i} className="text-slate-300 w-9 text-center text-xs">
                           {value}
                         </Text>
                       ))}
-                      <View className="w-5 items-center">
-                        <ChevronRight size={16} color="#64748b" />
+                      <View className="w-4 items-center">
+                        <ChevronRight size={14} color="#64748b" />
                       </View>
                     </Pressable>
                   );
