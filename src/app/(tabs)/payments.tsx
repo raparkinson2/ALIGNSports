@@ -710,12 +710,12 @@ export default function PaymentsScreen() {
               {/* Payment Type Selector */}
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Payment Type</Text>
-                <View className="flex-row flex-wrap">
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
                   {([
                     { value: 'dues', label: 'Dues' },
-                    { value: 'reserve_fee', label: 'Reserve Fee' },
-                    { value: 'facility_rental', label: 'Facility Rental' },
-                    { value: 'misc', label: 'Misc. Payment' },
+                    { value: 'reserve_fee', label: 'Reserve' },
+                    { value: 'facility_rental', label: 'Facility' },
+                    { value: 'misc', label: 'Misc.' },
                   ] as { value: PaymentPeriodType; label: string }[]).map((option) => (
                     <Pressable
                       key={option.value}
@@ -724,7 +724,7 @@ export default function PaymentsScreen() {
                         setPeriodType(option.value);
                       }}
                       className={cn(
-                        'px-4 py-2.5 rounded-xl mr-2 mb-2 border',
+                        'px-4 py-2.5 rounded-xl mr-2 border',
                         periodType === option.value
                           ? 'bg-cyan-500/20 border-cyan-500/50'
                           : 'bg-slate-800 border-slate-700'
@@ -740,7 +740,7 @@ export default function PaymentsScreen() {
                       </Text>
                     </Pressable>
                   ))}
-                </View>
+                </ScrollView>
                 <Text className="text-slate-500 text-xs mt-2">
                   {periodType === 'dues'
                     ? 'Dues track balance remaining until fully paid'
