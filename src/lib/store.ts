@@ -258,6 +258,7 @@ interface TeamStore {
   addPaymentPeriod: (period: PaymentPeriod) => void;
   updatePaymentPeriod: (id: string, updates: Partial<PaymentPeriod>) => void;
   removePaymentPeriod: (id: string) => void;
+  reorderPaymentPeriods: (periods: PaymentPeriod[]) => void;
   updatePlayerPayment: (periodId: string, playerId: string, status: 'unpaid' | 'paid' | 'partial', amount?: number, notes?: string) => void;
   addPaymentEntry: (periodId: string, playerId: string, entry: PaymentEntry) => void;
   removePaymentEntry: (periodId: string, playerId: string, entryId: string) => void;
@@ -521,6 +522,9 @@ export const useTeamStore = create<TeamStore>()(
       })),
       removePaymentPeriod: (id) => set((state) => ({
         paymentPeriods: state.paymentPeriods.filter((p) => p.id !== id),
+      })),
+      reorderPaymentPeriods: (periods) => set(() => ({
+        paymentPeriods: periods,
       })),
       updatePlayerPayment: (periodId, playerId, status, amount, notes) => set((state) => ({
         paymentPeriods: state.paymentPeriods.map((period) => {

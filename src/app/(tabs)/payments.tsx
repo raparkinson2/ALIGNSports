@@ -18,6 +18,9 @@ import {
   Calendar,
   ChevronLeft,
   Edit3,
+  GripVertical,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -222,9 +225,11 @@ export default function PaymentsScreen() {
   const addPaymentEntry = useTeamStore((s) => s.addPaymentEntry);
   const removePaymentEntry = useTeamStore((s) => s.removePaymentEntry);
   const updatePaymentPeriod = useTeamStore((s) => s.updatePaymentPeriod);
+  const reorderPaymentPeriods = useTeamStore((s) => s.reorderPaymentPeriods);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
 
+  const [isReorderMode, setIsReorderMode] = useState(false);
   const [isPaymentMethodModalVisible, setIsPaymentMethodModalVisible] = useState(false);
   const [isNewPeriodModalVisible, setIsNewPeriodModalVisible] = useState(false);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
@@ -369,6 +374,22 @@ export default function PaymentsScreen() {
     );
   };
 
+  const movePeriodUp = (index: number) => {
+    if (index === 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newPeriods = [...paymentPeriods];
+    [newPeriods[index - 1], newPeriods[index]] = [newPeriods[index], newPeriods[index - 1]];
+    reorderPaymentPeriods(newPeriods);
+  };
+
+  const movePeriodDown = (index: number) => {
+    if (index === paymentPeriods.length - 1) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newPeriods = [...paymentPeriods];
+    [newPeriods[index], newPeriods[index + 1]] = [newPeriods[index + 1], newPeriods[index]];
+    reorderPaymentPeriods(newPeriods);
+  };
+
   const selectedPeriod = paymentPeriods.find((p) => p.id === selectedPeriodId);
   const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
   const selectedPlayerPayment = selectedPeriod?.playerPayments.find((pp) => pp.playerId === selectedPlayerId);
@@ -466,14 +487,30 @@ export default function PaymentsScreen() {
                   <Users size={16} color="#a78bfa" />
                   <Text className="text-purple-400 font-semibold ml-2">Payment Tracking</Text>
                 </View>
-                {isAdmin() && (
-                  <Pressable
-                    onPress={() => setIsNewPeriodModalVisible(true)}
-                    className="bg-purple-500/20 rounded-full p-2"
-                  >
-                    <Plus size={16} color="#a78bfa" />
-                  </Pressable>
-                )}
+                <View className="flex-row items-center">
+                  {isAdmin() && paymentPeriods.length > 1 && (
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setIsReorderMode(!isReorderMode);
+                      }}
+                      className={cn(
+                        'rounded-full p-2 mr-2',
+                        isReorderMode ? 'bg-purple-500' : 'bg-purple-500/20'
+                      )}
+                    >
+                      <GripVertical size={16} color={isReorderMode ? 'white' : '#a78bfa'} />
+                    </Pressable>
+                  )}
+                  {isAdmin() && (
+                    <Pressable
+                      onPress={() => setIsNewPeriodModalVisible(true)}
+                      className="bg-purple-500/20 rounded-full p-2"
+                    >
+                      <Plus size={16} color="#a78bfa" />
+                    </Pressable>
+                  )}
+                </View>
               </View>
 
               {paymentPeriods.length === 0 ? (
@@ -493,48 +530,79 @@ export default function PaymentsScreen() {
                       key={period.id}
                       entering={FadeInDown.delay(200 + index * 50).springify()}
                     >
-                      <Pressable
-                        onPress={() => setSelectedPeriodId(period.id)}
-                        className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
-                      >
-                        <View className="flex-row items-center justify-between">
-                          <View className="flex-1">
-                            <Text className="text-white font-semibold text-lg">{period.title}</Text>
-                            <View className="flex-row items-center">
-                              <Text className="text-green-400 font-bold">${period.amount}</Text>
-                              {isAdmin() && (
-                                <Pressable
-                                  onPress={(e) => {
-                                    e.stopPropagation();
-                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                    setEditingPeriodId(period.id);
-                                    setEditPeriodAmount(period.amount.toString());
-                                    setIsEditAmountModalVisible(true);
-                                  }}
-                                  className="ml-3 bg-green-500/20 rounded-lg px-2.5 py-1.5 flex-row items-center"
-                                >
-                                  <Edit3 size={14} color="#22c55e" />
-                                  <Text className="text-green-400 text-xs font-medium ml-1">Edit</Text>
-                                </Pressable>
+                      <View className="flex-row items-center mb-3">
+                        {/* Reorder controls */}
+                        {isReorderMode && (
+                          <View className="mr-3 items-center">
+                            <Pressable
+                              onPress={() => movePeriodUp(index)}
+                              className={cn(
+                                'p-1.5 rounded-lg mb-1',
+                                index === 0 ? 'opacity-30' : 'bg-slate-700 active:bg-slate-600'
                               )}
+                              disabled={index === 0}
+                            >
+                              <ChevronUp size={18} color="#a78bfa" />
+                            </Pressable>
+                            <Pressable
+                              onPress={() => movePeriodDown(index)}
+                              className={cn(
+                                'p-1.5 rounded-lg',
+                                index === paymentPeriods.length - 1 ? 'opacity-30' : 'bg-slate-700 active:bg-slate-600'
+                              )}
+                              disabled={index === paymentPeriods.length - 1}
+                            >
+                              <ChevronDown size={18} color="#a78bfa" />
+                            </Pressable>
+                          </View>
+                        )}
+
+                        <Pressable
+                          onPress={() => !isReorderMode && setSelectedPeriodId(period.id)}
+                          className={cn(
+                            'flex-1 bg-slate-800/80 rounded-xl p-4 border border-slate-700/50',
+                            !isReorderMode && 'active:bg-slate-700/80'
+                          )}
+                        >
+                          <View className="flex-row items-center justify-between">
+                            <View className="flex-1">
+                              <Text className="text-white font-semibold text-lg">{period.title}</Text>
+                              <View className="flex-row items-center">
+                                <Text className="text-green-400 font-bold">${period.amount}</Text>
+                                {isAdmin() && !isReorderMode && (
+                                  <Pressable
+                                    onPress={(e) => {
+                                      e.stopPropagation();
+                                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                      setEditingPeriodId(period.id);
+                                      setEditPeriodAmount(period.amount.toString());
+                                      setIsEditAmountModalVisible(true);
+                                    }}
+                                    className="ml-3 bg-green-500/20 rounded-lg px-2.5 py-1.5 flex-row items-center"
+                                  >
+                                    <Edit3 size={14} color="#22c55e" />
+                                    <Text className="text-green-400 text-xs font-medium ml-1">Edit</Text>
+                                  </Pressable>
+                                )}
+                              </View>
+                            </View>
+                            <View className="items-end">
+                              <View className="flex-row items-center">
+                                <Text className="text-slate-400 text-sm mr-2">
+                                  {paidCount}/{totalCount} paid
+                                </Text>
+                                {!isReorderMode && <ChevronRight size={18} color="#64748b" />}
+                              </View>
+                              <View className="w-24 h-2 bg-slate-700 rounded-full mt-2 overflow-hidden">
+                                <View
+                                  className="h-full bg-green-500 rounded-full"
+                                  style={{ width: `${(paidCount / totalCount) * 100}%` }}
+                                />
+                              </View>
                             </View>
                           </View>
-                          <View className="items-end">
-                            <View className="flex-row items-center">
-                              <Text className="text-slate-400 text-sm mr-2">
-                                {paidCount}/{totalCount} paid
-                              </Text>
-                              <ChevronRight size={18} color="#64748b" />
-                            </View>
-                            <View className="w-24 h-2 bg-slate-700 rounded-full mt-2 overflow-hidden">
-                              <View
-                                className="h-full bg-green-500 rounded-full"
-                                style={{ width: `${(paidCount / totalCount) * 100}%` }}
-                              />
-                            </View>
-                          </View>
-                        </View>
-                      </Pressable>
+                        </Pressable>
+                      </View>
                     </Animated.View>
                   );
                 })
