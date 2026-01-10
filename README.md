@@ -136,13 +136,14 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Team Stats**: View comprehensive team statistics
   - Season record (Wins/Losses/Ties)
   - Win percentage (formatted as .XXX)
-  - Games played this season
+  - Season statistics summary (Games Played + sport totals)
   - Roster breakdown (active vs total players)
   - Player statistics with sport-specific columns:
-    - Hockey: Goals, Assists, PIM
+    - Hockey: Goals, Assists, PIM (skaters) | GP, SA, SV, SV% (goalies)
     - Baseball: At Bats, Hits, Home Runs, RBI, Strikeouts
     - Basketball: Points, Rebounds, Assists, Steals, Blocks
-    - Soccer: Goals, Assists, Yellow Cards
+    - Soccer: Goals, Assists, Yellow Cards (players) | GP, SA, SV, SV% (goalies)
+  - Tap any player to edit their stats
 - **Feature Request**: Submit suggestions for new app features via email
 - **Report Bug**: Report issues and bugs via email
 - Log out to switch players

@@ -85,6 +85,13 @@ export interface HockeyStats {
   pim: number; // Penalty minutes
 }
 
+export interface HockeyGoalieStats {
+  games: number;
+  shotsAgainst: number;
+  saves: number;
+  goalsAgainst: number;
+}
+
 export interface BaseballStats {
   atBats: number;
   hits: number;
@@ -107,7 +114,14 @@ export interface SoccerStats {
   yellowCards: number;
 }
 
-export type PlayerStats = HockeyStats | BaseballStats | BasketballStats | SoccerStats;
+export interface SoccerGoalieStats {
+  games: number;
+  shotsAgainst: number;
+  saves: number;
+  goalsAgainst: number;
+}
+
+export type PlayerStats = HockeyStats | HockeyGoalieStats | BaseballStats | BasketballStats | SoccerStats | SoccerGoalieStats;
 
 // Types
 export interface Player {
