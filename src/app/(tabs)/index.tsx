@@ -24,6 +24,7 @@ import { Image } from 'expo-image';
 import { useTeamStore, Game, TeamRecord, Sport } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { JerseyIcon } from '@/components/JerseyIcon';
+import { AddressSearch } from '@/components/AddressSearch';
 
 const getDateLabel = (dateString: string): string => {
   const date = parseISO(dateString);
@@ -558,14 +559,12 @@ export default function ScheduleScreen() {
               </View>
 
               {/* Address */}
-              <View className="mb-5">
+              <View className="mb-5" style={{ zIndex: 50 }}>
                 <Text className="text-slate-400 text-sm mb-2">Address</Text>
-                <TextInput
+                <AddressSearch
                   value={address}
                   onChangeText={setAddress}
-                  placeholder="e.g., 1234 Main Street"
-                  placeholderTextColor="#64748b"
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  placeholder="Search for an address..."
                 />
               </View>
 
