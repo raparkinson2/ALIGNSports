@@ -88,13 +88,17 @@ export interface HockeyStats {
 export interface BaseballStats {
   atBats: number;
   hits: number;
+  homeRuns: number;
   rbi: number;
+  strikeouts: number;
 }
 
 export interface BasketballStats {
   points: number;
   rebounds: number;
   assists: number;
+  steals: number;
+  blocks: number;
 }
 
 export interface SoccerStats {

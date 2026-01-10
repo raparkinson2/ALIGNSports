@@ -135,11 +135,14 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - Send game invites to potential subs
 - **Team Stats**: View comprehensive team statistics
   - Season record (Wins/Losses/Ties)
-  - Win percentage with progress bar
-  - Games played and upcoming
-  - Average attendance per game
-  - Most dedicated player (most games attended)
-  - Roster breakdown (active vs total)
+  - Win percentage (formatted as .XXX)
+  - Games played this season
+  - Roster breakdown (active vs total players)
+  - Player statistics with sport-specific columns:
+    - Hockey: Goals, Assists, PIM
+    - Baseball: At Bats, Hits, Home Runs, RBI, Strikeouts
+    - Basketball: Points, Rebounds, Assists, Steals, Blocks
+    - Soccer: Goals, Assists, Yellow Cards
 - **Feature Request**: Submit suggestions for new app features via email
 - **Report Bug**: Report issues and bugs via email
 - Log out to switch players

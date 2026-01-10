@@ -51,9 +51,9 @@ function getStatHeaders(sport: Sport): string[] {
     case 'hockey':
       return ['G', 'A', 'PIM'];
     case 'baseball':
-      return ['AB', 'H', 'RBI'];
+      return ['AB', 'H', 'HR', 'RBI', 'K'];
     case 'basketball':
-      return ['PTS', 'REB', 'AST'];
+      return ['PTS', 'REB', 'AST', 'STL', 'BLK'];
     case 'soccer':
       return ['G', 'A', 'YC'];
     default:
@@ -63,7 +63,10 @@ function getStatHeaders(sport: Sport): string[] {
 
 // Get stat values based on sport
 function getStatValues(sport: Sport, stats: HockeyStats | BaseballStats | BasketballStats | SoccerStats | undefined): (number | string)[] {
-  if (!stats) return ['-', '-', '-'];
+  if (!stats) {
+    if (sport === 'baseball' || sport === 'basketball') return ['-', '-', '-', '-', '-'];
+    return ['-', '-', '-'];
+  }
 
   switch (sport) {
     case 'hockey': {
@@ -72,11 +75,11 @@ function getStatValues(sport: Sport, stats: HockeyStats | BaseballStats | Basket
     }
     case 'baseball': {
       const s = stats as BaseballStats;
-      return [s.atBats ?? 0, s.hits ?? 0, s.rbi ?? 0];
+      return [s.atBats ?? 0, s.hits ?? 0, s.homeRuns ?? 0, s.rbi ?? 0, s.strikeouts ?? 0];
     }
     case 'basketball': {
       const s = stats as BasketballStats;
-      return [s.points ?? 0, s.rebounds ?? 0, s.assists ?? 0];
+      return [s.points ?? 0, s.rebounds ?? 0, s.assists ?? 0, s.steals ?? 0, s.blocks ?? 0];
     }
     case 'soccer': {
       const s = stats as SoccerStats;
@@ -274,7 +277,7 @@ export default function TeamStatsScreen() {
             <View className="flex-row items-center px-4 py-3 bg-slate-700/50 border-b border-slate-700">
               <Text className="text-slate-300 font-semibold flex-1">Player</Text>
               {statHeaders.map((header) => (
-                <Text key={header} className="text-slate-300 font-semibold w-12 text-center">
+                <Text key={header} className="text-slate-300 font-semibold w-10 text-center">
                   {header}
                 </Text>
               ))}
@@ -295,7 +298,7 @@ export default function TeamStatsScreen() {
                     <Text className="text-white flex-1" numberOfLines={1}>{player.name}</Text>
                   </View>
                   {statValues.map((value, i) => (
-                    <Text key={i} className="text-slate-300 w-12 text-center">
+                    <Text key={i} className="text-slate-300 w-10 text-center">
                       {value}
                     </Text>
                   ))}
