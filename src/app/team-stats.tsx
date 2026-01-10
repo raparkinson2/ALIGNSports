@@ -83,10 +83,7 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
 
   if (!stats) {
     if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
-      if (sport === 'hockey') {
-        return [0, '0-0-0', 0, '0.00', 0, 0, '.000'];
-      }
-      return [0, '0-0-0', 0, 0, '.000'];
+      return [0, '0-0-0', 0, '0.00', 0, 0, '.000'];
     }
     if (sport === 'hockey') return [0, 0, 0, 0, 0, 0];
     if (sport === 'baseball') return [0, 0, 0, 0, 0, 0];
@@ -102,17 +99,18 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
     const savePercentage = s.shotsAgainst > 0
       ? (s.saves / s.shotsAgainst).toFixed(3)
       : '.000';
+    const mp = s.minutesPlayed ?? 0;
 
-    // Hockey goalies get MP and GAA
+    // Hockey GAA = (Goals Against x 60) / Minutes Played
+    // Soccer GAA = (Goals Against / Minutes Played) x 90
+    let gaa: string;
     if (sport === 'hockey') {
-      const hs = s as HockeyGoalieStats;
-      const mp = hs.minutesPlayed ?? 0;
-      // GAA = (Goals Against x 60) / Minutes Played
-      const gaa = mp > 0 ? ((hs.goalsAgainst ?? 0) * 60 / mp).toFixed(2) : '0.00';
-      return [s.games ?? 0, record, mp, gaa, s.shotsAgainst ?? 0, s.saves ?? 0, savePercentage];
+      gaa = mp > 0 ? ((s.goalsAgainst ?? 0) * 60 / mp).toFixed(2) : '0.00';
+    } else {
+      gaa = mp > 0 ? ((s.goalsAgainst ?? 0) / mp * 90).toFixed(2) : '0.00';
     }
 
-    return [s.games ?? 0, record, s.shotsAgainst ?? 0, s.saves ?? 0, savePercentage];
+    return [s.games ?? 0, record, mp, gaa, s.shotsAgainst ?? 0, s.saves ?? 0, savePercentage];
   }
 
   switch (sport) {
@@ -263,6 +261,7 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
       { key: 'wins', label: 'Wins' },
       { key: 'losses', label: 'Losses' },
       { key: 'ties', label: 'Ties' },
+      { key: 'minutesPlayed', label: 'Minutes Played' },
       { key: 'shotsAgainst', label: 'Shots Against' },
       { key: 'saves', label: 'Saves' },
       { key: 'goalsAgainst', label: 'Goals Against' },
@@ -316,7 +315,7 @@ function getDefaultStats(sport: Sport, position: string): PlayerStats {
     if (sport === 'hockey') {
       return { games: 0, wins: 0, losses: 0, ties: 0, minutesPlayed: 0, shotsAgainst: 0, saves: 0, goalsAgainst: 0 };
     }
-    return { games: 0, wins: 0, losses: 0, ties: 0, shotsAgainst: 0, saves: 0, goalsAgainst: 0 };
+    return { games: 0, wins: 0, losses: 0, ties: 0, minutesPlayed: 0, shotsAgainst: 0, saves: 0, goalsAgainst: 0 };
   }
 
   switch (sport) {
@@ -333,12 +332,10 @@ function getDefaultStats(sport: Sport, position: string): PlayerStats {
   }
 }
 
-// Get goalie stat headers (hockey includes GAA)
+// Get goalie stat headers (includes GAA for both hockey and soccer)
 function getGoalieHeaders(sport: Sport): string[] {
-  if (sport === 'hockey') {
-    return ['GP', 'W-L-T', 'MP', 'GAA', 'SA', 'SV', 'SV%'];
-  }
-  return ['GP', 'W-L-T', 'SA', 'SV', 'SV%'];
+  // Both hockey and soccer goalies get MP and GAA
+  return ['GP', 'W-L-T', 'MP', 'GAA', 'SA', 'SV', 'SV%'];
 }
 
 export default function TeamStatsScreen() {
