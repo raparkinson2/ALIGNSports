@@ -610,34 +610,36 @@ export default function GameDetailScreen() {
             </Animated.View>
           )}
 
-          {/* External Invite Section */}
-          <Animated.View
-            entering={FadeInUp.delay(175).springify()}
-            className="mx-4 mb-4"
-          >
-            <View className="flex-row items-center mb-3">
-              <Send size={18} color="#a78bfa" />
-              <Text className="text-purple-400 text-lg font-semibold ml-2">
-                Invite Someone
-              </Text>
-            </View>
-            <View className="flex-row">
-              <Pressable
-                onPress={handleSendTextInvite}
-                className="flex-1 bg-purple-500/20 rounded-xl p-4 mr-2 border border-purple-500/30 active:bg-purple-500/30 flex-row items-center justify-center"
-              >
+          {/* External Invite Section - Only for captains and admins */}
+          {canManageTeam() && (
+            <Animated.View
+              entering={FadeInUp.delay(175).springify()}
+              className="mx-4 mb-4"
+            >
+              <View className="flex-row items-center mb-3">
                 <Send size={18} color="#a78bfa" />
-                <Text className="text-purple-400 font-semibold ml-2">Text Invite</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleSendEmailInvite}
-                className="flex-1 bg-purple-500/20 rounded-xl p-4 ml-2 border border-purple-500/30 active:bg-purple-500/30 flex-row items-center justify-center"
-              >
-                <Mail size={18} color="#a78bfa" />
-                <Text className="text-purple-400 font-semibold ml-2">Email Invite</Text>
-              </Pressable>
-            </View>
-          </Animated.View>
+                <Text className="text-purple-400 text-lg font-semibold ml-2">
+                  Invite Someone
+                </Text>
+              </View>
+              <View className="flex-row">
+                <Pressable
+                  onPress={handleSendTextInvite}
+                  className="flex-1 bg-purple-500/20 rounded-xl p-4 mr-2 border border-purple-500/30 active:bg-purple-500/30 flex-row items-center justify-center"
+                >
+                  <Send size={18} color="#a78bfa" />
+                  <Text className="text-purple-400 font-semibold ml-2">Text Invite</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleSendEmailInvite}
+                  className="flex-1 bg-purple-500/20 rounded-xl p-4 ml-2 border border-purple-500/30 active:bg-purple-500/30 flex-row items-center justify-center"
+                >
+                  <Mail size={18} color="#a78bfa" />
+                  <Text className="text-purple-400 font-semibold ml-2">Email Invite</Text>
+                </Pressable>
+              </View>
+            </Animated.View>
+          )}
 
           {/* Check-In Section */}
           <Animated.View
