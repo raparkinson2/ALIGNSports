@@ -155,10 +155,13 @@ export interface PlayerPayment {
   entries: PaymentEntry[]; // Individual payment entries
 }
 
+export type PaymentPeriodType = 'dues' | 'reserve_fee' | 'facility_rental' | 'misc';
+
 export interface PaymentPeriod {
   id: string;
   title: string;
   amount: number;
+  type: PaymentPeriodType;
   dueDate?: string;
   playerPayments: PlayerPayment[];
   createdAt: string;

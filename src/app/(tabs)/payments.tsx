@@ -26,6 +26,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   useTeamStore,
   PaymentPeriod,
+  PaymentPeriodType,
   PaymentMethod,
   PaymentApp,
   Player,
@@ -129,18 +130,52 @@ interface PlayerPaymentRowProps {
   status: 'unpaid' | 'paid' | 'partial';
   paidAmount?: number;
   totalAmount: number;
+  periodType: PaymentPeriodType;
   onPress: () => void;
 }
 
-function PlayerPaymentRow({ player, status, paidAmount, totalAmount, onPress }: PlayerPaymentRowProps) {
+function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType, onPress }: PlayerPaymentRowProps) {
   const balance = totalAmount - (paidAmount ?? 0);
+  const isDuesType = periodType === 'dues';
+
+  // For non-dues types, show amount paid instead of balance
+  const getStatusText = () => {
+    if (isDuesType) {
+      // Dues: show balance remaining
+      if (status === 'paid') return `Paid $${paidAmount ?? totalAmount}`;
+      if (status === 'partial') return `$${paidAmount ?? 0} paid - $${balance} remaining`;
+      return `$${totalAmount} due`;
+    } else {
+      // Non-dues: show amount contributed
+      if (paidAmount && paidAmount > 0) return `$${paidAmount} paid`;
+      return 'No payment yet';
+    }
+  };
+
+  // For non-dues types, different styling logic
+  const getBackgroundClass = () => {
+    if (isDuesType) {
+      return status === 'paid' ? 'bg-green-500/20' : status === 'partial' ? 'bg-amber-500/20' : 'bg-slate-800/60';
+    } else {
+      // For non-dues, highlight if they've paid anything
+      return (paidAmount && paidAmount > 0) ? 'bg-green-500/20' : 'bg-slate-800/60';
+    }
+  };
+
+  const getTextClass = () => {
+    if (isDuesType) {
+      return status === 'paid' ? 'text-green-400' : status === 'partial' ? 'text-amber-400' : 'text-slate-400';
+    } else {
+      return (paidAmount && paidAmount > 0) ? 'text-green-400' : 'text-slate-400';
+    }
+  };
 
   return (
     <Pressable
       onPress={onPress}
       className={cn(
         'flex-row items-center p-4 rounded-xl mb-2 active:opacity-80',
-        status === 'paid' ? 'bg-green-500/20' : status === 'partial' ? 'bg-amber-500/20' : 'bg-slate-800/60'
+        getBackgroundClass()
       )}
     >
       <Image
@@ -150,25 +185,26 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, onPress }: 
       />
       <View className="flex-1 ml-3">
         <Text className="text-white font-medium text-base">{player.name}</Text>
-        <Text className={cn(
-          'text-sm mt-0.5',
-          status === 'paid' ? 'text-green-400' : status === 'partial' ? 'text-amber-400' : 'text-slate-400'
-        )}>
-          {status === 'paid'
-            ? `Paid $${paidAmount ?? totalAmount}`
-            : status === 'partial'
-              ? `$${paidAmount ?? 0} paid - $${balance} remaining`
-              : `$${totalAmount} due`}
+        <Text className={cn('text-sm mt-0.5', getTextClass())}>
+          {getStatusText()}
         </Text>
       </View>
 
       <View className="items-end">
-        {status === 'paid' ? (
-          <CheckCircle2 size={28} color="#22c55e" />
-        ) : status === 'partial' ? (
-          <AlertCircle size={28} color="#f59e0b" />
+        {isDuesType ? (
+          status === 'paid' ? (
+            <CheckCircle2 size={28} color="#22c55e" />
+          ) : status === 'partial' ? (
+            <AlertCircle size={28} color="#f59e0b" />
+          ) : (
+            <Circle size={28} color="#64748b" />
+          )
         ) : (
-          <Circle size={28} color="#64748b" />
+          (paidAmount && paidAmount > 0) ? (
+            <CheckCircle2 size={28} color="#22c55e" />
+          ) : (
+            <Circle size={28} color="#64748b" />
+          )
         )}
       </View>
       <ChevronRight size={20} color="#64748b" className="ml-2" />
@@ -209,6 +245,7 @@ export default function PaymentsScreen() {
   // New period form
   const [periodTitle, setPeriodTitle] = useState('');
   const [periodAmount, setPeriodAmount] = useState('');
+  const [periodType, setPeriodType] = useState<PaymentPeriodType>('dues');
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
 
   // Edit period amount
@@ -263,6 +300,7 @@ export default function PaymentsScreen() {
       id: Date.now().toString(),
       title: periodTitle.trim(),
       amount: parseFloat(periodAmount),
+      type: periodType,
       playerPayments: selectedPlayerIds.map((playerId) => ({
         playerId,
         status: 'unpaid' as const,
@@ -275,6 +313,7 @@ export default function PaymentsScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setPeriodTitle('');
     setPeriodAmount('');
+    setPeriodType('dues');
     setSelectedPlayerIds([]);
     setIsNewPeriodModalVisible(false);
   };
@@ -668,6 +707,47 @@ export default function PaymentsScreen() {
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
+              {/* Payment Type Selector */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Payment Type</Text>
+                <View className="flex-row flex-wrap">
+                  {([
+                    { value: 'dues', label: 'Dues' },
+                    { value: 'reserve_fee', label: 'Reserve Fee' },
+                    { value: 'facility_rental', label: 'Facility Rental' },
+                    { value: 'misc', label: 'Misc. Payment' },
+                  ] as { value: PaymentPeriodType; label: string }[]).map((option) => (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setPeriodType(option.value);
+                      }}
+                      className={cn(
+                        'px-4 py-2.5 rounded-xl mr-2 mb-2 border',
+                        periodType === option.value
+                          ? 'bg-cyan-500/20 border-cyan-500/50'
+                          : 'bg-slate-800 border-slate-700'
+                      )}
+                    >
+                      <Text
+                        className={cn(
+                          'font-medium',
+                          periodType === option.value ? 'text-cyan-400' : 'text-slate-400'
+                        )}
+                      >
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Text className="text-slate-500 text-xs mt-2">
+                  {periodType === 'dues'
+                    ? 'Dues track balance remaining until fully paid'
+                    : 'This type shows total collected without a balance'}
+                </Text>
+              </View>
+
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Title</Text>
                 <TextInput
@@ -1090,6 +1170,7 @@ export default function PaymentsScreen() {
                           status={pp.status}
                           paidAmount={pp.amount}
                           totalAmount={selectedPeriod.amount}
+                          periodType={selectedPeriod.type ?? 'dues'}
                           onPress={() => {
                             setSelectedPlayerId(pp.playerId);
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
