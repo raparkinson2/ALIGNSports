@@ -260,7 +260,7 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
       { key: 'games', label: 'Games Played' },
       { key: 'wins', label: 'Wins' },
       { key: 'losses', label: 'Losses' },
-      { key: 'ties', label: 'Ties' },
+      { key: 'ties', label: 'Draws' },
       { key: 'minutesPlayed', label: 'Minutes Played' },
       { key: 'shotsAgainst', label: 'Shots Against' },
       { key: 'saves', label: 'Saves' },
@@ -497,7 +497,7 @@ export default function TeamStatsScreen() {
               </View>
               <View className="items-center">
                 <Text className="text-amber-400 text-4xl font-bold">{ties}</Text>
-                <Text className="text-slate-400 text-sm">Ties</Text>
+                <Text className="text-slate-400 text-sm">{sport === 'soccer' ? 'Draws' : 'Ties'}</Text>
               </View>
             </View>
             <View className="mt-4 pt-4 border-t border-slate-700/50">
