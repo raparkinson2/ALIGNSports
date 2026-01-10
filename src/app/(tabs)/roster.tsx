@@ -62,11 +62,11 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
 
   if (!stats) {
     if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
-      return ['-', '-', '-', '-', '-'];
+      return [0, '0-0-0', 0, 0, '.000'];
     }
-    if (sport === 'hockey') return ['-', '-', '-', '-', '-', '-'];
-    if (sport === 'baseball' || sport === 'basketball') return ['-', '-', '-', '-', '-'];
-    return ['-', '-', '-'];
+    if (sport === 'hockey') return [0, 0, 0, 0, 0, 0];
+    if (sport === 'baseball' || sport === 'basketball') return [0, 0, 0, 0, 0];
+    return [0, 0, 0];
   }
 
   // Handle goalie stats for hockey/soccer
@@ -100,7 +100,7 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
       return [s.goals ?? 0, s.assists ?? 0, s.yellowCards ?? 0];
     }
     default:
-      return ['-', '-', '-'];
+      return [0, 0, 0];
   }
 }
 
