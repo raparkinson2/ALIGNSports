@@ -250,14 +250,17 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
             <Text className="text-slate-400 text-sm">{positionDisplay}</Text>
           </View>
 
-          {/* Status Badge */}
-          {player.status === 'injured' ? (
-            <Text className="text-red-500 text-xl font-black">+</Text>
-          ) : player.status === 'suspended' ? (
-            <View className="bg-red-500/20 px-2 py-1 rounded-full">
-              <Text className="text-red-500 text-xs font-bold">SUS</Text>
-            </View>
-          ) : (
+          {/* Status Badge and Indicators */}
+          <View className="flex-row items-center">
+            {/* Injured indicator */}
+            {player.isInjured && (
+              <Text className="text-red-500 font-black mr-2" style={{ fontSize: 18 }}>+</Text>
+            )}
+            {/* Suspended indicator */}
+            {player.isSuspended && (
+              <Text className="text-red-500 font-bold mr-2" style={{ fontSize: 11 }}>SUS</Text>
+            )}
+            {/* Active/Reserve status */}
             <View className={cn(
               'px-2 py-1 rounded-full',
               player.status === 'active' ? 'bg-green-500/20' : 'bg-slate-600/50'
@@ -269,7 +272,7 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
                 {player.status === 'active' ? 'Active' : 'Reserve'}
               </Text>
             </View>
-          )}
+          </View>
         </View>
 
         {/* Player Stats */}
@@ -349,6 +352,8 @@ export default function RosterScreen() {
   const [email, setEmail] = useState('');
   const [playerRoles, setPlayerRoles] = useState<PlayerRole[]>([]);
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus>('active');
+  const [isInjured, setIsInjured] = useState(false);
+  const [isSuspended, setIsSuspended] = useState(false);
 
   // Invite modal state
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
@@ -362,6 +367,8 @@ export default function RosterScreen() {
     setEmail('');
     setPlayerRoles([]);
     setPlayerStatus('active');
+    setIsInjured(false);
+    setIsSuspended(false);
     setEditingPlayer(null);
   };
 
@@ -387,6 +394,8 @@ export default function RosterScreen() {
     setEmail(player.email || '');
     setPlayerRoles(player.roles || []);
     setPlayerStatus(player.status || 'active');
+    setIsInjured(player.isInjured || false);
+    setIsSuspended(player.isSuspended || false);
     setIsModalVisible(true);
   };
 
@@ -412,6 +421,8 @@ export default function RosterScreen() {
       if (isAdmin()) {
         updates.roles = playerRoles;
         updates.status = playerStatus;
+        updates.isInjured = isInjured;
+        updates.isSuspended = isSuspended;
       }
 
       updatePlayer(editingPlayer.id, updates);
@@ -762,21 +773,21 @@ export default function RosterScreen() {
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setPlayerStatus('injured');
+                        setIsInjured(!isInjured);
                       }}
                       className={cn(
                         'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
-                        playerStatus === 'injured' ? 'bg-red-500' : 'bg-slate-800'
+                        isInjured ? 'bg-red-500' : 'bg-slate-800'
                       )}
                     >
                       <Text className={cn(
-                        'text-base font-black mr-1',
-                        playerStatus === 'injured' ? 'text-white' : 'text-red-500'
+                        'text-lg font-black mr-1',
+                        isInjured ? 'text-white' : 'text-red-500'
                       )}>+</Text>
                       <Text
                         className={cn(
                           'font-semibold',
-                          playerStatus === 'injured' ? 'text-white' : 'text-slate-400'
+                          isInjured ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Injured
@@ -785,17 +796,17 @@ export default function RosterScreen() {
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setPlayerStatus('suspended');
+                        setIsSuspended(!isSuspended);
                       }}
                       className={cn(
                         'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
-                        playerStatus === 'suspended' ? 'bg-red-600' : 'bg-slate-800'
+                        isSuspended ? 'bg-red-600' : 'bg-slate-800'
                       )}
                     >
                       <Text
                         className={cn(
                           'font-bold mr-1',
-                          playerStatus === 'suspended' ? 'text-white' : 'text-red-500'
+                          isSuspended ? 'text-white' : 'text-red-500'
                         )}
                         style={{ fontSize: 12 }}
                       >
@@ -804,7 +815,7 @@ export default function RosterScreen() {
                       <Text
                         className={cn(
                           'font-semibold',
-                          playerStatus === 'suspended' ? 'text-white' : 'text-slate-400'
+                          isSuspended ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Suspended

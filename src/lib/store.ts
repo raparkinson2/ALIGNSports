@@ -108,7 +108,7 @@ export const SPORT_NAMES: Record<Sport, string> = {
 export type PlayerRole = 'admin' | 'captain';
 
 // Player Status
-export type PlayerStatus = 'active' | 'reserve' | 'injured' | 'suspended';
+export type PlayerStatus = 'active' | 'reserve';
 
 // Notification Preferences
 export interface NotificationPreferences {
@@ -213,6 +213,8 @@ export interface Player {
   avatar?: string;
   roles: PlayerRole[]; // Array of roles - can be admin, captain, or both
   status: PlayerStatus; // active or reserve (this is separate from roles)
+  isInjured?: boolean; // Player is injured
+  isSuspended?: boolean; // Player is suspended
   notificationPreferences?: NotificationPreferences;
   stats?: PlayerStats; // Regular player stats (batter for baseball, skater for hockey/soccer)
   pitcherStats?: BaseballPitcherStats; // Separate stats for pitching (baseball only)
