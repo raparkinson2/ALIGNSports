@@ -252,6 +252,10 @@ export default function AdminScreen() {
   const [newPlayerPosition, setNewPlayerPosition] = useState(positions[0]);
   const [newPlayerPhone, setNewPlayerPhone] = useState('');
   const [newPlayerEmail, setNewPlayerEmail] = useState('');
+  const [newPlayerRoles, setNewPlayerRoles] = useState<PlayerRole[]>([]);
+  const [newPlayerStatus, setNewPlayerStatus] = useState<PlayerStatus>('active');
+  const [newPlayerIsInjured, setNewPlayerIsInjured] = useState(false);
+  const [newPlayerIsSuspended, setNewPlayerIsSuspended] = useState(false);
 
   // Invite modal state
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
@@ -338,6 +342,10 @@ export default function AdminScreen() {
     setNewPlayerPosition(positions[0]);
     setNewPlayerPhone('');
     setNewPlayerEmail('');
+    setNewPlayerRoles([]);
+    setNewPlayerStatus('active');
+    setNewPlayerIsInjured(false);
+    setNewPlayerIsSuspended(false);
   };
 
   const handleCreatePlayer = () => {
@@ -356,8 +364,10 @@ export default function AdminScreen() {
       phone: rawPhone || undefined,
       email: newPlayerEmail.trim() || undefined,
       avatar: `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150`,
-      roles: [],
-      status: 'active',
+      roles: newPlayerRoles,
+      status: newPlayerStatus,
+      isInjured: newPlayerIsInjured,
+      isSuspended: newPlayerIsSuspended,
     };
 
     addPlayer(newPlayer);
@@ -1412,7 +1422,7 @@ export default function AdminScreen() {
               </View>
 
               {/* Email */}
-              <View className="mb-8">
+              <View className="mb-5">
                 <View className="flex-row items-center mb-2">
                   <Mail size={14} color="#67e8f9" />
                   <Text className="text-slate-400 text-sm ml-2">Email</Text>
@@ -1426,6 +1436,169 @@ export default function AdminScreen() {
                   autoCapitalize="none"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                 />
+              </View>
+
+              {/* Player Status */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Player Status</Text>
+                <View className="flex-row mb-2">
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setNewPlayerStatus('active');
+                    }}
+                    className={cn(
+                      'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                      newPlayerStatus === 'active' ? 'bg-green-500' : 'bg-slate-800'
+                    )}
+                  >
+                    {newPlayerStatus === 'active' && <Check size={16} color="white" />}
+                    <Text
+                      className={cn(
+                        'font-semibold ml-1',
+                        newPlayerStatus === 'active' ? 'text-white' : 'text-slate-400'
+                      )}
+                    >
+                      Active
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setNewPlayerStatus('reserve');
+                    }}
+                    className={cn(
+                      'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
+                      newPlayerStatus === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
+                    )}
+                  >
+                    {newPlayerStatus === 'reserve' && <Check size={16} color="white" />}
+                    <Text
+                      className={cn(
+                        'font-semibold ml-1',
+                        newPlayerStatus === 'reserve' ? 'text-white' : 'text-slate-400'
+                      )}
+                    >
+                      Reserve
+                    </Text>
+                  </Pressable>
+                </View>
+                <View className="flex-row">
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setNewPlayerIsInjured(!newPlayerIsInjured);
+                    }}
+                    className={cn(
+                      'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                      newPlayerIsInjured ? 'bg-red-500' : 'bg-slate-800'
+                    )}
+                  >
+                    <Text className={cn(
+                      'text-lg font-black mr-1',
+                      newPlayerIsInjured ? 'text-white' : 'text-red-500'
+                    )}>+</Text>
+                    <Text
+                      className={cn(
+                        'font-semibold',
+                        newPlayerIsInjured ? 'text-white' : 'text-slate-400'
+                      )}
+                    >
+                      Injured
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setNewPlayerIsSuspended(!newPlayerIsSuspended);
+                    }}
+                    className={cn(
+                      'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
+                      newPlayerIsSuspended ? 'bg-red-600' : 'bg-slate-800'
+                    )}
+                  >
+                    <Text
+                      className={cn(
+                        'font-bold mr-1',
+                        newPlayerIsSuspended ? 'text-white' : 'text-red-500'
+                      )}
+                      style={{ fontSize: 12 }}
+                    >
+                      SUS
+                    </Text>
+                    <Text
+                      className={cn(
+                        'font-semibold',
+                        newPlayerIsSuspended ? 'text-white' : 'text-slate-400'
+                      )}
+                    >
+                      Suspended
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Player Roles */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Player Roles</Text>
+                <View className="flex-row">
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      if (newPlayerRoles.includes('captain')) {
+                        setNewPlayerRoles(newPlayerRoles.filter((r) => r !== 'captain'));
+                      } else {
+                        setNewPlayerRoles([...newPlayerRoles, 'captain']);
+                      }
+                    }}
+                    className={cn(
+                      'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                      newPlayerRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
+                    )}
+                  >
+                    <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center">
+                      <Text className={cn(
+                        'text-xs font-black',
+                        newPlayerRoles.includes('captain') ? 'text-white' : 'text-amber-500'
+                      )}>C</Text>
+                    </View>
+                    <Text
+                      className={cn(
+                        'font-semibold ml-2',
+                        newPlayerRoles.includes('captain') ? 'text-white' : 'text-slate-400'
+                      )}
+                    >
+                      Captain
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      if (newPlayerRoles.includes('admin')) {
+                        setNewPlayerRoles(newPlayerRoles.filter((r) => r !== 'admin'));
+                      } else {
+                        setNewPlayerRoles([...newPlayerRoles, 'admin']);
+                      }
+                    }}
+                    className={cn(
+                      'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
+                      newPlayerRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
+                    )}
+                  >
+                    <Shield size={16} color={newPlayerRoles.includes('admin') ? 'white' : '#a78bfa'} />
+                    <Text
+                      className={cn(
+                        'font-semibold ml-2',
+                        newPlayerRoles.includes('admin') ? 'text-white' : 'text-slate-400'
+                      )}
+                    >
+                      Admin
+                    </Text>
+                  </Pressable>
+                </View>
+                <Text className="text-slate-500 text-xs mt-2">
+                  Tap to toggle roles. Players can have multiple roles.
+                </Text>
               </View>
 
               <Text className="text-slate-500 text-sm text-center mb-6">
