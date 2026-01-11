@@ -1031,14 +1031,48 @@ export default function TeamStatsScreen() {
                 {currentStatFields.map((field) => (
                   <View key={field.key} className="mb-4">
                     <Text className="text-slate-400 text-sm mb-2">{field.label}</Text>
-                    <TextInput
-                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
-                      value={editStats[field.key]}
-                      onChangeText={(text) => setEditStats({ ...editStats, [field.key]: text.replace(/[^0-9-]/g, '') })}
-                      keyboardType="number-pad"
-                      placeholder="0"
-                      placeholderTextColor="#64748b"
-                    />
+                    {field.key === 'plusMinus' ? (
+                      // Special +/- control with increment/decrement buttons
+                      <View className="flex-row items-center">
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            const current = parseInt(editStats[field.key] || '0', 10) || 0;
+                            setEditStats({ ...editStats, [field.key]: String(current - 1) });
+                          }}
+                          className="bg-red-500/20 border border-red-500/50 rounded-xl w-16 h-14 items-center justify-center active:bg-red-500/40"
+                        >
+                          <Text className="text-red-400 text-2xl font-bold">−</Text>
+                        </Pressable>
+                        <View className="flex-1 mx-3 bg-slate-800 rounded-xl px-4 py-3 border border-slate-700 items-center">
+                          <Text className="text-white text-xl font-semibold">
+                            {(() => {
+                              const val = parseInt(editStats[field.key] || '0', 10) || 0;
+                              return val > 0 ? `+${val}` : String(val);
+                            })()}
+                          </Text>
+                        </View>
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            const current = parseInt(editStats[field.key] || '0', 10) || 0;
+                            setEditStats({ ...editStats, [field.key]: String(current + 1) });
+                          }}
+                          className="bg-green-500/20 border border-green-500/50 rounded-xl w-16 h-14 items-center justify-center active:bg-green-500/40"
+                        >
+                          <Text className="text-green-400 text-2xl font-bold">+</Text>
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <TextInput
+                        className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
+                        value={editStats[field.key] === '0' ? '' : editStats[field.key]}
+                        onChangeText={(text) => setEditStats({ ...editStats, [field.key]: text.replace(/[^0-9]/g, '') || '0' })}
+                        keyboardType="number-pad"
+                        placeholder="0"
+                        placeholderTextColor="#64748b"
+                      />
+                    )}
                   </View>
                 ))}
 
