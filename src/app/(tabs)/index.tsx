@@ -131,8 +131,14 @@ interface GameCardProps {
 
 function GameCard({ game, index, onPress }: GameCardProps) {
   const teamSettings = useTeamStore((s) => s.teamSettings);
+  const players = useTeamStore((s) => s.players);
   const checkedInCount = game.checkedInPlayers?.length ?? 0;
   const invitedCount = game.invitedPlayers?.length ?? 0;
+
+  // Get refreshment duty player if assigned
+  const beerDutyPlayer = game.showBeerDuty && game.beerDutyPlayerId
+    ? players.find((p) => p.id === game.beerDutyPlayerId)
+    : null;
 
   // Look up jersey color by name or hex code (handles both cases)
   const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === game.jerseyColor || c.color === game.jerseyColor);
@@ -193,6 +199,14 @@ function GameCard({ game, index, onPress }: GameCardProps) {
                   {checkedInCount}/{invitedCount} checked in
                 </Text>
               </View>
+              {beerDutyPlayer && (
+                <View className="flex-row items-center">
+                  <Beer size={14} color="#f59e0b" />
+                  <Text className="text-amber-400 text-sm ml-1.5 font-medium">
+                    {beerDutyPlayer.name.split(' ')[0]}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         </View>
