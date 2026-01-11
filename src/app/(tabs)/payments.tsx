@@ -421,11 +421,7 @@ export default function PaymentsScreen() {
           entering={FadeIn.delay(50)}
           className="px-5 pt-2 pb-4"
         >
-          <View className="flex-row items-center">
-            <DollarSign size={20} color="#22c55e" />
-            <Text className="text-green-400 text-sm font-medium ml-2">Payments</Text>
-          </View>
-          <Text className="text-white text-3xl font-bold">Team Dues</Text>
+          <Text className="text-white text-3xl font-bold">Payments</Text>
         </Animated.View>
 
         <ScrollView
