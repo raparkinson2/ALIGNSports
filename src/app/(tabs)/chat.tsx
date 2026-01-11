@@ -95,12 +95,12 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
                     height: 200,
                     borderRadius: 16,
                   }}
-                  contentFit="contain"
+                  contentFit="cover"
                   autoplay={true}
                 />
               </View>
               {message.gifUrl && (
-                <View className="flex-row justify-end mt-1">
+                <View className="flex-row justify-end mt-0.5">
                   <Text className="text-slate-500 text-[10px]">Powered by GIPHY</Text>
                 </View>
               )}
