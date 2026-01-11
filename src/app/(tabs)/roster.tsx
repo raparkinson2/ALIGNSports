@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import {
   Users,
-  Plus,
   X,
   Shield,
   Phone,
@@ -13,6 +12,7 @@ import {
   Send,
   Check,
   Cross,
+  UserPlus,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -562,9 +562,8 @@ export default function RosterScreen() {
           {canManageTeam() && (
             <Pressable
               onPress={openAddModal}
-              className="bg-cyan-500 w-10 h-10 rounded-full items-center justify-center active:bg-cyan-600"
             >
-              <Plus size={24} color="white" />
+              <UserPlus size={24} color="#22c55e" />
             </Pressable>
           )}
         </Animated.View>
