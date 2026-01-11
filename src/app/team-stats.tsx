@@ -1049,7 +1049,8 @@ export default function TeamStatsScreen() {
                   const currentPlayer = players.find(p => p.id === selectedPlayer.id);
                   const playerLogs = (currentPlayer?.gameLogs || [])
                     .filter(log => log.statType === currentStatType)
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                    .reverse();
 
                   if (playerLogs.length === 0) return null;
 
