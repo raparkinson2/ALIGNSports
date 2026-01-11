@@ -16,6 +16,7 @@ import {
   Beer,
   ChevronDown,
   Edit3,
+  CalendarPlus,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -390,6 +391,16 @@ export default function ScheduleScreen() {
         >
           <View className="flex-row items-center justify-between">
             <Text className="text-white text-3xl font-bold">{teamName}</Text>
+            {canManageTeam() && (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setIsModalVisible(true);
+                }}
+              >
+                <CalendarPlus size={24} color="#22c55e" />
+              </Pressable>
+            )}
           </View>
           {/* Team Record */}
           <Pressable
@@ -468,26 +479,6 @@ export default function ScheduleScreen() {
             ))
           )}
         </ScrollView>
-
-        {/* FAB for adding games */}
-        {canManageTeam() && upcomingGames.length > 0 && (
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              setIsModalVisible(true);
-            }}
-            className="absolute bottom-28 right-5 bg-cyan-500 w-14 h-14 rounded-full items-center justify-center shadow-lg active:bg-cyan-600"
-            style={{
-              shadowColor: '#67e8f9',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 8,
-            }}
-          >
-            <Plus size={28} color="white" />
-          </Pressable>
-        )}
       </SafeAreaView>
 
       {/* Create Game Modal */}
