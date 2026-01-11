@@ -12,6 +12,7 @@ export default function TabLayout() {
   const chatLastReadAt = useTeamStore((s) => s.chatLastReadAt) ?? {};
   const showPayments = useTeamStore((s) => s.teamSettings.showPayments !== false);
   const showTeamChat = useTeamStore((s) => s.teamSettings.showTeamChat !== false);
+  const showPhotos = useTeamStore((s) => s.teamSettings.showPhotos !== false);
 
   // Derive admin status from reactive state
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
@@ -133,6 +134,7 @@ export default function TabLayout() {
         name="photos"
         options={{
           title: 'Photos',
+          href: showPhotos ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
