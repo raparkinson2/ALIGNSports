@@ -429,7 +429,7 @@ export default function ChatScreen() {
                 disabled={!messageText.trim()}
                 className={cn(
                   'w-11 h-11 rounded-full items-center justify-center',
-                  messageText.trim() ? 'bg-cyan-500 active:bg-cyan-600' : 'bg-slate-700'
+                  messageText.trim() ? 'bg-green-500 active:bg-green-600' : 'bg-slate-700'
                 )}
               >
                 <Send size={20} color={messageText.trim() ? 'white' : '#64748b'} />
