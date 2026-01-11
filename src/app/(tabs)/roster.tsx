@@ -252,9 +252,7 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
 
           {/* Status Badge */}
           {player.status === 'injured' ? (
-            <View className="flex-row items-center bg-red-500 rounded px-1.5 py-0.5">
-              <Text className="text-white text-sm font-black">+</Text>
-            </View>
+            <Text className="text-red-500 text-xl font-black">+</Text>
           ) : player.status === 'suspended' ? (
             <View className="bg-red-500/20 px-2 py-1 rounded-full">
               <Text className="text-red-500 text-xs font-bold">SUS</Text>
@@ -771,15 +769,10 @@ export default function RosterScreen() {
                         playerStatus === 'injured' ? 'bg-red-500' : 'bg-slate-800'
                       )}
                     >
-                      <View className={cn(
-                        'rounded px-1 py-0.5 mr-1',
-                        playerStatus === 'injured' ? 'bg-white' : 'bg-red-500'
-                      )}>
-                        <Text className={cn(
-                          'text-xs font-black',
-                          playerStatus === 'injured' ? 'text-red-500' : 'text-white'
-                        )}>+</Text>
-                      </View>
+                      <Text className={cn(
+                        'text-base font-black mr-1',
+                        playerStatus === 'injured' ? 'text-white' : 'text-red-500'
+                      )}>+</Text>
                       <Text
                         className={cn(
                           'font-semibold',
