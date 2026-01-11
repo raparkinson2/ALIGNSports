@@ -13,16 +13,46 @@ import {
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
-import { useTeamStore, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, Player, PlayerStats } from '@/lib/store';
+import { useTeamStore, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, Player, PlayerStats, getPlayerPositions } from '@/lib/store';
 
-// Check if player is a goalie
+// Check if player is a goalie (checks all positions)
 function isGoalie(position: string): boolean {
   return position === 'G' || position === 'GK';
+}
+
+// Check if any of the player's positions is a goalie
+function playerIsGoalie(player: Player): boolean {
+  const positions = getPlayerPositions(player);
+  return positions.some(p => isGoalie(p));
 }
 
 // Check if player is a pitcher
 function isPitcher(position: string): boolean {
   return position === 'P';
+}
+
+// Check if any of the player's positions is a pitcher
+function playerIsPitcher(player: Player): boolean {
+  const positions = getPlayerPositions(player);
+  return positions.includes('P');
+}
+
+// Check if player has non-pitcher positions (for baseball)
+function playerHasNonPitcherPositions(player: Player): boolean {
+  const positions = getPlayerPositions(player);
+  return positions.some(p => p !== 'P');
+}
+
+// Check if player has non-goalie positions (for hockey/soccer)
+function playerHasNonGoaliePositions(player: Player): boolean {
+  const positions = getPlayerPositions(player);
+  return positions.some(p => !isGoalie(p));
+}
+
+// Get display position string (e.g., "P/3B")
+function getDisplayPosition(player: Player): string {
+  const positions = getPlayerPositions(player);
+  return positions.join('/');
 }
 
 // Format name as "F. LastName"
@@ -642,16 +672,23 @@ export default function TeamStatsScreen() {
               <View className="w-4" />
             </View>
 
-            {/* Table Rows - Non-Goalies/Non-Pitchers */}
+            {/* Table Rows - Non-Goalies/Non-Pitchers (includes players with multiple positions that have batting positions) */}
             {sortedPlayers.filter(p => {
-              if (isGoalie(p.position) && (sport === 'hockey' || sport === 'soccer')) return false;
-              if (isPitcher(p.position) && sport === 'baseball') return false;
+              // For hockey/soccer: show if player has any non-goalie position
+              if (sport === 'hockey' || sport === 'soccer') {
+                return playerHasNonGoaliePositions(p);
+              }
+              // For baseball: show if player has any non-pitcher position
+              if (sport === 'baseball') {
+                return playerHasNonPitcherPositions(p);
+              }
               return true;
             }).map((player, index, arr) => {
-              const statValues = getStatValues(sport, player.stats, player.position);
+              // For batting stats, always use non-pitcher position stats
+              const statValues = getStatValues(sport, player.stats, 'batter');
               const showBorder = index !== arr.length - 1 ||
                 (sport === 'hockey' || sport === 'soccer') ||
-                (sport === 'baseball' && sortedPlayers.some(p => isPitcher(p.position)));
+                (sport === 'baseball' && sortedPlayers.some(p => playerIsPitcher(p)));
               return (
                 <Pressable
                   key={player.id}
@@ -664,7 +701,7 @@ export default function TeamStatsScreen() {
                     <Text className="text-cyan-400 font-medium text-xs mr-1">#{player.number}</Text>
                     <Text className="text-white text-sm">{formatName(player.name)}</Text>
                   </View>
-                  <Text className="text-slate-400 w-10 text-center text-xs">{player.position}</Text>
+                  <Text className="text-slate-400 w-10 text-center text-xs">{getDisplayPosition(player)}</Text>
                   <View className="flex-row ml-2">
                     {statValues.map((value, i) => (
                       <Text key={i} className="text-slate-300 w-9 text-center text-sm">
@@ -680,7 +717,7 @@ export default function TeamStatsScreen() {
             })}
 
             {/* Pitcher Section for Baseball */}
-            {sport === 'baseball' && sortedPlayers.some(p => isPitcher(p.position)) && (
+            {sport === 'baseball' && sortedPlayers.some(p => playerIsPitcher(p)) && (
               <>
                 {/* Pitcher Header */}
                 <View className="flex-row items-center px-3 py-3 bg-slate-700/50 border-b border-slate-700">
@@ -696,11 +733,11 @@ export default function TeamStatsScreen() {
                 </View>
 
                 {/* Pitcher Rows */}
-                {sortedPlayers.filter(p => isPitcher(p.position)).map((player, index, arr) => {
-                  const statValues = getStatValues(sport, player.stats, player.position);
+                {sortedPlayers.filter(p => playerIsPitcher(p)).map((player, index, arr) => {
+                  const statValues = getStatValues(sport, player.stats, 'P');
                   return (
                     <Pressable
-                      key={player.id}
+                      key={`pitcher-${player.id}`}
                       onPress={() => openEditModal(player)}
                       className={`flex-row items-center px-3 py-3 active:bg-slate-700/50 ${
                         index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
@@ -727,7 +764,7 @@ export default function TeamStatsScreen() {
             )}
 
             {/* Goalie Section for Hockey/Soccer */}
-            {(sport === 'hockey' || sport === 'soccer') && sortedPlayers.some(p => isGoalie(p.position)) && (
+            {(sport === 'hockey' || sport === 'soccer') && sortedPlayers.some(p => playerIsGoalie(p)) && (
               <>
                 {/* Goalie Header */}
                 <View className="flex-row items-center px-3 py-3 bg-slate-700/50 border-b border-slate-700">
@@ -743,11 +780,11 @@ export default function TeamStatsScreen() {
                 </View>
 
                 {/* Goalie Rows */}
-                {sortedPlayers.filter(p => isGoalie(p.position)).map((player, index, arr) => {
-                  const statValues = getStatValues(sport, player.stats, player.position);
+                {sortedPlayers.filter(p => playerIsGoalie(p)).map((player, index, arr) => {
+                  const statValues = getStatValues(sport, player.stats, sport === 'hockey' ? 'G' : 'GK');
                   return (
                     <Pressable
-                      key={player.id}
+                      key={`goalie-${player.id}`}
                       onPress={() => openEditModal(player)}
                       className={`flex-row items-center px-3 py-3 active:bg-slate-700/50 ${
                         index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
