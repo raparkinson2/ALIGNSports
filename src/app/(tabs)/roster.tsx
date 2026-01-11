@@ -247,31 +247,30 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
                 </View>
               )}
             </View>
-            <Text className="text-slate-400 text-sm">{positionDisplay}</Text>
+            <View className="flex-row items-center">
+              <Text className="text-slate-400 text-sm">{positionDisplay}</Text>
+              {/* Injured indicator */}
+              {player.isInjured && (
+                <Text className="text-red-500 font-black ml-2" style={{ fontSize: 16 }}>+</Text>
+              )}
+              {/* Suspended indicator */}
+              {player.isSuspended && (
+                <Text className="text-red-500 font-bold ml-2" style={{ fontSize: 11 }}>SUS</Text>
+              )}
+            </View>
           </View>
 
-          {/* Status Badge and Indicators */}
-          <View className="flex-row items-center">
-            {/* Injured indicator */}
-            {player.isInjured && (
-              <Text className="text-red-500 font-black mr-2" style={{ fontSize: 18 }}>+</Text>
-            )}
-            {/* Suspended indicator */}
-            {player.isSuspended && (
-              <Text className="text-red-500 font-bold mr-2" style={{ fontSize: 11 }}>SUS</Text>
-            )}
-            {/* Active/Reserve status */}
-            <View className={cn(
-              'px-2 py-1 rounded-full',
-              player.status === 'active' ? 'bg-green-500/20' : 'bg-slate-600/50'
+          {/* Status Badge */}
+          <View className={cn(
+            'px-2 py-1 rounded-full',
+            player.status === 'active' ? 'bg-green-500/20' : 'bg-slate-600/50'
+          )}>
+            <Text className={cn(
+              'text-xs font-medium',
+              player.status === 'active' ? 'text-green-400' : 'text-slate-400'
             )}>
-              <Text className={cn(
-                'text-xs font-medium',
-                player.status === 'active' ? 'text-green-400' : 'text-slate-400'
-              )}>
-                {player.status === 'active' ? 'Active' : 'Reserve'}
-              </Text>
-            </View>
+              {player.status === 'active' ? 'Active' : 'Reserve'}
+            </Text>
           </View>
         </View>
 
