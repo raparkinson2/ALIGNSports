@@ -646,6 +646,43 @@ export default function RosterScreen() {
                 />
               </View>
 
+              {/* Phone Input - Admin Only */}
+              {isAdmin() && (
+                <View className="mb-5">
+                  <View className="flex-row items-center mb-2">
+                    <Phone size={14} color="#a78bfa" />
+                    <Text className="text-slate-400 text-sm ml-2">Phone (Admin Only)</Text>
+                  </View>
+                  <TextInput
+                    value={phone}
+                    onChangeText={(text) => setPhone(formatPhoneInput(text))}
+                    placeholder="(555)123-4567"
+                    placeholderTextColor="#64748b"
+                    keyboardType="phone-pad"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  />
+                </View>
+              )}
+
+              {/* Email Input - Admin Only */}
+              {isAdmin() && (
+                <View className="mb-5">
+                  <View className="flex-row items-center mb-2">
+                    <Mail size={14} color="#a78bfa" />
+                    <Text className="text-slate-400 text-sm ml-2">Email (Admin Only)</Text>
+                  </View>
+                  <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="player@example.com"
+                    placeholderTextColor="#64748b"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  />
+                </View>
+              )}
+
               {/* Position Selector - Multiple Selection */}
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-1">Positions</Text>
@@ -685,43 +722,6 @@ export default function RosterScreen() {
                   })}
                 </View>
               </View>
-
-              {/* Phone Input - Admin Only */}
-              {isAdmin() && (
-                <View className="mb-5">
-                  <View className="flex-row items-center mb-2">
-                    <Phone size={14} color="#a78bfa" />
-                    <Text className="text-slate-400 text-sm ml-2">Phone (Admin Only)</Text>
-                  </View>
-                  <TextInput
-                    value={phone}
-                    onChangeText={(text) => setPhone(formatPhoneInput(text))}
-                    placeholder="(555)123-4567"
-                    placeholderTextColor="#64748b"
-                    keyboardType="phone-pad"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                  />
-                </View>
-              )}
-
-              {/* Email Input - Admin Only */}
-              {isAdmin() && (
-                <View className="mb-5">
-                  <View className="flex-row items-center mb-2">
-                    <Mail size={14} color="#a78bfa" />
-                    <Text className="text-slate-400 text-sm ml-2">Email (Admin Only)</Text>
-                  </View>
-                  <TextInput
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="player@example.com"
-                    placeholderTextColor="#64748b"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                  />
-                </View>
-              )}
 
               {/* Status Selector - Admin Only, Edit Mode Only */}
               {isAdmin() && editingPlayer && (
