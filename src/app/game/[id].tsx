@@ -374,7 +374,7 @@ export default function GameDetailScreen() {
     setIsInviteModalVisible(false);
   };
 
-  const handleSelectBeerDutyPlayer = (playerId: string) => {
+  const handleSelectBeerDutyPlayer = (playerId: string | undefined) => {
     updateGame(game.id, { beerDutyPlayerId: playerId });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsBeerDutyModalVisible(false);
@@ -780,6 +780,25 @@ export default function GameDetailScreen() {
             </View>
 
             <ScrollView className="flex-1 px-5 pt-4">
+              {/* None option to clear selection */}
+              <Pressable
+                onPress={() => handleSelectBeerDutyPlayer(undefined)}
+                className={cn(
+                  'flex-row items-center p-4 rounded-xl mb-2 border',
+                  !game.beerDutyPlayerId
+                    ? 'bg-slate-600/30 border-slate-500/50'
+                    : 'bg-slate-800/60 border-slate-700/50'
+                )}
+              >
+                <View className="w-11 h-11 rounded-full bg-slate-700 items-center justify-center">
+                  <X size={20} color="#94a3b8" />
+                </View>
+                <Text className="text-slate-300 font-semibold ml-3 flex-1">None</Text>
+                {!game.beerDutyPlayerId && (
+                  <CheckCircle2 size={24} color="#94a3b8" />
+                )}
+              </Pressable>
+
               {activePlayers.map((player) => (
                 <Pressable
                   key={player.id}
