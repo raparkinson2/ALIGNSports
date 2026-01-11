@@ -14,6 +14,7 @@ import {
   X,
   Check,
   Beer,
+  GlassWater,
   ChevronDown,
   Edit3,
 } from 'lucide-react-native';
@@ -135,8 +136,10 @@ function GameCard({ game, index, onPress }: GameCardProps) {
   const checkedInCount = game.checkedInPlayers?.length ?? 0;
   const invitedCount = game.invitedPlayers?.length ?? 0;
 
-  // Get refreshment duty player if assigned
-  const beerDutyPlayer = game.showBeerDuty && game.beerDutyPlayerId
+  // Get refreshment duty player if assigned and feature is enabled
+  const showRefreshmentDuty = teamSettings.showRefreshmentDuty !== false;
+  const is21Plus = teamSettings.refreshmentDutyIs21Plus !== false;
+  const beerDutyPlayer = showRefreshmentDuty && game.showBeerDuty && game.beerDutyPlayerId
     ? players.find((p) => p.id === game.beerDutyPlayerId)
     : null;
 
@@ -201,7 +204,11 @@ function GameCard({ game, index, onPress }: GameCardProps) {
               </View>
               {beerDutyPlayer && (
                 <View className="flex-row items-center ml-4">
-                  <Beer size={14} color="#f59e0b" />
+                  {is21Plus ? (
+                    <Beer size={14} color="#f59e0b" />
+                  ) : (
+                    <GlassWater size={14} color="#f59e0b" />
+                  )}
                   <Text className="text-amber-400 text-sm ml-1.5 font-medium">
                     {beerDutyPlayer.name}
                   </Text>

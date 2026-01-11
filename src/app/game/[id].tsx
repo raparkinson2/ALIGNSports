@@ -18,6 +18,7 @@ import {
   Bell,
   BellRing,
   Beer,
+  GlassWater,
   Settings,
   X,
   ChevronDown,
@@ -523,7 +524,7 @@ export default function GameDetailScreen() {
           </Animated.View>
 
           {/* Beer/Refreshment Duty - Only show if enabled */}
-          {game.showBeerDuty && (
+          {game.showBeerDuty && teamSettings.showRefreshmentDuty !== false && (
             <Animated.View
               entering={FadeInUp.delay(120).springify()}
               className="mx-4 mb-4"
@@ -533,7 +534,11 @@ export default function GameDetailScreen() {
                 className="bg-amber-500/20 rounded-2xl p-4 border border-amber-500/30"
               >
                 <View className="flex-row items-center">
-                  <Beer size={24} color="#f59e0b" />
+                  {teamSettings.refreshmentDutyIs21Plus !== false ? (
+                    <Beer size={24} color="#f59e0b" />
+                  ) : (
+                    <GlassWater size={24} color="#f59e0b" />
+                  )}
                   <View className="flex-1 ml-3">
                     <Text className="text-amber-400 font-semibold">Refreshment Duty</Text>
                     {beerDutyPlayer ? (

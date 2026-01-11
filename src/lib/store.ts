@@ -353,6 +353,8 @@ export interface TeamSettings {
   showPayments?: boolean; // Toggle to show/hide payments tab
   showTeamChat?: boolean; // Toggle to show/hide team chat tab
   showPhotos?: boolean; // Toggle to show/hide photos tab
+  showRefreshmentDuty?: boolean; // Toggle to show/hide refreshment duty feature
+  refreshmentDutyIs21Plus?: boolean; // If true, use beer icon; if false, use juice box icon
 }
 
 interface TeamStore {
@@ -508,6 +510,8 @@ const defaultTeamSettings: TeamSettings = {
   showPayments: true,
   showTeamChat: true,
   showPhotos: true,
+  showRefreshmentDuty: true,
+  refreshmentDutyIs21Plus: true,
 };
 
 export const useTeamStore = create<TeamStore>()(
@@ -915,6 +919,8 @@ export const useTeamStore = create<TeamStore>()(
           showPayments: true,
           showTeamChat: true,
           showPhotos: true,
+          showRefreshmentDuty: true,
+          refreshmentDutyIs21Plus: true,
         },
         players: [],
         games: [],

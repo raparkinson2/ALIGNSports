@@ -24,6 +24,8 @@ import {
   BarChart3,
   DollarSign,
   AlertTriangle,
+  Beer,
+  GlassWater,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -835,6 +837,64 @@ export default function AdminScreen() {
                   <ChevronRight size={20} color="#64748b" />
                 </View>
               </Pressable>
+            )}
+
+            {/* Refreshment Duty Toggle */}
+            <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View className="bg-amber-500/20 p-2 rounded-full">
+                    {teamSettings.refreshmentDutyIs21Plus !== false ? (
+                      <Beer size={20} color="#f59e0b" />
+                    ) : (
+                      <GlassWater size={20} color="#f59e0b" />
+                    )}
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-white font-semibold">Use Refreshment Duty</Text>
+                    <Text className="text-slate-400 text-sm">
+                      Assign players to bring refreshments
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={teamSettings.showRefreshmentDuty !== false}
+                  onValueChange={(value) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setTeamSettings({ showRefreshmentDuty: value });
+                  }}
+                  trackColor={{ false: '#334155', true: '#f59e0b' }}
+                  thumbColor="#ffffff"
+                />
+              </View>
+            </View>
+
+            {/* 21+ Toggle - only show when refreshment duty is enabled */}
+            {teamSettings.showRefreshmentDuty !== false && (
+              <View className="bg-slate-800/60 rounded-xl p-4 mb-3 border border-slate-700/30 ml-4">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View className="bg-amber-500/10 p-2 rounded-full">
+                      <Beer size={18} color="#d97706" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="text-slate-200 font-medium">21+ Beverages</Text>
+                      <Text className="text-slate-500 text-sm">
+                        Show beer icon instead of drinks
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={teamSettings.refreshmentDutyIs21Plus !== false}
+                    onValueChange={(value) => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setTeamSettings({ refreshmentDutyIs21Plus: value });
+                    }}
+                    trackColor={{ false: '#334155', true: '#d97706' }}
+                    thumbColor="#ffffff"
+                  />
+                </View>
+              </View>
             )}
 
             {/* Payments Toggle */}
