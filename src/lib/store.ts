@@ -108,7 +108,7 @@ export const SPORT_NAMES: Record<Sport, string> = {
 export type PlayerRole = 'admin' | 'captain';
 
 // Player Status
-export type PlayerStatus = 'active' | 'reserve';
+export type PlayerStatus = 'active' | 'reserve' | 'injured' | 'suspended';
 
 // Notification Preferences
 export interface NotificationPreferences {

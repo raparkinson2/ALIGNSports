@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Send,
   Check,
+  Cross,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -250,17 +251,27 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
           </View>
 
           {/* Status Badge */}
-          <View className={cn(
-            'px-2 py-1 rounded-full',
-            player.status === 'active' ? 'bg-green-500/20' : 'bg-slate-600/50'
-          )}>
-            <Text className={cn(
-              'text-xs font-medium',
-              player.status === 'active' ? 'text-green-400' : 'text-slate-400'
+          {player.status === 'injured' ? (
+            <View className="flex-row items-center">
+              <Cross size={18} color="#ef4444" strokeWidth={3} />
+            </View>
+          ) : player.status === 'suspended' ? (
+            <View className="bg-red-500/20 px-2 py-1 rounded-full">
+              <Text className="text-red-500 text-xs font-bold">SUS</Text>
+            </View>
+          ) : (
+            <View className={cn(
+              'px-2 py-1 rounded-full',
+              player.status === 'active' ? 'bg-green-500/20' : 'bg-slate-600/50'
             )}>
-              {player.status === 'active' ? 'Active' : 'Reserve'}
-            </Text>
-          </View>
+              <Text className={cn(
+                'text-xs font-medium',
+                player.status === 'active' ? 'text-green-400' : 'text-slate-400'
+              )}>
+                {player.status === 'active' ? 'Active' : 'Reserve'}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Player Stats */}
@@ -707,16 +718,17 @@ export default function RosterScreen() {
               {isAdmin() && editingPlayer && (
                 <View className="mb-5">
                   <Text className="text-slate-400 text-sm mb-2">Player Status</Text>
-                  <View className="flex-row">
+                  <View className="flex-row flex-wrap">
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setPlayerStatus('active');
                       }}
                       className={cn(
-                        'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                        'py-3 px-4 rounded-xl mr-2 mb-2 flex-row items-center justify-center',
                         playerStatus === 'active' ? 'bg-green-500' : 'bg-slate-800'
                       )}
+                      style={{ minWidth: '45%' }}
                     >
                       {playerStatus === 'active' && <Check size={16} color="white" className="mr-2" />}
                       <Text
@@ -734,9 +746,10 @@ export default function RosterScreen() {
                         setPlayerStatus('reserve');
                       }}
                       className={cn(
-                        'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
+                        'py-3 px-4 rounded-xl mb-2 flex-row items-center justify-center',
                         playerStatus === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
                       )}
+                      style={{ minWidth: '45%' }}
                     >
                       {playerStatus === 'reserve' && <Check size={16} color="white" className="mr-2" />}
                       <Text
@@ -746,6 +759,60 @@ export default function RosterScreen() {
                         )}
                       >
                         Reserve
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setPlayerStatus('injured');
+                      }}
+                      className={cn(
+                        'py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                        playerStatus === 'injured' ? 'bg-red-500' : 'bg-slate-800'
+                      )}
+                      style={{ minWidth: '45%' }}
+                    >
+                      {playerStatus === 'injured' ? (
+                        <Cross size={16} color="white" strokeWidth={3} />
+                      ) : (
+                        <Cross size={16} color="#ef4444" strokeWidth={2} />
+                      )}
+                      <Text
+                        className={cn(
+                          'font-semibold ml-1',
+                          playerStatus === 'injured' ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Injured
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setPlayerStatus('suspended');
+                      }}
+                      className={cn(
+                        'py-3 px-4 rounded-xl flex-row items-center justify-center',
+                        playerStatus === 'suspended' ? 'bg-red-600' : 'bg-slate-800'
+                      )}
+                      style={{ minWidth: '45%' }}
+                    >
+                      <Text
+                        className={cn(
+                          'font-bold mr-1',
+                          playerStatus === 'suspended' ? 'text-white' : 'text-red-500'
+                        )}
+                        style={{ fontSize: 12 }}
+                      >
+                        SUS
+                      </Text>
+                      <Text
+                        className={cn(
+                          'font-semibold',
+                          playerStatus === 'suspended' ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Suspended
                       </Text>
                     </Pressable>
                   </View>
