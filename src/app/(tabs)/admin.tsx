@@ -642,6 +642,37 @@ export default function AdminScreen() {
               </View>
             </Pressable>
 
+            {/* Sport Selection - Moved under Team Logo */}
+            <View className="mb-3">
+              <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                Sport
+              </Text>
+
+              <View className="flex-row justify-between">
+                {(Object.keys(SPORT_NAMES) as Sport[]).map((sport) => (
+                  <Pressable
+                    key={sport}
+                    onPress={() => handleChangeSport(sport)}
+                    className={cn(
+                      'flex-1 items-center py-3 rounded-xl mx-1 border',
+                      teamSettings.sport === sport
+                        ? 'bg-cyan-500/20 border-cyan-500/50'
+                        : 'bg-slate-800/80 border-slate-700/50'
+                    )}
+                  >
+                    <Text
+                      className={cn(
+                        'text-xs font-medium',
+                        teamSettings.sport === sport ? 'text-cyan-400' : 'text-slate-400'
+                      )}
+                    >
+                      {SPORT_NAMES[sport]}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
             <Pressable
               onPress={() => setIsJerseyModalVisible(true)}
               className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
@@ -795,42 +826,6 @@ export default function AdminScreen() {
                 <ChevronRight size={20} color="#ef4444" />
               </View>
             </Pressable>
-          </Animated.View>
-
-          {/* Sport Selection */}
-          <Animated.View entering={FadeInDown.delay(150).springify()} className="mt-4">
-            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-              Sport
-            </Text>
-
-            <View className="flex-row justify-between">
-              {(Object.keys(SPORT_NAMES) as Sport[]).map((sport) => (
-                <Pressable
-                  key={sport}
-                  onPress={() => handleChangeSport(sport)}
-                  className={cn(
-                    'flex-1 items-center py-3 rounded-xl mx-1 border',
-                    teamSettings.sport === sport
-                      ? 'bg-cyan-500/20 border-cyan-500/50'
-                      : 'bg-slate-800/80 border-slate-700/50'
-                  )}
-                >
-                  <SportIcon
-                    sport={sport}
-                    size={20}
-                    color={teamSettings.sport === sport ? '#67e8f9' : '#64748b'}
-                  />
-                  <Text
-                    className={cn(
-                      'mt-1 text-xs font-medium',
-                      teamSettings.sport === sport ? 'text-cyan-400' : 'text-slate-400'
-                    )}
-                  >
-                    {SPORT_NAMES[sport]}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
           </Animated.View>
 
           {/* Player Management */}
