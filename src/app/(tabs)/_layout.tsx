@@ -151,7 +151,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="payments"
         options={{
-          title: 'Payments',
+          title: 'Team Finances',
           href: showPayments ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
             <View

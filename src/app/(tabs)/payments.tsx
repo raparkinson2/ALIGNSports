@@ -421,7 +421,7 @@ export default function PaymentsScreen() {
           entering={FadeIn.delay(50)}
           className="px-5 pt-2 pb-4"
         >
-          <Text className="text-white text-3xl font-bold">Payments</Text>
+          <Text className="text-white text-3xl font-bold">Team Finances</Text>
         </Animated.View>
 
         <ScrollView
