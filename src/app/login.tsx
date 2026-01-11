@@ -1,25 +1,74 @@
-import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Mail, Lock, LogIn, UserPlus, Users } from 'lucide-react-native';
+import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { useTeamStore } from '@/lib/store';
+import { useTeamStore, Player } from '@/lib/store';
+
+interface PlayerLoginCardProps {
+  player: Player;
+  index: number;
+  onSelect: () => void;
+}
+
+function PlayerLoginCard({ player, index, onSelect }: PlayerLoginCardProps) {
+  return (
+    <Animated.View entering={FadeInDown.delay(100 + index * 50).springify()}>
+      <Pressable
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          onSelect();
+        }}
+        className="bg-slate-800/80 rounded-xl p-3 mb-2 border border-slate-700/50 active:bg-slate-700/80"
+      >
+        <View className="flex-row items-center">
+          {player.avatar ? (
+            <Image
+              source={{ uri: player.avatar }}
+              style={{ width: 44, height: 44, borderRadius: 22 }}
+              contentFit="cover"
+            />
+          ) : (
+            <View className="w-11 h-11 rounded-full bg-cyan-500/20 items-center justify-center">
+              <User size={22} color="#67e8f9" />
+            </View>
+          )}
+          <View className="flex-1 ml-3">
+            <Text className="text-white font-semibold">{player.name}</Text>
+            <Text className="text-slate-400 text-sm">#{player.number} - {player.position}</Text>
+          </View>
+          <ChevronRight size={20} color="#67e8f9" />
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
 
 export default function LoginScreen() {
   const router = useRouter();
   const loginWithEmail = useTeamStore((s) => s.loginWithEmail);
   const players = useTeamStore((s) => s.players);
   const teamName = useTeamStore((s) => s.teamName);
+  const setCurrentPlayerId = useTeamStore((s) => s.setCurrentPlayerId);
+  const setIsLoggedIn = useTeamStore((s) => s.setIsLoggedIn);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPlayerSelect, setShowPlayerSelect] = useState(false);
 
   const hasTeam = players.length > 0;
+
+  // Check if any players have passwords set (new auth system)
+  const hasPasswordAuth = players.some(p => p.password);
+
+  // Players without passwords (legacy)
+  const legacyPlayers = players.filter(p => !p.password);
 
   const handleLogin = () => {
     setError('');
@@ -35,7 +84,6 @@ export default function LoginScreen() {
 
     setIsLoading(true);
 
-    // Simulate slight delay for UX
     setTimeout(() => {
       const result = loginWithEmail(email.trim(), password);
 
@@ -49,6 +97,127 @@ export default function LoginScreen() {
       setIsLoading(false);
     }, 300);
   };
+
+  const handleSelectPlayer = (playerId: string) => {
+    setCurrentPlayerId(playerId);
+    setIsLoggedIn(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.replace('/(tabs)');
+  };
+
+  // Show player selection for legacy teams (no passwords set)
+  if (hasTeam && !hasPasswordAuth) {
+    return (
+      <View className="flex-1 bg-slate-900">
+        <LinearGradient
+          colors={['#0c4a6e', '#0f172a', '#0f172a']}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
+
+        <SafeAreaView className="flex-1">
+          <Animated.View
+            entering={FadeInUp.delay(50).springify()}
+            className="items-center pt-8 pb-6"
+          >
+            <View className="w-20 h-20 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
+              <Users size={40} color="#67e8f9" />
+            </View>
+            <Text className="text-cyan-400 text-sm font-medium uppercase tracking-wider mb-1">
+              Welcome to
+            </Text>
+            <Text className="text-white text-3xl font-bold">{teamName}</Text>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.delay(150).springify()}
+            className="px-5 mb-4"
+          >
+            <Text className="text-slate-400 text-base mb-2">
+              Select your name to continue
+            </Text>
+          </Animated.View>
+
+          <ScrollView
+            className="flex-1 px-5"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 40 }}
+          >
+            {players.map((player, index) => (
+              <PlayerLoginCard
+                key={player.id}
+                player={player}
+                index={index}
+                onSelect={() => handleSelectPlayer(player.id)}
+              />
+            ))}
+          </ScrollView>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  // Show player selection modal for legacy players
+  if (showPlayerSelect && legacyPlayers.length > 0) {
+    return (
+      <View className="flex-1 bg-slate-900">
+        <LinearGradient
+          colors={['#0c4a6e', '#0f172a', '#0f172a']}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
+
+        <SafeAreaView className="flex-1">
+          <Animated.View
+            entering={FadeInUp.delay(50).springify()}
+            className="items-center pt-8 pb-6"
+          >
+            <View className="w-20 h-20 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
+              <Users size={40} color="#67e8f9" />
+            </View>
+            <Text className="text-cyan-400 text-sm font-medium uppercase tracking-wider mb-1">
+              Quick Login
+            </Text>
+            <Text className="text-white text-3xl font-bold">{teamName}</Text>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.delay(150).springify()}
+            className="px-5 mb-4"
+          >
+            <Text className="text-slate-400 text-base mb-2">
+              Select your name to continue
+            </Text>
+          </Animated.View>
+
+          <ScrollView
+            className="flex-1 px-5"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 100 }}
+          >
+            {legacyPlayers.map((player, index) => (
+              <PlayerLoginCard
+                key={player.id}
+                player={player}
+                index={index}
+                onSelect={() => handleSelectPlayer(player.id)}
+              />
+            ))}
+          </ScrollView>
+
+          <View className="px-5 pb-6">
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowPlayerSelect(false);
+              }}
+              className="bg-slate-800/80 rounded-xl py-4 flex-row items-center justify-center border border-slate-700/50"
+            >
+              <Text className="text-slate-400 font-semibold">Back to Sign In</Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -140,12 +309,29 @@ export default function LoginScreen() {
                   </Text>
                 </Pressable>
 
-                {/* Divider */}
-                <View className="flex-row items-center my-8">
-                  <View className="flex-1 h-px bg-slate-700" />
-                  <Text className="text-slate-500 mx-4">or</Text>
-                  <View className="flex-1 h-px bg-slate-700" />
-                </View>
+                {/* Quick Login for Legacy Players */}
+                {legacyPlayers.length > 0 && (
+                  <>
+                    <View className="flex-row items-center my-6">
+                      <View className="flex-1 h-px bg-slate-700" />
+                      <Text className="text-slate-500 mx-4">or</Text>
+                      <View className="flex-1 h-px bg-slate-700" />
+                    </View>
+
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setShowPlayerSelect(true);
+                      }}
+                      className="bg-slate-800/80 rounded-xl py-4 flex-row items-center justify-center border border-slate-700/50 active:bg-slate-700/80 mb-4"
+                    >
+                      <User size={20} color="#67e8f9" />
+                      <Text className="text-cyan-400 font-semibold text-base ml-2">
+                        Quick Login (Select Name)
+                      </Text>
+                    </Pressable>
+                  </>
+                )}
 
                 {/* Create Account Link */}
                 <Pressable
