@@ -880,7 +880,7 @@ export default function AdminScreen() {
                     <View className="ml-3 flex-1">
                       <Text className="text-slate-200 font-medium">21+ Beverages</Text>
                       <Text className="text-slate-500 text-sm">
-                        Show beer icon instead of drinks
+                        Show beer mug icon
                       </Text>
                     </View>
                   </View>
