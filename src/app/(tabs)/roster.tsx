@@ -69,9 +69,11 @@ function getPitcherHeaders(): string[] {
 }
 
 // Get stat values based on sport
+// Pass 'batter' as position to force batting stats for a pitcher who also plays field positions
 function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: string): (number | string)[] {
   const playerIsGoalie = isGoalie(position);
   const playerIsPitcher = isPitcher(position);
+  const forceBatterStats = position === 'batter'; // Special case for pitcher/position players
 
   if (!stats) {
     if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
@@ -108,8 +110,8 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
     return [s.games ?? 0, record, mp, gaa, s.shotsAgainst ?? 0, s.saves ?? 0, savePercentage];
   }
 
-  // Handle pitcher stats for baseball
-  if (playerIsPitcher && sport === 'baseball') {
+  // Handle pitcher stats for baseball (but not if we're forcing batter stats)
+  if (playerIsPitcher && sport === 'baseball' && !forceBatterStats) {
     const s = stats as BaseballPitcherStats;
     const record = `${s.wins ?? 0}-${s.losses ?? 0}`;
     const ip = s.innings ?? 0;
@@ -127,6 +129,8 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
       return [s.gamesPlayed ?? 0, s.goals ?? 0, s.assists ?? 0, points, s.pim ?? 0, plusMinusStr];
     }
     case 'baseball': {
+      // For pitcher/position players, stats object may be BaseballPitcherStats
+      // but we need to read the batting fields which are stored separately
       const s = stats as BaseballStats;
       const atBats = s.atBats ?? 0;
       const hits = s.hits ?? 0;
@@ -165,6 +169,11 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
     ? playerPositions.join('/')
     : SPORT_POSITION_NAMES[sport][primaryPosition] || primaryPosition;
 
+  // Check if player has both pitcher and non-pitcher positions (baseball only)
+  const hasPitcherPosition = sport === 'baseball' && playerPositions.some(pos => isPitcher(pos));
+  const hasNonPitcherPosition = sport === 'baseball' && playerPositions.some(pos => !isPitcher(pos));
+  const showBothBaseballStats = hasPitcherPosition && hasNonPitcherPosition;
+
   // Get stat headers and values for this player (based on primary position)
   const playerIsGoalie = isGoalie(primaryPosition);
   const playerIsPitcher = isPitcher(primaryPosition);
@@ -178,6 +187,10 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
     headers = getStatHeaders(sport);
   }
   const statValues = getStatValues(sport, player.stats, primaryPosition);
+
+  // Get batting stats if player is a pitcher with other positions
+  const battingHeaders = showBothBaseballStats ? getStatHeaders(sport) : [];
+  const battingStatValues = showBothBaseballStats ? getStatValues(sport, player.stats, 'batter') : [];
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 60).springify()}>
@@ -231,6 +244,10 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
         {/* Player Stats */}
         {showStats && (
           <View className="mt-3 pt-3 border-t border-slate-700/50">
+            {/* Primary stats row (pitcher stats if pitcher) */}
+            {showBothBaseballStats && (
+              <Text className="text-cyan-400 text-xs font-medium mb-2">Pitching</Text>
+            )}
             <View className="flex-row justify-between">
               {headers.map((header, i) => (
                 <View key={header} className="items-center flex-1">
@@ -239,6 +256,21 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
                 </View>
               ))}
             </View>
+
+            {/* Batting stats row for pitcher/position players */}
+            {showBothBaseballStats && (
+              <View className="mt-3 pt-3 border-t border-slate-700/30">
+                <Text className="text-cyan-400 text-xs font-medium mb-2">Batting</Text>
+                <View className="flex-row justify-between">
+                  {battingHeaders.map((header, i) => (
+                    <View key={`batting-${header}`} className="items-center flex-1">
+                      <Text className="text-slate-500 text-xs mb-1">{header}</Text>
+                      <Text className="text-white text-sm font-medium">{battingStatValues[i]}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
         )}
       </Pressable>
