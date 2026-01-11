@@ -360,7 +360,7 @@ export default function AdminScreen() {
   };
 
   const getInviteMessage = () => {
-    return `Hey ${newlyCreatedPlayer?.name}!\n\nYou've been added to ${teamName}! Download the app and log in using your info to view the schedule, check in for games, and stay connected with the team.\n\nYour jersey number: #${newlyCreatedPlayer?.number}\n\nSee you at the next game!`;
+    return `Hey ${newlyCreatedPlayer?.name}!\n\nYou've been added to ${teamName}! Download the app and log in using your info to view the schedule, check in for games, and stay connected with the team.\n\nYou are #${newlyCreatedPlayer?.number}\n\nSee you at the next game!`;
   };
 
   const handleSendTextInvite = () => {
