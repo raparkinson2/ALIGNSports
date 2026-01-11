@@ -807,15 +807,29 @@ export const useTeamStore = create<TeamStore>()(
     {
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 4, // Increment to fix corrupted player positions and stats
+      version: 5, // Increment to fix corrupted player positions from sport switching
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Partial<TeamStore>;
-        // Force update players to have correct positions and stats
-        if (version < 4) {
+        // Fix corrupted positions from mixing sports
+        if (version < 5 && state.players && state.teamSettings) {
+          const currentSport = state.teamSettings.sport || 'hockey';
+          const validPositions = SPORT_POSITIONS[currentSport];
+          const cleanedPlayers = state.players.map((player) => {
+            // Filter positions to only include valid ones for current sport
+            const currentPositions = player.positions || [player.position];
+            const validPlayerPositions = currentPositions.filter(p => validPositions.includes(p));
+            // If no valid positions, assign first position of the sport
+            const finalPositions = validPlayerPositions.length > 0 ? validPlayerPositions : [validPositions[0]];
+            return {
+              ...player,
+              position: finalPositions[0],
+              positions: finalPositions,
+              stats: undefined, // Clear stats to start fresh
+            };
+          });
           return {
             ...state,
-            players: mockPlayers, // Reset to mock data with correct positions
-            teamSettings: defaultTeamSettings, // Reset to hockey
+            players: cleanedPlayers,
           };
         }
         return state as TeamStore;
