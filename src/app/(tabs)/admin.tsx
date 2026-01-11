@@ -22,6 +22,7 @@ import {
   UserPlus,
   BarChart3,
   DollarSign,
+  AlertTriangle,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -224,6 +225,7 @@ export default function AdminScreen() {
   const setTeamName = useTeamStore((s) => s.setTeamName);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const isAdmin = useTeamStore((s) => s.isAdmin);
+  const resetAllData = useTeamStore((s) => s.resetAllData);
 
   const positions = SPORT_POSITIONS[teamSettings.sport];
 
@@ -253,6 +255,9 @@ export default function AdminScreen() {
   // Sport change confirmation modal
   const [isSportChangeModalVisible, setIsSportChangeModalVisible] = useState(false);
   const [pendingSport, setPendingSport] = useState<Sport | null>(null);
+
+  // Erase all data confirmation modal
+  const [isEraseDataModalVisible, setIsEraseDataModalVisible] = useState(false);
 
   // Jersey color form
   const [newColorName, setNewColorName] = useState('');
@@ -448,6 +453,21 @@ export default function AdminScreen() {
   const cancelChangeSport = () => {
     setIsSportChangeModalVisible(false);
     setPendingSport(null);
+  };
+
+  const handleEraseAllData = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setIsEraseDataModalVisible(true);
+  };
+
+  const confirmEraseAllData = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    resetAllData();
+    setIsEraseDataModalVisible(false);
+  };
+
+  const cancelEraseAllData = () => {
+    setIsEraseDataModalVisible(false);
   };
 
   const handleAddJerseyColor = () => {
@@ -700,6 +720,27 @@ export default function AdminScreen() {
                 />
               </View>
             </View>
+
+            {/* Erase All Data */}
+            <Pressable
+              onPress={handleEraseAllData}
+              className="bg-red-500/10 rounded-xl p-4 mb-3 border border-red-500/30 active:bg-red-500/20"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View className="bg-red-500/20 p-2 rounded-full">
+                    <Trash2 size={20} color="#ef4444" />
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-red-400 font-semibold">Erase All Data</Text>
+                    <Text className="text-slate-400 text-sm">
+                      Delete all team data and start fresh
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color="#ef4444" />
+              </View>
+            </Pressable>
           </Animated.View>
 
           {/* Sport Selection */}
@@ -1328,6 +1369,52 @@ export default function AdminScreen() {
                 className="flex-row items-center justify-center bg-slate-700 rounded-xl py-4 active:bg-slate-600"
               >
                 <Text className="text-slate-300 font-semibold">Return</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Erase All Data Confirmation Modal */}
+      <Modal
+        visible={isEraseDataModalVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={cancelEraseAllData}
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-red-500/30">
+            {/* Header */}
+            <View className="items-center mb-6">
+              <View className="w-16 h-16 rounded-full bg-red-500/20 items-center justify-center mb-4">
+                <AlertTriangle size={32} color="#ef4444" />
+              </View>
+              <Text className="text-white text-xl font-bold text-center">
+                Erase All Data?
+              </Text>
+              <Text className="text-slate-400 text-center mt-2">
+                This will permanently delete all players, games, statistics, photos, chat messages, and payment records.
+              </Text>
+              <Text className="text-red-400 text-center mt-3 font-medium">
+                This action cannot be undone.
+              </Text>
+            </View>
+
+            {/* Buttons */}
+            <View>
+              <Pressable
+                onPress={confirmEraseAllData}
+                className="flex-row items-center justify-center bg-red-500 rounded-xl py-4 mb-3 active:bg-red-600"
+              >
+                <Trash2 size={18} color="white" />
+                <Text className="text-white font-semibold ml-2">Erase Everything</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={cancelEraseAllData}
+                className="flex-row items-center justify-center bg-slate-700 rounded-xl py-4 active:bg-slate-600"
+              >
+                <Text className="text-slate-300 font-semibold">Cancel</Text>
               </Pressable>
             </View>
           </View>

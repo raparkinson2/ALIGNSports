@@ -418,6 +418,9 @@ interface TeamStore {
   // Notification Preferences
   updateNotificationPreferences: (playerId: string, prefs: Partial<NotificationPreferences>) => void;
   getNotificationPreferences: (playerId: string) => NotificationPreferences;
+
+  // Reset all data
+  resetAllData: () => void;
 }
 
 // Mock data
@@ -803,6 +806,33 @@ export const useTeamStore = create<TeamStore>()(
         const player = state.players.find((p) => p.id === playerId);
         return player?.notificationPreferences || defaultNotificationPreferences;
       },
+
+      // Reset all data to defaults
+      resetAllData: () => set({
+        teamName: 'My Team',
+        teamSettings: {
+          sport: 'hockey',
+          jerseyColors: [
+            { name: 'White', color: '#ffffff' },
+            { name: 'Black', color: '#1a1a1a' },
+          ],
+          paymentMethods: [],
+          teamLogo: undefined,
+          record: undefined,
+          showTeamStats: true,
+          showPayments: true,
+        },
+        players: [],
+        games: [],
+        events: [],
+        photos: [],
+        notifications: [],
+        chatMessages: [],
+        chatLastReadAt: {},
+        paymentPeriods: [],
+        currentPlayerId: null,
+        isLoggedIn: false,
+      }),
     }),
     {
       name: 'team-storage',
