@@ -269,6 +269,8 @@ export interface ChatMessage {
   id: string;
   senderId: string;
   message: string;
+  imageUrl?: string; // For images from camera/gallery
+  gifUrl?: string; // For GIFs from GIPHY
   createdAt: string;
 }
 

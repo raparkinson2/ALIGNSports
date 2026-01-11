@@ -1,14 +1,32 @@
-import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Send } from 'lucide-react-native';
+import { MessageSquare, Send, ImageIcon, X, Search } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { useTeamStore, ChatMessage } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
+
+// GIPHY API - using the public beta key for demo purposes
+const GIPHY_API_KEY = 'dc6zaTOxFJmzC';
+
+interface GiphyGif {
+  id: string;
+  images: {
+    fixed_height: {
+      url: string;
+      width: string;
+      height: string;
+    };
+    original: {
+      url: string;
+    };
+  };
+}
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -22,6 +40,7 @@ interface MessageBubbleProps {
 function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index, onDelete }: MessageBubbleProps) {
   const messageDate = parseISO(message.createdAt);
   const timeStr = format(messageDate, 'h:mm a');
+  const hasMedia = message.imageUrl || message.gifUrl;
 
   const handleLongPress = () => {
     if (isOwnMessage && onDelete) {
@@ -67,15 +86,29 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
           )}
           <View
             className={cn(
-              'rounded-2xl px-4 py-2.5',
+              'rounded-2xl overflow-hidden',
+              hasMedia ? '' : 'px-4 py-2.5',
               isOwnMessage
                 ? 'bg-cyan-500 rounded-br-sm'
                 : 'bg-slate-700 rounded-bl-sm'
             )}
           >
-            <Text className={cn('text-base', isOwnMessage ? 'text-white' : 'text-slate-100')}>
-              {message.message}
-            </Text>
+            {/* Image or GIF */}
+            {(message.imageUrl || message.gifUrl) && (
+              <Image
+                source={{ uri: message.imageUrl || message.gifUrl }}
+                style={{ width: 200, height: 200, borderRadius: hasMedia && !message.message ? 16 : 0 }}
+                contentFit="cover"
+              />
+            )}
+            {/* Text message */}
+            {message.message && (
+              <View className={hasMedia ? 'px-4 py-2.5' : ''}>
+                <Text className={cn('text-base', isOwnMessage ? 'text-white' : 'text-slate-100')}>
+                  {message.message}
+                </Text>
+              </View>
+            )}
           </View>
           <Text className={cn('text-slate-500 text-[10px] mt-1', isOwnMessage ? 'mr-1 text-right' : 'ml-1')}>
             {timeStr}
@@ -110,6 +143,10 @@ export default function ChatScreen() {
   const markChatAsRead = useTeamStore((s) => s.markChatAsRead);
 
   const [messageText, setMessageText] = useState('');
+  const [isGifModalVisible, setIsGifModalVisible] = useState(false);
+  const [gifSearchQuery, setGifSearchQuery] = useState('');
+  const [gifs, setGifs] = useState<GiphyGif[]>([]);
+  const [isLoadingGifs, setIsLoadingGifs] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
@@ -132,6 +169,57 @@ export default function ChatScreen() {
     }, 100);
   }, [chatMessages.length, currentPlayerId, markChatAsRead]);
 
+  // Load trending GIFs when modal opens
+  useEffect(() => {
+    if (isGifModalVisible && gifs.length === 0) {
+      loadTrendingGifs();
+    }
+  }, [isGifModalVisible]);
+
+  const loadTrendingGifs = async () => {
+    setIsLoadingGifs(true);
+    try {
+      const response = await fetch(
+        `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=20&rating=pg-13`
+      );
+      const data = await response.json();
+      setGifs(data.data || []);
+    } catch (error) {
+      console.error('Error loading trending GIFs:', error);
+    } finally {
+      setIsLoadingGifs(false);
+    }
+  };
+
+  const searchGifs = async (query: string) => {
+    if (!query.trim()) {
+      loadTrendingGifs();
+      return;
+    }
+    setIsLoadingGifs(true);
+    try {
+      const response = await fetch(
+        `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(query)}&limit=20&rating=pg-13`
+      );
+      const data = await response.json();
+      setGifs(data.data || []);
+    } catch (error) {
+      console.error('Error searching GIFs:', error);
+    } finally {
+      setIsLoadingGifs(false);
+    }
+  };
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isGifModalVisible) {
+        searchGifs(gifSearchQuery);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [gifSearchQuery, isGifModalVisible]);
+
   const handleSendMessage = () => {
     if (!messageText.trim() || !currentPlayerId) return;
 
@@ -145,6 +233,44 @@ export default function ChatScreen() {
     addChatMessage(newMessage);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setMessageText('');
+  };
+
+  const handlePickImage = async () => {
+    if (!currentPlayerId) return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const newMessage: ChatMessage = {
+        id: Date.now().toString(),
+        senderId: currentPlayerId,
+        message: '',
+        imageUrl: result.assets[0].uri,
+        createdAt: new Date().toISOString(),
+      };
+      addChatMessage(newMessage);
+    }
+  };
+
+  const handleSelectGif = (gif: GiphyGif) => {
+    if (!currentPlayerId) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newMessage: ChatMessage = {
+      id: Date.now().toString(),
+      senderId: currentPlayerId,
+      message: '',
+      gifUrl: gif.images.fixed_height.url,
+      createdAt: new Date().toISOString(),
+    };
+    addChatMessage(newMessage);
+    setIsGifModalVisible(false);
+    setGifSearchQuery('');
   };
 
   // Group messages by date
@@ -232,6 +358,22 @@ export default function ChatScreen() {
           {/* Input Area */}
           <View className="px-4 pb-4 pt-2 border-t border-slate-800 bg-slate-900/95">
             <View className="flex-row items-end">
+              {/* Image Picker Button */}
+              <Pressable
+                onPress={handlePickImage}
+                className="w-11 h-11 rounded-full items-center justify-center bg-slate-800 mr-2 active:bg-slate-700"
+              >
+                <ImageIcon size={20} color="#67e8f9" />
+              </Pressable>
+
+              {/* GIF Button */}
+              <Pressable
+                onPress={() => setIsGifModalVisible(true)}
+                className="w-11 h-11 rounded-full items-center justify-center bg-slate-800 mr-2 active:bg-slate-700"
+              >
+                <Text className="text-cyan-400 font-bold text-xs">GIF</Text>
+              </Pressable>
+
               <View className="flex-1 bg-slate-800 rounded-2xl px-4 py-2 mr-2">
                 <TextInput
                   value={messageText}
@@ -258,6 +400,94 @@ export default function ChatScreen() {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      {/* GIF Picker Modal */}
+      <Modal
+        visible={isGifModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsGifModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <LinearGradient
+            colors={['#0f172a', '#1e293b', '#0f172a']}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          />
+
+          <SafeAreaView className="flex-1" edges={['top']}>
+            {/* Header */}
+            <View className="flex-row items-center justify-between px-5 pt-4 pb-4 border-b border-slate-700/50">
+              <Pressable
+                onPress={() => {
+                  setIsGifModalVisible(false);
+                  setGifSearchQuery('');
+                }}
+                className="p-2 -ml-2"
+              >
+                <X size={24} color="#94a3b8" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Choose a GIF</Text>
+              <View style={{ width: 40 }} />
+            </View>
+
+            {/* Search Bar */}
+            <View className="px-5 py-3">
+              <View className="flex-row items-center bg-slate-800 rounded-xl px-4 py-3">
+                <Search size={20} color="#64748b" />
+                <TextInput
+                  value={gifSearchQuery}
+                  onChangeText={setGifSearchQuery}
+                  placeholder="Search GIFs..."
+                  placeholderTextColor="#64748b"
+                  className="flex-1 text-white text-base ml-3"
+                  autoCapitalize="none"
+                />
+              </View>
+            </View>
+
+            {/* GIF Grid */}
+            {isLoadingGifs ? (
+              <View className="flex-1 items-center justify-center">
+                <ActivityIndicator size="large" color="#67e8f9" />
+              </View>
+            ) : (
+              <FlatList
+                data={gifs}
+                numColumns={2}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={{ padding: 10 }}
+                renderItem={({ item }) => (
+                  <Pressable
+                    onPress={() => handleSelectGif(item)}
+                    className="flex-1 m-1 active:opacity-80"
+                  >
+                    <Image
+                      source={{ uri: item.images.fixed_height.url }}
+                      style={{
+                        width: '100%',
+                        aspectRatio: parseInt(item.images.fixed_height.width) / parseInt(item.images.fixed_height.height),
+                        borderRadius: 8,
+                        minHeight: 100,
+                      }}
+                      contentFit="cover"
+                    />
+                  </Pressable>
+                )}
+                ListEmptyComponent={
+                  <View className="flex-1 items-center justify-center py-20">
+                    <Text className="text-slate-400">No GIFs found</Text>
+                  </View>
+                }
+              />
+            )}
+
+            {/* Powered by GIPHY */}
+            <View className="px-5 py-3 border-t border-slate-700/50">
+              <Text className="text-slate-500 text-xs text-center">Powered by GIPHY</Text>
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
     </View>
   );
 }
