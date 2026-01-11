@@ -84,7 +84,7 @@ function getStatHeaders(sport: Sport): string[] {
 
 // Get pitcher stat headers
 function getPitcherHeaders(): string[] {
-  return ['W-L', 'IP', 'K', 'BB', 'ERA'];
+  return ['GS', 'W-L', 'IP', 'CG', 'SO', 'K', 'BB', 'HR', 'ERA'];
 }
 
 // Get stat values based on sport
@@ -97,7 +97,7 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
       return [0, '0-0-0', 0, '0.00', 0, 0, '.000'];
     }
     if (playerIsPitcher && sport === 'baseball') {
-      return ['0-0', 0, 0, 0, '0.00'];
+      return [0, '0-0', 0, 0, 0, 0, 0, 0, '0.00'];
     }
     if (sport === 'hockey') return [0, 0, 0, 0, 0, 0];
     if (sport === 'baseball') return [0, 0, 0, 0, 0, 0];
@@ -134,7 +134,7 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
     const ip = s.innings ?? 0;
     // ERA = (Earned Runs / Innings Pitched) x 9
     const era = ip > 0 ? ((s.earnedRuns ?? 0) / ip * 9).toFixed(2) : '0.00';
-    return [record, ip, s.strikeouts ?? 0, s.walks ?? 0, era];
+    return [s.starts ?? 0, record, ip, s.completeGames ?? 0, s.shutouts ?? 0, s.strikeouts ?? 0, s.walks ?? 0, s.homeRuns ?? 0, era];
   }
 
   switch (sport) {
