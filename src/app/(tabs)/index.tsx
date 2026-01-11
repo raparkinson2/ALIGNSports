@@ -387,7 +387,6 @@ export default function ScheduleScreen() {
           >
             {teamSettings.record ? (
               <View className="flex-row items-center">
-                <Text className="text-slate-400 text-sm mr-2">Record</Text>
                 <View className="bg-slate-800/80 rounded-lg px-3 py-1.5 flex-row items-center">
                   <Text className="text-cyan-400 text-lg font-bold">
                     {formatTeamRecord(teamSettings.record, sport)}
