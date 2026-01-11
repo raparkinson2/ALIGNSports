@@ -557,7 +557,7 @@ export default function RosterScreen() {
             <Text className="text-cyan-400 text-sm font-medium ml-2">Roster</Text>
           </View>
           <View className="flex-row items-center justify-between">
-            <Text className="text-white text-3xl font-bold">{teamName} Roster</Text>
+            <Text className="text-white text-3xl font-bold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{teamName} Roster</Text>
             {canManageTeam() && (
               <Pressable
                 onPress={openAddModal}

@@ -390,7 +390,7 @@ export default function ScheduleScreen() {
           className="px-5 pt-2 pb-4"
         >
           <View className="flex-row items-center justify-between">
-            <Text className="text-white text-3xl font-bold">{teamName}</Text>
+            <Text className="text-white text-3xl font-bold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{teamName}</Text>
             {canManageTeam() && (
               <Pressable
                 onPress={() => {

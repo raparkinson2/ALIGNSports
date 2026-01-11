@@ -125,7 +125,7 @@ export default function LoginScreen() {
             <Text className="text-cyan-400 text-sm font-medium uppercase tracking-wider mb-1">
               Welcome to
             </Text>
-            <Text className="text-white text-3xl font-bold">{teamName}</Text>
+            <Text className="text-white text-3xl font-bold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{teamName}</Text>
           </Animated.View>
 
           <Animated.View
@@ -176,7 +176,7 @@ export default function LoginScreen() {
             <Text className="text-cyan-400 text-sm font-medium uppercase tracking-wider mb-1">
               Quick Login
             </Text>
-            <Text className="text-white text-3xl font-bold">{teamName}</Text>
+            <Text className="text-white text-3xl font-bold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{teamName}</Text>
           </Animated.View>
 
           <Animated.View
@@ -242,7 +242,7 @@ export default function LoginScreen() {
             <Text className="text-cyan-400 text-sm font-medium uppercase tracking-wider mb-1">
               {hasTeam ? 'Welcome Back' : 'Team Manager'}
             </Text>
-            <Text className="text-white text-3xl font-bold">
+            <Text className="text-white text-3xl font-bold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
               {hasTeam ? teamName : 'Get Started'}
             </Text>
           </Animated.View>

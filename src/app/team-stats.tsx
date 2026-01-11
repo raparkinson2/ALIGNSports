@@ -690,7 +690,7 @@ export default function TeamStatsScreen() {
         >
           {/* Title */}
           <Animated.View entering={FadeInDown.delay(50).springify()} className="mb-6">
-            <Text className="text-white text-3xl font-bold">{teamName}</Text>
+            <Text className="text-white text-3xl font-bold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{teamName}</Text>
             <Text className="text-slate-400 text-base mt-1">Team Statistics</Text>
           </Animated.View>
 
