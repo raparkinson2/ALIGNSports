@@ -113,9 +113,9 @@ export default function PhotosScreen() {
           <View className="flex-row items-center">
             <Pressable
               onPress={takePhoto}
-              className="bg-green-500 w-10 h-10 rounded-full items-center justify-center mr-2 active:bg-green-600"
+              className="bg-slate-800 w-10 h-10 rounded-full items-center justify-center mr-2 active:bg-slate-700"
             >
-              <Camera size={20} color="white" />
+              <Camera size={20} color="#67e8f9" />
             </Pressable>
             <Pressable
               onPress={pickImage}
