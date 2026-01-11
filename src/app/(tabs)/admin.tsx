@@ -866,21 +866,21 @@ export default function AdminScreen() {
             {/* Erase All Data */}
             <Pressable
               onPress={handleEraseAllData}
-              className="bg-red-500/10 rounded-xl p-4 mb-3 border border-red-500/30 active:bg-red-500/20"
+              className="bg-orange-500/10 rounded-xl p-4 mb-3 border border-orange-500/30 active:bg-orange-500/20"
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
-                  <View className="bg-red-500/20 p-2 rounded-full">
-                    <Trash2 size={20} color="#ef4444" />
+                  <View className="bg-orange-500/20 p-2 rounded-full">
+                    <Trash2 size={20} color="#f97316" />
                   </View>
                   <View className="ml-3 flex-1">
-                    <Text className="text-red-400 font-semibold">Erase All Data</Text>
+                    <Text className="text-orange-400 font-semibold">Erase All Data</Text>
                     <Text className="text-slate-400 text-sm">
                       Delete all team data and start fresh
                     </Text>
                   </View>
                 </View>
-                <ChevronRight size={20} color="#ef4444" />
+                <ChevronRight size={20} color="#f97316" />
               </View>
             </Pressable>
 
