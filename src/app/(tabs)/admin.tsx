@@ -642,7 +642,36 @@ export default function AdminScreen() {
               </View>
             </Pressable>
 
-            {/* Sport Selection - Moved under Team Logo */}
+            <Pressable
+              onPress={() => setIsJerseyModalVisible(true)}
+              className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <View className="bg-pink-500/20 p-2 rounded-full">
+                    <Palette size={20} color="#ec4899" />
+                  </View>
+                  <View className="ml-3">
+                    <Text className="text-white font-semibold">Jersey Colors</Text>
+                    <Text className="text-slate-400 text-sm">
+                      {teamSettings.jerseyColors.length} colors configured
+                    </Text>
+                  </View>
+                </View>
+                <View className="flex-row items-center">
+                  {teamSettings.jerseyColors.slice(0, 3).map((c, index) => (
+                    <View
+                      key={`preview-${index}`}
+                      className="w-6 h-6 rounded-full border-2 border-slate-700 -ml-2"
+                      style={{ backgroundColor: c.color }}
+                    />
+                  ))}
+                  <ChevronRight size={20} color="#64748b" className="ml-2" />
+                </View>
+              </View>
+            </Pressable>
+
+            {/* Sport Selection - Under Jersey Colors */}
             <View className="mb-3">
               <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
                 Sport
@@ -672,35 +701,6 @@ export default function AdminScreen() {
                 ))}
               </View>
             </View>
-
-            <Pressable
-              onPress={() => setIsJerseyModalVisible(true)}
-              className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
-            >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center">
-                  <View className="bg-pink-500/20 p-2 rounded-full">
-                    <Palette size={20} color="#ec4899" />
-                  </View>
-                  <View className="ml-3">
-                    <Text className="text-white font-semibold">Jersey Colors</Text>
-                    <Text className="text-slate-400 text-sm">
-                      {teamSettings.jerseyColors.length} colors configured
-                    </Text>
-                  </View>
-                </View>
-                <View className="flex-row items-center">
-                  {teamSettings.jerseyColors.slice(0, 3).map((c, index) => (
-                    <View
-                      key={`preview-${index}`}
-                      className="w-6 h-6 rounded-full border-2 border-slate-700 -ml-2"
-                      style={{ backgroundColor: c.color }}
-                    />
-                  ))}
-                  <ChevronRight size={20} color="#64748b" className="ml-2" />
-                </View>
-              </View>
-            </Pressable>
 
             {/* Team Chat Toggle */}
             <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
