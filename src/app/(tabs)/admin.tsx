@@ -250,6 +250,10 @@ export default function AdminScreen() {
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
   const [newlyCreatedPlayer, setNewlyCreatedPlayer] = useState<Player | null>(null);
 
+  // Sport change confirmation modal
+  const [isSportChangeModalVisible, setIsSportChangeModalVisible] = useState(false);
+  const [pendingSport, setPendingSport] = useState<Sport | null>(null);
+
   // Jersey color form
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#ffffff');
@@ -427,8 +431,23 @@ export default function AdminScreen() {
   };
 
   const handleChangeSport = (sport: Sport) => {
+    if (sport === teamSettings.sport) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setTeamSettings({ sport });
+    setPendingSport(sport);
+    setIsSportChangeModalVisible(true);
+  };
+
+  const confirmChangeSport = () => {
+    if (!pendingSport) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setTeamSettings({ sport: pendingSport });
+    setIsSportChangeModalVisible(false);
+    setPendingSport(null);
+  };
+
+  const cancelChangeSport = () => {
+    setIsSportChangeModalVisible(false);
+    setPendingSport(null);
   };
 
   const handleAddJerseyColor = () => {
@@ -1264,6 +1283,51 @@ export default function AdminScreen() {
                 className="flex-row items-center justify-center bg-slate-700 rounded-xl py-4 active:bg-slate-600"
               >
                 <Text className="text-slate-300 font-semibold">Skip for Now</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Sport Change Confirmation Modal */}
+      <Modal
+        visible={isSportChangeModalVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={cancelChangeSport}
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-700">
+            {/* Header */}
+            <View className="items-center mb-6">
+              <View className="w-16 h-16 rounded-full bg-amber-500/20 items-center justify-center mb-4">
+                {pendingSport && <SportIcon sport={pendingSport} color="#f59e0b" size={32} />}
+              </View>
+              <Text className="text-white text-xl font-bold text-center">
+                Change Sport?
+              </Text>
+              <Text className="text-slate-400 text-center mt-2">
+                Switching to {pendingSport ? SPORT_NAMES[pendingSport] : ''} will reset all player positions and clear their statistics.
+              </Text>
+              <Text className="text-amber-400 text-center mt-3 font-medium">
+                This action cannot be undone.
+              </Text>
+            </View>
+
+            {/* Buttons */}
+            <View>
+              <Pressable
+                onPress={confirmChangeSport}
+                className="flex-row items-center justify-center bg-amber-500 rounded-xl py-4 mb-3 active:bg-amber-600"
+              >
+                <Text className="text-white font-semibold">Proceed</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={cancelChangeSport}
+                className="flex-row items-center justify-center bg-slate-700 rounded-xl py-4 active:bg-slate-600"
+              >
+                <Text className="text-slate-300 font-semibold">Return</Text>
               </Pressable>
             </View>
           </View>
