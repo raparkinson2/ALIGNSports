@@ -207,13 +207,30 @@ export interface Player {
   email?: string;
   phone?: string;
   number: string;
-  position: string;
+  position: string; // Primary position (first in positions array)
+  positions?: string[]; // All positions player can play
   avatar?: string;
   roles: PlayerRole[]; // Array of roles - can be admin, captain, or both
   status: PlayerStatus; // active or reserve (this is separate from roles)
   notificationPreferences?: NotificationPreferences;
   stats?: PlayerStats;
 }
+
+// Helper to get all positions for a player (returns positions array or falls back to single position)
+export const getPlayerPositions = (player: Player): string[] => {
+  if (player.positions && player.positions.length > 0) {
+    return player.positions;
+  }
+  return [player.position];
+};
+
+// Helper to get primary position (first position)
+export const getPrimaryPosition = (player: Player): string => {
+  if (player.positions && player.positions.length > 0) {
+    return player.positions[0];
+  }
+  return player.position;
+};
 
 export interface Game {
   id: string;

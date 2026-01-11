@@ -17,7 +17,7 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
-import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, PlayerStats } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, PlayerStats, getPlayerPositions, getPrimaryPosition } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 
@@ -157,11 +157,17 @@ interface PlayerCardProps {
 
 function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProps) {
   const sport = useTeamStore((s) => s.teamSettings.sport);
-  const positionName = SPORT_POSITION_NAMES[sport][player.position] || player.position;
+  const playerPositions = getPlayerPositions(player);
+  const primaryPosition = getPrimaryPosition(player);
 
-  // Get stat headers and values for this player
-  const playerIsGoalie = isGoalie(player.position);
-  const playerIsPitcher = isPitcher(player.position);
+  // Format position display - show all positions joined by "/"
+  const positionDisplay = playerPositions.length > 1
+    ? playerPositions.join('/')
+    : SPORT_POSITION_NAMES[sport][primaryPosition] || primaryPosition;
+
+  // Get stat headers and values for this player (based on primary position)
+  const playerIsGoalie = isGoalie(primaryPosition);
+  const playerIsPitcher = isPitcher(primaryPosition);
 
   let headers: string[];
   if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
@@ -171,7 +177,7 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
   } else {
     headers = getStatHeaders(sport);
   }
-  const statValues = getStatValues(sport, player.stats, player.position);
+  const statValues = getStatValues(sport, player.stats, primaryPosition);
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 60).springify()}>
@@ -205,7 +211,7 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
                 </View>
               )}
             </View>
-            <Text className="text-slate-400 text-sm">{positionName}</Text>
+            <Text className="text-slate-400 text-sm">{positionDisplay}</Text>
           </View>
 
           {/* Status Badge */}
@@ -256,7 +262,7 @@ export default function RosterScreen() {
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
-  const [position, setPosition] = useState(positions[0]);
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([positions[0]]);
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [playerRoles, setPlayerRoles] = useState<PlayerRole[]>([]);
@@ -269,7 +275,7 @@ export default function RosterScreen() {
   const resetForm = () => {
     setName('');
     setNumber('');
-    setPosition(positions[0]);
+    setSelectedPositions([positions[0]]);
     setPhone('');
     setEmail('');
     setPlayerRoles([]);
@@ -294,7 +300,7 @@ export default function RosterScreen() {
     setEditingPlayer(player);
     setName(player.name);
     setNumber(player.number);
-    setPosition(player.position);
+    setSelectedPositions(getPlayerPositions(player));
     setPhone(formatPhoneNumber(player.phone));
     setEmail(player.email || '');
     setPlayerRoles(player.roles || []);
@@ -314,7 +320,8 @@ export default function RosterScreen() {
       const updates: Partial<Player> = {
         name: name.trim(),
         number: number.trim(),
-        position,
+        position: selectedPositions[0],
+        positions: selectedPositions,
         phone: rawPhone || undefined,
         email: email.trim() || undefined,
       };
@@ -333,7 +340,8 @@ export default function RosterScreen() {
         id: Date.now().toString(),
         name: name.trim(),
         number: number.trim(),
-        position,
+        position: selectedPositions[0],
+        positions: selectedPositions,
         phone: rawPhone || undefined,
         email: email.trim() || undefined,
         avatar: `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150`,
@@ -543,32 +551,43 @@ export default function RosterScreen() {
                 />
               </View>
 
-              {/* Position Selector */}
+              {/* Position Selector - Multiple Selection */}
               <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Position</Text>
+                <Text className="text-slate-400 text-sm mb-1">Positions</Text>
+                <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
                 <View className="flex-row flex-wrap">
-                  {positions.map((pos) => (
-                    <Pressable
-                      key={pos}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setPosition(pos);
-                      }}
-                      className={cn(
-                        'py-3 px-4 rounded-xl mr-2 mb-2 items-center',
-                        position === pos ? 'bg-cyan-500' : 'bg-slate-800'
-                      )}
-                    >
-                      <Text
+                  {positions.map((pos) => {
+                    const isSelected = selectedPositions.includes(pos);
+                    return (
+                      <Pressable
+                        key={pos}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          if (isSelected) {
+                            // Don't allow deselecting if it's the only position
+                            if (selectedPositions.length > 1) {
+                              setSelectedPositions(selectedPositions.filter(p => p !== pos));
+                            }
+                          } else {
+                            setSelectedPositions([...selectedPositions, pos]);
+                          }
+                        }}
                         className={cn(
-                          'font-semibold',
-                          position === pos ? 'text-white' : 'text-slate-400'
+                          'py-3 px-4 rounded-xl mr-2 mb-2 items-center',
+                          isSelected ? 'bg-cyan-500' : 'bg-slate-800'
                         )}
                       >
-                        {pos}
-                      </Text>
-                    </Pressable>
-                  ))}
+                        <Text
+                          className={cn(
+                            'font-semibold',
+                            isSelected ? 'text-white' : 'text-slate-400'
+                          )}
+                        >
+                          {pos}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
               </View>
 

@@ -7,6 +7,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 ### Multi-Sport Support
 - Choose your sport: Hockey, Baseball, Basketball, or Soccer
 - Sport-specific positions automatically configured
+- **Multiple Positions**: Players can be assigned multiple positions (e.g., LW/RW, SS/2B)
 - Position names displayed appropriately for each sport
 
 ### Role-Based Access
