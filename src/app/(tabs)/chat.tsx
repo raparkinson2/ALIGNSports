@@ -84,37 +84,55 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
           {!isOwnMessage && (
             <Text className="text-slate-400 text-xs mb-1 ml-1">{senderName}</Text>
           )}
-          <View
-            className={cn(
-              'rounded-2xl overflow-hidden',
-              hasMedia ? '' : 'px-4 py-2.5',
-              isOwnMessage
-                ? 'bg-cyan-500 rounded-br-sm'
-                : 'bg-slate-700 rounded-bl-sm'
-            )}
-            style={hasMedia ? { maxWidth: 250 } : undefined}
-          >
-            {/* Image or GIF */}
-            {(message.imageUrl || message.gifUrl) && (
+          {/* Media-only message (no background) */}
+          {hasMedia && !message.message && (
+            <View className="rounded-2xl overflow-hidden" style={{ maxWidth: 250 }}>
               <Image
                 source={{ uri: message.imageUrl || message.gifUrl }}
                 style={{
                   width: 250,
                   height: 200,
+                  borderRadius: 16,
                 }}
                 contentFit="contain"
                 autoplay={true}
               />
-            )}
-            {/* Text message */}
-            {message.message && (
-              <View className={hasMedia ? 'px-4 py-2.5' : ''}>
-                <Text className={cn('text-base', isOwnMessage ? 'text-white' : 'text-slate-100')}>
-                  {message.message}
-                </Text>
-              </View>
-            )}
-          </View>
+            </View>
+          )}
+          {/* Media with text or text-only message */}
+          {(message.message || !hasMedia) && (
+            <View
+              className={cn(
+                'rounded-2xl overflow-hidden',
+                !hasMedia && 'px-4 py-2.5',
+                isOwnMessage
+                  ? 'bg-cyan-500 rounded-br-sm'
+                  : 'bg-slate-700 rounded-bl-sm'
+              )}
+              style={hasMedia ? { maxWidth: 250 } : undefined}
+            >
+              {/* Image or GIF with text */}
+              {hasMedia && (
+                <Image
+                  source={{ uri: message.imageUrl || message.gifUrl }}
+                  style={{
+                    width: 250,
+                    height: 200,
+                  }}
+                  contentFit="contain"
+                  autoplay={true}
+                />
+              )}
+              {/* Text message */}
+              {message.message && (
+                <View className={hasMedia ? 'px-4 py-2.5' : ''}>
+                  <Text className={cn('text-base', isOwnMessage ? 'text-white' : 'text-slate-100')}>
+                    {message.message}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
           <Text className={cn('text-slate-500 text-[10px] mt-1', isOwnMessage ? 'mr-1 text-right' : 'ml-1')}>
             {timeStr}
           </Text>
