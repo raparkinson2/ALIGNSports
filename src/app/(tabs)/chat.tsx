@@ -87,7 +87,7 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
           {/* Media-only message (no background) */}
           {hasMedia && !message.message && (
             <View style={{ maxWidth: 250 }}>
-              <View className="rounded-2xl overflow-hidden">
+              <View className="rounded-2xl overflow-hidden relative">
                 <Image
                   source={{ uri: message.imageUrl || message.gifUrl }}
                   style={{
@@ -98,16 +98,12 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
                   contentFit="contain"
                   autoplay={true}
                 />
+                {message.gifUrl && (
+                  <View className="absolute bottom-2 right-2 bg-black/70 rounded px-2 py-1">
+                    <Text className="text-white text-[10px] font-semibold">Powered by GIPHY</Text>
+                  </View>
+                )}
               </View>
-              {message.gifUrl && (
-                <View className="flex-row justify-end mt-1 mr-1">
-                  <Image
-                    source={{ uri: 'https://giphy.com/static/img/poweredby_giphy.png' }}
-                    style={{ width: 100, height: 13 }}
-                    contentFit="contain"
-                  />
-                </View>
-              )}
             </View>
           )}
           {/* Media with text or text-only message */}
@@ -528,11 +524,7 @@ export default function ChatScreen() {
 
             {/* Powered by GIPHY */}
             <View className="px-5 py-3 border-t border-slate-700/50 items-center">
-              <Image
-                source={{ uri: 'https://giphy.com/static/img/poweredby_giphy.png' }}
-                style={{ width: 150, height: 20 }}
-                contentFit="contain"
-              />
+              <Text className="text-slate-400 text-sm font-semibold">Powered by GIPHY</Text>
             </View>
           </SafeAreaView>
         </View>
