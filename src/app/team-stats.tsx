@@ -72,7 +72,7 @@ function getStatHeaders(sport: Sport): string[] {
     case 'hockey':
       return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
     case 'baseball':
-      return ['GP', 'AB', 'H', 'HR', 'RBI', 'K'];
+      return ['GP', 'AB', 'H', 'HR', 'RBI', 'K', 'BA'];
     case 'basketball':
       return ['GP', 'PTS', 'PPG', 'REB', 'AST', 'STL', 'BLK'];
     case 'soccer':
@@ -100,7 +100,7 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
       return [0, '0-0', 0, 0, 0, 0, 0, 0, '0.00'];
     }
     if (sport === 'hockey') return [0, 0, 0, 0, 0, 0];
-    if (sport === 'baseball') return [0, 0, 0, 0, 0, 0];
+    if (sport === 'baseball') return [0, 0, 0, 0, 0, 0, '.000'];
     if (sport === 'basketball') return [0, 0, '0.0', 0, 0, 0, 0];
     if (sport === 'soccer') return [0, 0, 0, 0];
     return [0, 0, 0];
@@ -147,7 +147,10 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
     }
     case 'baseball': {
       const s = stats as BaseballStats;
-      return [s.gamesPlayed ?? 0, s.atBats ?? 0, s.hits ?? 0, s.homeRuns ?? 0, s.rbi ?? 0, s.strikeouts ?? 0];
+      const atBats = s.atBats ?? 0;
+      const hits = s.hits ?? 0;
+      const ba = atBats > 0 ? (hits / atBats).toFixed(3) : '.000';
+      return [s.gamesPlayed ?? 0, atBats, hits, s.homeRuns ?? 0, s.rbi ?? 0, s.strikeouts ?? 0, ba];
     }
     case 'basketball': {
       const s = stats as BasketballStats;
