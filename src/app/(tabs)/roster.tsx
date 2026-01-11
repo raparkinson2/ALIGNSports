@@ -531,7 +531,11 @@ export default function RosterScreen() {
           className="flex-row items-center justify-between px-5 pt-2 pb-4"
         >
           <View>
-            <Text className="text-white text-3xl font-bold">Roster</Text>
+            <View className="flex-row items-center">
+              <Users size={20} color="#67e8f9" />
+              <Text className="text-cyan-400 text-sm font-medium ml-2">Roster</Text>
+            </View>
+            <Text className="text-white text-3xl font-bold">{teamName} Roster</Text>
           </View>
           {canManageTeam() && (
             <Pressable
