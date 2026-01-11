@@ -87,7 +87,7 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
           {/* Media-only message (no background) */}
           {hasMedia && !message.message && (
             <View style={{ maxWidth: 250 }}>
-              <View className="rounded-2xl overflow-hidden relative">
+              <View className="rounded-2xl overflow-hidden">
                 <Image
                   source={{ uri: message.imageUrl || message.gifUrl }}
                   style={{
@@ -98,12 +98,12 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
                   contentFit="contain"
                   autoplay={true}
                 />
-                {message.gifUrl && (
-                  <View className="absolute bottom-2 right-2 bg-black/70 rounded px-2 py-1">
-                    <Text className="text-white text-[10px] font-semibold">Powered by GIPHY</Text>
-                  </View>
-                )}
               </View>
+              {message.gifUrl && (
+                <View className="flex-row justify-end mt-1">
+                  <Text className="text-slate-500 text-[10px]">Powered by GIPHY</Text>
+                </View>
+              )}
             </View>
           )}
           {/* Media with text or text-only message */}
