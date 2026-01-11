@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, TextInput, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
@@ -306,11 +306,10 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
   const playerIsGoalie = isGoalie(position);
   const playerIsPitcher = isPitcher(position);
 
-  // Goalie stats for hockey/soccer
+  // Goalie stats for hockey/soccer (no games field - each log = 1 GP)
   if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
     if (sport === 'hockey') {
       return [
-        { key: 'games', label: 'Games Played' },
         { key: 'wins', label: 'Wins' },
         { key: 'losses', label: 'Losses' },
         { key: 'ties', label: 'Ties' },
@@ -321,7 +320,6 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
       ];
     }
     return [
-      { key: 'games', label: 'Games Played' },
       { key: 'wins', label: 'Wins' },
       { key: 'losses', label: 'Losses' },
       { key: 'ties', label: 'Draws' },
@@ -332,7 +330,7 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
     ];
   }
 
-  // Pitcher stats for baseball
+  // Pitcher stats for baseball (starts field stays since it's different from GP)
   if (playerIsPitcher && sport === 'baseball') {
     return [
       { key: 'starts', label: 'Starts' },
@@ -349,10 +347,10 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
     ];
   }
 
+  // Regular player stats (no gamesPlayed field - each log = 1 GP)
   switch (sport) {
     case 'hockey':
       return [
-        { key: 'gamesPlayed', label: 'Games Played' },
         { key: 'goals', label: 'Goals' },
         { key: 'assists', label: 'Assists' },
         { key: 'pim', label: 'PIM' },
@@ -360,7 +358,6 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
       ];
     case 'baseball':
       return [
-        { key: 'gamesPlayed', label: 'Games Played' },
         { key: 'atBats', label: 'At Bats' },
         { key: 'hits', label: 'Hits' },
         { key: 'homeRuns', label: 'Home Runs' },
@@ -369,7 +366,6 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
       ];
     case 'basketball':
       return [
-        { key: 'gamesPlayed', label: 'Games Played' },
         { key: 'points', label: 'Points' },
         { key: 'rebounds', label: 'Rebounds' },
         { key: 'assists', label: 'Assists' },
@@ -378,7 +374,6 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
       ];
     case 'soccer':
       return [
-        { key: 'gamesPlayed', label: 'Games Played' },
         { key: 'goals', label: 'Goals' },
         { key: 'assists', label: 'Assists' },
         { key: 'yellowCards', label: 'Yellow Cards' },
@@ -499,6 +494,7 @@ export default function TeamStatsScreen() {
   const saveStats = () => {
     if (!selectedPlayer) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Keyboard.dismiss(); // Dismiss keyboard on save
 
     // Determine which position to use for getting stat fields based on edit mode
     let positionForStats: string;
@@ -546,6 +542,13 @@ export default function TeamStatsScreen() {
       });
     });
 
+    // Add games played count (each log = 1 game)
+    if (editMode === 'goalie') {
+      cumulativeStats.games = allLogs.length;
+    } else {
+      cumulativeStats.gamesPlayed = allLogs.length;
+    }
+
     // Save cumulative stats to the appropriate stats field based on edit mode
     if (editMode === 'pitcher') {
       updatePlayer(selectedPlayer.id, { pitcherStats: cumulativeStats as unknown as BaseballPitcherStats });
@@ -583,6 +586,15 @@ export default function TeamStatsScreen() {
         cumulativeStats[key] = (cumulativeStats[key] || 0) + (logStats[key] || 0);
       });
     });
+
+    // Add games played count (each log = 1 game)
+    if (remainingLogs.length > 0) {
+      if (logStatType === 'goalie') {
+        cumulativeStats.games = remainingLogs.length;
+      } else {
+        cumulativeStats.gamesPlayed = remainingLogs.length;
+      }
+    }
 
     // Update appropriate stats field
     if (logStatType === 'pitcher') {
