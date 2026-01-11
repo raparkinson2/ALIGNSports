@@ -1597,7 +1597,11 @@ export default function AdminScreen() {
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setNewPlayerPosition(positions[0]);
-                  setIsNewPlayerModalVisible(true);
+                  // Close manage players modal first, then open new player modal
+                  setIsManagePlayersModalVisible(false);
+                  setTimeout(() => {
+                    setIsNewPlayerModalVisible(true);
+                  }, 300);
                 }}
               >
                 <UserPlus size={24} color="#22c55e" />
