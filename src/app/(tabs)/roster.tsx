@@ -635,8 +635,8 @@ export default function RosterScreen() {
                 </View>
 
                 {/* Number Input */}
-                <View style={{ width: 90 }}>
-                  <Text className="text-slate-400 text-sm mb-2">Number</Text>
+                <View style={{ width: 100 }}>
+                  <Text className="text-slate-400 text-sm mb-2">Jersey Number</Text>
                   <TextInput
                     value={number}
                     onChangeText={setNumber}
