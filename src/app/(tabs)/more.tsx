@@ -686,18 +686,6 @@ export default function MoreScreen() {
             index={3}
           />
 
-          {showTeamStats && (
-            <MenuItem
-              icon={<BarChart3 size={20} color="#67e8f9" />}
-              title="Team Stats"
-              subtitle="View team statistics"
-              onPress={() => {
-                router.push('/team-stats');
-              }}
-              index={4}
-            />
-          )}
-
           {/* Account Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
             Account

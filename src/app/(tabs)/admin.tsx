@@ -2,6 +2,7 @@ import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert, Platform, S
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   Shield,
   Settings,
@@ -216,6 +217,7 @@ function PlayerManageCard({ player, index, onPress, isCurrentUser }: PlayerManag
 }
 
 export default function AdminScreen() {
+  const router = useRouter();
   const players = useTeamStore((s) => s.players);
   const addPlayer = useTeamStore((s) => s.addPlayer);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
@@ -694,6 +696,32 @@ export default function AdminScreen() {
                 />
               </View>
             </View>
+
+            {/* Team Stats Link - only show when enabled */}
+            {teamSettings.showTeamStats !== false && (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/team-stats');
+                }}
+                className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+              >
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View className="bg-cyan-500/20 p-2 rounded-full">
+                      <BarChart3 size={20} color="#67e8f9" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="text-white font-semibold">Team Stats</Text>
+                      <Text className="text-slate-400 text-sm">
+                        View and edit player statistics
+                      </Text>
+                    </View>
+                  </View>
+                  <ChevronRight size={20} color="#64748b" />
+                </View>
+              </Pressable>
+            )}
 
             {/* Payments Toggle */}
             <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
