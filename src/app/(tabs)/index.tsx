@@ -367,7 +367,6 @@ export default function ScheduleScreen() {
           entering={FadeInRight.delay(50).springify()}
           className="px-5 pt-2 pb-4"
         >
-          <Text className="text-slate-400 text-sm font-medium">Your Team</Text>
           <View className="flex-row items-center justify-between">
             <Text className="text-white text-3xl font-bold">{teamName}</Text>
           </View>
@@ -388,6 +387,7 @@ export default function ScheduleScreen() {
           >
             {teamSettings.record ? (
               <View className="flex-row items-center">
+                <Text className="text-slate-400 text-sm mr-2">Record</Text>
                 <View className="bg-slate-800/80 rounded-lg px-3 py-1.5 flex-row items-center">
                   <Text className="text-cyan-400 text-lg font-bold">
                     {formatTeamRecord(teamSettings.record, sport)}
