@@ -425,6 +425,7 @@ export default function RosterScreen() {
         updates.isSuspended = isSuspended;
       }
 
+      console.log('Saving player updates:', { isInjured, isSuspended, updates });
       updatePlayer(editingPlayer.id, updates);
       setIsModalVisible(false);
       resetForm();
