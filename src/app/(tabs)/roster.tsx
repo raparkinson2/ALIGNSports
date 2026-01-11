@@ -558,8 +558,7 @@ export default function RosterScreen() {
             return (
               <View key={group.title} className="mb-6">
                 <View className="flex-row items-center mb-3">
-                  <Users size={16} color="#67e8f9" />
-                  <Text className="text-cyan-400 font-semibold ml-2">
+                  <Text className="text-cyan-400 font-semibold">
                     {group.title} ({group.players.length})
                   </Text>
                 </View>
