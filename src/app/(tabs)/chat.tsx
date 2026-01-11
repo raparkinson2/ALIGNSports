@@ -86,17 +86,28 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
           )}
           {/* Media-only message (no background) */}
           {hasMedia && !message.message && (
-            <View className="rounded-2xl overflow-hidden" style={{ maxWidth: 250 }}>
-              <Image
-                source={{ uri: message.imageUrl || message.gifUrl }}
-                style={{
-                  width: 250,
-                  height: 200,
-                  borderRadius: 16,
-                }}
-                contentFit="contain"
-                autoplay={true}
-              />
+            <View style={{ maxWidth: 250 }}>
+              <View className="rounded-2xl overflow-hidden">
+                <Image
+                  source={{ uri: message.imageUrl || message.gifUrl }}
+                  style={{
+                    width: 250,
+                    height: 200,
+                    borderRadius: 16,
+                  }}
+                  contentFit="contain"
+                  autoplay={true}
+                />
+              </View>
+              {message.gifUrl && (
+                <View className="flex-row justify-end mt-1 mr-1">
+                  <Image
+                    source={{ uri: 'https://giphy.com/static/img/poweredby_giphy.png' }}
+                    style={{ width: 100, height: 13 }}
+                    contentFit="contain"
+                  />
+                </View>
+              )}
             </View>
           )}
           {/* Media with text or text-only message */}
@@ -516,8 +527,12 @@ export default function ChatScreen() {
             )}
 
             {/* Powered by GIPHY */}
-            <View className="px-5 py-3 border-t border-slate-700/50">
-              <Text className="text-slate-500 text-xs text-center">Powered by GIPHY</Text>
+            <View className="px-5 py-3 border-t border-slate-700/50 items-center">
+              <Image
+                source={{ uri: 'https://giphy.com/static/img/poweredby_giphy.png' }}
+                style={{ width: 150, height: 20 }}
+                contentFit="contain"
+              />
             </View>
           </SafeAreaView>
         </View>
