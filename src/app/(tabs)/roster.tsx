@@ -251,7 +251,7 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
               <Text className="text-slate-400 text-sm">{positionDisplay}</Text>
               {/* Injured indicator */}
               {player.isInjured && (
-                <Text className="text-red-500 font-black ml-2 text-sm">+</Text>
+                <Text className="text-red-500 font-black ml-2 text-base">+</Text>
               )}
               {/* Suspended indicator */}
               {player.isSuspended && (
