@@ -620,30 +620,33 @@ export default function RosterScreen() {
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6">
-              {/* Name Input */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Player Name</Text>
-                <TextInput
-                  value={name}
-                  onChangeText={setName}
-                  placeholder="Enter name"
-                  placeholderTextColor="#64748b"
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                />
-              </View>
+              {/* Name and Number Row */}
+              <View className="flex-row mb-5">
+                {/* Name Input */}
+                <View className="flex-1 mr-3">
+                  <Text className="text-slate-400 text-sm mb-2">Player Name</Text>
+                  <TextInput
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Enter name"
+                    placeholderTextColor="#64748b"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  />
+                </View>
 
-              {/* Number Input */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Jersey Number</Text>
-                <TextInput
-                  value={number}
-                  onChangeText={setNumber}
-                  placeholder="00"
-                  placeholderTextColor="#64748b"
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                />
+                {/* Number Input */}
+                <View style={{ width: 80 }}>
+                  <Text className="text-slate-400 text-sm mb-2">#</Text>
+                  <TextInput
+                    value={number}
+                    onChangeText={setNumber}
+                    placeholder="00"
+                    placeholderTextColor="#64748b"
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg text-center"
+                  />
+                </View>
               </View>
 
               {/* Phone Input - Admin Only */}
