@@ -718,17 +718,16 @@ export default function RosterScreen() {
               {isAdmin() && editingPlayer && (
                 <View className="mb-5">
                   <Text className="text-slate-400 text-sm mb-2">Player Status</Text>
-                  <View className="flex-row flex-wrap">
+                  <View className="flex-row mb-2">
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setPlayerStatus('active');
                       }}
                       className={cn(
-                        'py-3 px-4 rounded-xl mr-2 mb-2 flex-row items-center justify-center',
+                        'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
                         playerStatus === 'active' ? 'bg-green-500' : 'bg-slate-800'
                       )}
-                      style={{ minWidth: '45%' }}
                     >
                       {playerStatus === 'active' && <Check size={16} color="white" className="mr-2" />}
                       <Text
@@ -746,10 +745,9 @@ export default function RosterScreen() {
                         setPlayerStatus('reserve');
                       }}
                       className={cn(
-                        'py-3 px-4 rounded-xl mb-2 flex-row items-center justify-center',
+                        'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
                         playerStatus === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
                       )}
-                      style={{ minWidth: '45%' }}
                     >
                       {playerStatus === 'reserve' && <Check size={16} color="white" className="mr-2" />}
                       <Text
@@ -761,16 +759,17 @@ export default function RosterScreen() {
                         Reserve
                       </Text>
                     </Pressable>
+                  </View>
+                  <View className="flex-row">
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setPlayerStatus('injured');
                       }}
                       className={cn(
-                        'py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                        'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
                         playerStatus === 'injured' ? 'bg-red-500' : 'bg-slate-800'
                       )}
-                      style={{ minWidth: '45%' }}
                     >
                       {playerStatus === 'injured' ? (
                         <Cross size={16} color="white" strokeWidth={3} />
@@ -792,10 +791,9 @@ export default function RosterScreen() {
                         setPlayerStatus('suspended');
                       }}
                       className={cn(
-                        'py-3 px-4 rounded-xl flex-row items-center justify-center',
+                        'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
                         playerStatus === 'suspended' ? 'bg-red-600' : 'bg-slate-800'
                       )}
-                      style={{ minWidth: '45%' }}
                     >
                       <Text
                         className={cn(
