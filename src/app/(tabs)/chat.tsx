@@ -11,8 +11,9 @@ import { useTeamStore, ChatMessage } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 
-// GIPHY API - using the public beta key for demo purposes
-const GIPHY_API_KEY = 'dc6zaTOxFJmzC';
+// GIPHY API key - Get yours at https://developers.giphy.com/
+// Add EXPO_PUBLIC_GIPHY_API_KEY to ENV tab in Vibecode
+const GIPHY_API_KEY = process.env.EXPO_PUBLIC_GIPHY_API_KEY || '';
 
 interface GiphyGif {
   id: string;
@@ -446,7 +447,18 @@ export default function ChatScreen() {
             </View>
 
             {/* GIF Grid */}
-            {isLoadingGifs ? (
+            {!GIPHY_API_KEY ? (
+              <View className="flex-1 items-center justify-center px-8">
+                <Text className="text-slate-400 text-center text-lg font-medium mb-2">
+                  GIF Search Not Configured
+                </Text>
+                <Text className="text-slate-500 text-center text-sm">
+                  To enable GIFs, add your GIPHY API key in the ENV tab:{'\n\n'}
+                  EXPO_PUBLIC_GIPHY_API_KEY{'\n\n'}
+                  Get a free key at developers.giphy.com
+                </Text>
+              </View>
+            ) : isLoadingGifs ? (
               <View className="flex-1 items-center justify-center">
                 <ActivityIndicator size="large" color="#67e8f9" />
               </View>
