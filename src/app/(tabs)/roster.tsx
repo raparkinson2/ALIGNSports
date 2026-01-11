@@ -174,23 +174,45 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
   const hasNonPitcherPosition = sport === 'baseball' && playerPositions.some(pos => !isPitcher(pos));
   const showBothBaseballStats = hasPitcherPosition && hasNonPitcherPosition;
 
-  // Get stat headers and values for this player (based on primary position)
-  const playerIsGoalie = isGoalie(primaryPosition);
-  const playerIsPitcher = isPitcher(primaryPosition);
+  // Check if player has both goalie and non-goalie positions (hockey/soccer)
+  const hasGoaliePosition = (sport === 'hockey' || sport === 'soccer') && playerPositions.some(pos => isGoalie(pos));
+  const hasNonGoaliePosition = (sport === 'hockey' || sport === 'soccer') && playerPositions.some(pos => !isGoalie(pos));
+  const showBothGoalieStats = hasGoaliePosition && hasNonGoaliePosition;
 
+  // Get stat headers and values for this player (based on primary position)
+  const playerIsGoalieOnly = isGoalie(primaryPosition) && !hasNonGoaliePosition;
+  const playerIsPitcherOnly = isPitcher(primaryPosition) && !hasNonPitcherPosition;
+
+  // For players with both positions, always show skater/batter stats first
   let headers: string[];
-  if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
+  let statValues: (number | string)[];
+
+  if (showBothGoalieStats) {
+    // Show skater stats as primary for dual position players
+    headers = getStatHeaders(sport);
+    statValues = getStatValues(sport, player.stats, 'C'); // Use non-goalie position
+  } else if (showBothBaseballStats) {
+    // Show batting stats as primary for dual position players
+    headers = getStatHeaders(sport);
+    statValues = getStatValues(sport, player.stats, 'batter');
+  } else if (playerIsGoalieOnly && (sport === 'hockey' || sport === 'soccer')) {
     headers = getGoalieHeaders(sport);
-  } else if (playerIsPitcher && sport === 'baseball') {
+    statValues = getStatValues(sport, player.goalieStats, primaryPosition);
+  } else if (playerIsPitcherOnly && sport === 'baseball') {
     headers = getPitcherHeaders();
+    statValues = getStatValues(sport, player.pitcherStats, primaryPosition);
   } else {
     headers = getStatHeaders(sport);
+    statValues = getStatValues(sport, player.stats, primaryPosition);
   }
-  const statValues = getStatValues(sport, player.stats, primaryPosition);
 
-  // Get batting stats if player is a pitcher with other positions
-  const battingHeaders = showBothBaseballStats ? getStatHeaders(sport) : [];
-  const battingStatValues = showBothBaseballStats ? getStatValues(sport, player.stats, 'batter') : [];
+  // Get goalie stats if player has both goalie and non-goalie positions
+  const goalieHeaders = showBothGoalieStats ? getGoalieHeaders(sport) : [];
+  const goalieStatValues = showBothGoalieStats ? getStatValues(sport, player.goalieStats, sport === 'hockey' ? 'G' : 'GK') : [];
+
+  // Get pitching stats if player has both pitcher and non-pitcher positions
+  const pitchingHeaders = showBothBaseballStats ? getPitcherHeaders() : [];
+  const pitchingStatValues = showBothBaseballStats ? getStatValues(sport, player.pitcherStats, 'P') : [];
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 60).springify()}>
@@ -244,9 +266,13 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
         {/* Player Stats */}
         {showStats && (
           <View className="mt-3 pt-3 border-t border-slate-700/50">
-            {/* Primary stats row (pitcher stats if pitcher) */}
+            {/* Label for skater stats when showing both */}
+            {showBothGoalieStats && (
+              <Text className="text-cyan-400 text-xs font-medium mb-2">Skater</Text>
+            )}
+            {/* Label for batting stats when showing both */}
             {showBothBaseballStats && (
-              <Text className="text-cyan-400 text-xs font-medium mb-2">Pitching</Text>
+              <Text className="text-cyan-400 text-xs font-medium mb-2">Batting</Text>
             )}
             <View className="flex-row justify-between">
               {headers.map((header, i) => (
@@ -257,15 +283,30 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
               ))}
             </View>
 
-            {/* Batting stats row for pitcher/position players */}
+            {/* Goalie stats row for goalie/skater players */}
+            {showBothGoalieStats && (
+              <View className="mt-3 pt-3 border-t border-slate-700/30">
+                <Text className="text-cyan-400 text-xs font-medium mb-2">Goalie</Text>
+                <View className="flex-row justify-between">
+                  {goalieHeaders.map((header, i) => (
+                    <View key={`goalie-${header}`} className="items-center flex-1">
+                      <Text className="text-slate-500 text-xs mb-1">{header}</Text>
+                      <Text className="text-white text-sm font-medium">{goalieStatValues[i]}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Pitching stats row for pitcher/position players */}
             {showBothBaseballStats && (
               <View className="mt-3 pt-3 border-t border-slate-700/30">
-                <Text className="text-cyan-400 text-xs font-medium mb-2">Batting</Text>
+                <Text className="text-cyan-400 text-xs font-medium mb-2">Pitching</Text>
                 <View className="flex-row justify-between">
-                  {battingHeaders.map((header, i) => (
-                    <View key={`batting-${header}`} className="items-center flex-1">
+                  {pitchingHeaders.map((header, i) => (
+                    <View key={`pitching-${header}`} className="items-center flex-1">
                       <Text className="text-slate-500 text-xs mb-1">{header}</Text>
-                      <Text className="text-white text-sm font-medium">{battingStatValues[i]}</Text>
+                      <Text className="text-white text-sm font-medium">{pitchingStatValues[i]}</Text>
                     </View>
                   ))}
                 </View>
