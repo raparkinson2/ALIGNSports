@@ -438,8 +438,10 @@ export default function RosterScreen() {
         phone: rawPhone || undefined,
         email: email.trim() || undefined,
         avatar: `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150`,
-        roles: [],
-        status: 'active',
+        roles: isAdmin() ? playerRoles : [],
+        status: isAdmin() ? playerStatus : 'active',
+        isInjured: isAdmin() ? isInjured : false,
+        isSuspended: isAdmin() ? isSuspended : false,
       };
       addPlayer(newPlayer);
       setIsModalVisible(false);
@@ -726,8 +728,8 @@ export default function RosterScreen() {
                 </View>
               </View>
 
-              {/* Status Selector - Admin Only, Edit Mode Only */}
-              {isAdmin() && editingPlayer && (
+              {/* Status Selector - Admin Only */}
+              {isAdmin() && (
                 <View className="mb-5">
                   <Text className="text-slate-400 text-sm mb-2">Player Status</Text>
                   <View className="flex-row mb-2">
@@ -828,8 +830,8 @@ export default function RosterScreen() {
                 </View>
               )}
 
-              {/* Role Selector - Admin Only, Edit Mode Only */}
-              {isAdmin() && editingPlayer && (
+              {/* Role Selector - Admin Only */}
+              {isAdmin() && (
                 <View className="mb-5">
                   <Text className="text-slate-400 text-sm mb-2">Player Roles</Text>
                   <View className="flex-row">
