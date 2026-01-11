@@ -192,7 +192,7 @@ function GameCard({ game, index, onPress }: GameCardProps) {
             </View>
 
             {/* Footer */}
-            <View className="flex-row items-center justify-between pt-3 border-t border-slate-700/50">
+            <View className="flex-row items-center pt-3 border-t border-slate-700/50">
               <View className="flex-row items-center">
                 <Users size={14} color="#22c55e" />
                 <Text className="text-green-400 text-sm ml-2 font-medium">
@@ -200,10 +200,10 @@ function GameCard({ game, index, onPress }: GameCardProps) {
                 </Text>
               </View>
               {beerDutyPlayer && (
-                <View className="flex-row items-center">
+                <View className="flex-row items-center ml-4">
                   <Beer size={14} color="#f59e0b" />
                   <Text className="text-amber-400 text-sm ml-1.5 font-medium">
-                    {beerDutyPlayer.name.split(' ')[0]}
+                    {beerDutyPlayer.name}
                   </Text>
                 </View>
               )}
