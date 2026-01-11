@@ -7,7 +7,7 @@ interface JuiceBoxIconProps {
 
 export function JuiceBoxIcon({ size = 16, color = '#f59e0b' }: JuiceBoxIconProps) {
   return (
-    <Text style={{ fontSize: size, fontWeight: 'bold', color }}>
+    <Text style={{ fontSize: size, fontWeight: '500', color }}>
       H₂O
     </Text>
   );
