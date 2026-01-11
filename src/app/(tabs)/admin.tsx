@@ -1157,7 +1157,7 @@ export default function AdminScreen() {
                   <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
                     Status
                   </Text>
-                  <View className="flex-row">
+                  <View className="flex-row mb-2">
                     {(['active', 'reserve'] as PlayerStatus[]).map((status) => (
                       <Pressable
                         key={status}
@@ -1185,6 +1185,63 @@ export default function AdminScreen() {
                         </Text>
                       </Pressable>
                     ))}
+                  </View>
+                  <View className="flex-row">
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        const newValue = !selectedPlayer.isInjured;
+                        updatePlayer(selectedPlayer.id, { isInjured: newValue });
+                        setSelectedPlayer({ ...selectedPlayer, isInjured: newValue });
+                      }}
+                      className={cn(
+                        'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                        selectedPlayer.isInjured ? 'bg-red-500' : 'bg-slate-800'
+                      )}
+                    >
+                      <Text className={cn(
+                        'text-lg font-black mr-1',
+                        selectedPlayer.isInjured ? 'text-white' : 'text-red-500'
+                      )}>+</Text>
+                      <Text
+                        className={cn(
+                          'font-semibold',
+                          selectedPlayer.isInjured ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Injured
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        const newValue = !selectedPlayer.isSuspended;
+                        updatePlayer(selectedPlayer.id, { isSuspended: newValue });
+                        setSelectedPlayer({ ...selectedPlayer, isSuspended: newValue });
+                      }}
+                      className={cn(
+                        'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
+                        selectedPlayer.isSuspended ? 'bg-red-600' : 'bg-slate-800'
+                      )}
+                    >
+                      <Text
+                        className={cn(
+                          'font-bold mr-1',
+                          selectedPlayer.isSuspended ? 'text-white' : 'text-red-500'
+                        )}
+                        style={{ fontSize: 12 }}
+                      >
+                        SUS
+                      </Text>
+                      <Text
+                        className={cn(
+                          'font-semibold',
+                          selectedPlayer.isSuspended ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Suspended
+                      </Text>
+                    </Pressable>
                   </View>
                 </View>
               </ScrollView>
