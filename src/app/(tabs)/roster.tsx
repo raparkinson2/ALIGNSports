@@ -550,22 +550,22 @@ export default function RosterScreen() {
         {/* Header */}
         <Animated.View
           entering={FadeIn.delay(50)}
-          className="flex-row items-center justify-between px-5 pt-2 pb-4"
+          className="px-5 pt-2 pb-4"
         >
-          <View>
-            <View className="flex-row items-center">
-              <Users size={20} color="#67e8f9" />
-              <Text className="text-cyan-400 text-sm font-medium ml-2">Roster</Text>
-            </View>
-            <Text className="text-white text-3xl font-bold">{teamName} Roster</Text>
+          <View className="flex-row items-center">
+            <Users size={20} color="#67e8f9" />
+            <Text className="text-cyan-400 text-sm font-medium ml-2">Roster</Text>
           </View>
-          {canManageTeam() && (
-            <Pressable
-              onPress={openAddModal}
-            >
-              <UserPlus size={24} color="#22c55e" />
-            </Pressable>
-          )}
+          <View className="flex-row items-center justify-between">
+            <Text className="text-white text-3xl font-bold">{teamName} Roster</Text>
+            {canManageTeam() && (
+              <Pressable
+                onPress={openAddModal}
+              >
+                <UserPlus size={24} color="#22c55e" />
+              </Pressable>
+            )}
+          </View>
         </Animated.View>
 
         <ScrollView
