@@ -720,44 +720,55 @@ export default function TeamStatsScreen() {
             {sport === 'baseball' && sortedPlayers.some(p => playerIsPitcher(p)) && (
               <>
                 {/* Pitcher Header */}
-                <View className="flex-row items-center px-3 py-3 bg-slate-700/50 border-b border-slate-700">
-                  <Text className="text-slate-300 font-semibold flex-1">Pitchers</Text>
-                  <View className="flex-row ml-2">
-                    {getPitcherHeaders().map((header) => (
-                      <Text key={header} className="text-slate-300 font-semibold w-11 text-center text-xs">
-                        {header}
-                      </Text>
-                    ))}
-                  </View>
-                  <View className="w-4" />
+                <View className="bg-slate-700/50 border-b border-slate-700">
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
+                    <View className="flex-row items-center px-3 py-3" style={{ minWidth: 500 }}>
+                      <Text className="text-slate-300 font-semibold w-24">Pitchers</Text>
+                      <View className="flex-row">
+                        {getPitcherHeaders().map((header) => (
+                          <Text key={header} className="text-slate-300 font-semibold w-10 text-center text-xs">
+                            {header}
+                          </Text>
+                        ))}
+                      </View>
+                      <View className="w-4" />
+                    </View>
+                  </ScrollView>
                 </View>
 
                 {/* Pitcher Rows */}
                 {sortedPlayers.filter(p => playerIsPitcher(p)).map((player, index, arr) => {
                   const statValues = getStatValues(sport, player.stats, 'P');
                   return (
-                    <Pressable
+                    <ScrollView
                       key={`pitcher-${player.id}`}
-                      onPress={() => openEditModal(player)}
-                      className={`flex-row items-center px-3 py-3 active:bg-slate-700/50 ${
-                        index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
-                      }`}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={{ flexGrow: 0 }}
                     >
-                      <View className="flex-1 flex-row items-center">
-                        <Text className="text-cyan-400 font-medium text-xs mr-1">#{player.number}</Text>
-                        <Text className="text-white text-sm">{formatName(player.name)}</Text>
-                      </View>
-                      <View className="flex-row ml-2">
-                        {statValues.map((value, i) => (
-                          <Text key={i} className="text-slate-300 w-11 text-center text-sm">
-                            {value}
-                          </Text>
-                        ))}
-                      </View>
-                      <View className="w-4 items-center">
-                        <ChevronRight size={14} color="#64748b" />
-                      </View>
-                    </Pressable>
+                      <Pressable
+                        onPress={() => openEditModal(player)}
+                        className={`flex-row items-center px-3 py-3 active:bg-slate-700/50 ${
+                          index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
+                        }`}
+                        style={{ minWidth: 500 }}
+                      >
+                        <View className="w-24 flex-row items-center">
+                          <Text className="text-cyan-400 font-medium text-xs mr-1">#{player.number}</Text>
+                          <Text className="text-white text-sm" numberOfLines={1}>{formatName(player.name)}</Text>
+                        </View>
+                        <View className="flex-row">
+                          {statValues.map((value, i) => (
+                            <Text key={i} className="text-slate-300 w-10 text-center text-sm">
+                              {value}
+                            </Text>
+                          ))}
+                        </View>
+                        <View className="w-4 items-center">
+                          <ChevronRight size={14} color="#64748b" />
+                        </View>
+                      </Pressable>
+                    </ScrollView>
                   );
                 })}
               </>
