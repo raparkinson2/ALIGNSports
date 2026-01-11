@@ -119,9 +119,9 @@ export default function PhotosScreen() {
             </Pressable>
             <Pressable
               onPress={pickImage}
-              className="bg-cyan-500 w-10 h-10 rounded-full items-center justify-center active:bg-cyan-600"
+              className="bg-green-500 w-10 h-10 rounded-full items-center justify-center active:bg-green-600"
             >
-              <Plus size={24} color="white" />
+              <Plus size={20} color="white" />
             </Pressable>
           </View>
         </Animated.View>

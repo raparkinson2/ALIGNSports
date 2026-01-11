@@ -443,9 +443,9 @@ export default function PaymentsScreen() {
               {isAdmin() && (
                 <Pressable
                   onPress={() => setIsPaymentMethodModalVisible(true)}
-                  className="bg-cyan-500/20 rounded-full p-2"
+                  className="bg-green-500 w-10 h-10 rounded-full items-center justify-center active:bg-green-600"
                 >
-                  <Plus size={16} color="#67e8f9" />
+                  <Plus size={20} color="white" />
                 </Pressable>
               )}
             </View>
@@ -505,9 +505,9 @@ export default function PaymentsScreen() {
                   {isAdmin() && (
                     <Pressable
                       onPress={() => setIsNewPeriodModalVisible(true)}
-                      className="bg-purple-500/20 rounded-full p-2"
+                      className="bg-green-500 w-10 h-10 rounded-full items-center justify-center active:bg-green-600"
                     >
-                      <Plus size={16} color="#a78bfa" />
+                      <Plus size={20} color="white" />
                     </Pressable>
                   )}
                 </View>
