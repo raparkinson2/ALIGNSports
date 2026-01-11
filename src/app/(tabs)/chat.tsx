@@ -92,13 +92,18 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
                 ? 'bg-cyan-500 rounded-br-sm'
                 : 'bg-slate-700 rounded-bl-sm'
             )}
+            style={hasMedia ? { maxWidth: 250 } : undefined}
           >
             {/* Image or GIF */}
             {(message.imageUrl || message.gifUrl) && (
               <Image
                 source={{ uri: message.imageUrl || message.gifUrl }}
-                style={{ width: 200, height: 200, borderRadius: hasMedia && !message.message ? 16 : 0 }}
-                contentFit="cover"
+                style={{
+                  width: 250,
+                  height: 200,
+                }}
+                contentFit="contain"
+                autoplay={true}
               />
             )}
             {/* Text message */}
