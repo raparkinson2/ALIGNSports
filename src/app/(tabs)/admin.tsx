@@ -235,6 +235,7 @@ export default function AdminScreen() {
   const [isPlayerModalVisible, setIsPlayerModalVisible] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const [isJerseyModalVisible, setIsJerseyModalVisible] = useState(false);
+  const [isManagePlayersModalVisible, setIsManagePlayersModalVisible] = useState(false);
 
   // Player edit form
   const [editPlayerName, setEditPlayerName] = useState('');
@@ -826,39 +827,28 @@ export default function AdminScreen() {
                 <ChevronRight size={20} color="#ef4444" />
               </View>
             </Pressable>
-          </Animated.View>
 
-          {/* Player Management */}
-          <Animated.View entering={FadeInDown.delay(200).springify()} className="mt-6">
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center">
-                <UserCog size={16} color="#67e8f9" />
-                <Text className="text-cyan-400 font-semibold ml-2">
-                  Manage Players ({players.length})
-                </Text>
+            {/* Manage Players Menu Item */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsManagePlayersModalVisible(true);
+              }}
+              className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <View className="bg-cyan-500/20 p-2 rounded-full">
+                    <Users size={20} color="#67e8f9" />
+                  </View>
+                  <View className="ml-3">
+                    <Text className="text-white font-semibold">Manage Players</Text>
+                    <Text className="text-slate-400 text-sm">{players.length} players on roster</Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color="#64748b" />
               </View>
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setNewPlayerPosition(positions[0]);
-                  setIsNewPlayerModalVisible(true);
-                }}
-                className="flex-row items-center bg-green-500/20 rounded-full px-3 py-1.5"
-              >
-                <UserPlus size={14} color="#22c55e" />
-                <Text className="text-green-400 font-medium text-sm ml-1">Add</Text>
-              </Pressable>
-            </View>
-
-            {players.map((player, index) => (
-              <PlayerManageCard
-                key={player.id}
-                player={player}
-                index={index}
-                onPress={() => openPlayerModal(player)}
-                isCurrentUser={player.id === currentPlayerId}
-              />
-            ))}
+            </Pressable>
           </Animated.View>
         </ScrollView>
       </SafeAreaView>
@@ -1467,6 +1457,46 @@ export default function AdminScreen() {
               </Pressable>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      {/* Manage Players Modal */}
+      <Modal
+        visible={isManagePlayersModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsManagePlayersModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsManagePlayersModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Manage Players</Text>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setNewPlayerPosition(positions[0]);
+                  setIsNewPlayerModalVisible(true);
+                }}
+              >
+                <UserPlus size={24} color="#22c55e" />
+              </Pressable>
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false}>
+              {players.map((player, index) => (
+                <PlayerManageCard
+                  key={player.id}
+                  player={player}
+                  index={index}
+                  onPress={() => openPlayerModal(player)}
+                  isCurrentUser={player.id === currentPlayerId}
+                />
+              ))}
+            </ScrollView>
+          </SafeAreaView>
         </View>
       </Modal>
     </View>
