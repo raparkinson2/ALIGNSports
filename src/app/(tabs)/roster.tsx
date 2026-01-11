@@ -531,7 +531,6 @@ export default function RosterScreen() {
           className="flex-row items-center justify-between px-5 pt-2 pb-4"
         >
           <View>
-            <Text className="text-slate-400 text-sm font-medium">Team</Text>
             <Text className="text-white text-3xl font-bold">Roster</Text>
           </View>
           {canManageTeam() && (
