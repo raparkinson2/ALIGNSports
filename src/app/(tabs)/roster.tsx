@@ -600,15 +600,6 @@ export default function RosterScreen() {
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6">
-              {/* Admin Note for Stats */}
-              {editingPlayer && isAdmin() && showTeamStats && (
-                <View className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3 mb-5">
-                  <Text className="text-purple-400 text-sm">
-                    To update player stats, go to Team Stats in the Admin panel.
-                  </Text>
-                </View>
-              )}
-
               {/* Name Input */}
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Player Name</Text>
@@ -822,6 +813,15 @@ export default function RosterScreen() {
                   </View>
                   <Text className="text-slate-500 text-xs mt-2">
                     Tap to toggle roles. Players can have multiple roles.
+                  </Text>
+                </View>
+              )}
+
+              {/* Admin Note for Stats */}
+              {editingPlayer && isAdmin() && showTeamStats && (
+                <View className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3 mt-5 mb-5">
+                  <Text className="text-purple-400 text-sm">
+                    To update player stats, go to Team Stats in the Admin panel.
                   </Text>
                 </View>
               )}
