@@ -25,7 +25,6 @@ import {
   DollarSign,
   AlertTriangle,
   Beer,
-  GlassWater,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -33,6 +32,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
 import Svg, { Path, Circle as SvgCircle, Line, Rect, Ellipse } from 'react-native-svg';
+import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import {
   useTeamStore,
   Player,
@@ -847,7 +847,7 @@ export default function AdminScreen() {
                     {teamSettings.refreshmentDutyIs21Plus !== false ? (
                       <Beer size={20} color="#f59e0b" />
                     ) : (
-                      <GlassWater size={20} color="#f59e0b" />
+                      <JuiceBoxIcon size={20} color="#f59e0b" />
                     )}
                   </View>
                   <View className="ml-3 flex-1">

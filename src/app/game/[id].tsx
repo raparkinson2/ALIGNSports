@@ -18,7 +18,6 @@ import {
   Bell,
   BellRing,
   Beer,
-  GlassWater,
   Settings,
   X,
   ChevronDown,
@@ -37,6 +36,7 @@ import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification } from '@/l
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
+import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 
 // Helper to convert hex codes to readable color names
 const hexToColorName = (hex: string): string => {
@@ -537,7 +537,7 @@ export default function GameDetailScreen() {
                   {teamSettings.refreshmentDutyIs21Plus !== false ? (
                     <Beer size={24} color="#f59e0b" />
                   ) : (
-                    <GlassWater size={24} color="#f59e0b" />
+                    <JuiceBoxIcon size={24} color="#f59e0b" />
                   )}
                   <View className="flex-1 ml-3">
                     <Text className="text-amber-400 font-semibold">Refreshment Duty</Text>

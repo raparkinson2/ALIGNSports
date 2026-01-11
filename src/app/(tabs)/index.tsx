@@ -14,7 +14,6 @@ import {
   X,
   Check,
   Beer,
-  GlassWater,
   ChevronDown,
   Edit3,
 } from 'lucide-react-native';
@@ -25,6 +24,7 @@ import { Image } from 'expo-image';
 import { useTeamStore, Game, TeamRecord, Sport } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { JerseyIcon } from '@/components/JerseyIcon';
+import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { AddressSearch } from '@/components/AddressSearch';
 
 const getDateLabel = (dateString: string): string => {
@@ -207,7 +207,7 @@ function GameCard({ game, index, onPress }: GameCardProps) {
                   {is21Plus ? (
                     <Beer size={14} color="#f59e0b" />
                   ) : (
-                    <GlassWater size={14} color="#f59e0b" />
+                    <JuiceBoxIcon size={14} color="#f59e0b" />
                   )}
                   <Text className="text-amber-400 text-sm ml-1.5 font-medium">
                     {beerDutyPlayer.name}
