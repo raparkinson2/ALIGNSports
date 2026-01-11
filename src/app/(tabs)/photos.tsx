@@ -101,7 +101,7 @@ export default function PhotosScreen() {
         {/* Header */}
         <Animated.View
           entering={FadeIn.delay(50)}
-          className="flex-row items-center justify-between px-5 pt-2 pb-4"
+          className="flex-row items-end justify-between px-5 pt-2 pb-4"
         >
           <View>
             <View className="flex-row items-center">
@@ -110,12 +110,12 @@ export default function PhotosScreen() {
             </View>
             <Text className="text-white text-3xl font-bold">Team Photos</Text>
           </View>
-          <View className="flex-row">
+          <View className="flex-row items-center">
             <Pressable
               onPress={takePhoto}
-              className="bg-slate-800 w-10 h-10 rounded-full items-center justify-center mr-2 active:bg-slate-700"
+              className="bg-green-500 w-10 h-10 rounded-full items-center justify-center mr-2 active:bg-green-600"
             >
-              <Camera size={20} color="#67e8f9" />
+              <Camera size={20} color="white" />
             </Pressable>
             <Pressable
               onPress={pickImage}
