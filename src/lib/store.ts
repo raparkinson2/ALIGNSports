@@ -500,15 +500,20 @@ export const useTeamStore = create<TeamStore>()(
       setTeamSettings: (settings) => set((state) => {
         const newSettings = { ...state.teamSettings, ...settings };
 
-        // If sport is changing, remap all player positions
+        // If sport is changing, remap all player positions and clear old sport data
         if (settings.sport && settings.sport !== state.teamSettings.sport) {
           const fromSport = state.teamSettings.sport;
           const toSport = settings.sport;
-          const updatedPlayers = state.players.map((player) => ({
-            ...player,
-            position: mapPosition(player.position, fromSport, toSport),
-            // Keep stats - user can manually update them if needed
-          }));
+          const updatedPlayers = state.players.map((player) => {
+            // Map only the primary position to the new sport
+            const newPosition = mapPosition(player.position, fromSport, toSport);
+            return {
+              ...player,
+              position: newPosition,
+              positions: [newPosition], // Reset to single position for new sport
+              stats: undefined, // Clear stats when switching sports
+            };
+          });
           return {
             teamSettings: newSettings,
             players: updatedPlayers,
