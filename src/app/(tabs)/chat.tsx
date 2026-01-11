@@ -177,11 +177,7 @@ export default function ChatScreen() {
           entering={FadeIn.delay(50)}
           className="px-5 pt-2 pb-4 border-b border-slate-800"
         >
-          <View className="flex-row items-center">
-            <MessageSquare size={20} color="#67e8f9" />
-            <Text className="text-cyan-400 text-sm font-medium ml-2">Team Chat</Text>
-          </View>
-          <Text className="text-white text-2xl font-bold">{teamName}</Text>
+          <Text className="text-white text-2xl font-bold">{teamName} Team Chat</Text>
           <Text className="text-slate-400 text-sm">{players.length} members</Text>
         </Animated.View>
 
