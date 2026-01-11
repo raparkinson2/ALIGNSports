@@ -205,6 +205,7 @@ export interface Player {
   id: string;
   name: string;
   email?: string;
+  password?: string; // For authentication
   phone?: string;
   number: string;
   position: string; // Primary position (first in positions array)
@@ -410,6 +411,12 @@ interface TeamStore {
   isLoggedIn: boolean;
   setIsLoggedIn: (loggedIn: boolean) => void;
   logout: () => void;
+
+  // Authentication
+  loginWithEmail: (email: string, password: string) => { success: boolean; error?: string; playerId?: string };
+  registerAdmin: (name: string, email: string, password: string, teamName: string) => { success: boolean; error?: string };
+  registerInvitedPlayer: (email: string, password: string) => { success: boolean; error?: string; playerId?: string };
+  findPlayerByEmail: (email: string) => Player | undefined;
 
   // Helper to check if current user has admin/captain privileges
   canManageTeam: () => boolean;
@@ -769,12 +776,87 @@ export const useTeamStore = create<TeamStore>()(
         }),
       })),
 
-      currentPlayerId: '1', // Default to first player (admin)
+      currentPlayerId: null, // No default player
       setCurrentPlayerId: (id) => set({ currentPlayerId: id }),
 
       isLoggedIn: false,
       setIsLoggedIn: (loggedIn) => set({ isLoggedIn: loggedIn }),
       logout: () => set({ isLoggedIn: false, currentPlayerId: null }),
+
+      // Authentication
+      loginWithEmail: (email, password) => {
+        const state = get();
+        const player = state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+        if (!player) {
+          return { success: false, error: 'No account found with this email' };
+        }
+        if (!player.password) {
+          return { success: false, error: 'Please create an account first' };
+        }
+        if (player.password !== password) {
+          return { success: false, error: 'Incorrect password' };
+        }
+        set({ currentPlayerId: player.id, isLoggedIn: true });
+        return { success: true, playerId: player.id };
+      },
+
+      registerAdmin: (name, email, password, teamName) => {
+        const state = get();
+        // Check if email already exists
+        const existingPlayer = state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+        if (existingPlayer?.password) {
+          return { success: false, error: 'An account with this email already exists' };
+        }
+
+        const newPlayer: Player = {
+          id: Date.now().toString(),
+          name,
+          email: email.toLowerCase(),
+          password,
+          number: '1',
+          position: SPORT_POSITIONS[state.teamSettings.sport][0],
+          roles: ['admin'],
+          status: 'active',
+        };
+
+        set({
+          teamName,
+          players: [newPlayer],
+          currentPlayerId: newPlayer.id,
+          isLoggedIn: true,
+        });
+
+        return { success: true };
+      },
+
+      registerInvitedPlayer: (email, password) => {
+        const state = get();
+        const player = state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+        if (!player) {
+          return { success: false, error: 'No invitation found for this email. Ask your team admin to add you.' };
+        }
+        if (player.password) {
+          return { success: false, error: 'Account already exists. Please log in instead.' };
+        }
+
+        // Update player with password
+        const updatedPlayers = state.players.map((p) =>
+          p.id === player.id ? { ...p, password } : p
+        );
+
+        set({
+          players: updatedPlayers,
+          currentPlayerId: player.id,
+          isLoggedIn: true,
+        });
+
+        return { success: true, playerId: player.id };
+      },
+
+      findPlayerByEmail: (email) => {
+        const state = get();
+        return state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+      },
 
       canManageTeam: () => {
         const state = get();

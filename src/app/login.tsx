@@ -1,85 +1,53 @@
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { User, ChevronRight } from 'lucide-react-native';
+import { useState } from 'react';
+import { Mail, Lock, LogIn, UserPlus, Users } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { useTeamStore, Player, SPORT_NAMES } from '@/lib/store';
-
-interface PlayerLoginCardProps {
-  player: Player;
-  index: number;
-  onSelect: () => void;
-}
-
-function PlayerLoginCard({ player, index, onSelect }: PlayerLoginCardProps) {
-  const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onSelect();
-  };
-
-  return (
-    <Animated.View entering={FadeInDown.delay(100 + index * 60).springify()}>
-      <Pressable
-        onPress={handlePress}
-        className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80 active:scale-[0.98]"
-      >
-        <View className="flex-row items-center">
-          <View className="relative">
-            {player.avatar ? (
-              <Image
-                source={{ uri: player.avatar }}
-                style={{ width: 56, height: 56, borderRadius: 28 }}
-                contentFit="cover"
-              />
-            ) : (
-              <View className="w-14 h-14 rounded-full bg-cyan-500/20 items-center justify-center">
-                <User size={28} color="#67e8f9" />
-              </View>
-            )}
-            <View className="absolute -bottom-1 -right-1 bg-cyan-500 rounded-full px-2 py-0.5">
-              <Text className="text-white text-xs font-bold">#{player.number}</Text>
-            </View>
-          </View>
-
-          <View className="flex-1 ml-4">
-            <Text className="text-white text-lg font-semibold">{player.name}</Text>
-            <Text className="text-slate-400 text-sm">{player.position}</Text>
-          </View>
-
-          <ChevronRight size={24} color="#67e8f9" />
-        </View>
-      </Pressable>
-    </Animated.View>
-  );
-}
+import { useTeamStore } from '@/lib/store';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const loginWithEmail = useTeamStore((s) => s.loginWithEmail);
   const players = useTeamStore((s) => s.players);
   const teamName = useTeamStore((s) => s.teamName);
-  const teamSettings = useTeamStore((s) => s.teamSettings);
-  const setCurrentPlayerId = useTeamStore((s) => s.setCurrentPlayerId);
-  const setIsLoggedIn = useTeamStore((s) => s.setIsLoggedIn);
 
-  const teamLogo = teamSettings?.teamLogo;
-  const sport = teamSettings?.sport ?? 'hockey';
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Sport emoji fallbacks
-  const sportEmojis: Record<string, string> = {
-    hockey: '🏒',
-    baseball: '⚾',
-    basketball: '🏀',
-    soccer: '⚽',
-  };
+  const hasTeam = players.length > 0;
 
-  const handleSelectPlayer = (playerId: string) => {
-    setCurrentPlayerId(playerId);
-    setIsLoggedIn(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.replace('/(tabs)');
+  const handleLogin = () => {
+    setError('');
+
+    if (!email.trim()) {
+      setError('Please enter your email');
+      return;
+    }
+    if (!password.trim()) {
+      setError('Please enter your password');
+      return;
+    }
+
+    setIsLoading(true);
+
+    // Simulate slight delay for UX
+    setTimeout(() => {
+      const result = loginWithEmail(email.trim(), password);
+
+      if (result.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.replace('/(tabs)');
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setError(result.error || 'Login failed');
+      }
+      setIsLoading(false);
+    }, 300);
   };
 
   return (
@@ -90,52 +58,146 @@ export default function LoginScreen() {
       />
 
       <SafeAreaView className="flex-1">
-        {/* Header */}
-        <Animated.View
-          entering={FadeInUp.delay(50).springify()}
-          className="items-center pt-8 pb-6"
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1"
         >
-          {teamLogo ? (
-            <Image
-              source={{ uri: teamLogo }}
-              style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: 'rgba(103, 232, 249, 0.5)' }}
-              contentFit="cover"
-            />
-          ) : (
+          {/* Header */}
+          <Animated.View
+            entering={FadeInUp.delay(50).springify()}
+            className="items-center pt-12 pb-8"
+          >
             <View className="w-20 h-20 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
-              <Text className="text-4xl">{sportEmojis[sport]}</Text>
+              <Users size={40} color="#67e8f9" />
             </View>
-          )}
-          <Text className="text-cyan-400 text-sm font-medium uppercase tracking-wider mb-1 mt-4">
-            Welcome to
-          </Text>
-          <Text className="text-white text-3xl font-bold">{teamName}</Text>
-        </Animated.View>
+            <Text className="text-cyan-400 text-sm font-medium uppercase tracking-wider mb-1">
+              {hasTeam ? 'Welcome Back' : 'Team Manager'}
+            </Text>
+            <Text className="text-white text-3xl font-bold">
+              {hasTeam ? teamName : 'Get Started'}
+            </Text>
+          </Animated.View>
 
-        {/* Player Selection */}
-        <Animated.View
-          entering={FadeInUp.delay(150).springify()}
-          className="px-5 mb-4"
-        >
-          <Text className="text-slate-400 text-base mb-2">
-            Select your name to continue
-          </Text>
-        </Animated.View>
+          {/* Login Form */}
+          <Animated.View
+            entering={FadeInDown.delay(150).springify()}
+            className="flex-1 px-6"
+          >
+            {hasTeam ? (
+              <>
+                <Text className="text-slate-400 text-base mb-6 text-center">
+                  Sign in to access your team
+                </Text>
 
-        <ScrollView
-          className="flex-1 px-5"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
-        >
-          {players.map((player, index) => (
-            <PlayerLoginCard
-              key={player.id}
-              player={player}
-              index={index}
-              onSelect={() => handleSelectPlayer(player.id)}
-            />
-          ))}
-        </ScrollView>
+                {/* Email Input */}
+                <View className="mb-4">
+                  <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
+                    <Mail size={20} color="#64748b" />
+                    <TextInput
+                      value={email}
+                      onChangeText={setEmail}
+                      placeholder="Email address"
+                      placeholderTextColor="#64748b"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      className="flex-1 py-4 px-3 text-white text-base"
+                    />
+                  </View>
+                </View>
+
+                {/* Password Input */}
+                <View className="mb-4">
+                  <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
+                    <Lock size={20} color="#64748b" />
+                    <TextInput
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="Password"
+                      placeholderTextColor="#64748b"
+                      secureTextEntry
+                      className="flex-1 py-4 px-3 text-white text-base"
+                    />
+                  </View>
+                </View>
+
+                {/* Error Message */}
+                {error ? (
+                  <Animated.View entering={FadeInDown.springify()}>
+                    <Text className="text-red-400 text-center mb-4">{error}</Text>
+                  </Animated.View>
+                ) : null}
+
+                {/* Login Button */}
+                <Pressable
+                  onPress={handleLogin}
+                  disabled={isLoading}
+                  className="bg-cyan-500 rounded-xl py-4 flex-row items-center justify-center active:bg-cyan-600 disabled:opacity-50"
+                >
+                  <LogIn size={20} color="white" />
+                  <Text className="text-white font-semibold text-lg ml-2">
+                    {isLoading ? 'Signing In...' : 'Sign In'}
+                  </Text>
+                </Pressable>
+
+                {/* Divider */}
+                <View className="flex-row items-center my-8">
+                  <View className="flex-1 h-px bg-slate-700" />
+                  <Text className="text-slate-500 mx-4">or</Text>
+                  <View className="flex-1 h-px bg-slate-700" />
+                </View>
+
+                {/* Create Account Link */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push('/register');
+                  }}
+                  className="bg-slate-800/80 rounded-xl py-4 flex-row items-center justify-center border border-slate-700/50 active:bg-slate-700/80"
+                >
+                  <UserPlus size={20} color="#67e8f9" />
+                  <Text className="text-cyan-400 font-semibold text-base ml-2">
+                    Create Account
+                  </Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text className="text-slate-400 text-base mb-8 text-center">
+                  Create a new team or join an existing one
+                </Text>
+
+                {/* Create Team Button */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    router.push('/create-team');
+                  }}
+                  className="bg-cyan-500 rounded-xl py-4 flex-row items-center justify-center active:bg-cyan-600 mb-4"
+                >
+                  <Users size={20} color="white" />
+                  <Text className="text-white font-semibold text-lg ml-2">
+                    Create New Team
+                  </Text>
+                </Pressable>
+
+                {/* Join Team Button */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push('/register');
+                  }}
+                  className="bg-slate-800/80 rounded-xl py-4 flex-row items-center justify-center border border-slate-700/50 active:bg-slate-700/80"
+                >
+                  <UserPlus size={20} color="#67e8f9" />
+                  <Text className="text-cyan-400 font-semibold text-base ml-2">
+                    I Was Invited to a Team
+                  </Text>
+                </Pressable>
+              </>
+            )}
+          </Animated.View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
   );
