@@ -755,6 +755,32 @@ export default function AdminScreen() {
               </View>
             </View>
 
+            {/* Photos Toggle */}
+            <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View className="bg-purple-500/20 p-2 rounded-full">
+                    <ImageIcon size={20} color="#a78bfa" />
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-white font-semibold">Use Photos</Text>
+                    <Text className="text-slate-400 text-sm">
+                      Share team photos and memories
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={teamSettings.showPhotos !== false}
+                  onValueChange={(value) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setTeamSettings({ showPhotos: value });
+                  }}
+                  trackColor={{ false: '#334155', true: '#a78bfa' }}
+                  thumbColor="#ffffff"
+                />
+              </View>
+            </View>
+
             {/* Team Stats Toggle */}
             <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
