@@ -901,8 +901,8 @@ export default function AdminScreen() {
             <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
-                  <View className="bg-amber-500/20 p-2 rounded-full">
-                    <DollarSign size={20} color="#f59e0b" />
+                  <View className="bg-green-500/20 p-2 rounded-full">
+                    <DollarSign size={20} color="#22c55e" />
                   </View>
                   <View className="ml-3 flex-1">
                     <Text className="text-white font-semibold">Use Payments</Text>
@@ -917,7 +917,7 @@ export default function AdminScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setTeamSettings({ showPayments: value });
                   }}
-                  trackColor={{ false: '#334155', true: '#f59e0b' }}
+                  trackColor={{ false: '#334155', true: '#22c55e' }}
                   thumbColor="#ffffff"
                 />
               </View>
