@@ -249,7 +249,7 @@ export default function AdminScreen() {
   const [isNewPlayerModalVisible, setIsNewPlayerModalVisible] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerNumber, setNewPlayerNumber] = useState('');
-  const [newPlayerPosition, setNewPlayerPosition] = useState(positions[0]);
+  const [newPlayerPositions, setNewPlayerPositions] = useState<string[]>([positions[0]]);
   const [newPlayerPhone, setNewPlayerPhone] = useState('');
   const [newPlayerEmail, setNewPlayerEmail] = useState('');
   const [newPlayerRoles, setNewPlayerRoles] = useState<PlayerRole[]>([]);
@@ -339,7 +339,7 @@ export default function AdminScreen() {
   const resetNewPlayerForm = () => {
     setNewPlayerName('');
     setNewPlayerNumber('');
-    setNewPlayerPosition(positions[0]);
+    setNewPlayerPositions([positions[0]]);
     setNewPlayerPhone('');
     setNewPlayerEmail('');
     setNewPlayerRoles([]);
@@ -360,7 +360,8 @@ export default function AdminScreen() {
       id: Date.now().toString(),
       name: newPlayerName.trim(),
       number: newPlayerNumber.trim(),
-      position: newPlayerPosition,
+      position: newPlayerPositions[0],
+      positions: newPlayerPositions,
       phone: rawPhone || undefined,
       email: newPlayerEmail.trim() || undefined,
       avatar: `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150`,
@@ -1000,191 +1001,119 @@ export default function AdminScreen() {
             </View>
 
             {selectedPlayer && (
-              <ScrollView className="flex-1 px-5 pt-6">
-                {/* Player Info */}
-                <View className="items-center mb-6">
-                  <Image
-                    source={{ uri: selectedPlayer.avatar }}
-                    style={{ width: 80, height: 80, borderRadius: 40 }}
-                    contentFit="cover"
-                  />
-                </View>
-
-                {/* Name Edit */}
-                <View className="bg-slate-800/80 rounded-xl p-4 mb-4 border border-slate-700/50">
-                  <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-                    Player Name
-                  </Text>
-                  <TextInput
-                    value={editPlayerName}
-                    onChangeText={setEditPlayerName}
-                    placeholder="Enter player name"
-                    placeholderTextColor="#64748b"
-                    className="bg-slate-700 rounded-xl px-4 py-3 text-white"
-                    onBlur={handleSavePlayerName}
-                    onSubmitEditing={handleSavePlayerName}
-                    returnKeyType="done"
-                  />
-                </View>
-
-                {/* Jersey Number Edit */}
-                <View className="bg-slate-800/80 rounded-xl p-4 mb-4 border border-slate-700/50">
-                  <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-                    Jersey Number
-                  </Text>
-                  <TextInput
-                    value={editPlayerNumber}
-                    onChangeText={setEditPlayerNumber}
-                    placeholder="Enter jersey number"
-                    placeholderTextColor="#64748b"
-                    className="bg-slate-700 rounded-xl px-4 py-3 text-white"
-                    keyboardType="number-pad"
-                    onBlur={handleSavePlayerNumber}
-                    onSubmitEditing={handleSavePlayerNumber}
-                    returnKeyType="done"
-                    maxLength={3}
-                  />
-                </View>
-
-                {/* Contact Info - Editable */}
-                <View className="bg-slate-800/80 rounded-xl p-4 mb-4 border border-slate-700/50">
-                  <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-                    Contact Information
-                  </Text>
-
-                  {/* Phone */}
-                  <View className="mb-3">
-                    <View className="flex-row items-center mb-2">
-                      <Phone size={14} color="#67e8f9" />
-                      <Text className="text-slate-400 text-sm ml-2">Phone</Text>
-                    </View>
+              <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
+                {/* Name and Number Row */}
+                <View className="flex-row mb-5">
+                  {/* Name Input */}
+                  <View className="flex-1 mr-3">
+                    <Text className="text-slate-400 text-sm mb-2">Name</Text>
                     <TextInput
-                      value={editPlayerPhone}
-                      onChangeText={(text) => setEditPlayerPhone(formatPhoneInput(text))}
-                      placeholder="(555)123-4567"
+                      value={editPlayerName}
+                      onChangeText={setEditPlayerName}
+                      placeholder="Enter name"
                       placeholderTextColor="#64748b"
-                      className="bg-slate-700 rounded-xl px-4 py-3 text-white"
-                      keyboardType="phone-pad"
-                      onBlur={handleSavePlayerPhone}
-                      onSubmitEditing={handleSavePlayerPhone}
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                      onBlur={handleSavePlayerName}
+                      onSubmitEditing={handleSavePlayerName}
                       returnKeyType="done"
                     />
                   </View>
 
-                  {/* Email */}
-                  <View>
-                    <View className="flex-row items-center mb-2">
-                      <Mail size={14} color="#67e8f9" />
-                      <Text className="text-slate-400 text-sm ml-2">Email</Text>
-                    </View>
+                  {/* Number Input */}
+                  <View style={{ width: 100 }}>
+                    <Text className="text-slate-400 text-sm mb-2">Jersey Number</Text>
                     <TextInput
-                      value={editPlayerEmail}
-                      onChangeText={setEditPlayerEmail}
-                      placeholder="player@example.com"
+                      value={editPlayerNumber}
+                      onChangeText={setEditPlayerNumber}
+                      placeholder="00"
                       placeholderTextColor="#64748b"
-                      className="bg-slate-700 rounded-xl px-4 py-3 text-white"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      onBlur={handleSavePlayerEmail}
-                      onSubmitEditing={handleSavePlayerEmail}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg text-center"
+                      onBlur={handleSavePlayerNumber}
+                      onSubmitEditing={handleSavePlayerNumber}
                       returnKeyType="done"
                     />
                   </View>
                 </View>
 
-                {/* Role Selection - Multi-select */}
-                <View className="mb-4">
-                  <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
-                    Roles
-                  </Text>
-                  <Text className="text-slate-500 text-xs mb-3">
-                    Tap to toggle roles. Players can have multiple roles.
-                  </Text>
-                  <View className="flex-row">
-                    {(['admin', 'captain'] as PlayerRole[]).map((role) => {
-                      const isSelected = selectedRoles.includes(role);
-                      return (
-                        <Pressable
-                          key={role}
-                          onPress={() => handleToggleRole(role)}
-                          className={cn(
-                            'flex-1 py-3 rounded-xl mr-2 items-center border',
-                            isSelected
-                              ? role === 'admin'
-                                ? 'bg-purple-500/20 border-purple-500/50'
-                                : 'bg-amber-500/20 border-amber-500/50'
-                              : 'bg-slate-800 border-slate-700'
-                          )}
-                        >
-                          <View className="flex-row items-center">
-                            {role === 'admin' && <Shield size={16} color={isSelected ? '#a78bfa' : '#64748b'} />}
-                            {role === 'captain' && (
-                              <View className="w-5 h-5 rounded-full items-center justify-center" style={{ backgroundColor: isSelected ? '#f59e0b40' : '#64748b30' }}>
-                                <Text style={{ color: isSelected ? '#f59e0b' : '#64748b', fontSize: 11, fontWeight: '900' }}>C</Text>
-                              </View>
-                            )}
-                            {isSelected && (
-                              <View className="ml-2">
-                                <Check size={14} color={role === 'admin' ? '#a78bfa' : '#f59e0b'} />
-                              </View>
-                            )}
-                          </View>
-                          <Text
-                            className={cn(
-                              'mt-1 font-medium capitalize',
-                              isSelected
-                                ? role === 'admin'
-                                  ? 'text-purple-400'
-                                  : 'text-amber-400'
-                                : 'text-slate-400'
-                            )}
-                          >
-                            {role}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
+                {/* Phone */}
+                <View className="mb-5">
+                  <View className="flex-row items-center mb-2">
+                    <Phone size={14} color="#a78bfa" />
+                    <Text className="text-slate-400 text-sm ml-2">Phone</Text>
                   </View>
-                  {selectedRoles.length === 0 && (
-                    <Text className="text-slate-500 text-sm mt-2 text-center">
-                      No special roles - regular player
-                    </Text>
-                  )}
+                  <TextInput
+                    value={editPlayerPhone}
+                    onChangeText={(text) => setEditPlayerPhone(formatPhoneInput(text))}
+                    placeholder="(555)123-4567"
+                    placeholderTextColor="#64748b"
+                    keyboardType="phone-pad"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    onBlur={handleSavePlayerPhone}
+                    onSubmitEditing={handleSavePlayerPhone}
+                    returnKeyType="done"
+                  />
                 </View>
 
-                {/* Status Selection */}
-                <View className="mb-4">
-                  <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-                    Status
-                  </Text>
+                {/* Email */}
+                <View className="mb-5">
+                  <View className="flex-row items-center mb-2">
+                    <Mail size={14} color="#a78bfa" />
+                    <Text className="text-slate-400 text-sm ml-2">Email</Text>
+                  </View>
+                  <TextInput
+                    value={editPlayerEmail}
+                    onChangeText={setEditPlayerEmail}
+                    placeholder="player@example.com"
+                    placeholderTextColor="#64748b"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    onBlur={handleSavePlayerEmail}
+                    onSubmitEditing={handleSavePlayerEmail}
+                    returnKeyType="done"
+                  />
+                </View>
+
+                {/* Player Status */}
+                <View className="mb-5">
+                  <Text className="text-slate-400 text-sm mb-2">Player Status</Text>
                   <View className="flex-row mb-2">
-                    {(['active', 'reserve'] as PlayerStatus[]).map((status) => (
-                      <Pressable
-                        key={status}
-                        onPress={() => handleUpdateStatus(status)}
+                    <Pressable
+                      onPress={() => handleUpdateStatus('active')}
+                      className={cn(
+                        'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                        selectedPlayer.status === 'active' ? 'bg-green-500' : 'bg-slate-800'
+                      )}
+                    >
+                      {selectedPlayer.status === 'active' && <Check size={16} color="white" />}
+                      <Text
                         className={cn(
-                          'flex-1 py-3 rounded-xl mr-2 items-center border',
-                          selectedPlayer.status === status
-                            ? status === 'active'
-                              ? 'bg-green-500/20 border-green-500/50'
-                              : 'bg-slate-600/50 border-slate-500/50'
-                            : 'bg-slate-800 border-slate-700'
+                          'font-semibold ml-1',
+                          selectedPlayer.status === 'active' ? 'text-white' : 'text-slate-400'
                         )}
                       >
-                        <Text
-                          className={cn(
-                            'font-medium capitalize',
-                            selectedPlayer.status === status
-                              ? status === 'active'
-                                ? 'text-green-400'
-                                : 'text-slate-300'
-                              : 'text-slate-400'
-                          )}
-                        >
-                          {status}
-                        </Text>
-                      </Pressable>
-                    ))}
+                        Active
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleUpdateStatus('reserve')}
+                      className={cn(
+                        'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
+                        selectedPlayer.status === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
+                      )}
+                    >
+                      {selectedPlayer.status === 'reserve' && <Check size={16} color="white" />}
+                      <Text
+                        className={cn(
+                          'font-semibold ml-1',
+                          selectedPlayer.status === 'reserve' ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Reserve
+                      </Text>
+                    </Pressable>
                   </View>
                   <View className="flex-row">
                     <Pressable
@@ -1243,6 +1172,55 @@ export default function AdminScreen() {
                       </Text>
                     </Pressable>
                   </View>
+                </View>
+
+                {/* Player Roles */}
+                <View className="mb-5">
+                  <Text className="text-slate-400 text-sm mb-2">Player Roles</Text>
+                  <View className="flex-row">
+                    <Pressable
+                      onPress={() => handleToggleRole('captain')}
+                      className={cn(
+                        'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                        selectedRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
+                      )}
+                    >
+                      <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center">
+                        <Text className={cn(
+                          'text-xs font-black',
+                          selectedRoles.includes('captain') ? 'text-white' : 'text-amber-500'
+                        )}>C</Text>
+                      </View>
+                      <Text
+                        className={cn(
+                          'font-semibold ml-2',
+                          selectedRoles.includes('captain') ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Captain
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleToggleRole('admin')}
+                      className={cn(
+                        'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
+                        selectedRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
+                      )}
+                    >
+                      <Shield size={16} color={selectedRoles.includes('admin') ? 'white' : '#a78bfa'} />
+                      <Text
+                        className={cn(
+                          'font-semibold ml-2',
+                          selectedRoles.includes('admin') ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Admin
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <Text className="text-slate-500 text-xs mt-2">
+                    Tap to toggle roles. Players can have multiple roles.
+                  </Text>
                 </View>
               </ScrollView>
             )}
@@ -1406,7 +1384,7 @@ export default function AdminScreen() {
               <View className="flex-row mb-5">
                 {/* Name Input */}
                 <View className="flex-1 mr-3">
-                  <Text className="text-slate-400 text-sm mb-2">Name *</Text>
+                  <Text className="text-slate-400 text-sm mb-2">Name</Text>
                   <TextInput
                     value={newPlayerName}
                     onChangeText={setNewPlayerName}
@@ -1431,41 +1409,10 @@ export default function AdminScreen() {
                 </View>
               </View>
 
-              {/* Position */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Position</Text>
-                <View className="flex-row flex-wrap">
-                  {positions.map((pos) => (
-                    <Pressable
-                      key={pos}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setNewPlayerPosition(pos);
-                      }}
-                      className={cn(
-                        'px-3 py-2 rounded-xl mr-2 mb-2 border',
-                        newPlayerPosition === pos
-                          ? 'bg-cyan-500/20 border-cyan-500/50'
-                          : 'bg-slate-800 border-slate-700'
-                      )}
-                    >
-                      <Text
-                        className={cn(
-                          'font-medium text-sm',
-                          newPlayerPosition === pos ? 'text-cyan-400' : 'text-slate-400'
-                        )}
-                      >
-                        {pos}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-
               {/* Phone */}
               <View className="mb-5">
                 <View className="flex-row items-center mb-2">
-                  <Phone size={14} color="#67e8f9" />
+                  <Phone size={14} color="#a78bfa" />
                   <Text className="text-slate-400 text-sm ml-2">Phone</Text>
                 </View>
                 <TextInput
@@ -1481,7 +1428,7 @@ export default function AdminScreen() {
               {/* Email */}
               <View className="mb-5">
                 <View className="flex-row items-center mb-2">
-                  <Mail size={14} color="#67e8f9" />
+                  <Mail size={14} color="#a78bfa" />
                   <Text className="text-slate-400 text-sm ml-2">Email</Text>
                 </View>
                 <TextInput
@@ -1493,6 +1440,45 @@ export default function AdminScreen() {
                   autoCapitalize="none"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                 />
+              </View>
+
+              {/* Position */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-1">Positions</Text>
+                <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
+                <View className="flex-row flex-wrap">
+                  {positions.map((pos) => {
+                    const isSelected = newPlayerPositions.includes(pos);
+                    return (
+                      <Pressable
+                        key={pos}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          if (isSelected) {
+                            if (newPlayerPositions.length > 1) {
+                              setNewPlayerPositions(newPlayerPositions.filter(p => p !== pos));
+                            }
+                          } else {
+                            setNewPlayerPositions([...newPlayerPositions, pos]);
+                          }
+                        }}
+                        className={cn(
+                          'py-3 px-4 rounded-xl mr-2 mb-2 items-center',
+                          isSelected ? 'bg-cyan-500' : 'bg-slate-800'
+                        )}
+                      >
+                        <Text
+                          className={cn(
+                            'font-semibold',
+                            isSelected ? 'text-white' : 'text-slate-400'
+                          )}
+                        >
+                          {pos}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
 
               {/* Player Status */}
@@ -1829,7 +1815,7 @@ export default function AdminScreen() {
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setNewPlayerPosition(positions[0]);
+                  setNewPlayerPositions([positions[0]]);
                   // Close manage players modal first, then open new player modal
                   setIsManagePlayersModalVisible(false);
                   setTimeout(() => {
