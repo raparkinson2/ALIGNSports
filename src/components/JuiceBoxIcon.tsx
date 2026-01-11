@@ -11,7 +11,7 @@ export function JuiceBoxIcon({ size = 24, color = '#f59e0b' }: JuiceBoxIconProps
       <SvgText
         x="12"
         y="17"
-        fontSize="14"
+        fontSize="18"
         fontWeight="bold"
         fill={color}
         textAnchor="middle"
