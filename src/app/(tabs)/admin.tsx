@@ -262,6 +262,10 @@ export default function AdminScreen() {
   // Erase all data confirmation modal
   const [isEraseDataModalVisible, setIsEraseDataModalVisible] = useState(false);
 
+  // Delete team confirmation modal
+  const [isDeleteTeamModalVisible, setIsDeleteTeamModalVisible] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
   // Jersey color form
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#ffffff');
@@ -877,6 +881,31 @@ export default function AdminScreen() {
                   </View>
                 </View>
                 <ChevronRight size={20} color="#ef4444" />
+              </View>
+            </Pressable>
+
+            {/* Delete Team - Nuclear Option */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                setDeleteConfirmText('');
+                setIsDeleteTeamModalVisible(true);
+              }}
+              className="bg-red-900/30 rounded-xl p-4 mb-3 border border-red-700/50 active:bg-red-900/50"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View className="bg-red-700/30 p-2 rounded-full">
+                    <AlertTriangle size={20} color="#dc2626" />
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-red-500 font-semibold">Delete Team</Text>
+                    <Text className="text-slate-400 text-sm">
+                      Permanently delete team and all accounts
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color="#dc2626" />
               </View>
             </Pressable>
           </Animated.View>
@@ -1527,6 +1556,92 @@ export default function AdminScreen() {
               ))}
             </ScrollView>
           </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Delete Team Confirmation Modal */}
+      <Modal
+        visible={isDeleteTeamModalVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setIsDeleteTeamModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/80 justify-center items-center px-6">
+          <View className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-red-700/50">
+            {/* Header */}
+            <View className="items-center mb-6">
+              <View className="w-20 h-20 rounded-full bg-red-900/50 items-center justify-center mb-4">
+                <AlertTriangle size={40} color="#dc2626" />
+              </View>
+              <Text className="text-red-500 text-2xl font-bold text-center">
+                Delete Team?
+              </Text>
+              <Text className="text-slate-300 text-center mt-3">
+                This is a permanent, irreversible action that will delete:
+              </Text>
+              <View className="mt-3 w-full">
+                <Text className="text-slate-400 text-sm">• All player accounts and profiles</Text>
+                <Text className="text-slate-400 text-sm">• All admin accounts</Text>
+                <Text className="text-slate-400 text-sm">• All games and schedules</Text>
+                <Text className="text-slate-400 text-sm">• All photos and memories</Text>
+                <Text className="text-slate-400 text-sm">• All chat messages</Text>
+                <Text className="text-slate-400 text-sm">• All payment records</Text>
+                <Text className="text-slate-400 text-sm">• All team settings</Text>
+              </View>
+              <Text className="text-red-400 text-center mt-4 font-semibold">
+                This action CANNOT be undone.
+              </Text>
+            </View>
+
+            {/* Confirmation Input */}
+            <View className="mb-4">
+              <Text className="text-slate-300 text-center mb-2">
+                Type <Text className="text-red-500 font-bold">DELETE</Text> to confirm:
+              </Text>
+              <TextInput
+                value={deleteConfirmText}
+                onChangeText={setDeleteConfirmText}
+                placeholder="Type DELETE"
+                placeholderTextColor="#64748b"
+                className="bg-slate-700 rounded-xl px-4 py-3 text-white text-center text-lg font-semibold"
+                autoCapitalize="characters"
+              />
+            </View>
+
+            {/* Buttons */}
+            <View>
+              <Pressable
+                onPress={() => {
+                  if (deleteConfirmText === 'DELETE') {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                    resetAllData();
+                    setIsDeleteTeamModalVisible(false);
+                    setDeleteConfirmText('');
+                  }
+                }}
+                disabled={deleteConfirmText !== 'DELETE'}
+                className={cn(
+                  'flex-row items-center justify-center rounded-xl py-4 mb-3',
+                  deleteConfirmText === 'DELETE'
+                    ? 'bg-red-600 active:bg-red-700'
+                    : 'bg-slate-600 opacity-50'
+                )}
+              >
+                <Trash2 size={18} color="white" />
+                <Text className="text-white font-semibold ml-2">Delete Everything Forever</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  setIsDeleteTeamModalVisible(false);
+                  setDeleteConfirmText('');
+                }}
+                className="flex-row items-center justify-center bg-slate-700 rounded-xl py-4 active:bg-slate-600"
+              >
+                <Text className="text-slate-300 font-semibold">Cancel</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
       </Modal>
     </View>
