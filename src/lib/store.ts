@@ -214,7 +214,9 @@ export interface Player {
   roles: PlayerRole[]; // Array of roles - can be admin, captain, or both
   status: PlayerStatus; // active or reserve (this is separate from roles)
   notificationPreferences?: NotificationPreferences;
-  stats?: PlayerStats;
+  stats?: PlayerStats; // Regular player stats (batter for baseball, skater for hockey/soccer)
+  pitcherStats?: BaseballPitcherStats; // Separate stats for pitching (baseball only)
+  goalieStats?: HockeyGoalieStats | SoccerGoalieStats; // Separate stats for goalie (hockey/soccer only)
 }
 
 // Helper to get all positions for a player (returns positions array or falls back to single position)

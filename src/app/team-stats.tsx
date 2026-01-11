@@ -15,6 +15,9 @@ import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { useTeamStore, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, Player, PlayerStats, getPlayerPositions } from '@/lib/store';
 
+// Edit mode type - determines which stats to show/edit
+type EditMode = 'batter' | 'pitcher' | 'skater' | 'goalie';
+
 // Check if player is a goalie (checks all positions)
 function isGoalie(position: string): boolean {
   return position === 'G' || position === 'GK';
@@ -432,6 +435,7 @@ export default function TeamStatsScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [editStats, setEditStats] = useState<Record<string, string>>({});
+  const [editMode, setEditMode] = useState<EditMode>('skater'); // Track whether editing pitcher/batter or goalie/skater stats
 
   // Get record from team settings
   const wins = teamSettings.record?.wins ?? 0;
@@ -455,12 +459,35 @@ export default function TeamStatsScreen() {
   // Calculate team totals
   const teamTotals = calculateTeamTotals(players, sport);
 
-  // Open edit modal for a player
-  const openEditModal = (player: Player) => {
+  // Open edit modal for a player with specific mode (pitcher/batter, goalie/skater)
+  const openEditModal = (player: Player, mode: EditMode) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedPlayer(player);
-    const playerStatFields = getStatFields(sport, player.position);
-    const currentStats = player.stats || getDefaultStats(sport, player.position);
+    setEditMode(mode);
+
+    // Determine which position to use for getting stat fields based on mode
+    let positionForStats: string;
+    if (mode === 'pitcher') {
+      positionForStats = 'P';
+    } else if (mode === 'goalie') {
+      positionForStats = sport === 'hockey' ? 'G' : 'GK';
+    } else {
+      // For batter/skater, use a non-pitcher/non-goalie position
+      positionForStats = 'batter';
+    }
+
+    const playerStatFields = getStatFields(sport, positionForStats);
+
+    // Get current stats from the appropriate field based on mode
+    let currentStats: PlayerStats;
+    if (mode === 'pitcher') {
+      currentStats = player.pitcherStats || getDefaultStats(sport, 'P');
+    } else if (mode === 'goalie') {
+      currentStats = player.goalieStats || getDefaultStats(sport, sport === 'hockey' ? 'G' : 'GK');
+    } else {
+      currentStats = player.stats || getDefaultStats(sport, 'batter');
+    }
+
     const statsObj: Record<string, string> = {};
     playerStatFields.forEach((field) => {
       statsObj[field.key] = String((currentStats as unknown as Record<string, number>)[field.key] ?? 0);
@@ -473,18 +500,48 @@ export default function TeamStatsScreen() {
   const saveStats = () => {
     if (!selectedPlayer) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const playerStatFields = getStatFields(sport, selectedPlayer.position);
+
+    // Determine which position to use for getting stat fields based on edit mode
+    let positionForStats: string;
+    if (editMode === 'pitcher') {
+      positionForStats = 'P';
+    } else if (editMode === 'goalie') {
+      positionForStats = sport === 'hockey' ? 'G' : 'GK';
+    } else {
+      positionForStats = 'batter';
+    }
+
+    const playerStatFields = getStatFields(sport, positionForStats);
     const newStats: Record<string, number> = {};
     playerStatFields.forEach((field) => {
       newStats[field.key] = parseInt(editStats[field.key] || '0', 10) || 0;
     });
-    updatePlayer(selectedPlayer.id, { stats: newStats as unknown as PlayerStats });
+
+    // Save to the appropriate stats field based on edit mode
+    if (editMode === 'pitcher') {
+      updatePlayer(selectedPlayer.id, { pitcherStats: newStats as unknown as BaseballPitcherStats });
+    } else if (editMode === 'goalie') {
+      updatePlayer(selectedPlayer.id, { goalieStats: newStats as unknown as HockeyGoalieStats });
+    } else {
+      updatePlayer(selectedPlayer.id, { stats: newStats as unknown as PlayerStats });
+    }
+
     setEditModalVisible(false);
     setSelectedPlayer(null);
   };
 
-  // Get stat fields for the currently selected player (for edit modal)
-  const currentStatFields = selectedPlayer ? getStatFields(sport, selectedPlayer.position) : [];
+  // Get stat fields for the currently selected player (for edit modal) based on edit mode
+  const currentStatFields = selectedPlayer ? (() => {
+    let positionForStats: string;
+    if (editMode === 'pitcher') {
+      positionForStats = 'P';
+    } else if (editMode === 'goalie') {
+      positionForStats = sport === 'hockey' ? 'G' : 'GK';
+    } else {
+      positionForStats = 'batter';
+    }
+    return getStatFields(sport, positionForStats);
+  })() : [];
 
   // Sort players by points (goals + assists for hockey/soccer, points for basketball, hits for baseball)
   const sortedPlayers = [...players].sort((a, b) => {
@@ -692,7 +749,7 @@ export default function TeamStatsScreen() {
               return (
                 <Pressable
                   key={player.id}
-                  onPress={() => openEditModal(player)}
+                  onPress={() => openEditModal(player, sport === 'baseball' ? 'batter' : 'skater')}
                   className={`flex-row items-center px-3 py-3 active:bg-slate-700/50 ${
                     showBorder ? 'border-b border-slate-700/50' : ''
                   }`}
@@ -734,11 +791,11 @@ export default function TeamStatsScreen() {
 
                 {/* Pitcher Rows */}
                 {sortedPlayers.filter(p => playerIsPitcher(p)).map((player, index, arr) => {
-                  const statValues = getStatValues(sport, player.stats, 'P');
+                  const statValues = getStatValues(sport, player.pitcherStats, 'P');
                   return (
                     <Pressable
                       key={`pitcher-${player.id}`}
-                      onPress={() => openEditModal(player)}
+                      onPress={() => openEditModal(player, 'pitcher')}
                       className={`flex-row items-center px-2 py-3 active:bg-slate-700/50 ${
                         index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
                       }`}
@@ -781,11 +838,11 @@ export default function TeamStatsScreen() {
 
                 {/* Goalie Rows */}
                 {sortedPlayers.filter(p => playerIsGoalie(p)).map((player, index, arr) => {
-                  const statValues = getStatValues(sport, player.stats, sport === 'hockey' ? 'G' : 'GK');
+                  const statValues = getStatValues(sport, player.goalieStats, sport === 'hockey' ? 'G' : 'GK');
                   return (
                     <Pressable
                       key={`goalie-${player.id}`}
-                      onPress={() => openEditModal(player)}
+                      onPress={() => openEditModal(player, 'goalie')}
                       className={`flex-row items-center px-3 py-3 active:bg-slate-700/50 ${
                         index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
                       }`}
@@ -842,7 +899,9 @@ export default function TeamStatsScreen() {
                 >
                   <X size={24} color="#94a3b8" />
                 </Pressable>
-                <Text className="text-white text-lg font-semibold">Edit Stats</Text>
+                <Text className="text-white text-lg font-semibold">
+                  Edit {editMode === 'pitcher' ? 'Pitching' : editMode === 'goalie' ? 'Goalie' : editMode === 'batter' ? 'Batting' : 'Player'} Stats
+                </Text>
                 <Pressable
                   onPress={saveStats}
                   className="px-4 py-2 bg-cyan-500 rounded-lg"
