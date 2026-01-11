@@ -427,12 +427,9 @@ export default function ChatScreen() {
               <Pressable
                 onPress={handleSendMessage}
                 disabled={!messageText.trim()}
-                className={cn(
-                  'w-11 h-11 rounded-full items-center justify-center',
-                  messageText.trim() ? 'bg-green-500 active:bg-green-600' : 'bg-slate-700'
-                )}
+                className="w-11 h-11 rounded-full items-center justify-center bg-green-500 active:bg-green-600"
               >
-                <Send size={20} color={messageText.trim() ? 'white' : '#64748b'} />
+                <Send size={20} color="white" />
               </Pressable>
             </View>
           </View>
