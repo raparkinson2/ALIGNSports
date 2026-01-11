@@ -429,7 +429,9 @@ export default function ChatScreen() {
                 disabled={!messageText.trim()}
                 className="w-11 h-11 rounded-full items-center justify-center bg-green-500 active:bg-green-600"
               >
-                <Send size={20} color="white" />
+                <View style={{ marginLeft: -2 }}>
+                  <Send size={20} color="white" />
+                </View>
               </Pressable>
             </View>
           </View>
