@@ -104,8 +104,11 @@ export default function PhotosScreen() {
           className="flex-row items-center justify-between px-5 pt-2 pb-4"
         >
           <View>
-            <Text className="text-slate-400 text-sm font-medium">Team</Text>
-            <Text className="text-white text-3xl font-bold">Photos</Text>
+            <View className="flex-row items-center">
+              <ImageIcon size={20} color="#67e8f9" />
+              <Text className="text-cyan-400 text-sm font-medium ml-2">Photos</Text>
+            </View>
+            <Text className="text-white text-3xl font-bold">Team Photos</Text>
           </View>
           <View className="flex-row">
             <Pressable
