@@ -415,7 +415,7 @@ export default function ScheduleScreen() {
                 setIsRecordModalVisible(true);
               }
             }}
-            className="flex-row items-center mt-1"
+            className="mt-1"
           >
             {teamSettings.record ? (
               <View className="flex-row items-center">
