@@ -9,11 +9,14 @@ import {
   Award,
   X,
   ChevronRight,
+  Calendar,
+  Trash2,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
-import { useTeamStore, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, Player, PlayerStats, getPlayerPositions } from '@/lib/store';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useTeamStore, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, Player, PlayerStats, getPlayerPositions, GameLogEntry } from '@/lib/store';
 
 // Edit mode type - determines which stats to show/edit
 type EditMode = 'batter' | 'pitcher' | 'skater' | 'goalie';
@@ -428,6 +431,8 @@ export default function TeamStatsScreen() {
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const teamName = useTeamStore((s) => s.teamName);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
+  const addGameLog = useTeamStore((s) => s.addGameLog);
+  const removeGameLog = useTeamStore((s) => s.removeGameLog);
 
   const sport = teamSettings.sport || 'hockey';
 
@@ -436,6 +441,8 @@ export default function TeamStatsScreen() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [editStats, setEditStats] = useState<Record<string, string>>({});
   const [editMode, setEditMode] = useState<EditMode>('skater'); // Track whether editing pitcher/batter or goalie/skater stats
+  const [gameDate, setGameDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Get record from team settings
   const wins = teamSettings.record?.wins ?? 0;
@@ -464,6 +471,7 @@ export default function TeamStatsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedPlayer(player);
     setEditMode(mode);
+    setGameDate(new Date()); // Reset to today's date
 
     // Determine which position to use for getting stat fields based on mode
     let positionForStats: string;
@@ -478,37 +486,35 @@ export default function TeamStatsScreen() {
 
     const playerStatFields = getStatFields(sport, positionForStats);
 
-    // Get current stats from the appropriate field based on mode
-    let currentStats: PlayerStats;
-    if (mode === 'pitcher') {
-      currentStats = player.pitcherStats || getDefaultStats(sport, 'P');
-    } else if (mode === 'goalie') {
-      currentStats = player.goalieStats || getDefaultStats(sport, sport === 'hockey' ? 'G' : 'GK');
-    } else {
-      currentStats = player.stats || getDefaultStats(sport, 'batter');
-    }
-
+    // Start with empty stats (zeros) for entering a new game's stats
     const statsObj: Record<string, string> = {};
     playerStatFields.forEach((field) => {
-      statsObj[field.key] = String((currentStats as unknown as Record<string, number>)[field.key] ?? 0);
+      statsObj[field.key] = '0';
     });
     setEditStats(statsObj);
     setEditModalVisible(true);
   };
 
-  // Save stats
+  // Save stats as a game log entry
   const saveStats = () => {
     if (!selectedPlayer) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     // Determine which position to use for getting stat fields based on edit mode
     let positionForStats: string;
+    let statType: 'skater' | 'goalie' | 'batter' | 'pitcher';
     if (editMode === 'pitcher') {
       positionForStats = 'P';
+      statType = 'pitcher';
     } else if (editMode === 'goalie') {
       positionForStats = sport === 'hockey' ? 'G' : 'GK';
+      statType = 'goalie';
+    } else if (editMode === 'batter') {
+      positionForStats = 'batter';
+      statType = 'batter';
     } else {
       positionForStats = 'batter';
+      statType = 'skater';
     }
 
     const playerStatFields = getStatFields(sport, positionForStats);
@@ -517,17 +523,75 @@ export default function TeamStatsScreen() {
       newStats[field.key] = parseInt(editStats[field.key] || '0', 10) || 0;
     });
 
-    // Save to the appropriate stats field based on edit mode
+    // Create game log entry
+    const gameLogEntry: GameLogEntry = {
+      id: Date.now().toString(),
+      date: gameDate.toISOString(),
+      stats: newStats as unknown as PlayerStats,
+      statType,
+    };
+
+    // Add game log
+    addGameLog(selectedPlayer.id, gameLogEntry);
+
+    // Recalculate cumulative stats from all game logs of this type
+    const updatedPlayer = players.find(p => p.id === selectedPlayer.id);
+    const allLogs = [...(updatedPlayer?.gameLogs || []), gameLogEntry].filter(log => log.statType === statType);
+
+    const cumulativeStats: Record<string, number> = {};
+    allLogs.forEach(log => {
+      const logStats = log.stats as unknown as Record<string, number>;
+      Object.keys(logStats).forEach(key => {
+        cumulativeStats[key] = (cumulativeStats[key] || 0) + (logStats[key] || 0);
+      });
+    });
+
+    // Save cumulative stats to the appropriate stats field based on edit mode
     if (editMode === 'pitcher') {
-      updatePlayer(selectedPlayer.id, { pitcherStats: newStats as unknown as BaseballPitcherStats });
+      updatePlayer(selectedPlayer.id, { pitcherStats: cumulativeStats as unknown as BaseballPitcherStats });
     } else if (editMode === 'goalie') {
-      updatePlayer(selectedPlayer.id, { goalieStats: newStats as unknown as HockeyGoalieStats });
+      updatePlayer(selectedPlayer.id, { goalieStats: cumulativeStats as unknown as HockeyGoalieStats });
     } else {
-      updatePlayer(selectedPlayer.id, { stats: newStats as unknown as PlayerStats });
+      updatePlayer(selectedPlayer.id, { stats: cumulativeStats as unknown as PlayerStats });
     }
 
-    setEditModalVisible(false);
-    setSelectedPlayer(null);
+    // Reset form for next entry
+    const emptyStats: Record<string, string> = {};
+    playerStatFields.forEach((field) => {
+      emptyStats[field.key] = '0';
+    });
+    setEditStats(emptyStats);
+    setGameDate(new Date());
+  };
+
+  // Delete a game log entry and recalculate cumulative stats
+  const handleDeleteGameLog = (gameLogId: string, logStatType: 'skater' | 'goalie' | 'batter' | 'pitcher') => {
+    if (!selectedPlayer) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    removeGameLog(selectedPlayer.id, gameLogId);
+
+    // Get updated player after removal
+    const updatedPlayer = players.find(p => p.id === selectedPlayer.id);
+    const remainingLogs = (updatedPlayer?.gameLogs || []).filter(log => log.id !== gameLogId && log.statType === logStatType);
+
+    // Recalculate cumulative stats
+    const cumulativeStats: Record<string, number> = {};
+    remainingLogs.forEach(log => {
+      const logStats = log.stats as unknown as Record<string, number>;
+      Object.keys(logStats).forEach(key => {
+        cumulativeStats[key] = (cumulativeStats[key] || 0) + (logStats[key] || 0);
+      });
+    });
+
+    // Update appropriate stats field
+    if (logStatType === 'pitcher') {
+      updatePlayer(selectedPlayer.id, { pitcherStats: remainingLogs.length > 0 ? cumulativeStats as unknown as BaseballPitcherStats : undefined });
+    } else if (logStatType === 'goalie') {
+      updatePlayer(selectedPlayer.id, { goalieStats: remainingLogs.length > 0 ? cumulativeStats as unknown as HockeyGoalieStats : undefined });
+    } else {
+      updatePlayer(selectedPlayer.id, { stats: remainingLogs.length > 0 ? cumulativeStats as unknown as PlayerStats : undefined });
+    }
   };
 
   // Get stat fields for the currently selected player (for edit modal) based on edit mode
@@ -900,7 +964,7 @@ export default function TeamStatsScreen() {
                   <X size={24} color="#94a3b8" />
                 </Pressable>
                 <Text className="text-white text-lg font-semibold">
-                  Edit {editMode === 'pitcher' ? 'Pitching' : editMode === 'goalie' ? 'Goalie' : editMode === 'batter' ? 'Batting' : 'Player'} Stats
+                  Add {editMode === 'pitcher' ? 'Pitching' : editMode === 'goalie' ? 'Goalie' : editMode === 'batter' ? 'Batting' : 'Player'} Stats
                 </Text>
                 <Pressable
                   onPress={saveStats}
@@ -910,29 +974,134 @@ export default function TeamStatsScreen() {
                 </Pressable>
               </View>
 
-              <ScrollView className="flex-1 px-5 pt-4">
+              <ScrollView className="flex-1 px-5 pt-4" keyboardShouldPersistTaps="handled">
                 {/* Player Info */}
                 {selectedPlayer && (
-                  <View className="mb-6">
+                  <View className="mb-4">
                     <Text className="text-cyan-400 text-sm">#{selectedPlayer.number}</Text>
                     <Text className="text-white text-2xl font-bold">{selectedPlayer.name}</Text>
                   </View>
                 )}
 
+                {/* Date Picker */}
+                <View className="mb-6">
+                  <Text className="text-slate-400 text-sm mb-2">Game Date</Text>
+                  <Pressable
+                    onPress={() => setShowDatePicker(true)}
+                    className="bg-slate-800 rounded-xl px-4 py-3 border border-slate-700 flex-row items-center justify-between"
+                  >
+                    <View className="flex-row items-center">
+                      <Calendar size={20} color="#67e8f9" />
+                      <Text className="text-white text-lg ml-3">
+                        {gameDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color="#64748b" />
+                  </Pressable>
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={gameDate}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(event, date) => {
+                        setShowDatePicker(Platform.OS === 'ios');
+                        if (date) setGameDate(date);
+                      }}
+                      themeVariant="dark"
+                    />
+                  )}
+                </View>
+
                 {/* Stat Fields */}
+                <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                  Game Stats
+                </Text>
                 {currentStatFields.map((field) => (
                   <View key={field.key} className="mb-4">
                     <Text className="text-slate-400 text-sm mb-2">{field.label}</Text>
                     <TextInput
                       className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                       value={editStats[field.key]}
-                      onChangeText={(text) => setEditStats({ ...editStats, [field.key]: text.replace(/[^0-9]/g, '') })}
+                      onChangeText={(text) => setEditStats({ ...editStats, [field.key]: text.replace(/[^0-9-]/g, '') })}
                       keyboardType="number-pad"
                       placeholder="0"
                       placeholderTextColor="#64748b"
                     />
                   </View>
                 ))}
+
+                {/* Game Log History */}
+                {selectedPlayer && (() => {
+                  const currentStatType = editMode === 'pitcher' ? 'pitcher' : editMode === 'goalie' ? 'goalie' : editMode === 'batter' ? 'batter' : 'skater';
+                  // Get fresh player data from store to reflect updates
+                  const currentPlayer = players.find(p => p.id === selectedPlayer.id);
+                  const playerLogs = (currentPlayer?.gameLogs || [])
+                    .filter(log => log.statType === currentStatType)
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+                  if (playerLogs.length === 0) return null;
+
+                  return (
+                    <View className="mt-6 mb-8">
+                      <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                        Game Log ({playerLogs.length})
+                      </Text>
+                      <View className="bg-slate-800/60 rounded-2xl border border-slate-700/50 overflow-hidden">
+                        {playerLogs.map((log, index) => {
+                          const logStats = log.stats as unknown as Record<string, number>;
+                          const dateStr = new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                          // Get summary based on sport/mode
+                          let summary = '';
+                          if (editMode === 'pitcher') {
+                            const ip = logStats.innings ?? 0;
+                            const k = logStats.strikeouts ?? 0;
+                            summary = `${ip} IP, ${k} K`;
+                          } else if (editMode === 'goalie') {
+                            const sv = logStats.saves ?? 0;
+                            const ga = logStats.goalsAgainst ?? 0;
+                            summary = `${sv} SV, ${ga} GA`;
+                          } else if (sport === 'hockey') {
+                            const g = logStats.goals ?? 0;
+                            const a = logStats.assists ?? 0;
+                            summary = `${g}G ${a}A`;
+                          } else if (sport === 'baseball') {
+                            const h = logStats.hits ?? 0;
+                            const ab = logStats.atBats ?? 0;
+                            summary = `${h}-${ab}`;
+                          } else if (sport === 'basketball') {
+                            const pts = logStats.points ?? 0;
+                            const reb = logStats.rebounds ?? 0;
+                            const ast = logStats.assists ?? 0;
+                            summary = `${pts}pts ${reb}reb ${ast}ast`;
+                          } else if (sport === 'soccer') {
+                            const g = logStats.goals ?? 0;
+                            const a = logStats.assists ?? 0;
+                            summary = `${g}G ${a}A`;
+                          }
+
+                          return (
+                            <View
+                              key={log.id}
+                              className={`flex-row items-center justify-between px-4 py-3 ${index !== playerLogs.length - 1 ? 'border-b border-slate-700/50' : ''}`}
+                            >
+                              <View className="flex-row items-center flex-1">
+                                <Text className="text-cyan-400 text-sm font-medium w-16">{dateStr}</Text>
+                                <Text className="text-white text-sm ml-2">{summary}</Text>
+                              </View>
+                              <Pressable
+                                onPress={() => handleDeleteGameLog(log.id, currentStatType)}
+                                className="p-2 -mr-2"
+                              >
+                                <Trash2 size={18} color="#ef4444" />
+                              </Pressable>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  );
+                })()}
               </ScrollView>
             </SafeAreaView>
           </View>

@@ -151,7 +151,13 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
     - Baseball: At Bats, Hits, Home Runs, RBI, Strikeouts
     - Basketball: Points, Rebounds, Assists, Steals, Blocks
     - Soccer: Goals, Assists, Yellow Cards (players) | GP, SA, SV, SV% (goalies)
-  - Tap any player to edit their stats
+  - Tap any player to add game stats
+  - **Game Log**: Enter stats per game with date picker
+    - Select game date
+    - Enter stats for that specific game
+    - View game log history at bottom of modal
+    - Delete individual game entries
+    - Cumulative stats automatically calculated from all game logs
 - **Feature Request**: Submit suggestions for new app features via email
 - **Report Bug**: Report issues and bugs via email
 - Log out to switch players

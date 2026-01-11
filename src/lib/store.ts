@@ -200,6 +200,14 @@ export interface SoccerGoalieStats {
 
 export type PlayerStats = HockeyStats | HockeyGoalieStats | BaseballStats | BaseballPitcherStats | BasketballStats | SoccerStats | SoccerGoalieStats;
 
+// Game log entry for tracking individual game stats
+export interface GameLogEntry {
+  id: string;
+  date: string; // ISO string
+  stats: PlayerStats;
+  statType: 'skater' | 'goalie' | 'batter' | 'pitcher'; // Which type of stats this log is for
+}
+
 // Types
 export interface Player {
   id: string;
@@ -219,6 +227,7 @@ export interface Player {
   stats?: PlayerStats; // Regular player stats (batter for baseball, skater for hockey/soccer)
   pitcherStats?: BaseballPitcherStats; // Separate stats for pitching (baseball only)
   goalieStats?: HockeyGoalieStats | SoccerGoalieStats; // Separate stats for goalie (hockey/soccer only)
+  gameLogs?: GameLogEntry[]; // Individual game stat logs
 }
 
 // Helper to get all positions for a player (returns positions array or falls back to single position)
@@ -437,6 +446,10 @@ interface TeamStore {
   // Notification Preferences
   updateNotificationPreferences: (playerId: string, prefs: Partial<NotificationPreferences>) => void;
   getNotificationPreferences: (playerId: string) => NotificationPreferences;
+
+  // Game Logs
+  addGameLog: (playerId: string, gameLog: GameLogEntry) => void;
+  removeGameLog: (playerId: string, gameLogId: string) => void;
 
   // Reset all data
   resetAllData: () => void;
@@ -904,6 +917,22 @@ export const useTeamStore = create<TeamStore>()(
         const player = state.players.find((p) => p.id === playerId);
         return player?.notificationPreferences || defaultNotificationPreferences;
       },
+
+      // Game Logs
+      addGameLog: (playerId, gameLog) => set((state) => ({
+        players: state.players.map((p) =>
+          p.id === playerId
+            ? { ...p, gameLogs: [...(p.gameLogs || []), gameLog] }
+            : p
+        ),
+      })),
+      removeGameLog: (playerId, gameLogId) => set((state) => ({
+        players: state.players.map((p) =>
+          p.id === playerId
+            ? { ...p, gameLogs: (p.gameLogs || []).filter((g) => g.id !== gameLogId) }
+            : p
+        ),
+      })),
 
       // Reset all data to defaults
       resetAllData: () => set({
