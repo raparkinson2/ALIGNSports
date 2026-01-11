@@ -380,7 +380,7 @@ export default function ChatScreen() {
 
           {/* Input Area */}
           <View className="px-4 pb-4 pt-2 border-t border-slate-800 bg-slate-900/95">
-            <View className="flex-row items-end">
+            <View className="flex-row items-center">
               {/* Image Picker Button */}
               <Pressable
                 onPress={handlePickImage}
@@ -397,13 +397,13 @@ export default function ChatScreen() {
                 <Text className="text-cyan-400 font-bold text-xs">GIF</Text>
               </Pressable>
 
-              <View className="flex-1 bg-slate-800 rounded-2xl px-4 py-2 mr-2">
+              <View className="flex-1 bg-slate-800 rounded-2xl px-4 mr-2 min-h-[44px] justify-center">
                 <TextInput
                   value={messageText}
                   onChangeText={setMessageText}
                   placeholder="Type a message..."
                   placeholderTextColor="#64748b"
-                  className="text-white text-base"
+                  className="text-white text-base py-2.5"
                   multiline
                   maxLength={500}
                   style={{ maxHeight: 100 }}
