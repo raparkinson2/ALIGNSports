@@ -289,7 +289,11 @@ export default function AdminScreen() {
     setEditPlayerNumber(player.number);
     setEditPlayerPhone(formatPhoneNumber(player.phone));
     setEditPlayerEmail(player.email || '');
-    setIsPlayerModalVisible(true);
+    // Close manage players modal first, then open player edit modal
+    setIsManagePlayersModalVisible(false);
+    setTimeout(() => {
+      setIsPlayerModalVisible(true);
+    }, 300);
   };
 
   const handleSavePlayerName = () => {
