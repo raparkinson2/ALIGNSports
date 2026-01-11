@@ -98,9 +98,9 @@ export const mapPosition = (currentPosition: string, fromSport: Sport, toSport: 
 };
 
 export const SPORT_NAMES: Record<Sport, string> = {
-  hockey: 'Hockey',
   baseball: 'Baseball',
   basketball: 'Basketball',
+  hockey: 'Hockey',
   soccer: 'Soccer',
 };
 
