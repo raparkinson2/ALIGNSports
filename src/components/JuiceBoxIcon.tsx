@@ -10,8 +10,8 @@ export function JuiceBoxIcon({ size = 24, color = '#f59e0b' }: JuiceBoxIconProps
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <SvgText
         x="12"
-        y="16"
-        fontSize="10"
+        y="17"
+        fontSize="14"
         fontWeight="bold"
         fill={color}
         textAnchor="middle"
