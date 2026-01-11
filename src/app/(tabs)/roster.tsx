@@ -624,7 +624,7 @@ export default function RosterScreen() {
               <View className="flex-row mb-5">
                 {/* Name Input */}
                 <View className="flex-1 mr-3">
-                  <Text className="text-slate-400 text-sm mb-2">Player Name</Text>
+                  <Text className="text-slate-400 text-sm mb-2">Name</Text>
                   <TextInput
                     value={name}
                     onChangeText={setName}
@@ -635,8 +635,8 @@ export default function RosterScreen() {
                 </View>
 
                 {/* Number Input */}
-                <View style={{ width: 80 }}>
-                  <Text className="text-slate-400 text-sm mb-2">#</Text>
+                <View style={{ width: 90 }}>
+                  <Text className="text-slate-400 text-sm mb-2">Number</Text>
                   <TextInput
                     value={number}
                     onChangeText={setNumber}
