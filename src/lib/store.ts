@@ -271,6 +271,8 @@ export interface ChatMessage {
   message: string;
   imageUrl?: string; // For images from camera/gallery
   gifUrl?: string; // For GIFs from GIPHY
+  gifWidth?: number; // GIF original width
+  gifHeight?: number; // GIF original height
   createdAt: string;
 }
 

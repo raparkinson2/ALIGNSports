@@ -92,7 +92,9 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
                   source={{ uri: message.imageUrl || message.gifUrl }}
                   style={{
                     width: 250,
-                    height: 200,
+                    aspectRatio: message.gifWidth && message.gifHeight
+                      ? message.gifWidth / message.gifHeight
+                      : 1,
                     borderRadius: 16,
                   }}
                   contentFit="cover"
@@ -100,7 +102,7 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
                 />
               </View>
               {message.gifUrl && (
-                <View className="flex-row justify-end mt-0.5">
+                <View className="flex-row justify-end">
                   <Text className="text-slate-500 text-[10px]">Powered by GIPHY</Text>
                 </View>
               )}
@@ -296,6 +298,8 @@ export default function ChatScreen() {
       senderId: currentPlayerId,
       message: '',
       gifUrl: gif.images.fixed_height.url,
+      gifWidth: parseInt(gif.images.fixed_height.width),
+      gifHeight: parseInt(gif.images.fixed_height.height),
       createdAt: new Date().toISOString(),
     };
     addChatMessage(newMessage);
