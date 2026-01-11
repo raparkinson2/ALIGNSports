@@ -157,6 +157,20 @@ export interface BaseballStats {
   strikeouts: number;
 }
 
+export interface BaseballPitcherStats {
+  starts: number;
+  wins: number;
+  losses: number;
+  innings: number;
+  completeGames: number;
+  strikeouts: number;
+  walks: number;
+  hits: number;
+  homeRuns: number;
+  shutouts: number;
+  earnedRuns: number;
+}
+
 export interface BasketballStats {
   gamesPlayed: number;
   points: number;
@@ -184,7 +198,7 @@ export interface SoccerGoalieStats {
   goalsAgainst: number;
 }
 
-export type PlayerStats = HockeyStats | HockeyGoalieStats | BaseballStats | BasketballStats | SoccerStats | SoccerGoalieStats;
+export type PlayerStats = HockeyStats | HockeyGoalieStats | BaseballStats | BaseballPitcherStats | BasketballStats | SoccerStats | SoccerGoalieStats;
 
 // Types
 export interface Player {

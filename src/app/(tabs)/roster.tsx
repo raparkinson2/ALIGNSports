@@ -17,13 +17,18 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
-import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BasketballStats, SoccerStats, SoccerGoalieStats, PlayerStats } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, PlayerStats } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 
 // Check if player is a goalie
 function isGoalie(position: string): boolean {
   return position === 'G' || position === 'GK';
+}
+
+// Check if player is a pitcher
+function isPitcher(position: string): boolean {
+  return position === 'P';
 }
 
 // Format name as "F. LastName"
@@ -58,13 +63,22 @@ function getGoalieHeaders(sport: Sport): string[] {
   return ['GP', recordHeader, 'MP', 'GAA', 'SA', 'SV', 'SV%'];
 }
 
+// Get pitcher stat headers
+function getPitcherHeaders(): string[] {
+  return ['W-L', 'IP', 'K', 'BB', 'ERA'];
+}
+
 // Get stat values based on sport
 function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: string): (number | string)[] {
   const playerIsGoalie = isGoalie(position);
+  const playerIsPitcher = isPitcher(position);
 
   if (!stats) {
     if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
       return [0, '0-0-0', 0, '0.00', 0, 0, '.000'];
+    }
+    if (playerIsPitcher && sport === 'baseball') {
+      return ['0-0', 0, 0, 0, '0.00'];
     }
     if (sport === 'hockey') return [0, 0, 0, 0, 0, 0];
     if (sport === 'baseball') return [0, 0, 0, 0, 0, 0];
@@ -92,6 +106,16 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
     }
 
     return [s.games ?? 0, record, mp, gaa, s.shotsAgainst ?? 0, s.saves ?? 0, savePercentage];
+  }
+
+  // Handle pitcher stats for baseball
+  if (playerIsPitcher && sport === 'baseball') {
+    const s = stats as BaseballPitcherStats;
+    const record = `${s.wins ?? 0}-${s.losses ?? 0}`;
+    const ip = s.innings ?? 0;
+    // ERA = (Earned Runs / Innings Pitched) x 9
+    const era = ip > 0 ? ((s.earnedRuns ?? 0) / ip * 9).toFixed(2) : '0.00';
+    return [record, ip, s.strikeouts ?? 0, s.walks ?? 0, era];
   }
 
   switch (sport) {
@@ -134,9 +158,16 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
 
   // Get stat headers and values for this player
   const playerIsGoalie = isGoalie(player.position);
-  const headers = playerIsGoalie && (sport === 'hockey' || sport === 'soccer')
-    ? getGoalieHeaders(sport)
-    : getStatHeaders(sport);
+  const playerIsPitcher = isPitcher(player.position);
+
+  let headers: string[];
+  if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
+    headers = getGoalieHeaders(sport);
+  } else if (playerIsPitcher && sport === 'baseball') {
+    headers = getPitcherHeaders();
+  } else {
+    headers = getStatHeaders(sport);
+  }
   const statValues = getStatValues(sport, player.stats, player.position);
 
   return (
