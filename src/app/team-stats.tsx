@@ -1041,59 +1041,82 @@ export default function TeamStatsScreen() {
 
                   if (playerLogs.length === 0) return null;
 
+                  // Get headers based on sport/mode
+                  let logHeaders: string[] = [];
+                  if (editMode === 'pitcher') {
+                    logHeaders = ['IP', 'K', 'BB', 'H', 'ER'];
+                  } else if (editMode === 'goalie') {
+                    logHeaders = ['MP', 'SA', 'SV', 'GA'];
+                  } else if (sport === 'hockey') {
+                    logHeaders = ['G', 'A', 'PIM', '+/-'];
+                  } else if (sport === 'baseball') {
+                    logHeaders = ['AB', 'H', 'HR', 'RBI', 'K'];
+                  } else if (sport === 'basketball') {
+                    logHeaders = ['PTS', 'REB', 'AST', 'STL', 'BLK'];
+                  } else if (sport === 'soccer') {
+                    logHeaders = ['G', 'A', 'YC'];
+                  }
+
+                  // Map headers to stat keys
+                  const getStatKey = (header: string): string => {
+                    const keyMap: Record<string, string> = {
+                      'G': 'goals', 'A': 'assists', 'PIM': 'pim', '+/-': 'plusMinus',
+                      'AB': 'atBats', 'H': 'hits', 'HR': 'homeRuns', 'RBI': 'rbi', 'K': 'strikeouts',
+                      'PTS': 'points', 'REB': 'rebounds', 'AST': 'assists', 'STL': 'steals', 'BLK': 'blocks',
+                      'YC': 'yellowCards',
+                      'IP': 'innings', 'BB': 'walks', 'ER': 'earnedRuns',
+                      'MP': 'minutesPlayed', 'SA': 'shotsAgainst', 'SV': 'saves', 'GA': 'goalsAgainst',
+                    };
+                    return keyMap[header] || header.toLowerCase();
+                  };
+
                   return (
                     <View className="mt-6 mb-8">
                       <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
                         Game Log ({playerLogs.length})
                       </Text>
                       <View className="bg-slate-800/60 rounded-2xl border border-slate-700/50 overflow-hidden">
+                        {/* Header Row */}
+                        <View className="flex-row items-center px-4 py-2 bg-slate-700/50 border-b border-slate-700">
+                          <Text className="text-slate-400 text-xs font-semibold w-14">Date</Text>
+                          <View className="flex-row flex-1 justify-around">
+                            {logHeaders.map((header) => (
+                              <Text key={header} className="text-slate-400 text-xs font-semibold w-10 text-center">
+                                {header}
+                              </Text>
+                            ))}
+                          </View>
+                          <View className="w-8" />
+                        </View>
+                        {/* Data Rows */}
                         {playerLogs.map((log, index) => {
                           const logStats = log.stats as unknown as Record<string, number>;
                           const dateStr = new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-                          // Get summary based on sport/mode
-                          let summary = '';
-                          if (editMode === 'pitcher') {
-                            const ip = logStats.innings ?? 0;
-                            const k = logStats.strikeouts ?? 0;
-                            summary = `${ip} IP, ${k} K`;
-                          } else if (editMode === 'goalie') {
-                            const sv = logStats.saves ?? 0;
-                            const ga = logStats.goalsAgainst ?? 0;
-                            summary = `${sv} SV, ${ga} GA`;
-                          } else if (sport === 'hockey') {
-                            const g = logStats.goals ?? 0;
-                            const a = logStats.assists ?? 0;
-                            summary = `${g}G ${a}A`;
-                          } else if (sport === 'baseball') {
-                            const h = logStats.hits ?? 0;
-                            const ab = logStats.atBats ?? 0;
-                            summary = `${h}-${ab}`;
-                          } else if (sport === 'basketball') {
-                            const pts = logStats.points ?? 0;
-                            const reb = logStats.rebounds ?? 0;
-                            const ast = logStats.assists ?? 0;
-                            summary = `${pts}pts ${reb}reb ${ast}ast`;
-                          } else if (sport === 'soccer') {
-                            const g = logStats.goals ?? 0;
-                            const a = logStats.assists ?? 0;
-                            summary = `${g}G ${a}A`;
-                          }
-
                           return (
                             <View
                               key={log.id}
-                              className={`flex-row items-center justify-between px-4 py-3 ${index !== playerLogs.length - 1 ? 'border-b border-slate-700/50' : ''}`}
+                              className={`flex-row items-center px-4 py-3 ${index !== playerLogs.length - 1 ? 'border-b border-slate-700/50' : ''}`}
                             >
-                              <View className="flex-row items-center flex-1">
-                                <Text className="text-cyan-400 text-sm font-medium w-16">{dateStr}</Text>
-                                <Text className="text-white text-sm ml-2">{summary}</Text>
+                              <Text className="text-cyan-400 text-sm font-medium w-14">{dateStr}</Text>
+                              <View className="flex-row flex-1 justify-around">
+                                {logHeaders.map((header) => {
+                                  const key = getStatKey(header);
+                                  const value = logStats[key] ?? 0;
+                                  // Format +/- with sign
+                                  const displayValue = header === '+/-' && value > 0 ? `+${value}` : String(value);
+                                  return (
+                                    <Text key={header} className="text-white text-sm w-10 text-center">
+                                      {displayValue}
+                                    </Text>
+                                  );
+                                })}
                               </View>
                               <Pressable
                                 onPress={() => handleDeleteGameLog(log.id, currentStatType)}
-                                className="p-2 -mr-2"
+                                className="w-8 items-center"
                               >
-                                <Trash2 size={18} color="#ef4444" />
+                                <Trash2 size={16} color="#ef4444" />
                               </Pressable>
                             </View>
                           );
