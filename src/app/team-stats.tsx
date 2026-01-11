@@ -720,55 +720,44 @@ export default function TeamStatsScreen() {
             {sport === 'baseball' && sortedPlayers.some(p => playerIsPitcher(p)) && (
               <>
                 {/* Pitcher Header */}
-                <View className="bg-slate-700/50 border-b border-slate-700">
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
-                    <View className="flex-row items-center px-3 py-3" style={{ minWidth: 500 }}>
-                      <Text className="text-slate-300 font-semibold w-24">Pitchers</Text>
-                      <View className="flex-row">
-                        {getPitcherHeaders().map((header) => (
-                          <Text key={header} className="text-slate-300 font-semibold w-10 text-center text-xs">
-                            {header}
-                          </Text>
-                        ))}
-                      </View>
-                      <View className="w-4" />
-                    </View>
-                  </ScrollView>
+                <View className="flex-row items-center px-2 py-3 bg-slate-700/50 border-b border-slate-700">
+                  <Text className="text-slate-300 font-semibold text-xs" style={{ width: 76 }}>Pitchers</Text>
+                  <View className="flex-row flex-1 justify-between">
+                    {getPitcherHeaders().map((header) => (
+                      <Text key={header} className="text-slate-300 font-semibold text-center text-[10px]" style={{ width: 28 }}>
+                        {header}
+                      </Text>
+                    ))}
+                  </View>
+                  <View className="w-3" />
                 </View>
 
                 {/* Pitcher Rows */}
                 {sortedPlayers.filter(p => playerIsPitcher(p)).map((player, index, arr) => {
                   const statValues = getStatValues(sport, player.stats, 'P');
                   return (
-                    <ScrollView
+                    <Pressable
                       key={`pitcher-${player.id}`}
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      style={{ flexGrow: 0 }}
+                      onPress={() => openEditModal(player)}
+                      className={`flex-row items-center px-2 py-3 active:bg-slate-700/50 ${
+                        index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
+                      }`}
                     >
-                      <Pressable
-                        onPress={() => openEditModal(player)}
-                        className={`flex-row items-center px-3 py-3 active:bg-slate-700/50 ${
-                          index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
-                        }`}
-                        style={{ minWidth: 500 }}
-                      >
-                        <View className="w-24 flex-row items-center">
-                          <Text className="text-cyan-400 font-medium text-xs mr-1">#{player.number}</Text>
-                          <Text className="text-white text-sm" numberOfLines={1}>{formatName(player.name)}</Text>
-                        </View>
-                        <View className="flex-row">
-                          {statValues.map((value, i) => (
-                            <Text key={i} className="text-slate-300 w-10 text-center text-sm">
-                              {value}
-                            </Text>
-                          ))}
-                        </View>
-                        <View className="w-4 items-center">
-                          <ChevronRight size={14} color="#64748b" />
-                        </View>
-                      </Pressable>
-                    </ScrollView>
+                      <View className="flex-row items-center" style={{ width: 76 }}>
+                        <Text className="text-cyan-400 font-medium text-[10px] mr-0.5">#{player.number}</Text>
+                        <Text className="text-white text-xs" numberOfLines={1}>{formatName(player.name)}</Text>
+                      </View>
+                      <View className="flex-row flex-1 justify-between">
+                        {statValues.map((value, i) => (
+                          <Text key={i} className="text-slate-300 text-center text-xs" style={{ width: 28 }}>
+                            {value}
+                          </Text>
+                        ))}
+                      </View>
+                      <View className="w-3 items-center">
+                        <ChevronRight size={12} color="#64748b" />
+                      </View>
+                    </Pressable>
                   );
                 })}
               </>
