@@ -351,6 +351,7 @@ export interface TeamSettings {
   record?: TeamRecord;
   showTeamStats?: boolean; // Toggle to show/hide team stats feature
   showPayments?: boolean; // Toggle to show/hide payments tab
+  showTeamChat?: boolean; // Toggle to show/hide team chat tab
 }
 
 interface TeamStore {
@@ -504,6 +505,7 @@ const defaultTeamSettings: TeamSettings = {
   ],
   showTeamStats: true,
   showPayments: true,
+  showTeamChat: true,
 };
 
 export const useTeamStore = create<TeamStore>()(
@@ -909,6 +911,7 @@ export const useTeamStore = create<TeamStore>()(
           record: undefined,
           showTeamStats: true,
           showPayments: true,
+          showTeamChat: true,
         },
         players: [],
         games: [],
