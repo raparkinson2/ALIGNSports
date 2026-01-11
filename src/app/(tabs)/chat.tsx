@@ -11,9 +11,8 @@ import { useTeamStore, ChatMessage } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 
-// GIPHY API key - Get yours at https://developers.giphy.com/
-// Add EXPO_PUBLIC_GIPHY_API_KEY to ENV tab in Vibecode
-const GIPHY_API_KEY = process.env.EXPO_PUBLIC_GIPHY_API_KEY || '';
+// GIPHY API key
+const GIPHY_API_KEY = 'mUSMkXeohjZdAa2fSpTRGq7ljx5h00fI';
 
 interface GiphyGif {
   id: string;
