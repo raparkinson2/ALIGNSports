@@ -554,8 +554,7 @@ export default function MoreScreen() {
           entering={FadeIn.delay(50)}
           className="px-5 pt-2 pb-4"
         >
-          <Text className="text-slate-400 text-sm font-medium">Settings</Text>
-          <Text className="text-white text-3xl font-bold">More</Text>
+          <Text className="text-white text-3xl font-bold">My Settings</Text>
         </Animated.View>
 
         <ScrollView
