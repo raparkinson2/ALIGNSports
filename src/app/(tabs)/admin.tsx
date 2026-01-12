@@ -1346,7 +1346,7 @@ export default function AdminScreen() {
                   className="bg-cyan-500 rounded-xl py-3 flex-row items-center justify-center"
                 >
                   <Plus size={20} color="white" />
-                  <Text className="text-white font-semibold ml-2">Add Color</Text>
+                  <Text className="text-white font-semibold ml-2">Save Color</Text>
                 </Pressable>
               </View>
             </ScrollView>
