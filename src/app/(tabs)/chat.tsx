@@ -103,7 +103,7 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
               </View>
               {message.gifUrl && (
                 <View className="flex-row justify-end">
-                  <Text className="text-slate-500 text-[10px]">Powered by GIPHY</Text>
+                  <Text className="text-slate-500 text-xs">Powered by <Text className="font-bold">GIPHY</Text></Text>
                 </View>
               )}
             </View>
@@ -531,7 +531,7 @@ export default function ChatScreen() {
 
             {/* Powered by GIPHY */}
             <View className="px-5 py-3 border-t border-slate-700/50 items-center">
-              <Text className="text-slate-400 text-sm font-semibold">Powered by GIPHY</Text>
+              <Text className="text-slate-400 text-sm">Powered by <Text className="font-bold">GIPHY</Text></Text>
             </View>
           </SafeAreaView>
         </View>
