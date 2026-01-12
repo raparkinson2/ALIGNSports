@@ -103,7 +103,7 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
               </View>
               {message.gifUrl && (
                 <View className="flex-row justify-end">
-                  <Text className="text-slate-500 text-xs">Powered by <Text className="font-bold">GIPHY</Text></Text>
+                  <Text className="text-slate-500 text-sm">Powered by <Text className="font-bold">GIPHY</Text></Text>
                 </View>
               )}
             </View>
