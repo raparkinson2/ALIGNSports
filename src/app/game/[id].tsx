@@ -575,6 +575,33 @@ export default function GameDetailScreen() {
             </View>
           </Animated.View>
 
+          {/* Location Card */}
+          <Animated.View
+            entering={FadeInUp.delay(112).springify()}
+            className="mx-4 mb-4"
+          >
+            <Pressable
+              onPress={handleOpenMaps}
+              className="bg-slate-800/80 rounded-2xl p-4 border border-slate-700/50 active:bg-slate-700/80"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-1">
+                  <View className="flex-row items-center mb-1">
+                    <MapPin size={18} color="#67e8f9" />
+                    <Text className="text-cyan-400 font-semibold ml-2">Location</Text>
+                  </View>
+                  <Text className="text-white font-medium text-lg">{game.location}</Text>
+                  {game.address ? (
+                    <Text className="text-slate-400">{game.address}</Text>
+                  ) : null}
+                </View>
+                <View className="bg-cyan-500/20 p-3 rounded-full">
+                  <Navigation size={20} color="#67e8f9" />
+                </View>
+              </View>
+            </Pressable>
+          </Animated.View>
+
           {/* Set Lines Button - Only for hockey and captains/admins */}
           {teamSettings.sport === 'hockey' && canManageTeam() && (
             <Animated.View
@@ -1382,33 +1409,6 @@ export default function GameDetailScreen() {
               </Pressable>
             </Animated.View>
           )}
-
-          {/* Location Card */}
-          <Animated.View
-            entering={FadeInUp.delay(150).springify()}
-            className="mx-4 mb-4"
-          >
-            <Pressable
-              onPress={handleOpenMaps}
-              className="bg-slate-800/80 rounded-2xl p-4 border border-slate-700/50 active:bg-slate-700/80"
-            >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-1">
-                  <View className="flex-row items-center mb-1">
-                    <MapPin size={18} color="#67e8f9" />
-                    <Text className="text-cyan-400 font-semibold ml-2">Location</Text>
-                  </View>
-                  <Text className="text-white font-medium text-lg">{game.location}</Text>
-                  {game.address ? (
-                    <Text className="text-slate-400">{game.address}</Text>
-                  ) : null}
-                </View>
-                <View className="bg-cyan-500/20 p-3 rounded-full">
-                  <Navigation size={20} color="#67e8f9" />
-                </View>
-              </View>
-            </Pressable>
-          </Animated.View>
 
           {/* In-App Notifications Section */}
           {canManageTeam() && (
