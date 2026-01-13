@@ -317,13 +317,15 @@ export default function AdminScreen() {
   };
 
   const handleSavePlayerName = () => {
-    if (!selectedPlayer || !editPlayerFirstName.trim()) return;
+    if (!selectedPlayer || !editPlayerFirstName?.trim()) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const firstName = editPlayerFirstName.trim();
+    const lastName = editPlayerLastName?.trim() ?? '';
     updatePlayer(selectedPlayer.id, {
-      firstName: editPlayerFirstName.trim(),
-      lastName: editPlayerLastName.trim()
+      firstName,
+      lastName
     });
-    setSelectedPlayer({ ...selectedPlayer, firstName: editPlayerFirstName.trim(), lastName: editPlayerLastName.trim() });
+    setSelectedPlayer({ ...selectedPlayer, firstName, lastName });
   };
 
   const handleSavePlayerNumber = () => {

@@ -80,7 +80,7 @@ export function LineupViewer({
                               contentFit="cover"
                             />
                             <Text className="text-white text-sm font-semibold mt-1">#{lw.number}</Text>
-                            <Text className="text-slate-400 text-xs">{lw.name.split(' ')[0]}</Text>
+                            <Text className="text-slate-400 text-xs">{lw.firstName}</Text>
                           </>
                         ) : (
                           <>
@@ -103,7 +103,7 @@ export function LineupViewer({
                               contentFit="cover"
                             />
                             <Text className="text-white text-sm font-semibold mt-1">#{c.number}</Text>
-                            <Text className="text-slate-400 text-xs">{c.name.split(' ')[0]}</Text>
+                            <Text className="text-slate-400 text-xs">{c.firstName}</Text>
                           </>
                         ) : (
                           <>
@@ -126,7 +126,7 @@ export function LineupViewer({
                               contentFit="cover"
                             />
                             <Text className="text-white text-sm font-semibold mt-1">#{rw.number}</Text>
-                            <Text className="text-slate-400 text-xs">{rw.name.split(' ')[0]}</Text>
+                            <Text className="text-slate-400 text-xs">{rw.firstName}</Text>
                           </>
                         ) : (
                           <>
@@ -172,7 +172,7 @@ export function LineupViewer({
                               contentFit="cover"
                             />
                             <Text className="text-white text-sm font-semibold mt-1">#{ld.number}</Text>
-                            <Text className="text-slate-400 text-xs">{ld.name.split(' ')[0]}</Text>
+                            <Text className="text-slate-400 text-xs">{ld.firstName}</Text>
                           </>
                         ) : (
                           <>
@@ -195,7 +195,7 @@ export function LineupViewer({
                               contentFit="cover"
                             />
                             <Text className="text-white text-sm font-semibold mt-1">#{rd.number}</Text>
-                            <Text className="text-slate-400 text-xs">{rd.name.split(' ')[0]}</Text>
+                            <Text className="text-slate-400 text-xs">{rd.firstName}</Text>
                           </>
                         ) : (
                           <>
@@ -238,7 +238,7 @@ export function LineupViewer({
                             contentFit="cover"
                           />
                           <Text className="text-white text-sm font-semibold mt-1">#{g.number}</Text>
-                          <Text className="text-slate-400 text-xs">{g.name}</Text>
+                          <Text className="text-slate-400 text-xs">{g.firstName}</Text>
                         </>
                       ) : (
                         <>

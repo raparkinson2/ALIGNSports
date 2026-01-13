@@ -991,7 +991,7 @@ export default function TeamStatsScreen() {
                 {selectedPlayer && (
                   <View className="mb-4">
                     <Text className="text-cyan-400 text-sm">#{selectedPlayer.number}</Text>
-                    <Text className="text-white text-2xl font-bold">{selectedPlayer.name}</Text>
+                    <Text className="text-white text-2xl font-bold">{selectedPlayer.firstName} {selectedPlayer.lastName}</Text>
                   </View>
                 )}
 

@@ -71,7 +71,7 @@ export function BasketballLineupViewer({
                             contentFit="cover"
                           />
                           <Text className="text-white text-sm font-semibold mt-1">#{pg.number}</Text>
-                          <Text className="text-slate-400 text-xs">{pg.name}</Text>
+                          <Text className="text-slate-400 text-xs">{pg.firstName}</Text>
                         </>
                       ) : (
                         <>
