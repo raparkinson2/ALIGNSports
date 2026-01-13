@@ -1311,10 +1311,11 @@ export default function AdminScreen() {
               </Text>
 
               <View className="mb-4">
+                <Text className="text-slate-400 text-sm mb-2">Description (e.g. Home) <Text className="text-red-400">*</Text></Text>
                 <TextInput
                   value={newColorName}
                   onChangeText={setNewColorName}
-                  placeholder="Color name (e.g., Navy Blue)"
+                  placeholder="Enter description..."
                   placeholderTextColor="#64748b"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white mb-3"
                 />
@@ -1340,6 +1341,8 @@ export default function AdminScreen() {
                     </Pressable>
                   ))}
                 </View>
+
+                <Text className="text-slate-500 text-xs mb-3"><Text className="text-red-400">*</Text> Required</Text>
 
                 <Pressable
                   onPress={handleAddJerseyColor}
