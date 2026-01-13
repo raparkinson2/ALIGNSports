@@ -39,6 +39,7 @@ import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { LineupEditor } from '@/components/LineupEditor';
 import { hasAssignedPlayers } from '@/components/LineupViewer';
 import { BasketballLineupEditor, hasAssignedBasketballPlayers } from '@/components/BasketballLineupEditor';
@@ -137,11 +138,7 @@ function PlayerRow({ player, isCheckedIn, onToggleCheckIn, index, canToggle, isS
         )}
       >
         <View className="relative">
-          <Image
-            source={{ uri: player.avatar }}
-            style={{ width: 44, height: 44, borderRadius: 22 }}
-            contentFit="cover"
-          />
+          <PlayerAvatar player={player} size={44} />
           {isCheckedIn && (
             <View className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5">
               <CheckCircle2 size={14} color="white" />
@@ -792,11 +789,7 @@ export default function GameDetailScreen() {
                               <View key={i} className="items-center">
                                 {player ? (
                                   <>
-                                    <Image
-                                      source={{ uri: player.avatar }}
-                                      style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#10b981' }}
-                                      contentFit="cover"
-                                    />
+                                    <PlayerAvatar player={player} size={48} borderWidth={2} borderColor="#10b981" />
                                     <Text className="text-emerald-400 text-xs font-medium mt-1">{positions[i]}</Text>
                                     <Text className="text-white text-xs">#{player.number}</Text>
                                   </>
@@ -829,11 +822,7 @@ export default function GameDetailScreen() {
                               <View key={i} className="items-center">
                                 {player ? (
                                   <>
-                                    <Image
-                                      source={{ uri: player.avatar }}
-                                      style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#10b981' }}
-                                      contentFit="cover"
-                                    />
+                                    <PlayerAvatar player={player} size={48} borderWidth={2} borderColor="#10b981" />
                                     <Text className="text-emerald-400 text-xs font-medium mt-1">{positions[i]}</Text>
                                     <Text className="text-white text-xs">#{player.number}</Text>
                                   </>
@@ -860,11 +849,7 @@ export default function GameDetailScreen() {
                         <View key={`goal-${index}`} className="mb-4">
                           <Text className="text-slate-400 text-xs mb-2">{index === 0 ? 'Starter' : 'Backup'}</Text>
                           <View className="items-center">
-                            <Image
-                              source={{ uri: g.avatar }}
-                              style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#10b981' }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={g} size={48} borderWidth={2} borderColor="#10b981" />
                             <Text className="text-emerald-400 text-xs font-medium mt-1">G</Text>
                             <Text className="text-white text-xs">#{g.number}</Text>
                           </View>
@@ -905,11 +890,7 @@ export default function GameDetailScreen() {
                     <View className="items-center">
                       {game.basketballLineup.starters.pg ? (
                         <>
-                          <Image
-                            source={{ uri: players.find((p) => p.id === game.basketballLineup!.starters.pg)?.avatar }}
-                            style={{ width: 32, height: 32, borderRadius: 16 }}
-                            contentFit="cover"
-                          />
+                          <PlayerAvatar player={players.find((p) => p.id === game.basketballLineup!.starters.pg)} size={32} />
                           <Text className="text-white text-xs mt-0.5">#{players.find((p) => p.id === game.basketballLineup!.starters.pg)?.number}</Text>
                         </>
                       ) : (
@@ -926,11 +907,7 @@ export default function GameDetailScreen() {
                       <View key={`g-${i}`} className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -948,11 +925,7 @@ export default function GameDetailScreen() {
                       <View key={`f-${i}`} className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -970,11 +943,7 @@ export default function GameDetailScreen() {
                       <View key={`c-${i}`} className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (

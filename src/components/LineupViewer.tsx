@@ -1,9 +1,9 @@
 import { View, Text, Modal, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
-import { Image } from 'expo-image';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { HockeyLineup, Player, getPlayerName } from '@/lib/store';
+import { HockeyLineup, Player } from '@/lib/store';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 interface LineupViewerProps {
   visible: boolean;
@@ -74,11 +74,7 @@ export function LineupViewer({
                       <View className="items-center">
                         {lw ? (
                           <>
-                            <Image
-                              source={{ uri: lw.avatar }}
-                              style={{ width: 56, height: 56, borderRadius: 28 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={lw} size={56} />
                             <Text className="text-white text-sm font-semibold mt-1">#{lw.number}</Text>
                             <Text className="text-slate-400 text-xs">{lw.firstName}</Text>
                           </>
@@ -97,11 +93,7 @@ export function LineupViewer({
                       <View className="items-center">
                         {c ? (
                           <>
-                            <Image
-                              source={{ uri: c.avatar }}
-                              style={{ width: 56, height: 56, borderRadius: 28 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={c} size={56} />
                             <Text className="text-white text-sm font-semibold mt-1">#{c.number}</Text>
                             <Text className="text-slate-400 text-xs">{c.firstName}</Text>
                           </>
@@ -120,11 +112,7 @@ export function LineupViewer({
                       <View className="items-center">
                         {rw ? (
                           <>
-                            <Image
-                              source={{ uri: rw.avatar }}
-                              style={{ width: 56, height: 56, borderRadius: 28 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={rw} size={56} />
                             <Text className="text-white text-sm font-semibold mt-1">#{rw.number}</Text>
                             <Text className="text-slate-400 text-xs">{rw.firstName}</Text>
                           </>
@@ -166,11 +154,7 @@ export function LineupViewer({
                       <View className="items-center">
                         {ld ? (
                           <>
-                            <Image
-                              source={{ uri: ld.avatar }}
-                              style={{ width: 56, height: 56, borderRadius: 28 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={ld} size={56} />
                             <Text className="text-white text-sm font-semibold mt-1">#{ld.number}</Text>
                             <Text className="text-slate-400 text-xs">{ld.firstName}</Text>
                           </>
@@ -189,11 +173,7 @@ export function LineupViewer({
                       <View className="items-center">
                         {rd ? (
                           <>
-                            <Image
-                              source={{ uri: rd.avatar }}
-                              style={{ width: 56, height: 56, borderRadius: 28 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={rd} size={56} />
                             <Text className="text-white text-sm font-semibold mt-1">#{rd.number}</Text>
                             <Text className="text-slate-400 text-xs">{rd.firstName}</Text>
                           </>
@@ -232,11 +212,7 @@ export function LineupViewer({
                     <View className="items-center">
                       {g ? (
                         <>
-                          <Image
-                            source={{ uri: g.avatar }}
-                            style={{ width: 64, height: 64, borderRadius: 32 }}
-                            contentFit="cover"
-                          />
+                          <PlayerAvatar player={g} size={64} />
                           <Text className="text-white text-sm font-semibold mt-1">#{g.number}</Text>
                           <Text className="text-slate-400 text-xs">{g.firstName}</Text>
                         </>
