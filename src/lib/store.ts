@@ -288,7 +288,7 @@ export interface ChatMessage {
 }
 
 // Payment tracking types
-export type PaymentApp = 'venmo' | 'paypal' | 'zelle' | 'cashapp';
+export type PaymentApp = 'venmo' | 'paypal' | 'zelle' | 'cashapp' | 'applepay';
 
 export interface PaymentMethod {
   app: PaymentApp;
@@ -517,10 +517,7 @@ const defaultTeamSettings: TeamSettings = {
     { name: 'White', color: '#ffffff' },
     { name: 'Black', color: '#1a1a1a' },
   ],
-  paymentMethods: [
-    { app: 'venmo', username: 'raparkinson2', displayName: 'Venmo' },
-    { app: 'paypal', username: 'raparkinson2@gmail.com', displayName: 'PayPal' },
-  ],
+  paymentMethods: [],
   showTeamStats: true,
   showPayments: true,
   showTeamChat: true,
