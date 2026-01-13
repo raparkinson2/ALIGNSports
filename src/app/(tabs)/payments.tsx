@@ -38,6 +38,7 @@ import {
 } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { format, parseISO } from 'date-fns';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 const PAYMENT_APP_INFO: Record<PaymentApp, {
   name: string;
@@ -198,11 +199,7 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
         getBackgroundClass()
       )}
     >
-      <Image
-        source={{ uri: player.avatar }}
-        style={{ width: 44, height: 44, borderRadius: 22 }}
-        contentFit="cover"
-      />
+      <PlayerAvatar player={player} size={44} />
       <View className="flex-1 ml-3">
         <Text className="text-white font-medium text-base">{getPlayerName(player)}</Text>
         <Text className={cn('text-sm mt-0.5', getTextClass())}>
@@ -274,6 +271,9 @@ export default function PaymentsScreen() {
   const [isEditAmountModalVisible, setIsEditAmountModalVisible] = useState(false);
   const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null);
   const [editPeriodAmount, setEditPeriodAmount] = useState('');
+
+  // Add player to period modal
+  const [isAddPlayerModalVisible, setIsAddPlayerModalVisible] = useState(false);
 
   const paymentMethods = teamSettings.paymentMethods ?? [];
 
@@ -413,6 +413,63 @@ export default function PaymentsScreen() {
   const selectedPeriod = paymentPeriods.find((p) => p.id === selectedPeriodId);
   const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
   const selectedPlayerPayment = selectedPeriod?.playerPayments.find((pp) => pp.playerId === selectedPlayerId);
+
+  const handleAddPlayerToPeriod = (playerId: string) => {
+    if (!selectedPeriodId || !selectedPeriod) return;
+
+    // Check if player already in period
+    if (selectedPeriod.playerPayments.some((pp) => pp.playerId === playerId)) {
+      return;
+    }
+
+    const updatedPayments = [
+      ...selectedPeriod.playerPayments,
+      {
+        playerId,
+        status: 'unpaid' as const,
+        entries: [],
+      },
+    ];
+
+    updatePaymentPeriod(selectedPeriodId, { playerPayments: updatedPayments });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleRemovePlayerFromPeriod = (playerId: string) => {
+    if (!selectedPeriodId || !selectedPeriod) return;
+
+    const player = players.find((p) => p.id === playerId);
+    const playerPayment = selectedPeriod.playerPayments.find((pp) => pp.playerId === playerId);
+
+    // Warn if player has made payments
+    const hasPayments = playerPayment?.entries && playerPayment.entries.length > 0;
+
+    Alert.alert(
+      'Remove Player',
+      hasPayments
+        ? `${getPlayerName(player!)} has payment records. Removing them will delete their payment history for this period. Are you sure?`
+        : `Remove ${getPlayerName(player!)} from this payment period?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            const updatedPayments = selectedPeriod.playerPayments.filter(
+              (pp) => pp.playerId !== playerId
+            );
+            updatePaymentPeriod(selectedPeriodId, { playerPayments: updatedPayments });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
+        },
+      ]
+    );
+  };
+
+  // Get players not in current period
+  const playersNotInPeriod = selectedPeriod
+    ? players.filter((p) => !selectedPeriod.playerPayments.some((pp) => pp.playerId === p.id))
+    : [];
 
   // Check if current user can view this player's details
   const canViewPlayerDetails = (playerId: string) => {
@@ -994,11 +1051,7 @@ export default function PaymentsScreen() {
                 <ScrollView className="flex-1 px-5 pt-6">
                   {/* Player Info */}
                   <View className="items-center mb-6">
-                    <Image
-                      source={{ uri: selectedPlayer.avatar }}
-                      style={{ width: 80, height: 80, borderRadius: 40 }}
-                      contentFit="cover"
-                    />
+                    <PlayerAvatar player={selectedPlayer} size={80} />
                     <Text className="text-white text-xl font-bold mt-3">{getPlayerName(selectedPlayer)}</Text>
                     <Text className="text-slate-400">{selectedPeriod.title}</Text>
                   </View>
@@ -1243,9 +1296,23 @@ export default function PaymentsScreen() {
                       </View>
                     )}
 
-                    <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-                      Tap a player to view/add payments
-                    </Text>
+                    <View className="flex-row items-center justify-between mb-3">
+                      <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                        Players ({selectedPeriod.playerPayments.length})
+                      </Text>
+                      {isAdmin() && playersNotInPeriod.length > 0 && (
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setIsAddPlayerModalVisible(true);
+                          }}
+                          className="bg-cyan-500/20 rounded-lg px-3 py-1.5 flex-row items-center active:bg-cyan-500/30"
+                        >
+                          <Plus size={14} color="#67e8f9" />
+                          <Text className="text-cyan-400 text-xs font-medium ml-1">Add Player</Text>
+                        </Pressable>
+                      )}
+                    </View>
 
                     {selectedPeriod.playerPayments.map((pp) => {
                       const player = players.find((p) => p.id === pp.playerId);
@@ -1255,18 +1322,29 @@ export default function PaymentsScreen() {
                       if (!canViewPlayerDetails(pp.playerId)) return null;
 
                       return (
-                        <PlayerPaymentRow
-                          key={pp.playerId}
-                          player={player}
-                          status={pp.status}
-                          paidAmount={pp.amount}
-                          totalAmount={selectedPeriod.amount}
-                          periodType={selectedPeriod.type ?? 'dues'}
-                          onPress={() => {
-                            setSelectedPlayerId(pp.playerId);
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          }}
-                        />
+                        <View key={pp.playerId} className="flex-row items-center mb-2">
+                          <View className="flex-1">
+                            <PlayerPaymentRow
+                              player={player}
+                              status={pp.status}
+                              paidAmount={pp.amount}
+                              totalAmount={selectedPeriod.amount}
+                              periodType={selectedPeriod.type ?? 'dues'}
+                              onPress={() => {
+                                setSelectedPlayerId(pp.playerId);
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              }}
+                            />
+                          </View>
+                          {isAdmin() && (
+                            <Pressable
+                              onPress={() => handleRemovePlayerFromPeriod(pp.playerId)}
+                              className="ml-2 p-3 bg-red-500/20 rounded-xl active:bg-red-500/30"
+                            >
+                              <Trash2 size={18} color="#ef4444" />
+                            </Pressable>
+                          )}
+                        </View>
                       );
                     })}
                   </ScrollView>
@@ -1322,6 +1400,68 @@ export default function PaymentsScreen() {
                 This will update the amount due for all players in this period.
               </Text>
             </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Add Player to Period Modal */}
+      <Modal
+        visible={isAddPlayerModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsAddPlayerModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsAddPlayerModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Add Players</Text>
+              <Pressable onPress={() => setIsAddPlayerModalVisible(false)}>
+                <Text className="text-cyan-400 font-semibold">Done</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
+              {playersNotInPeriod.length === 0 ? (
+                <View className="items-center py-12">
+                  <Users size={48} color="#64748b" />
+                  <Text className="text-slate-400 text-center mt-4">
+                    All players are already in this payment period
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <Text className="text-slate-400 text-sm mb-4">
+                    Tap a player to add them to this payment period
+                  </Text>
+                  {playersNotInPeriod.map((player) => (
+                    <Pressable
+                      key={player.id}
+                      onPress={() => {
+                        handleAddPlayerToPeriod(player.id);
+                      }}
+                      className="flex-row items-center p-3 rounded-xl mb-2 bg-slate-800/60 border border-slate-700/50 active:bg-slate-700/60"
+                    >
+                      <PlayerAvatar player={player} size={44} />
+                      <View className="flex-1 ml-3">
+                        <Text className="text-white font-medium">{getPlayerName(player)}</Text>
+                        <Text className={cn(
+                          'text-xs',
+                          player.status === 'active' ? 'text-green-400' : 'text-slate-400'
+                        )}>
+                          {player.status === 'active' ? 'Active' : 'Reserve'} · #{player.number}
+                        </Text>
+                      </View>
+                      <View className="bg-cyan-500/20 rounded-lg px-3 py-1.5">
+                        <Plus size={16} color="#67e8f9" />
+                      </View>
+                    </Pressable>
+                  ))}
+                </>
+              )}
+            </ScrollView>
           </SafeAreaView>
         </View>
       </Modal>
