@@ -317,10 +317,10 @@ export default function AdminScreen() {
   };
 
   const handleSavePlayerName = () => {
-    if (!selectedPlayer || !editPlayerFirstName?.trim()) return;
+    if (!selectedPlayer || !editPlayerFirstName?.trim() || !editPlayerLastName?.trim()) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const firstName = editPlayerFirstName.trim();
-    const lastName = editPlayerLastName?.trim() ?? '';
+    const lastName = editPlayerLastName.trim();
     updatePlayer(selectedPlayer.id, {
       firstName,
       lastName
@@ -369,6 +369,10 @@ export default function AdminScreen() {
 
     if (!newPlayerFirstName.trim()) {
       Alert.alert('Missing Info', 'Please enter a first name.');
+      return;
+    }
+    if (!newPlayerLastName.trim()) {
+      Alert.alert('Missing Info', 'Please enter a last name.');
       return;
     }
     if (!newPlayerNumber.trim()) {
@@ -1105,11 +1109,11 @@ export default function AdminScreen() {
                     onSubmitEditing={handleSavePlayerName}
                     returnKeyType="done"
                   />
-                  <Text className="text-slate-400 text-sm mb-2">Last Name</Text>
+                  <Text className="text-slate-400 text-sm mb-2">Last Name<Text className="text-red-400">*</Text></Text>
                   <TextInput
                     value={editPlayerLastName}
                     onChangeText={setEditPlayerLastName}
-                    placeholder="Enter last name (optional)"
+                    placeholder="Enter last name"
                     placeholderTextColor="#64748b"
                     className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                     onBlur={handleSavePlayerName}
@@ -1546,11 +1550,11 @@ export default function AdminScreen() {
                   placeholderTextColor="#64748b"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg mb-3"
                 />
-                <Text className="text-slate-400 text-sm mb-2">Last Name</Text>
+                <Text className="text-slate-400 text-sm mb-2">Last Name<Text className="text-red-400">*</Text></Text>
                 <TextInput
                   value={newPlayerLastName}
                   onChangeText={setNewPlayerLastName}
-                  placeholder="Enter last name (optional)"
+                  placeholder="Enter last name"
                   placeholderTextColor="#64748b"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                 />
