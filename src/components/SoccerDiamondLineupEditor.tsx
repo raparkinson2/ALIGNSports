@@ -5,7 +5,7 @@ import { X, Trash2 } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { SoccerDiamondLineup, Player } from '@/lib/store';
+import { SoccerDiamondLineup, Player, getPlayerName } from '@/lib/store';
 import { cn } from '@/lib/cn';
 
 interface SoccerDiamondLineupEditorProps {
@@ -302,7 +302,7 @@ export function SoccerDiamondLineupEditor({
                           contentFit="cover"
                         />
                         <View className="ml-3 flex-1">
-                          <Text className="text-white font-medium">{player.name}</Text>
+                          <Text className="text-white font-medium">{getPlayerName(player)}</Text>
                           <Text className="text-slate-400 text-xs">#{player.number}</Text>
                         </View>
                         <Text className="text-slate-500 text-xs">{player.position}</Text>

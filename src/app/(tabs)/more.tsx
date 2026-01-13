@@ -28,7 +28,7 @@ import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences } from '@/lib/store';
+import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences, getPlayerName } from '@/lib/store';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 import { sendTestNotification, registerForPushNotificationsAsync } from '@/lib/notifications';
 
@@ -160,7 +160,7 @@ function EditProfileModal({ visible, onClose, player, onSave }: EditProfileModal
               <View className="mb-4">
                 <Text className="text-slate-400 text-sm mb-2">Name</Text>
                 <View className="bg-slate-800/50 rounded-xl px-4 py-3">
-                  <Text className="text-slate-300 text-base">{player.name}</Text>
+                  <Text className="text-slate-300 text-base">{getPlayerName(player)}</Text>
                 </View>
                 <Text className="text-slate-500 text-xs mt-1">Contact an admin to change your name</Text>
               </View>
@@ -747,7 +747,7 @@ export default function MoreScreen() {
                     </View>
                   </View>
                   <View className="flex-1 ml-4">
-                    <Text className="text-white text-xl font-bold">{currentPlayer.name}</Text>
+                    <Text className="text-white text-xl font-bold">{getPlayerName(currentPlayer)}</Text>
                     <Text className="text-cyan-400 text-sm">{currentPlayer.position} · {teamName}</Text>
                   </View>
                   <View className="w-8 h-8 rounded-full bg-slate-700 items-center justify-center">

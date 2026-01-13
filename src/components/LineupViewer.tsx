@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { HockeyLineup, Player } from '@/lib/store';
+import { HockeyLineup, Player, getPlayerName } from '@/lib/store';
 
 interface LineupViewerProps {
   visible: boolean;

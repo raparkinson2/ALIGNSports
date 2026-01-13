@@ -33,7 +33,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, SoccerLineup, SoccerDiamondLineup } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, SoccerLineup, SoccerDiamondLineup, getPlayerName } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
@@ -154,7 +154,7 @@ function PlayerRow({ player, isCheckedIn, onToggleCheckIn, index, canToggle, isS
         </View>
 
         <View className="flex-1 ml-3">
-          <Text className="text-white font-semibold">{player.name}</Text>
+          <Text className="text-white font-semibold">{getPlayerName(player)}</Text>
           <Text className="text-slate-400 text-xs">#{player.number} · {positionName}</Text>
         </View>
 
@@ -631,7 +631,7 @@ export default function GameDetailScreen() {
                           style={{ width: 24, height: 24, borderRadius: 12 }}
                           contentFit="cover"
                         />
-                        <Text className="text-white ml-2">{beerDutyPlayer.name}</Text>
+                        <Text className="text-white ml-2">{getPlayerName(beerDutyPlayer)}</Text>
                       </View>
                     ) : (
                       <Text className="text-slate-400 text-sm">Not assigned</Text>
@@ -1656,7 +1656,7 @@ export default function GameDetailScreen() {
                     style={{ width: 44, height: 44, borderRadius: 22 }}
                     contentFit="cover"
                   />
-                  <Text className="text-white font-semibold ml-3 flex-1">{player.name}</Text>
+                  <Text className="text-white font-semibold ml-3 flex-1">{getPlayerName(player)}</Text>
                   {game.beerDutyPlayerId === player.id && (
                     <CheckCircle2 size={24} color="#f59e0b" />
                   )}
@@ -1885,7 +1885,7 @@ export default function GameDetailScreen() {
                             contentFit="cover"
                           />
                           <View className="flex-1 ml-3">
-                            <Text className="text-white font-medium">{player.name}</Text>
+                            <Text className="text-white font-medium">{getPlayerName(player)}</Text>
                             <Text className="text-slate-400 text-sm">#{player.number}</Text>
                           </View>
                           <View className="bg-cyan-500 rounded-lg px-3 py-1.5">
@@ -1914,7 +1914,7 @@ export default function GameDetailScreen() {
                             contentFit="cover"
                           />
                           <View className="flex-1 ml-3">
-                            <Text className="text-white font-medium">{player.name}</Text>
+                            <Text className="text-white font-medium">{getPlayerName(player)}</Text>
                             <Text className="text-slate-400 text-sm">#{player.number}</Text>
                           </View>
                           <View className="bg-cyan-500 rounded-lg px-3 py-1.5">

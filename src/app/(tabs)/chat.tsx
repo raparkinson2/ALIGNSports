@@ -7,7 +7,7 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import { useTeamStore, ChatMessage } from '@/lib/store';
+import { useTeamStore, ChatMessage, getPlayerName } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 
@@ -381,7 +381,7 @@ export default function ChatScreen() {
                         key={message.id}
                         message={message}
                         isOwnMessage={isOwnMessage}
-                        senderName={sender?.name || 'Unknown'}
+                        senderName={sender ? getPlayerName(sender) : 'Unknown'}
                         senderAvatar={sender?.avatar}
                         index={groupIndex * 10 + msgIndex}
                         onDelete={isOwnMessage ? () => deleteChatMessage(message.id) : undefined}

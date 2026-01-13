@@ -23,7 +23,7 @@ import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { useTeamStore, Game, TeamRecord, Sport } from '@/lib/store';
+import { useTeamStore, Game, TeamRecord, Sport, getPlayerName } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
@@ -289,7 +289,7 @@ function GameCard({ game, index, onPress, onViewLines }: GameCardProps) {
                     <JuiceBoxIcon size={14} color="#f59e0b" />
                   )}
                   <Text className="text-amber-400 text-sm ml-1.5 font-medium">
-                    {beerDutyPlayer.name}
+                    {getPlayerName(beerDutyPlayer)}
                   </Text>
                 </View>
               )}
@@ -795,7 +795,7 @@ export default function ScheduleScreen() {
                               'font-medium ml-2 text-sm',
                               isSelected ? 'text-green-400' : 'text-slate-400'
                             )}>
-                              {player.name.split(' ')[0]}
+                              {player.firstName}
                             </Text>
                             {isSelected && <Check size={14} color="#22c55e" style={{ marginLeft: 4 }} />}
                           </Pressable>
@@ -832,7 +832,7 @@ export default function ScheduleScreen() {
                                   'font-medium ml-2 text-sm',
                                   isSelected ? 'text-amber-400' : 'text-slate-400'
                                 )}>
-                                  {player.name.split(' ')[0]}
+                                  {player.firstName}
                                 </Text>
                                 {isSelected && <Check size={14} color="#f59e0b" style={{ marginLeft: 4 }} />}
                               </Pressable>
@@ -903,7 +903,7 @@ export default function ScheduleScreen() {
                             'font-medium ml-2',
                             selectedBeerDutyPlayer === player.id ? 'text-amber-400' : 'text-slate-400'
                           )}>
-                            {player.name.split(' ')[0]}
+                            {player.firstName}
                           </Text>
                         </Pressable>
                       ))}

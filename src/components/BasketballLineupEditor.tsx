@@ -10,6 +10,7 @@ import {
   Player,
   BasketballLineup,
   SPORT_POSITION_NAMES,
+  getPlayerName,
 } from '@/lib/store';
 
 interface BasketballLineupEditorProps {
@@ -607,7 +608,7 @@ export function BasketballLineupEditor({
                               isAssigned ? 'text-slate-500' : 'text-white'
                             )}
                           >
-                            {player.name}
+                            {getPlayerName(player)}
                           </Text>
                           <Text className="text-slate-400 text-sm">
                             #{player.number} · {positionName}

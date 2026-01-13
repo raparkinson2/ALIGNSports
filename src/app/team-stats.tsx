@@ -16,7 +16,7 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTeamStore, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, Player, PlayerStats, getPlayerPositions, GameLogEntry } from '@/lib/store';
+import { useTeamStore, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, Player, PlayerStats, getPlayerPositions, GameLogEntry, getPlayerName } from '@/lib/store';
 
 // Edit mode type - determines which stats to show/edit
 type EditMode = 'batter' | 'pitcher' | 'skater' | 'goalie';
@@ -832,7 +832,7 @@ export default function TeamStatsScreen() {
                 >
                   <View className="flex-1 flex-row items-center">
                     <Text className="text-cyan-400 font-medium text-xs mr-1">#{player.number}</Text>
-                    <Text className="text-white text-sm">{formatName(player.name)}</Text>
+                    <Text className="text-white text-sm">{formatName(getPlayerName(player))}</Text>
                   </View>
                   <Text className="text-slate-400 w-10 text-center text-xs">{getDisplayPosition(player)}</Text>
                   <View className="flex-row ml-2">
@@ -878,7 +878,7 @@ export default function TeamStatsScreen() {
                     >
                       <View className="flex-row items-center" style={{ width: 76 }}>
                         <Text className="text-cyan-400 font-medium text-[10px] mr-0.5">#{player.number}</Text>
-                        <Text className="text-white text-xs" numberOfLines={1}>{formatName(player.name)}</Text>
+                        <Text className="text-white text-xs" numberOfLines={1}>{formatName(getPlayerName(player))}</Text>
                       </View>
                       <View className="flex-row flex-1 justify-between">
                         {statValues.map((value, i) => (
@@ -925,7 +925,7 @@ export default function TeamStatsScreen() {
                     >
                       <View className="flex-1 flex-row items-center">
                         <Text className="text-cyan-400 font-medium text-xs mr-1">#{player.number}</Text>
-                        <Text className="text-white text-sm">{formatName(player.name)}</Text>
+                        <Text className="text-white text-sm">{formatName(getPlayerName(player))}</Text>
                       </View>
                       <View className="flex-row ml-2">
                         {statValues.map((value, i) => (

@@ -34,6 +34,7 @@ import {
   PaymentApp,
   Player,
   PaymentEntry,
+  getPlayerName,
 } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { format, parseISO } from 'date-fns';
@@ -203,7 +204,7 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
         contentFit="cover"
       />
       <View className="flex-1 ml-3">
-        <Text className="text-white font-medium text-base">{player.name}</Text>
+        <Text className="text-white font-medium text-base">{getPlayerName(player)}</Text>
         <Text className={cn('text-sm mt-0.5', getTextClass())}>
           {getStatusText()}
         </Text>
@@ -939,7 +940,7 @@ export default function PaymentsScreen() {
                         contentFit="cover"
                       />
                       <View className="flex-1 ml-3">
-                        <Text className="text-white font-medium">{player.name}</Text>
+                        <Text className="text-white font-medium">{getPlayerName(player)}</Text>
                         <Text className={cn(
                           'text-xs',
                           player.status === 'active' ? 'text-green-400' : 'text-slate-400'
@@ -998,7 +999,7 @@ export default function PaymentsScreen() {
                       style={{ width: 80, height: 80, borderRadius: 40 }}
                       contentFit="cover"
                     />
-                    <Text className="text-white text-xl font-bold mt-3">{selectedPlayer.name}</Text>
+                    <Text className="text-white text-xl font-bold mt-3">{getPlayerName(selectedPlayer)}</Text>
                     <Text className="text-slate-400">{selectedPeriod.title}</Text>
                   </View>
 

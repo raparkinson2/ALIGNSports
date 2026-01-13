@@ -43,6 +43,7 @@ import {
   SPORT_POSITION_NAMES,
   PlayerRole,
   PlayerStatus,
+  getPlayerName,
 } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneNumber, formatPhoneInput, unformatPhone } from '@/lib/phone';
@@ -177,7 +178,7 @@ function PlayerManageCard({ player, index, onPress, isCurrentUser }: PlayerManag
           />
           <View className="flex-1 ml-3">
             <View className="flex-row items-center">
-              <Text className="text-white font-semibold">{player.name}</Text>
+              <Text className="text-white font-semibold">{getPlayerName(player)}</Text>
               {isCurrentUser && (
                 <View className="ml-2 bg-cyan-500/20 rounded-full px-2 py-0.5">
                   <Text className="text-cyan-400 text-xs">You</Text>
@@ -243,14 +244,16 @@ export default function AdminScreen() {
   const [isManagePlayersModalVisible, setIsManagePlayersModalVisible] = useState(false);
 
   // Player edit form
-  const [editPlayerName, setEditPlayerName] = useState('');
+  const [editPlayerFirstName, setEditPlayerFirstName] = useState('');
+  const [editPlayerLastName, setEditPlayerLastName] = useState('');
   const [editPlayerNumber, setEditPlayerNumber] = useState('');
   const [editPlayerPhone, setEditPlayerPhone] = useState('');
   const [editPlayerEmail, setEditPlayerEmail] = useState('');
 
   // New player form
   const [isNewPlayerModalVisible, setIsNewPlayerModalVisible] = useState(false);
-  const [newPlayerName, setNewPlayerName] = useState('');
+  const [newPlayerFirstName, setNewPlayerFirstName] = useState('');
+  const [newPlayerLastName, setNewPlayerLastName] = useState('');
   const [newPlayerNumber, setNewPlayerNumber] = useState('');
   const [newPlayerPositions, setNewPlayerPositions] = useState<string[]>([positions[0]]);
   const [newPlayerPhone, setNewPlayerPhone] = useState('');
@@ -301,7 +304,8 @@ export default function AdminScreen() {
 
   const openPlayerModal = (player: Player) => {
     setSelectedPlayer(player);
-    setEditPlayerName(player.name);
+    setEditPlayerFirstName(player.firstName);
+    setEditPlayerLastName(player.lastName);
     setEditPlayerNumber(player.number);
     setEditPlayerPhone(formatPhoneNumber(player.phone));
     setEditPlayerEmail(player.email || '');
@@ -313,10 +317,13 @@ export default function AdminScreen() {
   };
 
   const handleSavePlayerName = () => {
-    if (!selectedPlayer || !editPlayerName.trim()) return;
+    if (!selectedPlayer || !editPlayerFirstName.trim()) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    updatePlayer(selectedPlayer.id, { name: editPlayerName.trim() });
-    setSelectedPlayer({ ...selectedPlayer, name: editPlayerName.trim() });
+    updatePlayer(selectedPlayer.id, {
+      firstName: editPlayerFirstName.trim(),
+      lastName: editPlayerLastName.trim()
+    });
+    setSelectedPlayer({ ...selectedPlayer, firstName: editPlayerFirstName.trim(), lastName: editPlayerLastName.trim() });
   };
 
   const handleSavePlayerNumber = () => {
@@ -343,7 +350,8 @@ export default function AdminScreen() {
 
   // New Player Functions
   const resetNewPlayerForm = () => {
-    setNewPlayerName('');
+    setNewPlayerFirstName('');
+    setNewPlayerLastName('');
     setNewPlayerNumber('');
     setNewPlayerPositions([positions[0]]);
     setNewPlayerPhone('');
@@ -357,8 +365,8 @@ export default function AdminScreen() {
   const handleCreatePlayer = () => {
     const rawPhone = unformatPhone(newPlayerPhone);
 
-    if (!newPlayerName.trim()) {
-      Alert.alert('Missing Info', 'Please enter a name.');
+    if (!newPlayerFirstName.trim()) {
+      Alert.alert('Missing Info', 'Please enter a first name.');
       return;
     }
     if (!newPlayerNumber.trim()) {
@@ -376,7 +384,8 @@ export default function AdminScreen() {
 
     const newPlayer: Player = {
       id: Date.now().toString(),
-      name: newPlayerName.trim(),
+      firstName: newPlayerFirstName.trim(),
+      lastName: newPlayerLastName.trim(),
       number: newPlayerNumber.trim(),
       position: newPlayerPositions[0],
       positions: newPlayerPositions,
@@ -400,7 +409,7 @@ export default function AdminScreen() {
   };
 
   const getInviteMessage = () => {
-    return `Hey ${newlyCreatedPlayer?.name}!\n\nYou've been added to ${teamName}! Download the app and log in using your info to view the schedule, check in for games, and stay connected with the team.\n\nYour jersey number is #${newlyCreatedPlayer?.number}\n\nSee you at the next game!`;
+    return `Hey ${newlyCreatedPlayer ? getPlayerName(newlyCreatedPlayer) : ''}!\n\nYou've been added to ${teamName}! Download the app and log in using your info to view the schedule, check in for games, and stay connected with the team.\n\nYour jersey number is #${newlyCreatedPlayer?.number}\n\nSee you at the next game!`;
   };
 
   const handleSendTextInvite = () => {
@@ -1081,39 +1090,47 @@ export default function AdminScreen() {
 
             {selectedPlayer && (
               <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
-                {/* Name and Number Row */}
-                <View className="flex-row mb-5">
-                  {/* Name Input */}
-                  <View className="flex-1 mr-3">
-                    <Text className="text-slate-400 text-sm mb-2">Name<Text className="text-red-400">*</Text></Text>
-                    <TextInput
-                      value={editPlayerName}
-                      onChangeText={setEditPlayerName}
-                      placeholder="Enter name"
-                      placeholderTextColor="#64748b"
-                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                      onBlur={handleSavePlayerName}
-                      onSubmitEditing={handleSavePlayerName}
-                      returnKeyType="done"
-                    />
-                  </View>
+                {/* Name Inputs */}
+                <View className="mb-5">
+                  <Text className="text-slate-400 text-sm mb-2">First Name<Text className="text-red-400">*</Text></Text>
+                  <TextInput
+                    value={editPlayerFirstName}
+                    onChangeText={setEditPlayerFirstName}
+                    placeholder="Enter first name"
+                    placeholderTextColor="#64748b"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg mb-3"
+                    onBlur={handleSavePlayerName}
+                    onSubmitEditing={handleSavePlayerName}
+                    returnKeyType="done"
+                  />
+                  <Text className="text-slate-400 text-sm mb-2">Last Name</Text>
+                  <TextInput
+                    value={editPlayerLastName}
+                    onChangeText={setEditPlayerLastName}
+                    placeholder="Enter last name (optional)"
+                    placeholderTextColor="#64748b"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    onBlur={handleSavePlayerName}
+                    onSubmitEditing={handleSavePlayerName}
+                    returnKeyType="done"
+                  />
+                </View>
 
-                  {/* Number Input */}
-                  <View style={{ width: 100 }}>
-                    <Text className="text-slate-400 text-sm mb-2">Jersey #<Text className="text-red-400">*</Text></Text>
-                    <TextInput
-                      value={editPlayerNumber}
-                      onChangeText={setEditPlayerNumber}
-                      placeholder="00"
-                      placeholderTextColor="#64748b"
-                      keyboardType="number-pad"
-                      maxLength={2}
-                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg text-center"
-                      onBlur={handleSavePlayerNumber}
-                      onSubmitEditing={handleSavePlayerNumber}
-                      returnKeyType="done"
-                    />
-                  </View>
+                {/* Number Input */}
+                <View className="mb-5">
+                  <Text className="text-slate-400 text-sm mb-2">Jersey #<Text className="text-red-400">*</Text></Text>
+                  <TextInput
+                    value={editPlayerNumber}
+                    onChangeText={setEditPlayerNumber}
+                    placeholder="00"
+                    placeholderTextColor="#64748b"
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    onBlur={handleSavePlayerNumber}
+                    onSubmitEditing={handleSavePlayerNumber}
+                    returnKeyType="done"
+                  />
                 </View>
 
                 {/* Phone */}
@@ -1517,33 +1534,38 @@ export default function AdminScreen() {
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
-              {/* Name and Number Row */}
-              <View className="flex-row mb-5">
-                {/* Name Input */}
-                <View className="flex-1 mr-3">
-                  <Text className="text-slate-400 text-sm mb-2">Name<Text className="text-red-400">*</Text></Text>
-                  <TextInput
-                    value={newPlayerName}
-                    onChangeText={setNewPlayerName}
-                    placeholder="Enter name"
-                    placeholderTextColor="#64748b"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                  />
-                </View>
+              {/* Name Inputs */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">First Name<Text className="text-red-400">*</Text></Text>
+                <TextInput
+                  value={newPlayerFirstName}
+                  onChangeText={setNewPlayerFirstName}
+                  placeholder="Enter first name"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg mb-3"
+                />
+                <Text className="text-slate-400 text-sm mb-2">Last Name</Text>
+                <TextInput
+                  value={newPlayerLastName}
+                  onChangeText={setNewPlayerLastName}
+                  placeholder="Enter last name (optional)"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                />
+              </View>
 
-                {/* Number Input */}
-                <View style={{ width: 100 }}>
-                  <Text className="text-slate-400 text-sm mb-2">Jersey #<Text className="text-red-400">*</Text></Text>
-                  <TextInput
-                    value={newPlayerNumber}
-                    onChangeText={setNewPlayerNumber}
-                    placeholder="00"
-                    placeholderTextColor="#64748b"
-                    keyboardType="number-pad"
-                    maxLength={2}
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg text-center"
-                  />
-                </View>
+              {/* Number Input */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Jersey #<Text className="text-red-400">*</Text></Text>
+                <TextInput
+                  value={newPlayerNumber}
+                  onChangeText={setNewPlayerNumber}
+                  placeholder="00"
+                  placeholderTextColor="#64748b"
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                />
               </View>
 
               {/* Phone */}
@@ -1805,7 +1827,7 @@ export default function AdminScreen() {
                 Player Added!
               </Text>
               <Text className="text-slate-400 text-center mt-2">
-                Send {newlyCreatedPlayer?.name} an invite to register and join the team?
+                Send {newlyCreatedPlayer ? getPlayerName(newlyCreatedPlayer) : ''} an invite to register and join the team?
               </Text>
             </View>
 

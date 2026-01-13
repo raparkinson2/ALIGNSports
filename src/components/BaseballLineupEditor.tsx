@@ -5,7 +5,7 @@ import { X, Trash2 } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { BaseballLineup, Player } from '@/lib/store';
+import { BaseballLineup, Player, getPlayerName } from '@/lib/store';
 import { cn } from '@/lib/cn';
 
 interface BaseballLineupEditorProps {
@@ -163,7 +163,7 @@ export function BaseballLineupEditor({
               />
             </View>
             <Text className="text-white text-xs font-semibold mt-1">#{player.number}</Text>
-            <Text className="text-slate-400 text-[10px]">{player.name.split(' ')[0]}</Text>
+            <Text className="text-slate-400 text-[10px]">{getPlayerName(player).split(' ')[0]}</Text>
           </>
         ) : (
           <>
@@ -289,7 +289,7 @@ export function BaseballLineupEditor({
                           contentFit="cover"
                         />
                         <View className="ml-3 flex-1">
-                          <Text className="text-white font-medium">{player.name}</Text>
+                          <Text className="text-white font-medium">{getPlayerName(player)}</Text>
                           <Text className="text-slate-400 text-xs">#{player.number}</Text>
                         </View>
                         <Text className="text-slate-500 text-xs">{player.position}</Text>

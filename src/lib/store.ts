@@ -211,7 +211,8 @@ export interface GameLogEntry {
 // Types
 export interface Player {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email?: string;
   password?: string; // For authentication
   phone?: string;
@@ -229,6 +230,18 @@ export interface Player {
   goalieStats?: HockeyGoalieStats | SoccerGoalieStats; // Separate stats for goalie (hockey/soccer only)
   gameLogs?: GameLogEntry[]; // Individual game stat logs
 }
+
+// Helper to get full name from player
+export const getPlayerName = (player: Player): string => {
+  return `${player.firstName} ${player.lastName}`.trim();
+};
+
+// Helper to get initials from player (for avatar fallback)
+export const getPlayerInitials = (player: Player): string => {
+  const first = player.firstName?.charAt(0)?.toUpperCase() || '';
+  const last = player.lastName?.charAt(0)?.toUpperCase() || '';
+  return `${first}${last}`;
+};
 
 // Helper to get all positions for a player (returns positions array or falls back to single position)
 export const getPlayerPositions = (player: Player): string[] => {
@@ -548,14 +561,16 @@ interface TeamStore {
 
 // Mock data
 const mockPlayers: Player[] = [
-  { id: '1', name: 'Mike Johnson', email: 'mike.johnson@email.com', phone: '555-0101', number: '12', position: 'C', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', roles: ['admin', 'captain'], status: 'active', stats: { gamesPlayed: 9, goals: 12, assists: 18, pim: 8, plusMinus: 5 } },
-  { id: '2', name: 'Dave Williams', email: 'dave.williams@email.com', phone: '555-0102', number: '7', position: 'LW', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', roles: ['captain'], status: 'active', stats: { gamesPlayed: 8, goals: 8, assists: 14, pim: 12, plusMinus: 3 } },
-  { id: '3', name: 'Chris Brown', email: 'chris.brown@email.com', phone: '555-0103', number: '22', position: 'RW', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', roles: [], status: 'active', stats: { gamesPlayed: 9, goals: 15, assists: 9, pim: 4, plusMinus: 8 } },
-  { id: '4', name: 'Jake Miller', email: 'jake.miller@email.com', phone: '555-0104', number: '4', position: 'LD', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', roles: [], status: 'active', stats: { gamesPlayed: 9, goals: 2, assists: 11, pim: 18, plusMinus: -2 } },
-  { id: '5', name: 'Ryan Davis', email: 'ryan.davis@email.com', phone: '555-0105', number: '8', position: 'RD', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', roles: [], status: 'active', stats: { gamesPlayed: 7, goals: 3, assists: 8, pim: 14, plusMinus: 1 } },
-  { id: '6', name: 'Tom Wilson', email: 'tom.wilson@email.com', phone: '555-0106', number: '31', position: 'G', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150', roles: [], status: 'active', stats: { games: 8, wins: 6, losses: 1, ties: 1, minutesPlayed: 480, shotsAgainst: 240, saves: 218, goalsAgainst: 22 } },
-  { id: '7', name: 'Steve Anderson', email: 'steve.anderson@email.com', phone: '555-0107', number: '15', position: 'C', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150', roles: [], status: 'reserve', stats: { gamesPlayed: 5, goals: 4, assists: 6, pim: 6, plusMinus: 2 } },
-  { id: '8', name: 'Kevin Martinez', email: 'kevin.martinez@email.com', phone: '555-0108', number: '19', position: 'LW', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150', roles: [], status: 'reserve', stats: { gamesPlayed: 6, goals: 5, assists: 7, pim: 10, plusMinus: 0 } },
+  { id: '1', firstName: 'Mike', lastName: 'Johnson', email: 'mike.johnson@email.com', phone: '555-0101', number: '12', position: 'C', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', roles: ['admin', 'captain'], status: 'active', stats: { gamesPlayed: 9, goals: 12, assists: 18, pim: 8, plusMinus: 5 } },
+  { id: '2', firstName: 'Dave', lastName: 'Williams', email: 'dave.williams@email.com', phone: '555-0102', number: '7', position: 'LW', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', roles: ['captain'], status: 'active', stats: { gamesPlayed: 8, goals: 8, assists: 14, pim: 12, plusMinus: 3 } },
+  { id: '3', firstName: 'Chris', lastName: 'Brown', email: 'chris.brown@email.com', phone: '555-0103', number: '22', position: 'RW', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', roles: [], status: 'active', stats: { gamesPlayed: 9, goals: 15, assists: 9, pim: 4, plusMinus: 8 } },
+  { id: '4', firstName: 'Jake', lastName: 'Miller', email: 'jake.miller@email.com', phone: '555-0104', number: '4', position: 'LD', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', roles: [], status: 'active', stats: { gamesPlayed: 9, goals: 2, assists: 11, pim: 18, plusMinus: -2 } },
+  { id: '5', firstName: 'Ryan', lastName: 'Davis', email: 'ryan.davis@email.com', phone: '555-0105', number: '8', position: 'RD', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', roles: [], status: 'active', stats: { gamesPlayed: 7, goals: 3, assists: 8, pim: 14, plusMinus: 1 } },
+  { id: '6', firstName: 'Tom', lastName: 'Wilson', email: 'tom.wilson@email.com', phone: '555-0106', number: '31', position: 'G', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150', roles: [], status: 'active', stats: { games: 8, wins: 6, losses: 1, ties: 1, minutesPlayed: 480, shotsAgainst: 240, saves: 218, goalsAgainst: 22 } },
+  { id: '7', firstName: 'Steve', lastName: 'Anderson', email: 'steve.anderson@email.com', phone: '555-0107', number: '15', position: 'C', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150', roles: [], status: 'reserve', stats: { gamesPlayed: 5, goals: 4, assists: 6, pim: 6, plusMinus: 2 } },
+  { id: '8', firstName: 'Kevin', lastName: 'Martinez', email: 'kevin.martinez@email.com', phone: '555-0108', number: '19', position: 'LW', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150', roles: [], status: 'reserve', stats: { gamesPlayed: 6, goals: 5, assists: 7, pim: 10, plusMinus: 0 } },
+  { id: '9', firstName: 'Alex', lastName: 'Thompson', email: 'alex.thompson@email.com', phone: '555-0109', number: '30', position: 'G', roles: [], status: 'reserve', stats: { games: 2, wins: 1, losses: 1, ties: 0, minutesPlayed: 120, shotsAgainst: 60, saves: 54, goalsAgainst: 6 } },
+  { id: '10', firstName: 'Brian', lastName: 'Lee', email: 'brian.lee@email.com', phone: '555-0110', number: '25', position: 'RW', roles: [], status: 'active', stats: { gamesPlayed: 4, goals: 2, assists: 3, pim: 2, plusMinus: 1 } },
 ];
 
 const mockGames: Game[] = [
@@ -925,9 +940,15 @@ export const useTeamStore = create<TeamStore>()(
           return { success: false, error: 'An account with this email already exists' };
         }
 
+        // Split name into firstName and lastName
+        const nameParts = name.trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
         const newPlayer: Player = {
           id: Date.now().toString(),
-          name,
+          firstName,
+          lastName,
           email: email.toLowerCase(),
           password,
           number: '1',

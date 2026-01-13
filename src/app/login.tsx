@@ -7,7 +7,7 @@ import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight } from 'lucide-r
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { useTeamStore, Player } from '@/lib/store';
+import { useTeamStore, Player, getPlayerName } from '@/lib/store';
 
 interface PlayerLoginCardProps {
   player: Player;
@@ -38,7 +38,7 @@ function PlayerLoginCard({ player, index, onSelect }: PlayerLoginCardProps) {
             </View>
           )}
           <View className="flex-1 ml-3">
-            <Text className="text-white font-semibold">{player.name}</Text>
+            <Text className="text-white font-semibold">{getPlayerName(player)}</Text>
             <Text className="text-slate-400 text-sm">#{player.number} - {player.position}</Text>
           </View>
           <ChevronRight size={20} color="#67e8f9" />

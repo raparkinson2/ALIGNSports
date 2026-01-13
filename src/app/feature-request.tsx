@@ -7,7 +7,7 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { useState } from 'react';
-import { useTeamStore } from '@/lib/store';
+import { useTeamStore, getPlayerName } from '@/lib/store';
 
 const FEEDBACK_EMAIL = 'sell.hold.given@myclkd.id';
 
@@ -46,7 +46,7 @@ export default function FeatureRequestScreen() {
       `Title: ${title.trim()}\n\n` +
       `Description:\n${description.trim()}\n\n` +
       `---\n` +
-      `Submitted by: ${currentPlayer?.name || 'Unknown'}\n` +
+      `Submitted by: ${currentPlayer ? getPlayerName(currentPlayer) : 'Unknown'}\n` +
       `Team: ${teamName}\n` +
       `Date: ${new Date().toLocaleDateString()}`
     );

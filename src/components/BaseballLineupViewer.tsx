@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { BaseballLineup, Player } from '@/lib/store';
+import { BaseballLineup, Player, getPlayerName } from '@/lib/store';
 
 interface BaseballLineupViewerProps {
   visible: boolean;
@@ -52,7 +52,7 @@ export function BaseballLineupViewer({
               contentFit="cover"
             />
             <Text className="text-white text-xs font-semibold mt-1">#{player.number}</Text>
-            <Text className="text-slate-400 text-[10px]">{player.name.split(' ')[0]}</Text>
+            <Text className="text-slate-400 text-[10px]">{getPlayerName(player).split(' ')[0]}</Text>
           </>
         ) : (
           <>

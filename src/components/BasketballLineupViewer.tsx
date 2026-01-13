@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { BasketballLineup, Player } from '@/lib/store';
+import { BasketballLineup, Player, getPlayerName } from '@/lib/store';
 
 interface BasketballLineupViewerProps {
   visible: boolean;
@@ -102,7 +102,7 @@ export function BasketballLineupViewer({
                                   contentFit="cover"
                                 />
                                 <Text className="text-white text-sm font-semibold mt-1">#{player.number}</Text>
-                                <Text className="text-slate-400 text-xs">{player.name.split(' ')[0]}</Text>
+                                <Text className="text-slate-400 text-xs">{getPlayerName(player).split(' ')[0]}</Text>
                               </>
                             ) : (
                               <>
@@ -137,7 +137,7 @@ export function BasketballLineupViewer({
                                   contentFit="cover"
                                 />
                                 <Text className="text-white text-sm font-semibold mt-1">#{player.number}</Text>
-                                <Text className="text-slate-400 text-xs">{player.name.split(' ')[0]}</Text>
+                                <Text className="text-slate-400 text-xs">{getPlayerName(player).split(' ')[0]}</Text>
                               </>
                             ) : (
                               <>
@@ -172,7 +172,7 @@ export function BasketballLineupViewer({
                                   contentFit="cover"
                                 />
                                 <Text className="text-white text-sm font-semibold mt-1">#{player.number}</Text>
-                                <Text className="text-slate-400 text-xs">{player.name.split(' ')[0]}</Text>
+                                <Text className="text-slate-400 text-xs">{getPlayerName(player).split(' ')[0]}</Text>
                               </>
                             ) : (
                               <>
@@ -213,7 +213,7 @@ export function BasketballLineupViewer({
                             contentFit="cover"
                           />
                           <Text className="text-white text-xs font-semibold mt-1">#{player.number}</Text>
-                          <Text className="text-slate-400 text-[10px]">{player.name.split(' ')[0]}</Text>
+                          <Text className="text-slate-400 text-[10px]">{getPlayerName(player).split(' ')[0]}</Text>
                         </View>
                       );
                     })}

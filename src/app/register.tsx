@@ -21,7 +21,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [foundPlayer, setFoundPlayer] = useState<{ name: string; number: string } | null>(null);
+  const [foundPlayer, setFoundPlayer] = useState<{ firstName: string; lastName: string; number: string } | null>(null);
 
   const hasTeam = players.length > 0;
 
@@ -51,7 +51,7 @@ export default function RegisterScreen() {
       return;
     }
 
-    setFoundPlayer({ name: player.name, number: player.number });
+    setFoundPlayer({ firstName: player.firstName, lastName: player.lastName, number: player.number });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setStep(2);
   };
@@ -207,7 +207,7 @@ export default function RegisterScreen() {
                     <View className="ml-3">
                       <Text className="text-green-400 font-semibold">Invitation Found!</Text>
                       <Text className="text-slate-400 text-sm">
-                        Welcome, {foundPlayer.name} (#{foundPlayer.number})
+                        Welcome, {foundPlayer.firstName} {foundPlayer.lastName} (#{foundPlayer.number})
                       </Text>
                     </View>
                   </View>

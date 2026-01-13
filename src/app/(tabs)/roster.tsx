@@ -18,7 +18,7 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
-import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, PlayerStats, getPlayerPositions, getPrimaryPosition } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, PlayerStats, getPlayerPositions, getPrimaryPosition, getPlayerName } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 
@@ -235,7 +235,7 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
 
           <View className="flex-1 ml-4">
             <View className="flex-row items-center">
-              <Text className="text-white text-lg font-semibold">{player.name}</Text>
+              <Text className="text-white text-lg font-semibold">{getPlayerName(player)}</Text>
               {player.roles?.includes('captain') && (
                 <View className="ml-2 bg-amber-500/20 rounded-full w-6 h-6 items-center justify-center">
                   <Text className="text-amber-500 text-sm font-black">C</Text>
@@ -344,7 +344,8 @@ export default function RosterScreen() {
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [number, setNumber] = useState('');
   const [selectedPositions, setSelectedPositions] = useState<string[]>([positions[0]]);
   const [phone, setPhone] = useState('');
@@ -359,7 +360,8 @@ export default function RosterScreen() {
   const [newlyCreatedPlayer, setNewlyCreatedPlayer] = useState<Player | null>(null);
 
   const resetForm = () => {
-    setName('');
+    setFirstName('');
+    setLastName('');
     setNumber('');
     setSelectedPositions([positions[0]]);
     setPhone('');
@@ -386,7 +388,8 @@ export default function RosterScreen() {
       return;
     }
     setEditingPlayer(player);
-    setName(player.name);
+    setFirstName(player.firstName);
+    setLastName(player.lastName);
     setNumber(player.number);
     setSelectedPositions(getPlayerPositions(player));
     setPhone(formatPhoneNumber(player.phone));
@@ -399,7 +402,7 @@ export default function RosterScreen() {
   };
 
   const handleSave = () => {
-    if (!name.trim() || !number.trim()) return;
+    if (!firstName.trim() || !lastName.trim() || !number.trim()) return;
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -408,7 +411,8 @@ export default function RosterScreen() {
 
     if (editingPlayer) {
       const updates: Partial<Player> = {
-        name: name.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         number: number.trim(),
         position: selectedPositions[0],
         positions: selectedPositions,
@@ -431,13 +435,13 @@ export default function RosterScreen() {
     } else {
       const newPlayer: Player = {
         id: Date.now().toString(),
-        name: name.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         number: number.trim(),
         position: selectedPositions[0],
         positions: selectedPositions,
         phone: rawPhone || undefined,
         email: email.trim() || undefined,
-        avatar: `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150`,
         roles: isAdmin() ? playerRoles : [],
         status: isAdmin() ? playerStatus : 'active',
         isInjured: isAdmin() ? isInjured : false,
@@ -456,7 +460,7 @@ export default function RosterScreen() {
   };
 
   const getInviteMessage = () => {
-    return `Hey ${newlyCreatedPlayer?.name}!\n\nYou've been added to ${teamName}! Download the app and log in using your info to view the schedule, check in for games, and stay connected with the team.\n\nYour jersey number is #${newlyCreatedPlayer?.number}\n\nSee you at the next game!`;
+    return `Hey ${newlyCreatedPlayer ? getPlayerName(newlyCreatedPlayer) : ''}!\n\nYou've been added to ${teamName}! Download the app and log in using your info to view the schedule, check in for games, and stay connected with the team.\n\nYour jersey number is #${newlyCreatedPlayer?.number}\n\nSee you at the next game!`;
   };
 
   const handleSendTextInvite = () => {
@@ -621,33 +625,46 @@ export default function RosterScreen() {
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6">
-              {/* Name and Number Row */}
+              {/* First Name and Last Name Row */}
               <View className="flex-row mb-5">
-                {/* Name Input */}
-                <View className="flex-1 mr-3">
-                  <Text className="text-slate-400 text-sm mb-2">Name</Text>
+                {/* First Name Input */}
+                <View className="flex-1 mr-2">
+                  <Text className="text-slate-400 text-sm mb-2">First Name<Text className="text-red-400">*</Text></Text>
                   <TextInput
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Enter name"
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    placeholder="First"
                     placeholderTextColor="#64748b"
                     className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                   />
                 </View>
 
-                {/* Number Input */}
-                <View style={{ width: 100 }}>
-                  <Text className="text-slate-400 text-sm mb-2">Jersey Number</Text>
+                {/* Last Name Input */}
+                <View className="flex-1 ml-2">
+                  <Text className="text-slate-400 text-sm mb-2">Last Name<Text className="text-red-400">*</Text></Text>
                   <TextInput
-                    value={number}
-                    onChangeText={setNumber}
-                    placeholder="00"
+                    value={lastName}
+                    onChangeText={setLastName}
+                    placeholder="Last"
                     placeholderTextColor="#64748b"
-                    keyboardType="number-pad"
-                    maxLength={2}
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg text-center"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                   />
                 </View>
+              </View>
+
+              {/* Jersey Number Row */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Jersey Number<Text className="text-red-400">*</Text></Text>
+                <TextInput
+                  value={number}
+                  onChangeText={setNumber}
+                  placeholder="00"
+                  placeholderTextColor="#64748b"
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  style={{ width: 100 }}
+                />
               </View>
 
               {/* Phone Input - Admin Only */}
@@ -925,7 +942,7 @@ export default function RosterScreen() {
                 Player Added!
               </Text>
               <Text className="text-slate-400 text-center mt-2">
-                Send {newlyCreatedPlayer?.name} an invite to register and join the team?
+                Send {newlyCreatedPlayer ? getPlayerName(newlyCreatedPlayer) : ''} an invite to register and join the team?
               </Text>
             </View>
 
