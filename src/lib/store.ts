@@ -302,6 +302,21 @@ export interface BaseballLineup {
   catcher?: string; // C
 }
 
+// Soccer Lineup Types (11 starters)
+export interface SoccerLineup {
+  gk?: string;  // Goalkeeper
+  lb?: string;  // Left Back
+  cb1?: string; // Center Back 1
+  cb2?: string; // Center Back 2
+  rb?: string;  // Right Back
+  lm?: string;  // Left Midfield
+  cm1?: string; // Center Midfield 1
+  cm2?: string; // Center Midfield 2
+  rm?: string;  // Right Midfield
+  st1?: string; // Striker 1
+  st2?: string; // Striker 2
+}
+
 export interface Game {
   id: string;
   opponent: string;
@@ -319,6 +334,7 @@ export interface Game {
   lineup?: HockeyLineup; // Hockey line combinations
   basketballLineup?: BasketballLineup; // Basketball lineup
   baseballLineup?: BaseballLineup; // Baseball lineup
+  soccerLineup?: SoccerLineup; // Soccer lineup
 }
 
 // In-app notification types
