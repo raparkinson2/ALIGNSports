@@ -1351,7 +1351,7 @@ export default function AdminScreen() {
                         className="bg-slate-700 rounded-xl px-4 py-3 text-white mb-3"
                       />
                       <Text className="text-slate-400 text-sm mb-2">Select Color</Text>
-                      <View className="flex-row mb-3">
+                      <View className="flex-row justify-between mb-3">
                         {COLOR_PRESETS.map((hex) => (
                           <Pressable
                             key={hex}
@@ -1360,10 +1360,10 @@ export default function AdminScreen() {
                               setEditColorHex(hex);
                             }}
                             className={cn(
-                              'w-[30px] h-[30px] rounded-full border-2 items-center justify-center mr-0.5',
+                              'flex-1 aspect-square rounded-full border-2 items-center justify-center mx-0.5',
                               editColorHex === hex ? 'border-cyan-400' : 'border-slate-600'
                             )}
-                            style={{ backgroundColor: hex }}
+                            style={{ backgroundColor: hex, maxWidth: 32 }}
                           >
                             {editColorHex === hex && (
                               <Check size={14} color={hex === '#ffffff' || hex === '#ca8a04' ? '#000' : '#fff'} />
@@ -1426,7 +1426,7 @@ export default function AdminScreen() {
                 />
 
                 <Text className="text-slate-400 text-sm mb-2">Select Color</Text>
-                <View className="flex-row mb-4">
+                <View className="flex-row justify-between mb-4">
                   {COLOR_PRESETS.map((hex) => (
                     <Pressable
                       key={hex}
@@ -1435,10 +1435,10 @@ export default function AdminScreen() {
                         setNewColorHex(hex);
                       }}
                       className={cn(
-                        'w-[30px] h-[30px] rounded-full border-2 items-center justify-center mr-0.5',
+                        'flex-1 aspect-square rounded-full border-2 items-center justify-center mx-0.5',
                         newColorHex === hex ? 'border-cyan-400' : 'border-slate-600'
                       )}
-                      style={{ backgroundColor: hex }}
+                      style={{ backgroundColor: hex, maxWidth: 32 }}
                     >
                       {newColorHex === hex && (
                         <Check size={14} color={hex === '#ffffff' || hex === '#ca8a04' ? '#000' : '#fff'} />
