@@ -790,8 +790,9 @@ export default function GameDetailScreen() {
                                 {player ? (
                                   <>
                                     <PlayerAvatar player={player} size={48} borderWidth={2} borderColor="#10b981" />
-                                    <Text className="text-emerald-400 text-xs font-medium mt-1">{positions[i]}</Text>
-                                    <Text className="text-white text-xs">#{player.number}</Text>
+                                    <Text className="text-white text-xs mt-1">{player.firstName}</Text>
+                                    <Text className="text-emerald-400 text-xs font-medium">{positions[i]}</Text>
+                                    <Text className="text-slate-400 text-xs">#{player.number}</Text>
                                   </>
                                 ) : (
                                   <>
@@ -823,8 +824,9 @@ export default function GameDetailScreen() {
                                 {player ? (
                                   <>
                                     <PlayerAvatar player={player} size={48} borderWidth={2} borderColor="#10b981" />
-                                    <Text className="text-emerald-400 text-xs font-medium mt-1">{positions[i]}</Text>
-                                    <Text className="text-white text-xs">#{player.number}</Text>
+                                    <Text className="text-white text-xs mt-1">{player.firstName}</Text>
+                                    <Text className="text-emerald-400 text-xs font-medium">{positions[i]}</Text>
+                                    <Text className="text-slate-400 text-xs">#{player.number}</Text>
                                   </>
                                 ) : (
                                   <>
@@ -850,8 +852,9 @@ export default function GameDetailScreen() {
                           <Text className="text-slate-400 text-xs mb-2">{index === 0 ? 'Starter' : 'Backup'}</Text>
                           <View className="items-center">
                             <PlayerAvatar player={g} size={48} borderWidth={2} borderColor="#10b981" />
-                            <Text className="text-emerald-400 text-xs font-medium mt-1">G</Text>
-                            <Text className="text-white text-xs">#{g.number}</Text>
+                            <Text className="text-white text-xs mt-1">{g.firstName}</Text>
+                            <Text className="text-emerald-400 text-xs font-medium">G</Text>
+                            <Text className="text-slate-400 text-xs">#{g.number}</Text>
                           </View>
                         </View>
                       );
