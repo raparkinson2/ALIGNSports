@@ -767,9 +767,10 @@ export default function GameDetailScreen() {
                   const c = line.c ? players.find((p) => p.id === line.c) : null;
                   const rw = line.rw ? players.find((p) => p.id === line.rw) : null;
                   if (!lw && !c && !rw) return null;
+                  const positions = ['LW', 'C', 'RW'];
                   return (
-                    <View key={`fwd-${index}`} className="mb-2">
-                      <Text className="text-slate-400 text-xs mb-1">Line {index + 1}</Text>
+                    <View key={`fwd-${index}`} className="mb-4">
+                      <Text className="text-slate-400 text-xs mb-2">Line {index + 1}</Text>
                       <View className="flex-row justify-around">
                         {[lw, c, rw].map((player, i) => (
                           <View key={i} className="items-center">
@@ -777,15 +778,19 @@ export default function GameDetailScreen() {
                               <>
                                 <Image
                                   source={{ uri: player.avatar }}
-                                  style={{ width: 32, height: 32, borderRadius: 16 }}
+                                  style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#10b981' }}
                                   contentFit="cover"
                                 />
-                                <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                                <Text className="text-emerald-400 text-xs font-medium mt-1">{positions[i]}</Text>
+                                <Text className="text-white text-xs">#{player.number}</Text>
                               </>
                             ) : (
-                              <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                                <Text className="text-slate-500 text-xs">-</Text>
-                              </View>
+                              <>
+                                <View className="w-12 h-12 rounded-full bg-slate-700/50 items-center justify-center border-2 border-slate-600">
+                                  <Text className="text-slate-500 text-xs">-</Text>
+                                </View>
+                                <Text className="text-slate-500 text-xs font-medium mt-1">{positions[i]}</Text>
+                              </>
                             )}
                           </View>
                         ))}
@@ -799,9 +804,10 @@ export default function GameDetailScreen() {
                   const ld = line.ld ? players.find((p) => p.id === line.ld) : null;
                   const rd = line.rd ? players.find((p) => p.id === line.rd) : null;
                   if (!ld && !rd) return null;
+                  const positions = ['LD', 'RD'];
                   return (
-                    <View key={`def-${index}`} className="mb-2">
-                      <Text className="text-slate-400 text-xs mb-1">D-Pair {index + 1}</Text>
+                    <View key={`def-${index}`} className="mb-4">
+                      <Text className="text-slate-400 text-xs mb-2">D-Pair {index + 1}</Text>
                       <View className="flex-row justify-around px-8">
                         {[ld, rd].map((player, i) => (
                           <View key={i} className="items-center">
@@ -809,15 +815,19 @@ export default function GameDetailScreen() {
                               <>
                                 <Image
                                   source={{ uri: player.avatar }}
-                                  style={{ width: 32, height: 32, borderRadius: 16 }}
+                                  style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#10b981' }}
                                   contentFit="cover"
                                 />
-                                <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                                <Text className="text-emerald-400 text-xs font-medium mt-1">{positions[i]}</Text>
+                                <Text className="text-white text-xs">#{player.number}</Text>
                               </>
                             ) : (
-                              <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                                <Text className="text-slate-500 text-xs">-</Text>
-                              </View>
+                              <>
+                                <View className="w-12 h-12 rounded-full bg-slate-700/50 items-center justify-center border-2 border-slate-600">
+                                  <Text className="text-slate-500 text-xs">-</Text>
+                                </View>
+                                <Text className="text-slate-500 text-xs font-medium mt-1">{positions[i]}</Text>
+                              </>
                             )}
                           </View>
                         ))}
@@ -831,15 +841,16 @@ export default function GameDetailScreen() {
                   const g = line.g ? players.find((p) => p.id === line.g) : null;
                   if (!g) return null;
                   return (
-                    <View key={`goal-${index}`} className="mb-2">
-                      <Text className="text-slate-400 text-xs mb-1">{index === 0 ? 'Starter' : 'Backup'}</Text>
+                    <View key={`goal-${index}`} className="mb-4">
+                      <Text className="text-slate-400 text-xs mb-2">{index === 0 ? 'Starter' : 'Backup'}</Text>
                       <View className="items-center">
                         <Image
                           source={{ uri: g.avatar }}
-                          style={{ width: 32, height: 32, borderRadius: 16 }}
+                          style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#10b981' }}
                           contentFit="cover"
                         />
-                        <Text className="text-white text-xs mt-0.5">#{g.number}</Text>
+                        <Text className="text-emerald-400 text-xs font-medium mt-1">G</Text>
+                        <Text className="text-white text-xs">#{g.number}</Text>
                       </View>
                     </View>
                   );
