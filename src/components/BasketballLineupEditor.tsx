@@ -41,7 +41,7 @@ function PositionSlot({ position, playerId, players, onSelect, label }: Position
       <View
         className={cn(
           'w-16 h-16 rounded-full border-2 items-center justify-center overflow-hidden',
-          player ? 'border-orange-500 bg-slate-700' : 'border-slate-600 border-dashed bg-slate-800/50'
+          player ? 'border-emerald-500 bg-slate-700' : 'border-slate-600 border-dashed bg-slate-800/50'
         )}
       >
         {player ? (
@@ -309,7 +309,7 @@ export function BasketballLineupEditor({
               </Pressable>
               <Pressable
                 onPress={handleSave}
-                className="bg-orange-500 px-4 py-2 rounded-lg"
+                className="bg-emerald-500 px-4 py-2 rounded-lg"
               >
                 <Text className="text-white font-semibold">Save</Text>
               </Pressable>
@@ -319,8 +319,8 @@ export function BasketballLineupEditor({
           <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
             {/* Starting 5 Configuration */}
             <Animated.View entering={FadeIn.delay(50)} className="px-5 pt-4">
-              <View className="bg-orange-500/20 rounded-xl p-3 mb-4 border border-orange-500/30">
-                <Text className="text-orange-400 text-sm font-medium text-center">
+              <View className="bg-emerald-500/20 rounded-xl p-3 mb-4 border border-emerald-500/30">
+                <Text className="text-emerald-400 text-sm font-medium text-center">
                   Starting 5: {currentStarterCount}/5 positions configured
                   {remainingSlots > 0 && ` (${remainingSlots} remaining)`}
                 </Text>
@@ -335,10 +335,10 @@ export function BasketballLineupEditor({
                   onPress={() => handleConfigChange('pg', 0)}
                   className={cn(
                     'px-4 py-2 rounded-lg',
-                    lineup.hasPG ? 'bg-orange-500/30' : 'bg-slate-800'
+                    lineup.hasPG ? 'bg-emerald-500/30' : 'bg-slate-800'
                   )}
                 >
-                  <Text className={lineup.hasPG ? 'text-orange-400 font-medium' : 'text-slate-400'}>
+                  <Text className={lineup.hasPG ? 'text-emerald-400 font-medium' : 'text-slate-400'}>
                     {lineup.hasPG ? 'Enabled' : 'Disabled'}
                   </Text>
                 </Pressable>
@@ -374,7 +374,7 @@ export function BasketballLineupEditor({
                   >
                     <Minus
                       size={20}
-                      color={lineup.numGuards <= 0 ? '#475569' : '#fb923c'}
+                      color={lineup.numGuards <= 0 ? '#475569' : '#10b981'}
                     />
                   </Pressable>
                   <Text className="text-white font-bold px-3">{lineup.numGuards}</Text>
@@ -385,7 +385,7 @@ export function BasketballLineupEditor({
                   >
                     <Plus
                       size={20}
-                      color={lineup.numGuards >= 3 || currentStarterCount >= 5 ? '#475569' : '#fb923c'}
+                      color={lineup.numGuards >= 3 || currentStarterCount >= 5 ? '#475569' : '#10b981'}
                     />
                   </Pressable>
                 </View>
@@ -424,7 +424,7 @@ export function BasketballLineupEditor({
                   >
                     <Minus
                       size={20}
-                      color={lineup.numForwards <= 0 ? '#475569' : '#fb923c'}
+                      color={lineup.numForwards <= 0 ? '#475569' : '#10b981'}
                     />
                   </Pressable>
                   <Text className="text-white font-bold px-3">{lineup.numForwards}</Text>
@@ -435,7 +435,7 @@ export function BasketballLineupEditor({
                   >
                     <Plus
                       size={20}
-                      color={lineup.numForwards >= 2 || currentStarterCount >= 5 ? '#475569' : '#fb923c'}
+                      color={lineup.numForwards >= 2 || currentStarterCount >= 5 ? '#475569' : '#10b981'}
                     />
                   </Pressable>
                 </View>
@@ -474,7 +474,7 @@ export function BasketballLineupEditor({
                   >
                     <Minus
                       size={20}
-                      color={lineup.numCenters <= 0 ? '#475569' : '#fb923c'}
+                      color={lineup.numCenters <= 0 ? '#475569' : '#10b981'}
                     />
                   </Pressable>
                   <Text className="text-white font-bold px-3">{lineup.numCenters}</Text>
@@ -485,7 +485,7 @@ export function BasketballLineupEditor({
                   >
                     <Plus
                       size={20}
-                      color={lineup.numCenters >= 2 || currentStarterCount >= 5 ? '#475569' : '#fb923c'}
+                      color={lineup.numCenters >= 2 || currentStarterCount >= 5 ? '#475569' : '#10b981'}
                     />
                   </Pressable>
                 </View>

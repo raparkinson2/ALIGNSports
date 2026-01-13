@@ -572,17 +572,17 @@ export default function GameDetailScreen() {
             >
               <Pressable
                 onPress={() => setIsBasketballLineupModalVisible(true)}
-                className="bg-orange-500/20 rounded-2xl p-4 border border-orange-500/30 active:bg-orange-500/30"
+                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30 active:bg-emerald-500/30"
               >
                 <View className="flex-row items-center">
-                  <ListOrdered size={24} color="#fb923c" />
+                  <ListOrdered size={24} color="#10b981" />
                   <View className="flex-1 ml-3">
-                    <Text className="text-orange-400 font-semibold">Set Lineup</Text>
+                    <Text className="text-emerald-400 font-semibold">Set Lineup</Text>
                     <Text className="text-slate-400 text-sm">
                       {hasAssignedBasketballPlayers(game.basketballLineup) ? 'Edit starting 5 and bench' : 'Configure starting 5 and bench players'}
                     </Text>
                   </View>
-                  <ChevronDown size={20} color="#fb923c" />
+                  <ChevronDown size={20} color="#10b981" />
                 </View>
               </Pressable>
             </Animated.View>
@@ -742,15 +742,15 @@ export default function GameDetailScreen() {
             >
               <Pressable
                 onPress={canManageTeam() ? () => setIsBasketballLineupModalVisible(true) : undefined}
-                className="bg-orange-500/20 rounded-2xl p-4 border border-orange-500/30"
+                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30"
               >
                 <View className="flex-row items-center justify-between mb-3">
                   <View className="flex-row items-center">
-                    <ListOrdered size={20} color="#fb923c" />
-                    <Text className="text-orange-400 font-semibold ml-2">Lineup</Text>
+                    <ListOrdered size={20} color="#10b981" />
+                    <Text className="text-emerald-400 font-semibold ml-2">Lineup</Text>
                   </View>
                   {canManageTeam() && (
-                    <ChevronDown size={20} color="#fb923c" />
+                    <ChevronDown size={20} color="#10b981" />
                   )}
                 </View>
 

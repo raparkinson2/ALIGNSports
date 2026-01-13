@@ -61,7 +61,7 @@ export function BasketballLineupViewer({
                 {/* Point Guard */}
                 {lineup.hasPG && (
                   <View className="mb-4">
-                    <Text className="text-orange-400 text-xs font-medium mb-2 text-center">Point Guard</Text>
+                    <Text className="text-emerald-400 text-xs font-medium mb-2 text-center">Point Guard</Text>
                     <View className="items-center">
                       {pg ? (
                         <>
@@ -88,7 +88,7 @@ export function BasketballLineupViewer({
                 {/* Guards */}
                 {lineup.numGuards > 0 && (
                   <View className="mb-4">
-                    <Text className="text-orange-400 text-xs font-medium mb-2 text-center">Guards</Text>
+                    <Text className="text-emerald-400 text-xs font-medium mb-2 text-center">Guards</Text>
                     <View className="flex-row justify-around">
                       {lineup.starters.guards.slice(0, lineup.numGuards).map((playerId, index) => {
                         const player = getPlayer(playerId);
@@ -123,7 +123,7 @@ export function BasketballLineupViewer({
                 {/* Forwards */}
                 {lineup.numForwards > 0 && (
                   <View className="mb-4">
-                    <Text className="text-orange-400 text-xs font-medium mb-2 text-center">Forwards</Text>
+                    <Text className="text-emerald-400 text-xs font-medium mb-2 text-center">Forwards</Text>
                     <View className="flex-row justify-around">
                       {lineup.starters.forwards.slice(0, lineup.numForwards).map((playerId, index) => {
                         const player = getPlayer(playerId);
@@ -158,7 +158,7 @@ export function BasketballLineupViewer({
                 {/* Centers */}
                 {lineup.numCenters > 0 && (
                   <View>
-                    <Text className="text-orange-400 text-xs font-medium mb-2 text-center">Centers</Text>
+                    <Text className="text-emerald-400 text-xs font-medium mb-2 text-center">Centers</Text>
                     <View className="flex-row justify-around">
                       {lineup.starters.centers.slice(0, lineup.numCenters).map((playerId, index) => {
                         const player = getPlayer(playerId);

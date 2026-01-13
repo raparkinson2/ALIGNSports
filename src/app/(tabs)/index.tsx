@@ -228,10 +228,10 @@ function GameCard({ game, index, onPress, onViewLines }: GameCardProps) {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   onViewLines();
                 }}
-                className="bg-orange-500/20 rounded-xl p-3 mb-3 border border-orange-500/30 flex-row items-center justify-center active:bg-orange-500/30"
+                className="bg-emerald-500/20 rounded-xl p-3 mb-3 border border-emerald-500/30 flex-row items-center justify-center active:bg-emerald-500/30"
               >
-                <ListOrdered size={16} color="#fb923c" />
-                <Text className="text-orange-400 font-medium ml-2">Game Lineup</Text>
+                <ListOrdered size={16} color="#10b981" />
+                <Text className="text-emerald-400 font-medium ml-2">Game Lineup</Text>
               </Pressable>
             )}
 
