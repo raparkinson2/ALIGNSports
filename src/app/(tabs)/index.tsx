@@ -17,6 +17,7 @@ import {
   ChevronDown,
   Edit3,
   CalendarPlus,
+  ListOrdered,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -27,6 +28,7 @@ import { cn } from '@/lib/cn';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { AddressSearch } from '@/components/AddressSearch';
+import { LineupViewer, hasAssignedPlayers } from '@/components/LineupViewer';
 
 const getDateLabel = (dateString: string): string => {
   const date = parseISO(dateString);
@@ -129,9 +131,10 @@ interface GameCardProps {
   game: Game;
   index: number;
   onPress: () => void;
+  onViewLines: () => void;
 }
 
-function GameCard({ game, index, onPress }: GameCardProps) {
+function GameCard({ game, index, onPress, onViewLines }: GameCardProps) {
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const players = useTeamStore((s) => s.players);
   const checkedInCount = game.checkedInPlayers?.length ?? 0;
@@ -149,6 +152,9 @@ function GameCard({ game, index, onPress }: GameCardProps) {
   // If found in settings, use the name. Otherwise, try to convert hex to color name
   const jerseyColorName = jerseyColorInfo?.name || hexToColorName(game.jerseyColor);
   const jerseyColorHex = jerseyColorInfo?.color || game.jerseyColor;
+
+  // Check if lines are set (for hockey only)
+  const showLinesButton = teamSettings.sport === 'hockey' && hasAssignedPlayers(game.lineup);
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 100).springify()}>
@@ -195,6 +201,21 @@ function GameCard({ game, index, onPress }: GameCardProps) {
               <Text className="text-slate-400 text-sm ml-2">{game.location}</Text>
             </View>
 
+            {/* Game Lines Button */}
+            {showLinesButton && (
+              <Pressable
+                onPress={(e) => {
+                  e.stopPropagation();
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onViewLines();
+                }}
+                className="bg-emerald-500/20 rounded-xl p-3 mb-3 border border-emerald-500/30 flex-row items-center justify-center active:bg-emerald-500/30"
+              >
+                <ListOrdered size={16} color="#10b981" />
+                <Text className="text-emerald-400 font-medium ml-2">Game Lines</Text>
+              </Pressable>
+            )}
+
             {/* Footer */}
             <View className="flex-row items-center pt-3 border-t border-slate-700/50">
               <View className="flex-row items-center">
@@ -235,6 +256,7 @@ export default function ScheduleScreen() {
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isRecordModalVisible, setIsRecordModalVisible] = useState(false);
+  const [lineupViewerGame, setLineupViewerGame] = useState<Game | null>(null);
   const [opponent, setOpponent] = useState('');
   const [location, setLocation] = useState('');
   const [gameDate, setGameDate] = useState(new Date());
@@ -475,6 +497,7 @@ export default function ScheduleScreen() {
                 game={game}
                 index={index}
                 onPress={() => router.push(`/game/${game.id}`)}
+                onViewLines={() => setLineupViewerGame(game)}
               />
             ))
           )}
@@ -962,6 +985,17 @@ export default function ScheduleScreen() {
           </SafeAreaView>
         </View>
       </Modal>
+
+      {/* Lineup Viewer Modal */}
+      {lineupViewerGame?.lineup && (
+        <LineupViewer
+          visible={!!lineupViewerGame}
+          onClose={() => setLineupViewerGame(null)}
+          lineup={lineupViewerGame.lineup}
+          players={players}
+          opponent={lineupViewerGame.opponent}
+        />
+      )}
     </View>
   );
 }
