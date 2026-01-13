@@ -29,6 +29,8 @@ import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { AddressSearch } from '@/components/AddressSearch';
 import { LineupViewer, hasAssignedPlayers } from '@/components/LineupViewer';
+import { BasketballLineupViewer } from '@/components/BasketballLineupViewer';
+import { hasAssignedBasketballPlayers } from '@/components/BasketballLineupEditor';
 
 const getDateLabel = (dateString: string): string => {
   const date = parseISO(dateString);
@@ -155,6 +157,8 @@ function GameCard({ game, index, onPress, onViewLines }: GameCardProps) {
 
   // Check if lines are set (for hockey only)
   const showLinesButton = teamSettings.sport === 'hockey' && hasAssignedPlayers(game.lineup);
+  // Check if lineup is set (for basketball)
+  const showBasketballLineupButton = teamSettings.sport === 'basketball' && hasAssignedBasketballPlayers(game.basketballLineup);
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 100).springify()}>
@@ -213,6 +217,21 @@ function GameCard({ game, index, onPress, onViewLines }: GameCardProps) {
               >
                 <ListOrdered size={16} color="#10b981" />
                 <Text className="text-emerald-400 font-medium ml-2">Game Lines</Text>
+              </Pressable>
+            )}
+
+            {/* Game Lineup Button (Basketball) */}
+            {showBasketballLineupButton && (
+              <Pressable
+                onPress={(e) => {
+                  e.stopPropagation();
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onViewLines();
+                }}
+                className="bg-orange-500/20 rounded-xl p-3 mb-3 border border-orange-500/30 flex-row items-center justify-center active:bg-orange-500/30"
+              >
+                <ListOrdered size={16} color="#fb923c" />
+                <Text className="text-orange-400 font-medium ml-2">Game Lineup</Text>
               </Pressable>
             )}
 
@@ -986,12 +1005,23 @@ export default function ScheduleScreen() {
         </View>
       </Modal>
 
-      {/* Lineup Viewer Modal */}
-      {lineupViewerGame?.lineup && (
+      {/* Lineup Viewer Modal (Hockey) */}
+      {lineupViewerGame?.lineup && teamSettings.sport === 'hockey' && (
         <LineupViewer
           visible={!!lineupViewerGame}
           onClose={() => setLineupViewerGame(null)}
           lineup={lineupViewerGame.lineup}
+          players={players}
+          opponent={lineupViewerGame.opponent}
+        />
+      )}
+
+      {/* Basketball Lineup Viewer Modal */}
+      {lineupViewerGame?.basketballLineup && teamSettings.sport === 'basketball' && (
+        <BasketballLineupViewer
+          visible={!!lineupViewerGame}
+          onClose={() => setLineupViewerGame(null)}
+          lineup={lineupViewerGame.basketballLineup}
           players={players}
           opponent={lineupViewerGame.opponent}
         />

@@ -271,6 +271,24 @@ export interface HockeyLineup {
   numGoalieLines: number;  // 1-2
 }
 
+// Basketball Lineup Types
+export interface BasketballStartingFive {
+  pg?: string; // Point Guard - max 1
+  guards: (string | undefined)[]; // Guards (G) - max 3
+  forwards: (string | undefined)[]; // Forwards (F) - max 2
+  centers: (string | undefined)[]; // Centers (C) - max 2
+}
+
+export interface BasketballLineup {
+  starters: BasketballStartingFive;
+  bench: (string | undefined)[]; // Up to 10 bench spots
+  // Configuration for how many of each position in starting 5
+  numGuards: number; // 0-3
+  numForwards: number; // 0-2
+  numCenters: number; // 0-2
+  hasPG: boolean; // 0 or 1
+}
+
 export interface Game {
   id: string;
   opponent: string;
@@ -286,6 +304,7 @@ export interface Game {
   showBeerDuty: boolean; // Admin toggle for beer/refreshment duty display
   beerDutyPlayerId?: string; // Player responsible for bringing beverages
   lineup?: HockeyLineup; // Hockey line combinations
+  basketballLineup?: BasketballLineup; // Basketball lineup
 }
 
 // In-app notification types

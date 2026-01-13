@@ -33,13 +33,15 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { LineupEditor } from '@/components/LineupEditor';
 import { hasAssignedPlayers } from '@/components/LineupViewer';
+import { BasketballLineupEditor, hasAssignedBasketballPlayers } from '@/components/BasketballLineupEditor';
+import { BasketballLineupViewer } from '@/components/BasketballLineupViewer';
 
 // Helper to convert hex codes to readable color names
 const hexToColorName = (hex: string): string => {
@@ -182,6 +184,7 @@ export default function GameDetailScreen() {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
   const [isLineupModalVisible, setIsLineupModalVisible] = useState(false);
+  const [isBasketballLineupModalVisible, setIsBasketballLineupModalVisible] = useState(false);
 
   // Edit form state
   const [editOpponent, setEditOpponent] = useState('');
@@ -455,6 +458,11 @@ export default function GameDetailScreen() {
     setIsLineupModalVisible(false);
   };
 
+  const handleSaveBasketballLineup = (basketballLineup: BasketballLineup) => {
+    updateGame(game.id, { basketballLineup });
+    setIsBasketballLineupModalVisible(false);
+  };
+
   return (
     <View className="flex-1 bg-slate-900">
       <LinearGradient
@@ -551,6 +559,30 @@ export default function GameDetailScreen() {
                     </Text>
                   </View>
                   <ChevronDown size={20} color="#10b981" />
+                </View>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* Set Lineup Button - Only for basketball and captains/admins */}
+          {teamSettings.sport === 'basketball' && canManageTeam() && (
+            <Animated.View
+              entering={FadeInUp.delay(115).springify()}
+              className="mx-4 mb-4"
+            >
+              <Pressable
+                onPress={() => setIsBasketballLineupModalVisible(true)}
+                className="bg-orange-500/20 rounded-2xl p-4 border border-orange-500/30 active:bg-orange-500/30"
+              >
+                <View className="flex-row items-center">
+                  <ListOrdered size={24} color="#fb923c" />
+                  <View className="flex-1 ml-3">
+                    <Text className="text-orange-400 font-semibold">Set Lineup</Text>
+                    <Text className="text-slate-400 text-sm">
+                      {hasAssignedBasketballPlayers(game.basketballLineup) ? 'Edit starting 5 and bench' : 'Configure starting 5 and bench players'}
+                    </Text>
+                  </View>
+                  <ChevronDown size={20} color="#fb923c" />
                 </View>
               </Pressable>
             </Animated.View>
@@ -698,6 +730,126 @@ export default function GameDetailScreen() {
                     </View>
                   );
                 })}
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* Basketball Lineup Display - Only when lineup is set and has players */}
+          {teamSettings.sport === 'basketball' && game.basketballLineup && hasAssignedBasketballPlayers(game.basketballLineup) && (
+            <Animated.View
+              entering={FadeInUp.delay(125).springify()}
+              className="mx-4 mb-4"
+            >
+              <Pressable
+                onPress={canManageTeam() ? () => setIsBasketballLineupModalVisible(true) : undefined}
+                className="bg-orange-500/20 rounded-2xl p-4 border border-orange-500/30"
+              >
+                <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center">
+                    <ListOrdered size={20} color="#fb923c" />
+                    <Text className="text-orange-400 font-semibold ml-2">Lineup</Text>
+                  </View>
+                  {canManageTeam() && (
+                    <ChevronDown size={20} color="#fb923c" />
+                  )}
+                </View>
+
+                {/* Starting 5 Preview */}
+                <Text className="text-slate-400 text-xs mb-2">Starting 5</Text>
+                <View className="flex-row justify-around mb-2">
+                  {/* PG */}
+                  {game.basketballLineup.hasPG && (
+                    <View className="items-center">
+                      {game.basketballLineup.starters.pg ? (
+                        <>
+                          <Image
+                            source={{ uri: players.find((p) => p.id === game.basketballLineup!.starters.pg)?.avatar }}
+                            style={{ width: 32, height: 32, borderRadius: 16 }}
+                            contentFit="cover"
+                          />
+                          <Text className="text-white text-xs mt-0.5">#{players.find((p) => p.id === game.basketballLineup!.starters.pg)?.number}</Text>
+                        </>
+                      ) : (
+                        <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                          <Text className="text-slate-500 text-xs">PG</Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                  {/* Guards */}
+                  {game.basketballLineup.starters.guards.slice(0, game.basketballLineup.numGuards).map((playerId, i) => {
+                    const player = playerId ? players.find((p) => p.id === playerId) : null;
+                    return (
+                      <View key={`g-${i}`} className="items-center">
+                        {player ? (
+                          <>
+                            <Image
+                              source={{ uri: player.avatar }}
+                              style={{ width: 32, height: 32, borderRadius: 16 }}
+                              contentFit="cover"
+                            />
+                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                          </>
+                        ) : (
+                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                            <Text className="text-slate-500 text-xs">G</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                  {/* Forwards */}
+                  {game.basketballLineup.starters.forwards.slice(0, game.basketballLineup.numForwards).map((playerId, i) => {
+                    const player = playerId ? players.find((p) => p.id === playerId) : null;
+                    return (
+                      <View key={`f-${i}`} className="items-center">
+                        {player ? (
+                          <>
+                            <Image
+                              source={{ uri: player.avatar }}
+                              style={{ width: 32, height: 32, borderRadius: 16 }}
+                              contentFit="cover"
+                            />
+                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                          </>
+                        ) : (
+                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                            <Text className="text-slate-500 text-xs">F</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                  {/* Centers */}
+                  {game.basketballLineup.starters.centers.slice(0, game.basketballLineup.numCenters).map((playerId, i) => {
+                    const player = playerId ? players.find((p) => p.id === playerId) : null;
+                    return (
+                      <View key={`c-${i}`} className="items-center">
+                        {player ? (
+                          <>
+                            <Image
+                              source={{ uri: player.avatar }}
+                              style={{ width: 32, height: 32, borderRadius: 16 }}
+                              contentFit="cover"
+                            />
+                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                          </>
+                        ) : (
+                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                            <Text className="text-slate-500 text-xs">C</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {/* Bench count */}
+                {game.basketballLineup.bench.filter(Boolean).length > 0 && (
+                  <Text className="text-slate-400 text-xs text-center">
+                    + {game.basketballLineup.bench.filter(Boolean).length} on bench
+                  </Text>
+                )}
               </Pressable>
             </Animated.View>
           )}
@@ -1241,6 +1393,15 @@ export default function GameDetailScreen() {
         onClose={() => setIsLineupModalVisible(false)}
         onSave={handleSaveLineup}
         initialLineup={game.lineup}
+        availablePlayers={players}
+      />
+
+      {/* Basketball Lineup Editor Modal */}
+      <BasketballLineupEditor
+        visible={isBasketballLineupModalVisible}
+        onClose={() => setIsBasketballLineupModalVisible(false)}
+        onSave={handleSaveBasketballLineup}
+        initialLineup={game.basketballLineup}
         availablePlayers={players}
       />
     </View>
