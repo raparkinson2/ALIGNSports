@@ -277,7 +277,10 @@ export default function PaymentsScreen() {
   const paymentMethods = teamSettings.paymentMethods ?? [];
 
   const handleAddPaymentMethod = () => {
-    if (!paymentUsername.trim()) return;
+    if (!paymentUsername.trim()) {
+      Alert.alert('Missing Info', 'Please enter the username, email, or phone number for this payment method.');
+      return;
+    }
 
     const newMethod: PaymentMethod = {
       app: selectedApp,
@@ -739,7 +742,7 @@ export default function PaymentsScreen() {
                    selectedApp === 'paypal' ? 'PayPal.me Username' :
                    selectedApp === 'cashapp' ? 'Cash App $Cashtag' :
                    selectedApp === 'applepay' ? 'Phone Number or Email' :
-                   'Zelle Email/Phone'}
+                   'Zelle Email/Phone'}<Text className="text-red-400">*</Text>
                 </Text>
                 <TextInput
                   value={paymentUsername}
@@ -761,6 +764,8 @@ export default function PaymentsScreen() {
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                 />
               </View>
+
+              <Text className="text-slate-500 text-xs mb-3"><Text className="text-red-400">*</Text> Required</Text>
             </ScrollView>
           </SafeAreaView>
         </View>
