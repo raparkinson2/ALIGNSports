@@ -1,0 +1,302 @@
+import { useState, useMemo } from 'react';
+import { View, Text, Modal, Pressable, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { X, Check, Trash2 } from 'lucide-react-native';
+import { Image } from 'expo-image';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { BaseballLineup, Player } from '@/lib/store';
+
+interface BaseballLineupEditorProps {
+  visible: boolean;
+  onClose: () => void;
+  onSave: (lineup: BaseballLineup) => void;
+  initialLineup?: BaseballLineup;
+  players: Player[];
+}
+
+type PositionKey = 'lf' | 'cf' | 'rf' | 'thirdBase' | 'shortstop' | 'secondBase' | 'firstBase' | 'pitcher' | 'catcher';
+
+const POSITION_LABELS: Record<PositionKey, string> = {
+  lf: 'LF',
+  cf: 'CF',
+  rf: 'RF',
+  thirdBase: '3B',
+  shortstop: 'SS',
+  secondBase: '2B',
+  firstBase: '1B',
+  pitcher: 'P',
+  catcher: 'C',
+};
+
+const POSITION_NAMES: Record<PositionKey, string> = {
+  lf: 'Left Field',
+  cf: 'Center Field',
+  rf: 'Right Field',
+  thirdBase: 'Third Base',
+  shortstop: 'Shortstop',
+  secondBase: 'Second Base',
+  firstBase: 'First Base',
+  pitcher: 'Pitcher',
+  catcher: 'Catcher',
+};
+
+const createEmptyLineup = (): BaseballLineup => ({
+  lf: undefined,
+  cf: undefined,
+  rf: undefined,
+  thirdBase: undefined,
+  shortstop: undefined,
+  secondBase: undefined,
+  firstBase: undefined,
+  pitcher: undefined,
+  catcher: undefined,
+});
+
+// Helper function to check if a lineup has any assigned players
+export function hasAssignedBaseballPlayers(lineup: BaseballLineup | undefined): boolean {
+  if (!lineup) return false;
+  return !!(
+    lineup.lf ||
+    lineup.cf ||
+    lineup.rf ||
+    lineup.thirdBase ||
+    lineup.shortstop ||
+    lineup.secondBase ||
+    lineup.firstBase ||
+    lineup.pitcher ||
+    lineup.catcher
+  );
+}
+
+export function BaseballLineupEditor({
+  visible,
+  onClose,
+  onSave,
+  initialLineup,
+  players,
+}: BaseballLineupEditorProps) {
+  const [lineup, setLineup] = useState<BaseballLineup>(initialLineup || createEmptyLineup());
+  const [selectedPosition, setSelectedPosition] = useState<PositionKey | null>(null);
+
+  // Get all assigned player IDs
+  const assignedPlayerIds = useMemo(() => {
+    const ids = new Set<string>();
+    Object.values(lineup).forEach((playerId) => {
+      if (playerId) ids.add(playerId);
+    });
+    return ids;
+  }, [lineup]);
+
+  // Available players (not assigned to any position)
+  const availablePlayers = useMemo(() => {
+    return players.filter((p) => p.status === 'active' && !assignedPlayerIds.has(p.id));
+  }, [players, assignedPlayerIds]);
+
+  const handlePositionSelect = (position: PositionKey) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedPosition(position);
+  };
+
+  const handlePlayerSelect = (playerId: string) => {
+    if (!selectedPosition) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setLineup((prev) => ({
+      ...prev,
+      [selectedPosition]: playerId,
+    }));
+    setSelectedPosition(null);
+  };
+
+  const handleRemovePlayer = (position: PositionKey) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setLineup((prev) => ({
+      ...prev,
+      [position]: undefined,
+    }));
+  };
+
+  const handleClearAllPositions = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setLineup(createEmptyLineup());
+  };
+
+  const handleSave = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onSave(lineup);
+  };
+
+  const getPlayer = (playerId: string | undefined) => {
+    return playerId ? players.find((p) => p.id === playerId) : null;
+  };
+
+  const renderPositionSlot = (position: PositionKey, size: 'large' | 'medium' = 'medium') => {
+    const player = getPlayer(lineup[position]);
+    const isSelected = selectedPosition === position;
+    const slotSize = size === 'large' ? 64 : 52;
+
+    return (
+      <Pressable
+        onPress={() => handlePositionSelect(position)}
+        onLongPress={() => player && handleRemovePlayer(position)}
+        className={`items-center ${isSelected ? 'opacity-50' : ''}`}
+      >
+        {player ? (
+          <>
+            <View
+              className="border-2 border-emerald-500 rounded-full"
+              style={{ width: slotSize + 4, height: slotSize + 4 }}
+            >
+              <Image
+                source={{ uri: player.avatar }}
+                style={{ width: slotSize, height: slotSize, borderRadius: slotSize / 2 }}
+                contentFit="cover"
+              />
+            </View>
+            <Text className="text-white text-xs font-semibold mt-1">#{player.number}</Text>
+            <Text className="text-slate-400 text-[10px]">{player.name.split(' ')[0]}</Text>
+          </>
+        ) : (
+          <>
+            <View
+              className={`rounded-full bg-slate-700/50 items-center justify-center border-2 ${
+                isSelected ? 'border-emerald-500' : 'border-slate-600'
+              }`}
+              style={{ width: slotSize + 4, height: slotSize + 4 }}
+            >
+              <Text className="text-slate-500 text-lg">+</Text>
+            </View>
+            <Text className="text-slate-500 text-xs mt-1">Tap to add</Text>
+          </>
+        )}
+        <Text className="text-emerald-400 text-[10px] font-medium mt-0.5">
+          {POSITION_LABELS[position]}
+        </Text>
+      </Pressable>
+    );
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <View className="flex-1 bg-slate-900">
+        <SafeAreaView className="flex-1">
+          {/* Header */}
+          <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+            <Pressable onPress={onClose} className="p-1">
+              <X size={24} color="#64748b" />
+            </Pressable>
+            <Text className="text-white text-lg font-semibold">Set Lineup</Text>
+            <Pressable onPress={handleSave} className="p-1">
+              <Check size={24} color="#10b981" />
+            </Pressable>
+          </View>
+
+          <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
+            {/* Clear All Button */}
+            <Animated.View entering={FadeIn.delay(50)} className="px-5 pt-4">
+              <Pressable
+                onPress={handleClearAllPositions}
+                className="flex-row items-center justify-center bg-red-500/10 rounded-xl py-3 border border-red-500/30"
+              >
+                <Trash2 size={18} color="#ef4444" />
+                <Text className="text-red-500 font-medium ml-2">Clear All Positions</Text>
+              </Pressable>
+            </Animated.View>
+
+            {/* Diamond Layout */}
+            <Animated.View entering={FadeIn.delay(100)} className="px-5 pt-6">
+              <Text className="text-white text-lg font-semibold mb-4 text-center">
+                Field Positions
+              </Text>
+
+              <View className="bg-slate-800/60 rounded-2xl p-4 border border-slate-700/50">
+                {/* Outfield Row */}
+                <View className="flex-row justify-around mb-6">
+                  {renderPositionSlot('lf')}
+                  {renderPositionSlot('cf', 'large')}
+                  {renderPositionSlot('rf')}
+                </View>
+
+                {/* Infield Row - SS and 2B */}
+                <View className="flex-row justify-center gap-16 mb-4">
+                  {renderPositionSlot('shortstop')}
+                  {renderPositionSlot('secondBase')}
+                </View>
+
+                {/* Infield Row - 3B and 1B */}
+                <View className="flex-row justify-between px-6 mb-4">
+                  {renderPositionSlot('thirdBase')}
+                  {renderPositionSlot('firstBase')}
+                </View>
+
+                {/* Pitcher */}
+                <View className="items-center mb-4">
+                  {renderPositionSlot('pitcher', 'large')}
+                </View>
+
+                {/* Catcher */}
+                <View className="items-center">
+                  {renderPositionSlot('catcher', 'large')}
+                </View>
+              </View>
+            </Animated.View>
+
+            {/* Player Selection */}
+            {selectedPosition && (
+              <Animated.View entering={FadeInDown.delay(50)} className="px-5 pt-6">
+                <Text className="text-white text-lg font-semibold mb-3">
+                  Select {POSITION_NAMES[selectedPosition]}
+                </Text>
+
+                <View className="bg-slate-800/60 rounded-2xl border border-slate-700/50 overflow-hidden">
+                  {availablePlayers.length === 0 ? (
+                    <View className="p-4">
+                      <Text className="text-slate-400 text-center">
+                        All players are assigned to positions
+                      </Text>
+                    </View>
+                  ) : (
+                    availablePlayers.map((player, index) => (
+                      <Pressable
+                        key={player.id}
+                        onPress={() => handlePlayerSelect(player.id)}
+                        className={`flex-row items-center p-3 ${
+                          index < availablePlayers.length - 1 ? 'border-b border-slate-700/50' : ''
+                        }`}
+                      >
+                        <Image
+                          source={{ uri: player.avatar }}
+                          style={{ width: 40, height: 40, borderRadius: 20 }}
+                          contentFit="cover"
+                        />
+                        <View className="ml-3 flex-1">
+                          <Text className="text-white font-medium">{player.name}</Text>
+                          <Text className="text-slate-400 text-xs">#{player.number}</Text>
+                        </View>
+                        <Text className="text-slate-500 text-xs">{player.position}</Text>
+                      </Pressable>
+                    ))
+                  )}
+                </View>
+              </Animated.View>
+            )}
+
+            {/* Instructions */}
+            <Animated.View entering={FadeIn.delay(200)} className="px-5 pt-6">
+              <View className="bg-slate-800/40 rounded-xl p-4">
+                <Text className="text-slate-400 text-sm text-center">
+                  Tap a position to assign a player. Long press to remove.
+                </Text>
+              </View>
+            </Animated.View>
+          </ScrollView>
+        </SafeAreaView>
+      </View>
+    </Modal>
+  );
+}

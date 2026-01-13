@@ -289,6 +289,19 @@ export interface BasketballLineup {
   hasPG: boolean; // 0 or 1
 }
 
+// Baseball Lineup Types
+export interface BaseballLineup {
+  lf?: string;  // Left Field
+  cf?: string;  // Center Field
+  rf?: string;  // Right Field
+  thirdBase?: string; // 3B
+  shortstop?: string; // SS
+  secondBase?: string; // 2B
+  firstBase?: string; // 1B
+  pitcher?: string; // P
+  catcher?: string; // C
+}
+
 export interface Game {
   id: string;
   opponent: string;
@@ -305,6 +318,7 @@ export interface Game {
   beerDutyPlayerId?: string; // Player responsible for bringing beverages
   lineup?: HockeyLineup; // Hockey line combinations
   basketballLineup?: BasketballLineup; // Basketball lineup
+  baseballLineup?: BaseballLineup; // Baseball lineup
 }
 
 // In-app notification types

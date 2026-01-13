@@ -31,6 +31,8 @@ import { AddressSearch } from '@/components/AddressSearch';
 import { LineupViewer, hasAssignedPlayers } from '@/components/LineupViewer';
 import { BasketballLineupViewer } from '@/components/BasketballLineupViewer';
 import { hasAssignedBasketballPlayers } from '@/components/BasketballLineupEditor';
+import { BaseballLineupViewer } from '@/components/BaseballLineupViewer';
+import { hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
 
 const getDateLabel = (dateString: string): string => {
   const date = parseISO(dateString);
@@ -159,6 +161,8 @@ function GameCard({ game, index, onPress, onViewLines }: GameCardProps) {
   const showLinesButton = teamSettings.sport === 'hockey' && hasAssignedPlayers(game.lineup);
   // Check if lineup is set (for basketball)
   const showBasketballLineupButton = teamSettings.sport === 'basketball' && hasAssignedBasketballPlayers(game.basketballLineup);
+  // Check if lineup is set (for baseball)
+  const showBaseballLineupButton = teamSettings.sport === 'baseball' && hasAssignedBaseballPlayers(game.baseballLineup);
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 100).springify()}>
@@ -222,6 +226,21 @@ function GameCard({ game, index, onPress, onViewLines }: GameCardProps) {
 
             {/* Game Lineup Button (Basketball) */}
             {showBasketballLineupButton && (
+              <Pressable
+                onPress={(e) => {
+                  e.stopPropagation();
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onViewLines();
+                }}
+                className="bg-emerald-500/20 rounded-xl p-3 mb-3 border border-emerald-500/30 flex-row items-center justify-center active:bg-emerald-500/30"
+              >
+                <ListOrdered size={16} color="#10b981" />
+                <Text className="text-emerald-400 font-medium ml-2">Game Lineup</Text>
+              </Pressable>
+            )}
+
+            {/* Game Lineup Button (Baseball) */}
+            {showBaseballLineupButton && (
               <Pressable
                 onPress={(e) => {
                   e.stopPropagation();
@@ -1022,6 +1041,17 @@ export default function ScheduleScreen() {
           visible={!!lineupViewerGame}
           onClose={() => setLineupViewerGame(null)}
           lineup={lineupViewerGame.basketballLineup}
+          players={players}
+          opponent={lineupViewerGame.opponent}
+        />
+      )}
+
+      {/* Baseball Lineup Viewer Modal */}
+      {lineupViewerGame?.baseballLineup && teamSettings.sport === 'baseball' && (
+        <BaseballLineupViewer
+          visible={!!lineupViewerGame}
+          onClose={() => setLineupViewerGame(null)}
+          lineup={lineupViewerGame.baseballLineup}
           players={players}
           opponent={lineupViewerGame.opponent}
         />
