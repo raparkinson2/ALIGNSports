@@ -48,6 +48,7 @@ import {
 } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneNumber, formatPhoneInput, unformatPhone } from '@/lib/phone';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 // Custom Sport Icons
 function HockeyIcon({ color, size = 18 }: { color: string; size?: number }) {
@@ -171,11 +172,7 @@ function PlayerManageCard({ player, index, onPress, isCurrentUser }: PlayerManag
       className="bg-slate-800/80 rounded-xl p-4 border border-slate-700/50 active:bg-slate-700/80"
     >
       <View className="flex-row items-center">
-        <Image
-          source={{ uri: player.avatar }}
-          style={{ width: 44, height: 44, borderRadius: 22 }}
-          contentFit="cover"
-        />
+        <PlayerAvatar player={player} size={44} />
         <View className="flex-1 ml-3">
           <View className="flex-row items-center">
             <Text className="text-white font-semibold">{getPlayerName(player)}</Text>
@@ -478,7 +475,7 @@ export default function AdminScreen() {
       positions: newPlayerPositions,
       phone: rawPhone,
       email: newPlayerEmail.trim(),
-      avatar: `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150`,
+      avatar: undefined,
       roles: newPlayerRoles,
       status: newPlayerStatus,
       isInjured: newPlayerIsInjured,
