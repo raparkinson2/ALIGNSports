@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, TextInput, Modal, Platform, Switch } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Modal, Platform, Switch, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -19,7 +19,9 @@ import {
   CalendarPlus,
   ListOrdered,
 } from 'lucide-react-native';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInRight, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Trash2 } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
@@ -138,9 +140,10 @@ interface GameCardProps {
   index: number;
   onPress: () => void;
   onViewLines: () => void;
+  skipAnimation?: boolean;
 }
 
-function GameCard({ game, index, onPress, onViewLines }: GameCardProps) {
+function GameCard({ game, index, onPress, onViewLines, skipAnimation = false }: GameCardProps) {
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const players = useTeamStore((s) => s.players);
   const checkedInCount = game.checkedInPlayers?.length ?? 0;
@@ -168,135 +171,223 @@ function GameCard({ game, index, onPress, onViewLines }: GameCardProps) {
   // Check if lineup is set (for soccer)
   const showSoccerLineupButton = teamSettings.sport === 'soccer' && hasAssignedSoccerPlayers(game.soccerLineup);
 
-  return (
-    <Animated.View entering={FadeInDown.delay(index * 100).springify()}>
-      <Pressable
-        onPress={onPress}
-        className="mb-4 active:scale-[0.98]"
-        style={{ transform: [{ scale: 1 }] }}
-      >
-        <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
-          {/* Jersey Color Bar */}
-          <View style={{ backgroundColor: jerseyColorHex, height: 6 }} />
+  const cardContent = (
+    <Pressable
+      onPress={onPress}
+      className={cn('active:scale-[0.98]', !skipAnimation && 'mb-4')}
+      style={{ transform: [{ scale: 1 }] }}
+    >
+      <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
+        {/* Jersey Color Bar */}
+        <View style={{ backgroundColor: jerseyColorHex, height: 6 }} />
 
-          <View className="p-4">
-            {/* Date Badge & Opponent */}
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center">
-                <View className="bg-cyan-500/20 px-3 py-1 rounded-full mr-3">
-                  <Text className="text-cyan-400 text-xs font-semibold">
-                    {getDateLabel(game.date)}
-                  </Text>
-                </View>
-                <Text className="text-white text-xl font-bold">vs {game.opponent}</Text>
-              </View>
-              <ChevronRight size={20} color="#64748b" />
-            </View>
-
-            {/* Info Grid */}
-            <View className="flex-row mb-3">
-              <View className="flex-1 flex-row items-center">
-                <Clock size={14} color="#67e8f9" />
-                <Text className="text-slate-300 text-sm ml-2">{game.time}</Text>
-              </View>
-              <View className="flex-1 flex-row items-center">
-                <JerseyIcon size={16} color={jerseyColorHex} />
-                <Text className="text-slate-300 text-sm ml-2">
-                  {jerseyColorName} Jersey
+        <View className="p-4">
+          {/* Date Badge & Opponent */}
+          <View className="flex-row items-center justify-between mb-3">
+            <View className="flex-row items-center">
+              <View className="bg-cyan-500/20 px-3 py-1 rounded-full mr-3">
+                <Text className="text-cyan-400 text-xs font-semibold">
+                  {getDateLabel(game.date)}
                 </Text>
               </View>
+              <Text className="text-white text-xl font-bold">vs {game.opponent}</Text>
             </View>
+            <ChevronRight size={20} color="#64748b" />
+          </View>
 
-            {/* Location */}
-            <View className="flex-row items-center mb-3">
-              <MapPin size={14} color="#67e8f9" />
-              <Text className="text-slate-400 text-sm ml-2">{game.location}</Text>
+          {/* Info Grid */}
+          <View className="flex-row mb-3">
+            <View className="flex-1 flex-row items-center">
+              <Clock size={14} color="#67e8f9" />
+              <Text className="text-slate-300 text-sm ml-2">{game.time}</Text>
             </View>
-
-            {/* Game Lines Button */}
-            {showLinesButton && (
-              <Pressable
-                onPress={(e) => {
-                  e.stopPropagation();
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onViewLines();
-                }}
-                className="bg-emerald-500/20 rounded-xl p-3 mb-3 border border-emerald-500/30 flex-row items-center justify-center active:bg-emerald-500/30"
-              >
-                <ListOrdered size={16} color="#10b981" />
-                <Text className="text-emerald-400 font-medium ml-2">Game Lines</Text>
-              </Pressable>
-            )}
-
-            {/* Game Lineup Button (Basketball) */}
-            {showBasketballLineupButton && (
-              <Pressable
-                onPress={(e) => {
-                  e.stopPropagation();
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onViewLines();
-                }}
-                className="bg-emerald-500/20 rounded-xl p-3 mb-3 border border-emerald-500/30 flex-row items-center justify-center active:bg-emerald-500/30"
-              >
-                <ListOrdered size={16} color="#10b981" />
-                <Text className="text-emerald-400 font-medium ml-2">Game Lineup</Text>
-              </Pressable>
-            )}
-
-            {/* Game Lineup Button (Baseball) */}
-            {showBaseballLineupButton && (
-              <Pressable
-                onPress={(e) => {
-                  e.stopPropagation();
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onViewLines();
-                }}
-                className="bg-emerald-500/20 rounded-xl p-3 mb-3 border border-emerald-500/30 flex-row items-center justify-center active:bg-emerald-500/30"
-              >
-                <ListOrdered size={16} color="#10b981" />
-                <Text className="text-emerald-400 font-medium ml-2">Game Lineup</Text>
-              </Pressable>
-            )}
-
-            {/* Game Lineup Button (Soccer) */}
-            {showSoccerLineupButton && (
-              <Pressable
-                onPress={(e) => {
-                  e.stopPropagation();
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onViewLines();
-                }}
-                className="bg-emerald-500/20 rounded-xl p-3 mb-3 border border-emerald-500/30 flex-row items-center justify-center active:bg-emerald-500/30"
-              >
-                <ListOrdered size={16} color="#10b981" />
-                <Text className="text-emerald-400 font-medium ml-2">Game Lineup</Text>
-              </Pressable>
-            )}
-
-            {/* Footer */}
-            <View className="flex-row items-center pt-3 border-t border-slate-700/50">
-              <View className="flex-row items-center">
-                <Users size={14} color="#22c55e" />
-                <Text className="text-green-400 text-sm ml-2 font-medium">
-                  {checkedInCount}/{invitedCount} checked in
-                </Text>
-              </View>
-              {beerDutyPlayer && (
-                <View className="flex-row items-center ml-4">
-                  {is21Plus ? (
-                    <Beer size={14} color="#f59e0b" />
-                  ) : (
-                    <JuiceBoxIcon size={14} color="#f59e0b" />
-                  )}
-                  <Text className="text-amber-400 text-sm ml-1.5 font-medium">
-                    {getPlayerName(beerDutyPlayer)}
-                  </Text>
-                </View>
-              )}
+            <View className="flex-1 flex-row items-center">
+              <JerseyIcon size={16} color={jerseyColorHex} />
+              <Text className="text-slate-300 text-sm ml-2">
+                {jerseyColorName} Jersey
+              </Text>
             </View>
           </View>
+
+          {/* Location */}
+          <View className="flex-row items-center mb-3">
+            <MapPin size={14} color="#67e8f9" />
+            <Text className="text-slate-400 text-sm ml-2">{game.location}</Text>
+          </View>
+
+          {/* Game Lines Button */}
+          {showLinesButton && (
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onViewLines();
+              }}
+              className="bg-emerald-500/20 rounded-xl p-3 mb-3 border border-emerald-500/30 flex-row items-center justify-center active:bg-emerald-500/30"
+            >
+              <ListOrdered size={16} color="#10b981" />
+              <Text className="text-emerald-400 font-medium ml-2">Game Lines</Text>
+            </Pressable>
+          )}
+
+          {/* Game Lineup Button (Basketball) */}
+          {showBasketballLineupButton && (
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onViewLines();
+              }}
+              className="bg-emerald-500/20 rounded-xl p-3 mb-3 border border-emerald-500/30 flex-row items-center justify-center active:bg-emerald-500/30"
+            >
+              <ListOrdered size={16} color="#10b981" />
+              <Text className="text-emerald-400 font-medium ml-2">Game Lineup</Text>
+            </Pressable>
+          )}
+
+          {/* Game Lineup Button (Baseball) */}
+          {showBaseballLineupButton && (
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onViewLines();
+              }}
+              className="bg-emerald-500/20 rounded-xl p-3 mb-3 border border-emerald-500/30 flex-row items-center justify-center active:bg-emerald-500/30"
+            >
+              <ListOrdered size={16} color="#10b981" />
+              <Text className="text-emerald-400 font-medium ml-2">Game Lineup</Text>
+            </Pressable>
+          )}
+
+          {/* Game Lineup Button (Soccer) */}
+          {showSoccerLineupButton && (
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onViewLines();
+              }}
+              className="bg-emerald-500/20 rounded-xl p-3 mb-3 border border-emerald-500/30 flex-row items-center justify-center active:bg-emerald-500/30"
+            >
+              <ListOrdered size={16} color="#10b981" />
+              <Text className="text-emerald-400 font-medium ml-2">Game Lineup</Text>
+            </Pressable>
+          )}
+
+          {/* Footer */}
+          <View className="flex-row items-center pt-3 border-t border-slate-700/50">
+            <View className="flex-row items-center">
+              <Users size={14} color="#22c55e" />
+              <Text className="text-green-400 text-sm ml-2 font-medium">
+                {checkedInCount}/{invitedCount} checked in
+              </Text>
+            </View>
+            {beerDutyPlayer && (
+              <View className="flex-row items-center ml-4">
+                {is21Plus ? (
+                  <Beer size={14} color="#f59e0b" />
+                ) : (
+                  <JuiceBoxIcon size={14} color="#f59e0b" />
+                )}
+                <Text className="text-amber-400 text-sm ml-1.5 font-medium">
+                  {getPlayerName(beerDutyPlayer)}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
-      </Pressable>
+      </View>
+    </Pressable>
+  );
+
+  if (skipAnimation) {
+    return cardContent;
+  }
+
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 100).springify()}>
+      {cardContent}
+    </Animated.View>
+  );
+}
+
+interface SwipeableGameCardProps extends GameCardProps {
+  onDelete: () => void;
+  canDelete: boolean;
+}
+
+function SwipeableGameCard({
+  onDelete,
+  canDelete,
+  game,
+  index,
+  onPress,
+  onViewLines,
+}: SwipeableGameCardProps) {
+  const translateX = useSharedValue(0);
+  const DELETE_THRESHOLD = -80;
+
+  const handleDelete = () => {
+    translateX.value = withSpring(0);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onDelete();
+  };
+
+  const panGesture = Gesture.Pan()
+    .enabled(canDelete)
+    .activeOffsetX([-10, 10])
+    .onUpdate((event) => {
+      if (event.translationX < 0) {
+        translateX.value = Math.max(event.translationX, -100);
+      } else {
+        translateX.value = withSpring(0);
+      }
+    })
+    .onEnd((event) => {
+      if (event.translationX < DELETE_THRESHOLD) {
+        translateX.value = withSpring(-80);
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const deleteButtonStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, Math.abs(translateX.value) / 40),
+  }));
+
+  if (!canDelete) {
+    return <GameCard game={game} index={index} onPress={onPress} onViewLines={onViewLines} />;
+  }
+
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 100).springify()}>
+      <View className="relative mb-4 overflow-hidden rounded-2xl">
+        {/* Delete button behind */}
+        <Animated.View
+          style={[deleteButtonStyle]}
+          className="absolute right-0 top-0 bottom-0 w-20 bg-red-500 items-center justify-center rounded-r-2xl"
+        >
+          <Pressable
+            onPress={handleDelete}
+            className="flex-1 w-full items-center justify-center"
+          >
+            <Trash2 size={24} color="white" />
+            <Text className="text-white text-xs font-medium mt-1">Delete</Text>
+          </Pressable>
+        </Animated.View>
+
+        {/* Swipeable row */}
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={animatedStyle}>
+            <GameCard game={game} index={0} onPress={onPress} onViewLines={onViewLines} skipAnimation />
+          </Animated.View>
+        </GestureDetector>
+      </View>
     </Animated.View>
   );
 }
@@ -308,6 +399,7 @@ export default function ScheduleScreen() {
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const addGame = useTeamStore((s) => s.addGame);
+  const removeGame = useTeamStore((s) => s.removeGame);
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
 
@@ -549,12 +641,30 @@ export default function ScheduleScreen() {
             </View>
           ) : (
             upcomingGames.map((game, index) => (
-              <GameCard
+              <SwipeableGameCard
                 key={game.id}
                 game={game}
                 index={index}
                 onPress={() => router.push(`/game/${game.id}`)}
                 onViewLines={() => setLineupViewerGame(game)}
+                canDelete={canManageTeam()}
+                onDelete={() => {
+                  Alert.alert(
+                    'Delete Game',
+                    `Are you sure you want to delete the game vs ${game.opponent}?`,
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Delete',
+                        style: 'destructive',
+                        onPress: () => {
+                          removeGame(game.id);
+                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        },
+                      },
+                    ]
+                  );
+                }}
               />
             ))
           )}
