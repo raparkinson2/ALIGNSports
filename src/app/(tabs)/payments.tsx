@@ -1154,6 +1154,20 @@ export default function PaymentsScreen() {
                     </View>
                   )}
 
+                  {/* Remove Player from Period - Only for Admins */}
+                  {isAdmin() && (
+                    <Pressable
+                      onPress={() => {
+                        handleRemovePlayerFromPeriod(selectedPlayerId!);
+                        setSelectedPlayerId(null);
+                      }}
+                      className="bg-red-500/20 rounded-xl p-4 mb-6 flex-row items-center justify-center active:bg-red-500/30"
+                    >
+                      <Trash2 size={18} color="#ef4444" />
+                      <Text className="text-red-400 font-semibold ml-2">Remove from Period</Text>
+                    </Pressable>
+                  )}
+
                   {/* Payment History */}
                   <View className="mb-6">
                     <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
@@ -1322,29 +1336,18 @@ export default function PaymentsScreen() {
                       if (!canViewPlayerDetails(pp.playerId)) return null;
 
                       return (
-                        <View key={pp.playerId} className="flex-row items-center mb-2">
-                          <View className="flex-1">
-                            <PlayerPaymentRow
-                              player={player}
-                              status={pp.status}
-                              paidAmount={pp.amount}
-                              totalAmount={selectedPeriod.amount}
-                              periodType={selectedPeriod.type ?? 'dues'}
-                              onPress={() => {
-                                setSelectedPlayerId(pp.playerId);
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                              }}
-                            />
-                          </View>
-                          {isAdmin() && (
-                            <Pressable
-                              onPress={() => handleRemovePlayerFromPeriod(pp.playerId)}
-                              className="ml-2 p-3 bg-red-500/20 rounded-xl active:bg-red-500/30"
-                            >
-                              <Trash2 size={18} color="#ef4444" />
-                            </Pressable>
-                          )}
-                        </View>
+                        <PlayerPaymentRow
+                          key={pp.playerId}
+                          player={player}
+                          status={pp.status}
+                          paidAmount={pp.amount}
+                          totalAmount={selectedPeriod.amount}
+                          periodType={selectedPeriod.type ?? 'dues'}
+                          onPress={() => {
+                            setSelectedPlayerId(pp.playerId);
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          }}
+                        />
                       );
                     })}
                   </ScrollView>
