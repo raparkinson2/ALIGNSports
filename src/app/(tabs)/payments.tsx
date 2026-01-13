@@ -311,6 +311,173 @@ function SwipeablePlayerPaymentRow({
   );
 }
 
+interface SwipeablePaymentPeriodRowProps {
+  period: PaymentPeriod;
+  index: number;
+  isReorderMode: boolean;
+  onPress: () => void;
+  onDelete: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onEditAmount: () => void;
+  totalPeriods: number;
+  isAdmin: boolean;
+}
+
+function SwipeablePaymentPeriodRow({
+  period,
+  index,
+  isReorderMode,
+  onPress,
+  onDelete,
+  onMoveUp,
+  onMoveDown,
+  onEditAmount,
+  totalPeriods,
+  isAdmin,
+}: SwipeablePaymentPeriodRowProps) {
+  const translateX = useSharedValue(0);
+  const DELETE_THRESHOLD = -80;
+
+  const paidCount = period.playerPayments.filter((pp) => pp.status === 'paid').length;
+  const totalCount = period.playerPayments.length;
+
+  const handleDelete = () => {
+    translateX.value = withSpring(0);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onDelete();
+  };
+
+  const panGesture = Gesture.Pan()
+    .enabled(isAdmin && !isReorderMode)
+    .activeOffsetX([-10, 10])
+    .onUpdate((event) => {
+      if (event.translationX < 0) {
+        translateX.value = Math.max(event.translationX, -100);
+      } else {
+        translateX.value = withSpring(0);
+      }
+    })
+    .onEnd((event) => {
+      if (event.translationX < DELETE_THRESHOLD) {
+        translateX.value = withSpring(-80);
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const deleteButtonStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, Math.abs(translateX.value) / 40),
+  }));
+
+  const rowContent = (
+    <View className="flex-row items-center mb-3">
+      {/* Reorder controls */}
+      {isReorderMode && (
+        <View className="mr-3 items-center">
+          <Pressable
+            onPress={onMoveUp}
+            className={cn(
+              'p-1.5 rounded-lg mb-1',
+              index === 0 ? 'opacity-30' : 'bg-slate-700 active:bg-slate-600'
+            )}
+            disabled={index === 0}
+          >
+            <ChevronUp size={18} color="#a78bfa" />
+          </Pressable>
+          <Pressable
+            onPress={onMoveDown}
+            className={cn(
+              'p-1.5 rounded-lg',
+              index === totalPeriods - 1 ? 'opacity-30' : 'bg-slate-700 active:bg-slate-600'
+            )}
+            disabled={index === totalPeriods - 1}
+          >
+            <ChevronDown size={18} color="#a78bfa" />
+          </Pressable>
+        </View>
+      )}
+
+      <Pressable
+        onPress={() => !isReorderMode && onPress()}
+        className={cn(
+          'flex-1 bg-slate-800/80 rounded-xl p-4 border border-slate-700/50',
+          !isReorderMode && 'active:bg-slate-700/80'
+        )}
+      >
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1">
+            <Text className="text-white font-semibold text-lg">{period.title}</Text>
+            <View className="flex-row items-center">
+              <Text className="text-green-400 font-bold">${period.amount}</Text>
+              {isAdmin && !isReorderMode && (
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    onEditAmount();
+                  }}
+                  className="ml-3 bg-green-500/20 rounded-lg px-2.5 py-1.5 flex-row items-center"
+                >
+                  <Edit3 size={14} color="#22c55e" />
+                  <Text className="text-green-400 text-xs font-medium ml-1">Edit</Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+          <View className="items-end">
+            <View className="flex-row items-center">
+              <Text className="text-slate-400 text-sm mr-2">
+                {paidCount}/{totalCount} paid
+              </Text>
+              {!isReorderMode && <ChevronRight size={18} color="#64748b" />}
+            </View>
+            <View className="w-24 h-2 bg-slate-700 rounded-full mt-2 overflow-hidden">
+              <View
+                className="h-full bg-green-500 rounded-full"
+                style={{ width: `${totalCount > 0 ? (paidCount / totalCount) * 100 : 0}%` }}
+              />
+            </View>
+          </View>
+        </View>
+      </Pressable>
+    </View>
+  );
+
+  if (!isAdmin || isReorderMode) {
+    return rowContent;
+  }
+
+  return (
+    <View className="relative overflow-hidden rounded-xl mb-3">
+      {/* Delete button behind */}
+      <Animated.View
+        style={[deleteButtonStyle]}
+        className="absolute right-0 top-0 bottom-0 w-20 bg-red-500 items-center justify-center rounded-r-xl"
+      >
+        <Pressable
+          onPress={handleDelete}
+          className="flex-1 w-full items-center justify-center"
+        >
+          <Trash2 size={24} color="white" />
+          <Text className="text-white text-xs font-medium mt-1">Delete</Text>
+        </Pressable>
+      </Animated.View>
+
+      {/* Swipeable row */}
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={animatedStyle}>
+          {rowContent}
+        </Animated.View>
+      </GestureDetector>
+    </View>
+  );
+}
+
 export default function PaymentsScreen() {
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore((s) => s.teamSettings);
@@ -680,91 +847,40 @@ export default function PaymentsScreen() {
                   </Text>
                 </View>
               ) : (
-                paymentPeriods.map((period, index) => {
-                  const paidCount = period.playerPayments.filter((pp) => pp.status === 'paid').length;
-                  const totalCount = period.playerPayments.length;
-
-                  return (
-                    <Animated.View
-                      key={period.id}
-                      entering={FadeInDown.delay(200 + index * 50).springify()}
-                    >
-                      <View className="flex-row items-center mb-3">
-                        {/* Reorder controls */}
-                        {isReorderMode && (
-                          <View className="mr-3 items-center">
-                            <Pressable
-                              onPress={() => movePeriodUp(index)}
-                              className={cn(
-                                'p-1.5 rounded-lg mb-1',
-                                index === 0 ? 'opacity-30' : 'bg-slate-700 active:bg-slate-600'
-                              )}
-                              disabled={index === 0}
-                            >
-                              <ChevronUp size={18} color="#a78bfa" />
-                            </Pressable>
-                            <Pressable
-                              onPress={() => movePeriodDown(index)}
-                              className={cn(
-                                'p-1.5 rounded-lg',
-                                index === paymentPeriods.length - 1 ? 'opacity-30' : 'bg-slate-700 active:bg-slate-600'
-                              )}
-                              disabled={index === paymentPeriods.length - 1}
-                            >
-                              <ChevronDown size={18} color="#a78bfa" />
-                            </Pressable>
-                          </View>
-                        )}
-
-                        <Pressable
-                          onPress={() => !isReorderMode && setSelectedPeriodId(period.id)}
-                          className={cn(
-                            'flex-1 bg-slate-800/80 rounded-xl p-4 border border-slate-700/50',
-                            !isReorderMode && 'active:bg-slate-700/80'
-                          )}
-                        >
-                          <View className="flex-row items-center justify-between">
-                            <View className="flex-1">
-                              <Text className="text-white font-semibold text-lg">{period.title}</Text>
-                              <View className="flex-row items-center">
-                                <Text className="text-green-400 font-bold">${period.amount}</Text>
-                                {isAdmin() && !isReorderMode && (
-                                  <Pressable
-                                    onPress={(e) => {
-                                      e.stopPropagation();
-                                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                      setEditingPeriodId(period.id);
-                                      setEditPeriodAmount(period.amount.toString());
-                                      setIsEditAmountModalVisible(true);
-                                    }}
-                                    className="ml-3 bg-green-500/20 rounded-lg px-2.5 py-1.5 flex-row items-center"
-                                  >
-                                    <Edit3 size={14} color="#22c55e" />
-                                    <Text className="text-green-400 text-xs font-medium ml-1">Edit</Text>
-                                  </Pressable>
-                                )}
-                              </View>
-                            </View>
-                            <View className="items-end">
-                              <View className="flex-row items-center">
-                                <Text className="text-slate-400 text-sm mr-2">
-                                  {paidCount}/{totalCount} paid
-                                </Text>
-                                {!isReorderMode && <ChevronRight size={18} color="#64748b" />}
-                              </View>
-                              <View className="w-24 h-2 bg-slate-700 rounded-full mt-2 overflow-hidden">
-                                <View
-                                  className="h-full bg-green-500 rounded-full"
-                                  style={{ width: `${(paidCount / totalCount) * 100}%` }}
-                                />
-                              </View>
-                            </View>
-                          </View>
-                        </Pressable>
-                      </View>
-                    </Animated.View>
-                  );
-                })
+                paymentPeriods.map((period, index) => (
+                  <Animated.View
+                    key={period.id}
+                    entering={FadeInDown.delay(200 + index * 50).springify()}
+                  >
+                    <SwipeablePaymentPeriodRow
+                      period={period}
+                      index={index}
+                      isReorderMode={isReorderMode}
+                      onPress={() => setSelectedPeriodId(period.id)}
+                      onDelete={() => {
+                        Alert.alert('Delete Period', 'Are you sure you want to delete this payment period?', [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Delete',
+                            style: 'destructive',
+                            onPress: () => {
+                              removePaymentPeriod(period.id);
+                            },
+                          },
+                        ]);
+                      }}
+                      onMoveUp={() => movePeriodUp(index)}
+                      onMoveDown={() => movePeriodDown(index)}
+                      onEditAmount={() => {
+                        setEditingPeriodId(period.id);
+                        setEditPeriodAmount(period.amount.toString());
+                        setIsEditAmountModalVisible(true);
+                      }}
+                      totalPeriods={paymentPeriods.length}
+                      isAdmin={isAdmin()}
+                    />
+                  </Animated.View>
+                ))
               )}
             </Animated.View>
           )}
@@ -1289,25 +1405,7 @@ export default function PaymentsScreen() {
                   <Text className="text-white text-lg font-semibold">
                     {selectedPeriod?.title || 'Payment Period'}
                   </Text>
-                  {isAdmin() && selectedPeriod && (
-                    <Pressable
-                      onPress={() => {
-                        Alert.alert('Delete Period', 'Are you sure?', [
-                          { text: 'Cancel', style: 'cancel' },
-                          {
-                            text: 'Delete',
-                            style: 'destructive',
-                            onPress: () => {
-                              removePaymentPeriod(selectedPeriod.id);
-                              setSelectedPeriodId(null);
-                            },
-                          },
-                        ]);
-                      }}
-                    >
-                      <Trash2 size={20} color="#ef4444" />
-                    </Pressable>
-                  )}
+                  <View style={{ width: 24 }} />
                 </View>
 
                 {selectedPeriod && (
