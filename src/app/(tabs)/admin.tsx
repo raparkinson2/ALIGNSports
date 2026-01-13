@@ -25,6 +25,7 @@ import {
   DollarSign,
   AlertTriangle,
   Beer,
+  Edit3,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -275,6 +276,9 @@ export default function AdminScreen() {
   // Jersey color form
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#ffffff');
+  const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
+  const [editColorName, setEditColorName] = useState('');
+  const [editColorHex, setEditColorHex] = useState('#ffffff');
 
   // Team name form
   const [editTeamName, setEditTeamName] = useState(teamName);
@@ -516,6 +520,54 @@ export default function AdminScreen() {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             const newColors = teamSettings.jerseyColors.filter((c) => c.name !== name);
             setTeamSettings({ jerseyColors: newColors });
+          },
+        },
+      ]
+    );
+  };
+
+  const handleEditJerseyColor = (index: number) => {
+    const color = teamSettings.jerseyColors[index];
+    setEditingColorIndex(index);
+    setEditColorName(color.name);
+    setEditColorHex(color.color);
+  };
+
+  const handleSaveEditJerseyColor = () => {
+    if (editingColorIndex === null || !editColorName.trim()) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const newColors = [...teamSettings.jerseyColors];
+    newColors[editingColorIndex] = { name: editColorName.trim(), color: editColorHex };
+    setTeamSettings({ jerseyColors: newColors });
+    setEditingColorIndex(null);
+    setEditColorName('');
+    setEditColorHex('#ffffff');
+  };
+
+  const handleCancelEditJerseyColor = () => {
+    setEditingColorIndex(null);
+    setEditColorName('');
+    setEditColorHex('#ffffff');
+  };
+
+  const handleDeleteEditingColor = () => {
+    if (editingColorIndex === null) return;
+    const colorName = teamSettings.jerseyColors[editingColorIndex].name;
+    Alert.alert(
+      'Remove Jersey Color',
+      `Are you sure you want to remove "${colorName}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            const newColors = teamSettings.jerseyColors.filter((_, i) => i !== editingColorIndex);
+            setTeamSettings({ jerseyColors: newColors });
+            setEditingColorIndex(null);
+            setEditColorName('');
+            setEditColorHex('#ffffff');
           },
         },
       ]
@@ -1287,21 +1339,75 @@ export default function AdminScreen() {
               </Text>
 
               {teamSettings.jerseyColors.map((color, index) => (
-                <View
-                  key={`color-${index}`}
-                  className="flex-row items-center bg-slate-800/80 rounded-xl p-4 mb-2 border border-slate-700/50"
-                >
-                  <View
-                    className="w-10 h-10 rounded-full border-2 border-slate-600"
-                    style={{ backgroundColor: color.color }}
-                  />
-                  <Text className="text-white font-medium ml-3 flex-1">{color.name}</Text>
-                  <Pressable
-                    onPress={() => handleRemoveJerseyColor(color.name)}
-                    className="p-2"
-                  >
-                    <Trash2 size={18} color="#ef4444" />
-                  </Pressable>
+                <View key={`color-${index}`}>
+                  {editingColorIndex === index ? (
+                    // Edit mode
+                    <View className="bg-slate-800/80 rounded-xl p-4 mb-2 border border-cyan-500/50">
+                      <TextInput
+                        value={editColorName}
+                        onChangeText={setEditColorName}
+                        placeholder="Description (e.g. Home)"
+                        placeholderTextColor="#64748b"
+                        className="bg-slate-700 rounded-xl px-4 py-3 text-white mb-3"
+                      />
+                      <Text className="text-slate-400 text-sm mb-2">Select Color</Text>
+                      <View className="flex-row flex-wrap mb-3">
+                        {COLOR_PRESETS.map((hex) => (
+                          <Pressable
+                            key={hex}
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              setEditColorHex(hex);
+                            }}
+                            className={cn(
+                              'w-10 h-10 rounded-full mr-2 mb-2 border-2 items-center justify-center',
+                              editColorHex === hex ? 'border-cyan-400' : 'border-slate-600'
+                            )}
+                            style={{ backgroundColor: hex }}
+                          >
+                            {editColorHex === hex && (
+                              <Check size={16} color={hex === '#ffffff' || hex === '#ca8a04' ? '#000' : '#fff'} />
+                            )}
+                          </Pressable>
+                        ))}
+                      </View>
+                      <View className="flex-row">
+                        <Pressable
+                          onPress={handleCancelEditJerseyColor}
+                          className="flex-1 bg-slate-700 rounded-xl py-3 mr-2"
+                        >
+                          <Text className="text-slate-300 font-semibold text-center">Cancel</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={handleDeleteEditingColor}
+                          className="bg-red-500/20 rounded-xl py-3 px-4 mr-2"
+                        >
+                          <Trash2 size={18} color="#ef4444" />
+                        </Pressable>
+                        <Pressable
+                          onPress={handleSaveEditJerseyColor}
+                          className="flex-1 bg-cyan-500 rounded-xl py-3"
+                        >
+                          <Text className="text-white font-semibold text-center">Save</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ) : (
+                    // Display mode
+                    <View className="flex-row items-center bg-slate-800/80 rounded-xl p-4 mb-2 border border-slate-700/50">
+                      <View
+                        className="w-10 h-10 rounded-full border-2 border-slate-600"
+                        style={{ backgroundColor: color.color }}
+                      />
+                      <Text className="text-white font-medium ml-3 flex-1">{color.name}</Text>
+                      <Pressable
+                        onPress={() => handleEditJerseyColor(index)}
+                        className="p-2"
+                      >
+                        <Edit3 size={18} color="#67e8f9" />
+                      </Pressable>
+                    </View>
+                  )}
                 </View>
               ))}
 
