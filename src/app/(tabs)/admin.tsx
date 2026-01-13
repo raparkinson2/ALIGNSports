@@ -1307,15 +1307,14 @@ export default function AdminScreen() {
 
               {/* Add New Color */}
               <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
-                Add New Color
+                Add New Color<Text className="text-red-400">*</Text>
               </Text>
 
               <View className="mb-4">
-                <Text className="text-slate-400 text-sm mb-2">Description (e.g. Home) <Text className="text-red-400">*</Text></Text>
                 <TextInput
                   value={newColorName}
                   onChangeText={setNewColorName}
-                  placeholder="Enter description..."
+                  placeholder="Description (e.g. Home)"
                   placeholderTextColor="#64748b"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white mb-3"
                 />
