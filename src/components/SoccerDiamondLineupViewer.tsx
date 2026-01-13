@@ -1,0 +1,151 @@
+import { View, Text, Modal, Pressable, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { X } from 'lucide-react-native';
+import { Image } from 'expo-image';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { SoccerDiamondLineup, Player } from '@/lib/store';
+
+interface SoccerDiamondLineupViewerProps {
+  visible: boolean;
+  onClose: () => void;
+  lineup: SoccerDiamondLineup;
+  players: Player[];
+  opponent: string;
+}
+
+type PositionKey = 'gk' | 'lb' | 'cb1' | 'cb2' | 'rb' | 'cdm' | 'lm' | 'rm' | 'cam' | 'st1' | 'st2';
+
+const POSITION_LABELS: Record<PositionKey, string> = {
+  gk: 'GK',
+  lb: 'LB',
+  cb1: 'CB',
+  cb2: 'CB',
+  rb: 'RB',
+  cdm: 'CDM',
+  lm: 'LM',
+  rm: 'RM',
+  cam: 'CAM',
+  st1: 'ST',
+  st2: 'ST',
+};
+
+export function SoccerDiamondLineupViewer({
+  visible,
+  onClose,
+  lineup,
+  players,
+  opponent,
+}: SoccerDiamondLineupViewerProps) {
+  const getPlayer = (playerId: string | undefined) => {
+    return playerId ? players.find((p) => p.id === playerId) : null;
+  };
+
+  const renderPositionSlot = (position: PositionKey, size: 'large' | 'medium' = 'medium') => {
+    const player = getPlayer(lineup[position]);
+    const slotSize = size === 'large' ? 64 : 48;
+
+    return (
+      <View className="items-center">
+        {player ? (
+          <>
+            <Image
+              source={{ uri: player.avatar }}
+              style={{ width: slotSize, height: slotSize, borderRadius: slotSize / 2 }}
+              contentFit="cover"
+            />
+            <Text className="text-white text-xs font-semibold mt-1">#{player.number}</Text>
+          </>
+        ) : (
+          <>
+            <View
+              className="rounded-full bg-slate-700/50 items-center justify-center"
+              style={{ width: slotSize, height: slotSize }}
+            >
+              <Text className="text-slate-500 text-lg">-</Text>
+            </View>
+            <Text className="text-slate-500 text-[10px] mt-1">Empty</Text>
+          </>
+        )}
+        <Text className="text-emerald-400 text-[10px] font-medium mt-0.5">
+          {POSITION_LABELS[position]}
+        </Text>
+      </View>
+    );
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <View className="flex-1 bg-slate-900">
+        <SafeAreaView className="flex-1">
+          {/* Header */}
+          <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+            <Pressable onPress={onClose} className="p-1">
+              <X size={24} color="#64748b" />
+            </Pressable>
+            <Text className="text-white text-lg font-semibold">Game Lineup</Text>
+            <View style={{ width: 32 }} />
+          </View>
+
+          <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
+            {/* Game Info */}
+            <Animated.View entering={FadeIn.delay(50)} className="px-5 pt-4 pb-2">
+              <Text className="text-slate-400 text-sm text-center">vs {opponent}</Text>
+            </Animated.View>
+
+            {/* Diamond Formation Layout (4-1-2-1-2) */}
+            <Animated.View entering={FadeIn.delay(100)} className="px-5 pt-4">
+              <Text className="text-white text-lg font-semibold mb-4 text-center">
+                Starting XI (Diamond)
+              </Text>
+
+              <Animated.View
+                entering={FadeInDown.delay(50)}
+                className="bg-slate-800/60 rounded-2xl p-4 border border-slate-700/50"
+              >
+                {/* Strikers Row */}
+                <View className="flex-row justify-center gap-12 mb-5">
+                  {renderPositionSlot('st1')}
+                  {renderPositionSlot('st2')}
+                </View>
+
+                {/* CAM Row */}
+                <View className="items-center mb-5">
+                  {renderPositionSlot('cam')}
+                </View>
+
+                {/* LM / RM Row */}
+                <View className="flex-row justify-around mb-5">
+                  {renderPositionSlot('lm')}
+                  {renderPositionSlot('rm')}
+                </View>
+
+                {/* CDM Row */}
+                <View className="items-center mb-5">
+                  {renderPositionSlot('cdm')}
+                </View>
+
+                {/* Defense Row */}
+                <View className="flex-row justify-around mb-5">
+                  {renderPositionSlot('lb')}
+                  {renderPositionSlot('cb1')}
+                  {renderPositionSlot('cb2')}
+                  {renderPositionSlot('rb')}
+                </View>
+
+                {/* Goalkeeper */}
+                <View className="items-center">
+                  {renderPositionSlot('gk', 'large')}
+                </View>
+              </Animated.View>
+            </Animated.View>
+          </ScrollView>
+        </SafeAreaView>
+      </View>
+    </Modal>
+  );
+}

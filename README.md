@@ -39,6 +39,11 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
   - Choose 1-4 forward lines, 1-4 defense pairs, and 1-2 goalies
   - Lines display on game detail screen for all players to see
   - Tap the Lines card to edit (Captains/Admins)
+- **Soccer Formations** (Soccer only): Choose between different formations
+  - **4-4-2**: Classic formation with 4 defenders, 4 midfielders (LM, CM, CM, RM), and 2 strikers
+  - **Diamond 4-1-2-1-2**: Diamond midfield with CDM, LM, RM, CAM, and 2 strikers
+  - Formation selector shows visual preview of each formation
+  - Configured lineups display on game detail screen
 - Send game invites via text or email (pre-fills recipients)
 - **Invite More Players**: Admins/Captains can invite additional players after game creation
   - Invite individual players with one tap

@@ -33,7 +33,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, SoccerLineup } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, SoccerLineup, SoccerDiamondLineup } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
@@ -46,6 +46,8 @@ import { BaseballLineupEditor, hasAssignedBaseballPlayers } from '@/components/B
 import { BaseballLineupViewer } from '@/components/BaseballLineupViewer';
 import { SoccerLineupEditor, hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
 import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
+import { SoccerDiamondLineupEditor, hasAssignedSoccerDiamondPlayers } from '@/components/SoccerDiamondLineupEditor';
+import { SoccerDiamondLineupViewer } from '@/components/SoccerDiamondLineupViewer';
 
 // Helper to convert hex codes to readable color names
 const hexToColorName = (hex: string): string => {
@@ -191,6 +193,8 @@ export default function GameDetailScreen() {
   const [isBasketballLineupModalVisible, setIsBasketballLineupModalVisible] = useState(false);
   const [isBaseballLineupModalVisible, setIsBaseballLineupModalVisible] = useState(false);
   const [isSoccerLineupModalVisible, setIsSoccerLineupModalVisible] = useState(false);
+  const [isSoccerDiamondLineupModalVisible, setIsSoccerDiamondLineupModalVisible] = useState(false);
+  const [isSoccerFormationModalVisible, setIsSoccerFormationModalVisible] = useState(false);
 
   // Edit form state
   const [editOpponent, setEditOpponent] = useState('');
@@ -479,6 +483,21 @@ export default function GameDetailScreen() {
     setIsSoccerLineupModalVisible(false);
   };
 
+  const handleSaveSoccerDiamondLineup = (soccerDiamondLineup: SoccerDiamondLineup) => {
+    updateGame(game.id, { soccerDiamondLineup });
+    setIsSoccerDiamondLineupModalVisible(false);
+  };
+
+  const handleSelectSoccerFormation = (formation: '442' | 'diamond') => {
+    setIsSoccerFormationModalVisible(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (formation === '442') {
+      setIsSoccerLineupModalVisible(true);
+    } else {
+      setIsSoccerDiamondLineupModalVisible(true);
+    }
+  };
+
   return (
     <View className="flex-1 bg-slate-900">
       <LinearGradient
@@ -635,7 +654,7 @@ export default function GameDetailScreen() {
               className="mx-4 mb-4"
             >
               <Pressable
-                onPress={() => setIsSoccerLineupModalVisible(true)}
+                onPress={() => setIsSoccerFormationModalVisible(true)}
                 className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30 active:bg-emerald-500/30"
               >
                 <View className="flex-row items-center">
@@ -643,7 +662,7 @@ export default function GameDetailScreen() {
                   <View className="flex-1 ml-3">
                     <Text className="text-emerald-400 font-semibold">Set Lineup</Text>
                     <Text className="text-slate-400 text-sm">
-                      {hasAssignedSoccerPlayers(game.soccerLineup) ? 'Edit starting XI' : 'Configure starting XI'}
+                      {(hasAssignedSoccerPlayers(game.soccerLineup) || hasAssignedSoccerDiamondPlayers(game.soccerDiamondLineup)) ? 'Edit starting XI' : 'Configure starting XI'}
                     </Text>
                   </View>
                   <ChevronDown size={20} color="#10b981" />
@@ -1146,6 +1165,196 @@ export default function GameDetailScreen() {
                 <View className="flex-row justify-center">
                   {(() => {
                     const player = game.soccerLineup!.gk ? players.find((p) => p.id === game.soccerLineup!.gk) : null;
+                    return (
+                      <View className="items-center">
+                        {player ? (
+                          <>
+                            <Image
+                              source={{ uri: player.avatar }}
+                              style={{ width: 32, height: 32, borderRadius: 16 }}
+                              contentFit="cover"
+                            />
+                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                          </>
+                        ) : (
+                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                            <Text className="text-slate-500 text-[10px]">GK</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })()}
+                </View>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* Soccer Diamond Lineup Display - Only when lineup is set and has players */}
+          {teamSettings.sport === 'soccer' && game.soccerDiamondLineup && hasAssignedSoccerDiamondPlayers(game.soccerDiamondLineup) && (
+            <Animated.View
+              entering={FadeInUp.delay(125).springify()}
+              className="mx-4 mb-4"
+            >
+              <Pressable
+                onPress={canManageTeam() ? () => setIsSoccerDiamondLineupModalVisible(true) : undefined}
+                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30"
+              >
+                <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center">
+                    <ListOrdered size={20} color="#10b981" />
+                    <Text className="text-emerald-400 font-semibold ml-2">Lineup (Diamond)</Text>
+                  </View>
+                  {canManageTeam() && (
+                    <ChevronDown size={20} color="#10b981" />
+                  )}
+                </View>
+
+                {/* Forwards Preview */}
+                <Text className="text-slate-400 text-xs mb-2">Forwards</Text>
+                <View className="flex-row justify-center gap-6 mb-3">
+                  {['st1', 'st2'].map((pos) => {
+                    const playerId = game.soccerDiamondLineup![pos as keyof SoccerDiamondLineup];
+                    const player = playerId ? players.find((p) => p.id === playerId) : null;
+                    return (
+                      <View key={pos} className="items-center">
+                        {player ? (
+                          <>
+                            <Image
+                              source={{ uri: player.avatar }}
+                              style={{ width: 32, height: 32, borderRadius: 16 }}
+                              contentFit="cover"
+                            />
+                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                          </>
+                        ) : (
+                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                            <Text className="text-slate-500 text-[10px]">ST</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {/* CAM Preview */}
+                <Text className="text-slate-400 text-xs mb-2">Attacking Mid</Text>
+                <View className="items-center mb-3">
+                  {(() => {
+                    const player = game.soccerDiamondLineup!.cam ? players.find((p) => p.id === game.soccerDiamondLineup!.cam) : null;
+                    return (
+                      <View className="items-center">
+                        {player ? (
+                          <>
+                            <Image
+                              source={{ uri: player.avatar }}
+                              style={{ width: 32, height: 32, borderRadius: 16 }}
+                              contentFit="cover"
+                            />
+                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                          </>
+                        ) : (
+                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                            <Text className="text-slate-500 text-[10px]">CAM</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })()}
+                </View>
+
+                {/* LM / RM Preview */}
+                <Text className="text-slate-400 text-xs mb-2">Wide Mids</Text>
+                <View className="flex-row justify-around mb-3">
+                  {[
+                    { key: 'lm', label: 'LM' },
+                    { key: 'rm', label: 'RM' },
+                  ].map(({ key, label }) => {
+                    const playerId = game.soccerDiamondLineup![key as keyof SoccerDiamondLineup];
+                    const player = playerId ? players.find((p) => p.id === playerId) : null;
+                    return (
+                      <View key={key} className="items-center">
+                        {player ? (
+                          <>
+                            <Image
+                              source={{ uri: player.avatar }}
+                              style={{ width: 32, height: 32, borderRadius: 16 }}
+                              contentFit="cover"
+                            />
+                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                          </>
+                        ) : (
+                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                            <Text className="text-slate-500 text-[10px]">{label}</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {/* CDM Preview */}
+                <Text className="text-slate-400 text-xs mb-2">Defensive Mid</Text>
+                <View className="items-center mb-3">
+                  {(() => {
+                    const player = game.soccerDiamondLineup!.cdm ? players.find((p) => p.id === game.soccerDiamondLineup!.cdm) : null;
+                    return (
+                      <View className="items-center">
+                        {player ? (
+                          <>
+                            <Image
+                              source={{ uri: player.avatar }}
+                              style={{ width: 32, height: 32, borderRadius: 16 }}
+                              contentFit="cover"
+                            />
+                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                          </>
+                        ) : (
+                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                            <Text className="text-slate-500 text-[10px]">CDM</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })()}
+                </View>
+
+                {/* Defense Preview */}
+                <Text className="text-slate-400 text-xs mb-2">Defense</Text>
+                <View className="flex-row justify-around mb-3">
+                  {[
+                    { key: 'lb', label: 'LB' },
+                    { key: 'cb1', label: 'CB' },
+                    { key: 'cb2', label: 'CB' },
+                    { key: 'rb', label: 'RB' },
+                  ].map(({ key, label }) => {
+                    const playerId = game.soccerDiamondLineup![key as keyof SoccerDiamondLineup];
+                    const player = playerId ? players.find((p) => p.id === playerId) : null;
+                    return (
+                      <View key={key} className="items-center">
+                        {player ? (
+                          <>
+                            <Image
+                              source={{ uri: player.avatar }}
+                              style={{ width: 32, height: 32, borderRadius: 16 }}
+                              contentFit="cover"
+                            />
+                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                          </>
+                        ) : (
+                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                            <Text className="text-slate-500 text-[10px]">{label}</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {/* Goalkeeper Preview */}
+                <Text className="text-slate-400 text-xs mb-2">Goalkeeper</Text>
+                <View className="flex-row justify-center">
+                  {(() => {
+                    const player = game.soccerDiamondLineup!.gk ? players.find((p) => p.id === game.soccerDiamondLineup!.gk) : null;
                     return (
                       <View className="items-center">
                         {player ? (
@@ -1738,6 +1947,177 @@ export default function GameDetailScreen() {
         initialLineup={game.soccerLineup}
         players={players}
       />
+
+      {/* Soccer Diamond Lineup Editor Modal */}
+      <SoccerDiamondLineupEditor
+        visible={isSoccerDiamondLineupModalVisible}
+        onClose={() => setIsSoccerDiamondLineupModalVisible(false)}
+        onSave={handleSaveSoccerDiamondLineup}
+        initialLineup={game.soccerDiamondLineup}
+        players={players}
+      />
+
+      {/* Soccer Formation Selector Modal */}
+      <Modal
+        visible={isSoccerFormationModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsSoccerFormationModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsSoccerFormationModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Choose Formation</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-6">
+              {/* 4-4-2 Formation */}
+              <Pressable
+                onPress={() => handleSelectSoccerFormation('442')}
+                className={cn(
+                  'rounded-2xl p-5 mb-4 border',
+                  hasAssignedSoccerPlayers(game.soccerLineup)
+                    ? 'bg-emerald-500/20 border-emerald-500/50'
+                    : 'bg-slate-800/60 border-slate-700/50'
+                )}
+              >
+                <Text className="text-white text-lg font-semibold mb-2">4-4-2</Text>
+                <Text className="text-slate-400 text-sm mb-4">
+                  Classic formation with 4 defenders, 4 midfielders, and 2 strikers
+                </Text>
+                {/* Visual representation */}
+                <View className="bg-slate-700/30 rounded-xl p-4">
+                  {/* Strikers */}
+                  <View className="flex-row justify-center gap-6 mb-3">
+                    <View className="w-8 h-8 rounded-full bg-emerald-500/40 items-center justify-center">
+                      <Text className="text-emerald-400 text-[10px]">ST</Text>
+                    </View>
+                    <View className="w-8 h-8 rounded-full bg-emerald-500/40 items-center justify-center">
+                      <Text className="text-emerald-400 text-[10px]">ST</Text>
+                    </View>
+                  </View>
+                  {/* Midfield */}
+                  <View className="flex-row justify-around mb-3">
+                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
+                      <Text className="text-cyan-400 text-[10px]">LM</Text>
+                    </View>
+                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
+                      <Text className="text-cyan-400 text-[10px]">CM</Text>
+                    </View>
+                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
+                      <Text className="text-cyan-400 text-[10px]">CM</Text>
+                    </View>
+                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
+                      <Text className="text-cyan-400 text-[10px]">RM</Text>
+                    </View>
+                  </View>
+                  {/* Defense */}
+                  <View className="flex-row justify-around mb-3">
+                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
+                      <Text className="text-amber-400 text-[10px]">LB</Text>
+                    </View>
+                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
+                      <Text className="text-amber-400 text-[10px]">CB</Text>
+                    </View>
+                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
+                      <Text className="text-amber-400 text-[10px]">CB</Text>
+                    </View>
+                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
+                      <Text className="text-amber-400 text-[10px]">RB</Text>
+                    </View>
+                  </View>
+                  {/* GK */}
+                  <View className="items-center">
+                    <View className="w-10 h-10 rounded-full bg-purple-500/40 items-center justify-center">
+                      <Text className="text-purple-400 text-[10px]">GK</Text>
+                    </View>
+                  </View>
+                </View>
+                {hasAssignedSoccerPlayers(game.soccerLineup) && (
+                  <Text className="text-emerald-400 text-sm mt-3 text-center">Currently configured</Text>
+                )}
+              </Pressable>
+
+              {/* Diamond 4-1-2-1-2 Formation */}
+              <Pressable
+                onPress={() => handleSelectSoccerFormation('diamond')}
+                className={cn(
+                  'rounded-2xl p-5 mb-4 border',
+                  hasAssignedSoccerDiamondPlayers(game.soccerDiamondLineup)
+                    ? 'bg-emerald-500/20 border-emerald-500/50'
+                    : 'bg-slate-800/60 border-slate-700/50'
+                )}
+              >
+                <Text className="text-white text-lg font-semibold mb-2">Diamond 4-1-2-1-2</Text>
+                <Text className="text-slate-400 text-sm mb-4">
+                  Diamond midfield with CDM, LM, RM, and CAM
+                </Text>
+                {/* Visual representation */}
+                <View className="bg-slate-700/30 rounded-xl p-4">
+                  {/* Strikers */}
+                  <View className="flex-row justify-center gap-6 mb-3">
+                    <View className="w-8 h-8 rounded-full bg-emerald-500/40 items-center justify-center">
+                      <Text className="text-emerald-400 text-[10px]">ST</Text>
+                    </View>
+                    <View className="w-8 h-8 rounded-full bg-emerald-500/40 items-center justify-center">
+                      <Text className="text-emerald-400 text-[10px]">ST</Text>
+                    </View>
+                  </View>
+                  {/* CAM */}
+                  <View className="items-center mb-3">
+                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
+                      <Text className="text-cyan-400 text-[8px]">CAM</Text>
+                    </View>
+                  </View>
+                  {/* LM / RM */}
+                  <View className="flex-row justify-around mb-3">
+                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
+                      <Text className="text-cyan-400 text-[10px]">LM</Text>
+                    </View>
+                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
+                      <Text className="text-cyan-400 text-[10px]">RM</Text>
+                    </View>
+                  </View>
+                  {/* CDM */}
+                  <View className="items-center mb-3">
+                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
+                      <Text className="text-cyan-400 text-[8px]">CDM</Text>
+                    </View>
+                  </View>
+                  {/* Defense */}
+                  <View className="flex-row justify-around mb-3">
+                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
+                      <Text className="text-amber-400 text-[10px]">LB</Text>
+                    </View>
+                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
+                      <Text className="text-amber-400 text-[10px]">CB</Text>
+                    </View>
+                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
+                      <Text className="text-amber-400 text-[10px]">CB</Text>
+                    </View>
+                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
+                      <Text className="text-amber-400 text-[10px]">RB</Text>
+                    </View>
+                  </View>
+                  {/* GK */}
+                  <View className="items-center">
+                    <View className="w-10 h-10 rounded-full bg-purple-500/40 items-center justify-center">
+                      <Text className="text-purple-400 text-[10px]">GK</Text>
+                    </View>
+                  </View>
+                </View>
+                {hasAssignedSoccerDiamondPlayers(game.soccerDiamondLineup) && (
+                  <Text className="text-emerald-400 text-sm mt-3 text-center">Currently configured</Text>
+                )}
+              </Pressable>
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
     </View>
   );
 }

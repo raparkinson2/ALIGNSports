@@ -317,6 +317,21 @@ export interface SoccerLineup {
   st2?: string; // Striker 2
 }
 
+// Soccer Diamond Midfield Lineup Types (4-1-2-1-2)
+export interface SoccerDiamondLineup {
+  gk?: string;  // Goalkeeper
+  lb?: string;  // Left Back
+  cb1?: string; // Center Back 1
+  cb2?: string; // Center Back 2
+  rb?: string;  // Right Back
+  cdm?: string; // Center Defensive Midfielder
+  lm?: string;  // Left Midfielder
+  rm?: string;  // Right Midfielder
+  cam?: string; // Center Attacking Midfielder
+  st1?: string; // Striker 1
+  st2?: string; // Striker 2
+}
+
 export interface Game {
   id: string;
   opponent: string;
@@ -334,7 +349,8 @@ export interface Game {
   lineup?: HockeyLineup; // Hockey line combinations
   basketballLineup?: BasketballLineup; // Basketball lineup
   baseballLineup?: BaseballLineup; // Baseball lineup
-  soccerLineup?: SoccerLineup; // Soccer lineup
+  soccerLineup?: SoccerLineup; // Soccer lineup (4-4-2)
+  soccerDiamondLineup?: SoccerDiamondLineup; // Soccer diamond midfield lineup (4-1-2-1-2)
 }
 
 // In-app notification types
