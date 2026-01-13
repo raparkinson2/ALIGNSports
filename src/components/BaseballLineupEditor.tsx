@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
 import { View, Text, Modal, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Check, Trash2 } from 'lucide-react-native';
+import { X, Trash2 } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { BaseballLineup, Player } from '@/lib/store';
+import { cn } from '@/lib/cn';
 
 interface BaseballLineupEditorProps {
   visible: boolean;
@@ -126,9 +127,17 @@ export function BaseballLineupEditor({
     onSave(lineup);
   };
 
+  const handleClose = () => {
+    setLineup(initialLineup || createEmptyLineup());
+    onClose();
+  };
+
   const getPlayer = (playerId: string | undefined) => {
     return playerId ? players.find((p) => p.id === playerId) : null;
   };
+
+  // Check if any players are assigned
+  const hasAnyAssigned = assignedPlayerIds.size > 0;
 
   const renderPositionSlot = (position: PositionKey, size: 'large' | 'medium' = 'medium') => {
     const player = getPlayer(lineup[position]);
@@ -187,27 +196,32 @@ export function BaseballLineupEditor({
         <SafeAreaView className="flex-1">
           {/* Header */}
           <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-            <Pressable onPress={onClose} className="p-1">
+            <Pressable onPress={handleClose} className="p-1">
               <X size={24} color="#64748b" />
             </Pressable>
             <Text className="text-white text-lg font-semibold">Set Lineup</Text>
-            <Pressable onPress={handleSave} className="p-1">
-              <Check size={24} color="#10b981" />
-            </Pressable>
+            <View className="flex-row items-center gap-2">
+              <Pressable
+                onPress={handleClearAllPositions}
+                className="bg-slate-800 px-3 py-2 rounded-lg flex-row items-center"
+                disabled={!hasAnyAssigned}
+              >
+                <Trash2 size={16} color={!hasAnyAssigned ? '#475569' : '#f87171'} />
+                <Text className={cn(
+                  'ml-1.5 font-medium text-sm',
+                  !hasAnyAssigned ? 'text-slate-600' : 'text-red-400'
+                )}>Clear</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSave}
+                className="bg-emerald-500 px-4 py-2 rounded-lg"
+              >
+                <Text className="text-slate-900 font-semibold">Save</Text>
+              </Pressable>
+            </View>
           </View>
 
           <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
-            {/* Clear All Button */}
-            <Animated.View entering={FadeIn.delay(50)} className="px-5 pt-4">
-              <Pressable
-                onPress={handleClearAllPositions}
-                className="flex-row items-center justify-center bg-red-500/10 rounded-xl py-3 border border-red-500/30"
-              >
-                <Trash2 size={18} color="#ef4444" />
-                <Text className="text-red-500 font-medium ml-2">Clear All Positions</Text>
-              </Pressable>
-            </Animated.View>
-
             {/* Diamond Layout */}
             <Animated.View entering={FadeIn.delay(100)} className="px-5 pt-6">
               <Text className="text-white text-lg font-semibold mb-4 text-center">
