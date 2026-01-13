@@ -39,6 +39,7 @@ import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { LineupEditor } from '@/components/LineupEditor';
+import { hasAssignedPlayers } from '@/components/LineupViewer';
 
 // Helper to convert hex codes to readable color names
 const hexToColorName = (hex: string): string => {
@@ -570,8 +571,8 @@ export default function GameDetailScreen() {
             </Animated.View>
           )}
 
-          {/* Lines Display - Only for hockey when lineup is set */}
-          {teamSettings.sport === 'hockey' && game.lineup && (
+          {/* Lines Display - Only for hockey when lineup is set and has players */}
+          {teamSettings.sport === 'hockey' && game.lineup && hasAssignedPlayers(game.lineup) && (
             <Animated.View
               entering={FadeInUp.delay(125).springify()}
               className="mx-4 mb-4"
