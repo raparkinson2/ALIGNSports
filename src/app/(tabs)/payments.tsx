@@ -22,10 +22,11 @@ import {
   ChevronUp,
   ChevronDown,
 } from 'lucide-react-native';
-import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeIn, useAnimatedStyle, useSharedValue, withSpring, runOnJS } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
   useTeamStore,
   PaymentPeriod,
@@ -195,7 +196,7 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
     <Pressable
       onPress={onPress}
       className={cn(
-        'flex-row items-center p-4 rounded-xl mb-2 active:opacity-80',
+        'flex-row items-center p-4 rounded-xl active:opacity-80',
         getBackgroundClass()
       )}
     >
@@ -226,6 +227,87 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
       </View>
       <ChevronRight size={20} color="#64748b" className="ml-2" />
     </Pressable>
+  );
+}
+
+interface SwipeablePlayerPaymentRowProps extends PlayerPaymentRowProps {
+  onDelete?: () => void;
+  canDelete?: boolean;
+}
+
+function SwipeablePlayerPaymentRow({
+  onDelete,
+  canDelete = false,
+  ...rowProps
+}: SwipeablePlayerPaymentRowProps) {
+  const translateX = useSharedValue(0);
+  const DELETE_THRESHOLD = -80;
+
+  const handleDelete = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onDelete?.();
+  };
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .onUpdate((event) => {
+      if (!canDelete) return;
+      // Only allow swiping left (negative values)
+      if (event.translationX < 0) {
+        translateX.value = Math.max(event.translationX, -100);
+      } else {
+        translateX.value = withSpring(0);
+      }
+    })
+    .onEnd((event) => {
+      if (!canDelete) return;
+      if (event.translationX < DELETE_THRESHOLD) {
+        // Keep it open at delete position
+        translateX.value = withSpring(-80);
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const deleteButtonStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, Math.abs(translateX.value) / 40),
+  }));
+
+  if (!canDelete) {
+    return (
+      <View className="mb-2">
+        <PlayerPaymentRow {...rowProps} />
+      </View>
+    );
+  }
+
+  return (
+    <View className="relative mb-2 overflow-hidden rounded-xl">
+      {/* Delete button behind */}
+      <Animated.View
+        style={[deleteButtonStyle]}
+        className="absolute right-0 top-0 bottom-0 w-20 bg-red-500 items-center justify-center"
+      >
+        <Pressable
+          onPress={handleDelete}
+          className="flex-1 w-full items-center justify-center"
+        >
+          <Trash2 size={24} color="white" />
+          <Text className="text-white text-xs font-medium mt-1">Delete</Text>
+        </Pressable>
+      </Animated.View>
+
+      {/* Swipeable row */}
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={animatedStyle}>
+          <PlayerPaymentRow {...rowProps} />
+        </Animated.View>
+      </GestureDetector>
+    </View>
   );
 }
 
@@ -1154,20 +1236,6 @@ export default function PaymentsScreen() {
                     </View>
                   )}
 
-                  {/* Remove Player from Period - Only for Admins */}
-                  {isAdmin() && (
-                    <Pressable
-                      onPress={() => {
-                        handleRemovePlayerFromPeriod(selectedPlayerId!);
-                        setSelectedPlayerId(null);
-                      }}
-                      className="bg-red-500/20 rounded-xl p-4 mb-6 flex-row items-center justify-center active:bg-red-500/30"
-                    >
-                      <Trash2 size={18} color="#ef4444" />
-                      <Text className="text-red-400 font-semibold ml-2">Remove from Period</Text>
-                    </Pressable>
-                  )}
-
                   {/* Payment History */}
                   <View className="mb-6">
                     <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
@@ -1336,7 +1404,7 @@ export default function PaymentsScreen() {
                       if (!canViewPlayerDetails(pp.playerId)) return null;
 
                       return (
-                        <PlayerPaymentRow
+                        <SwipeablePlayerPaymentRow
                           key={pp.playerId}
                           player={player}
                           status={pp.status}
@@ -1347,6 +1415,8 @@ export default function PaymentsScreen() {
                             setSelectedPlayerId(pp.playerId);
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                           }}
+                          canDelete={isAdmin()}
+                          onDelete={() => handleRemovePlayerFromPeriod(pp.playerId)}
                         />
                       );
                     })}
