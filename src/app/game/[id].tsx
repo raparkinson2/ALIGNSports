@@ -532,6 +532,30 @@ export default function GameDetailScreen() {
             </View>
           </Animated.View>
 
+          {/* Set Lines Button - Only for hockey and captains/admins */}
+          {teamSettings.sport === 'hockey' && canManageTeam() && (
+            <Animated.View
+              entering={FadeInUp.delay(115).springify()}
+              className="mx-4 mb-4"
+            >
+              <Pressable
+                onPress={() => setIsLineupModalVisible(true)}
+                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30 active:bg-emerald-500/30"
+              >
+                <View className="flex-row items-center">
+                  <ListOrdered size={24} color="#10b981" />
+                  <View className="flex-1 ml-3">
+                    <Text className="text-emerald-400 font-semibold">Set Lines</Text>
+                    <Text className="text-slate-400 text-sm">
+                      {hasAssignedPlayers(game.lineup) ? 'Edit line combinations' : 'Configure forward, defense, and goalie lines'}
+                    </Text>
+                  </View>
+                  <ChevronDown size={20} color="#10b981" />
+                </View>
+              </Pressable>
+            </Animated.View>
+          )}
+
           {/* Beer/Refreshment Duty - Only show if enabled */}
           {game.showBeerDuty && teamSettings.showRefreshmentDuty !== false && (
             <Animated.View
@@ -862,25 +886,6 @@ export default function GameDetailScreen() {
                   </View>
                 </View>
               </Pressable>
-
-              {/* Set Lines Button - Only for hockey */}
-              {teamSettings.sport === 'hockey' && (
-                <Pressable
-                  onPress={() => {
-                    setIsSettingsModalVisible(false);
-                    setIsLineupModalVisible(true);
-                  }}
-                  className="bg-emerald-500/20 rounded-xl p-4 mb-4 border border-emerald-500/30 active:bg-emerald-500/30"
-                >
-                  <View className="flex-row items-center">
-                    <ListOrdered size={20} color="#10b981" />
-                    <View className="ml-3">
-                      <Text className="text-emerald-400 font-semibold">Set Lines</Text>
-                      <Text className="text-slate-400 text-sm">Configure forward, defense, and goalie lines</Text>
-                    </View>
-                  </View>
-                </Pressable>
-              )}
 
               {/* Delete Game Button */}
               {isAdmin() && (
