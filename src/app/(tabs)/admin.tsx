@@ -355,12 +355,24 @@ export default function AdminScreen() {
   };
 
   const handleCreatePlayer = () => {
-    if (!newPlayerName.trim() || !newPlayerNumber.trim()) {
-      Alert.alert('Missing Info', 'Please enter a name and jersey number.');
+    const rawPhone = unformatPhone(newPlayerPhone);
+
+    if (!newPlayerName.trim()) {
+      Alert.alert('Missing Info', 'Please enter a name.');
       return;
     }
-
-    const rawPhone = unformatPhone(newPlayerPhone);
+    if (!newPlayerNumber.trim()) {
+      Alert.alert('Missing Info', 'Please enter a jersey number.');
+      return;
+    }
+    if (!rawPhone) {
+      Alert.alert('Missing Info', 'Please enter a phone number.');
+      return;
+    }
+    if (!newPlayerEmail.trim()) {
+      Alert.alert('Missing Info', 'Please enter an email address.');
+      return;
+    }
 
     const newPlayer: Player = {
       id: Date.now().toString(),
@@ -368,8 +380,8 @@ export default function AdminScreen() {
       number: newPlayerNumber.trim(),
       position: newPlayerPositions[0],
       positions: newPlayerPositions,
-      phone: rawPhone || undefined,
-      email: newPlayerEmail.trim() || undefined,
+      phone: rawPhone,
+      email: newPlayerEmail.trim(),
       avatar: `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150`,
       roles: newPlayerRoles,
       status: newPlayerStatus,
@@ -382,11 +394,9 @@ export default function AdminScreen() {
     setIsNewPlayerModalVisible(false);
     resetNewPlayerForm();
 
-    // Show invite modal if player has phone or email
-    if (rawPhone || newPlayerEmail.trim()) {
-      setNewlyCreatedPlayer({ ...newPlayer, phone: rawPhone || undefined, email: newPlayerEmail.trim() || undefined });
-      setIsInviteModalVisible(true);
-    }
+    // Show invite modal since player has phone and email (both required now)
+    setNewlyCreatedPlayer({ ...newPlayer });
+    setIsInviteModalVisible(true);
   };
 
   const getInviteMessage = () => {
@@ -1075,7 +1085,7 @@ export default function AdminScreen() {
                 <View className="flex-row mb-5">
                   {/* Name Input */}
                   <View className="flex-1 mr-3">
-                    <Text className="text-slate-400 text-sm mb-2">Name</Text>
+                    <Text className="text-slate-400 text-sm mb-2">Name<Text className="text-red-400">*</Text></Text>
                     <TextInput
                       value={editPlayerName}
                       onChangeText={setEditPlayerName}
@@ -1090,7 +1100,7 @@ export default function AdminScreen() {
 
                   {/* Number Input */}
                   <View style={{ width: 100 }}>
-                    <Text className="text-slate-400 text-sm mb-2">Jersey Number</Text>
+                    <Text className="text-slate-400 text-sm mb-2">Jersey #<Text className="text-red-400">*</Text></Text>
                     <TextInput
                       value={editPlayerNumber}
                       onChangeText={setEditPlayerNumber}
@@ -1110,7 +1120,7 @@ export default function AdminScreen() {
                 <View className="mb-5">
                   <View className="flex-row items-center mb-2">
                     <Phone size={14} color="#a78bfa" />
-                    <Text className="text-slate-400 text-sm ml-2">Phone</Text>
+                    <Text className="text-slate-400 text-sm ml-2">Phone<Text className="text-red-400">*</Text></Text>
                   </View>
                   <TextInput
                     value={editPlayerPhone}
@@ -1129,7 +1139,7 @@ export default function AdminScreen() {
                 <View className="mb-5">
                   <View className="flex-row items-center mb-2">
                     <Mail size={14} color="#a78bfa" />
-                    <Text className="text-slate-400 text-sm ml-2">Email</Text>
+                    <Text className="text-slate-400 text-sm ml-2">Email<Text className="text-red-400">*</Text></Text>
                   </View>
                   <TextInput
                     value={editPlayerEmail}
@@ -1144,6 +1154,8 @@ export default function AdminScreen() {
                     returnKeyType="done"
                   />
                 </View>
+
+                <Text className="text-slate-500 text-xs mb-4"><Text className="text-red-400">*</Text> Required</Text>
 
                 {/* Player Status */}
                 <View className="mb-5">
@@ -1509,7 +1521,7 @@ export default function AdminScreen() {
               <View className="flex-row mb-5">
                 {/* Name Input */}
                 <View className="flex-1 mr-3">
-                  <Text className="text-slate-400 text-sm mb-2">Name</Text>
+                  <Text className="text-slate-400 text-sm mb-2">Name<Text className="text-red-400">*</Text></Text>
                   <TextInput
                     value={newPlayerName}
                     onChangeText={setNewPlayerName}
@@ -1521,7 +1533,7 @@ export default function AdminScreen() {
 
                 {/* Number Input */}
                 <View style={{ width: 100 }}>
-                  <Text className="text-slate-400 text-sm mb-2">Jersey Number</Text>
+                  <Text className="text-slate-400 text-sm mb-2">Jersey #<Text className="text-red-400">*</Text></Text>
                   <TextInput
                     value={newPlayerNumber}
                     onChangeText={setNewPlayerNumber}
@@ -1538,7 +1550,7 @@ export default function AdminScreen() {
               <View className="mb-5">
                 <View className="flex-row items-center mb-2">
                   <Phone size={14} color="#a78bfa" />
-                  <Text className="text-slate-400 text-sm ml-2">Phone</Text>
+                  <Text className="text-slate-400 text-sm ml-2">Phone<Text className="text-red-400">*</Text></Text>
                 </View>
                 <TextInput
                   value={newPlayerPhone}
@@ -1554,7 +1566,7 @@ export default function AdminScreen() {
               <View className="mb-5">
                 <View className="flex-row items-center mb-2">
                   <Mail size={14} color="#a78bfa" />
-                  <Text className="text-slate-400 text-sm ml-2">Email</Text>
+                  <Text className="text-slate-400 text-sm ml-2">Email<Text className="text-red-400">*</Text></Text>
                 </View>
                 <TextInput
                   value={newPlayerEmail}
@@ -1769,9 +1781,7 @@ export default function AdminScreen() {
                 </Text>
               </View>
 
-              <Text className="text-slate-500 text-sm text-center mb-6">
-                Add phone or email to send an invite after creating the player
-              </Text>
+              <Text className="text-slate-500 text-xs mb-6"><Text className="text-red-400">*</Text> Required</Text>
             </ScrollView>
           </SafeAreaView>
         </View>
