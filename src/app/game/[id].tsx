@@ -26,17 +26,19 @@ import {
   Trash2,
   Plus,
   UserPlus,
+  ListOrdered,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
+import { LineupEditor } from '@/components/LineupEditor';
 
 // Helper to convert hex codes to readable color names
 const hexToColorName = (hex: string): string => {
@@ -178,6 +180,7 @@ export default function GameDetailScreen() {
   const [isBeerDutyModalVisible, setIsBeerDutyModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
+  const [isLineupModalVisible, setIsLineupModalVisible] = useState(false);
 
   // Edit form state
   const [editOpponent, setEditOpponent] = useState('');
@@ -446,6 +449,11 @@ export default function GameDetailScreen() {
     );
   };
 
+  const handleSaveLineup = (lineup: HockeyLineup) => {
+    updateGame(game.id, { lineup });
+    setIsLineupModalVisible(false);
+  };
+
   return (
     <View className="flex-1 bg-slate-900">
       <LinearGradient
@@ -558,6 +566,113 @@ export default function GameDetailScreen() {
                     <ChevronDown size={20} color="#f59e0b" />
                   )}
                 </View>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* Lines Display - Only for hockey when lineup is set */}
+          {teamSettings.sport === 'hockey' && game.lineup && (
+            <Animated.View
+              entering={FadeInUp.delay(125).springify()}
+              className="mx-4 mb-4"
+            >
+              <Pressable
+                onPress={canManageTeam() ? () => setIsLineupModalVisible(true) : undefined}
+                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30"
+              >
+                <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center">
+                    <ListOrdered size={20} color="#10b981" />
+                    <Text className="text-emerald-400 font-semibold ml-2">Lines</Text>
+                  </View>
+                  {canManageTeam() && (
+                    <ChevronDown size={20} color="#10b981" />
+                  )}
+                </View>
+
+                {/* Forward Lines Preview */}
+                {game.lineup.forwardLines.slice(0, game.lineup.numForwardLines).map((line, index) => {
+                  const lw = line.lw ? players.find((p) => p.id === line.lw) : null;
+                  const c = line.c ? players.find((p) => p.id === line.c) : null;
+                  const rw = line.rw ? players.find((p) => p.id === line.rw) : null;
+                  if (!lw && !c && !rw) return null;
+                  return (
+                    <View key={`fwd-${index}`} className="mb-2">
+                      <Text className="text-slate-400 text-xs mb-1">Line {index + 1}</Text>
+                      <View className="flex-row justify-around">
+                        {[lw, c, rw].map((player, i) => (
+                          <View key={i} className="items-center">
+                            {player ? (
+                              <>
+                                <Image
+                                  source={{ uri: player.avatar }}
+                                  style={{ width: 32, height: 32, borderRadius: 16 }}
+                                  contentFit="cover"
+                                />
+                                <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                              </>
+                            ) : (
+                              <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                                <Text className="text-slate-500 text-xs">-</Text>
+                              </View>
+                            )}
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  );
+                })}
+
+                {/* Defense Pairs Preview */}
+                {game.lineup.defenseLines.slice(0, game.lineup.numDefenseLines).map((line, index) => {
+                  const ld = line.ld ? players.find((p) => p.id === line.ld) : null;
+                  const rd = line.rd ? players.find((p) => p.id === line.rd) : null;
+                  if (!ld && !rd) return null;
+                  return (
+                    <View key={`def-${index}`} className="mb-2">
+                      <Text className="text-slate-400 text-xs mb-1">D-Pair {index + 1}</Text>
+                      <View className="flex-row justify-around px-8">
+                        {[ld, rd].map((player, i) => (
+                          <View key={i} className="items-center">
+                            {player ? (
+                              <>
+                                <Image
+                                  source={{ uri: player.avatar }}
+                                  style={{ width: 32, height: 32, borderRadius: 16 }}
+                                  contentFit="cover"
+                                />
+                                <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                              </>
+                            ) : (
+                              <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                                <Text className="text-slate-500 text-xs">-</Text>
+                              </View>
+                            )}
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  );
+                })}
+
+                {/* Goalies Preview */}
+                {game.lineup.goalieLines.slice(0, game.lineup.numGoalieLines).map((line, index) => {
+                  const g = line.g ? players.find((p) => p.id === line.g) : null;
+                  if (!g) return null;
+                  return (
+                    <View key={`goal-${index}`} className="mb-2">
+                      <Text className="text-slate-400 text-xs mb-1">{index === 0 ? 'Starter' : 'Backup'}</Text>
+                      <View className="items-center">
+                        <Image
+                          source={{ uri: g.avatar }}
+                          style={{ width: 32, height: 32, borderRadius: 16 }}
+                          contentFit="cover"
+                        />
+                        <Text className="text-white text-xs mt-0.5">#{g.number}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
               </Pressable>
             </Animated.View>
           )}
@@ -746,6 +861,25 @@ export default function GameDetailScreen() {
                   </View>
                 </View>
               </Pressable>
+
+              {/* Set Lines Button - Only for hockey */}
+              {teamSettings.sport === 'hockey' && (
+                <Pressable
+                  onPress={() => {
+                    setIsSettingsModalVisible(false);
+                    setIsLineupModalVisible(true);
+                  }}
+                  className="bg-emerald-500/20 rounded-xl p-4 mb-4 border border-emerald-500/30 active:bg-emerald-500/30"
+                >
+                  <View className="flex-row items-center">
+                    <ListOrdered size={20} color="#10b981" />
+                    <View className="ml-3">
+                      <Text className="text-emerald-400 font-semibold">Set Lines</Text>
+                      <Text className="text-slate-400 text-sm">Configure forward, defense, and goalie lines</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              )}
 
               {/* Delete Game Button */}
               {isAdmin() && (
@@ -1094,6 +1228,15 @@ export default function GameDetailScreen() {
           </SafeAreaView>
         </View>
       </Modal>
+
+      {/* Lineup Editor Modal */}
+      <LineupEditor
+        visible={isLineupModalVisible}
+        onClose={() => setIsLineupModalVisible(false)}
+        onSave={handleSaveLineup}
+        initialLineup={game.lineup}
+        availablePlayers={players}
+      />
     </View>
   );
 }

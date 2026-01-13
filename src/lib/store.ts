@@ -246,6 +246,31 @@ export const getPrimaryPosition = (player: Player): string => {
   return player.position;
 };
 
+// Hockey Lines Types
+export interface HockeyForwardLine {
+  lw?: string; // player id
+  c?: string;  // player id
+  rw?: string; // player id
+}
+
+export interface HockeyDefenseLine {
+  ld?: string; // player id
+  rd?: string; // player id
+}
+
+export interface HockeyGoalieLine {
+  g?: string; // player id
+}
+
+export interface HockeyLineup {
+  forwardLines: HockeyForwardLine[]; // 1-4 lines
+  defenseLines: HockeyDefenseLine[]; // 1-4 lines
+  goalieLines: HockeyGoalieLine[]; // 1-2 lines
+  numForwardLines: number; // 1-4
+  numDefenseLines: number; // 1-4
+  numGoalieLines: number;  // 1-2
+}
+
 export interface Game {
   id: string;
   opponent: string;
@@ -260,6 +285,7 @@ export interface Game {
   photos: string[];
   showBeerDuty: boolean; // Admin toggle for beer/refreshment duty display
   beerDutyPlayerId?: string; // Player responsible for bringing beverages
+  lineup?: HockeyLineup; // Hockey line combinations
 }
 
 // In-app notification types
