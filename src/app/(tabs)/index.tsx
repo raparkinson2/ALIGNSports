@@ -365,30 +365,27 @@ function SwipeableGameCard({
   }
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * 100).springify()}>
-      <View className="relative mb-4 overflow-hidden rounded-2xl">
-        {/* Delete button behind */}
-        <Animated.View
-          style={[deleteButtonStyle]}
-          className="absolute right-0 top-0 bottom-0 w-20 bg-red-500 items-center justify-center rounded-r-2xl"
+    <View className="relative mb-4 overflow-hidden rounded-2xl">
+      {/* Delete button behind */}
+      <Animated.View
+        style={[deleteButtonStyle, { position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center', borderTopRightRadius: 16, borderBottomRightRadius: 16 }]}
+      >
+        <Pressable
+          onPress={handleDelete}
+          className="flex-1 w-full items-center justify-center"
         >
-          <Pressable
-            onPress={handleDelete}
-            className="flex-1 w-full items-center justify-center"
-          >
-            <Trash2 size={24} color="white" />
-            <Text className="text-white text-xs font-medium mt-1">Delete</Text>
-          </Pressable>
-        </Animated.View>
+          <Trash2 size={24} color="white" />
+          <Text className="text-white text-xs font-medium mt-1">Delete</Text>
+        </Pressable>
+      </Animated.View>
 
-        {/* Swipeable row */}
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={animatedStyle}>
-            <GameCard game={game} index={0} onPress={onPress} onViewLines={onViewLines} skipAnimation />
-          </Animated.View>
-        </GestureDetector>
-      </View>
-    </Animated.View>
+      {/* Swipeable row */}
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={animatedStyle}>
+          <GameCard game={game} index={index} onPress={onPress} onViewLines={onViewLines} skipAnimation />
+        </Animated.View>
+      </GestureDetector>
+    </View>
   );
 }
 
