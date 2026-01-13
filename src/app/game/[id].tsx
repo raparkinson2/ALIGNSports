@@ -688,7 +688,11 @@ export default function GameDetailScreen() {
                     <JuiceBoxIcon size={24} color="#f59e0b" />
                   )}
                   <View className="flex-1 ml-3">
-                    <Text className="text-amber-400 font-semibold">Refreshment Duty</Text>
+                    <Text className="text-amber-400 font-semibold">
+                      {teamSettings.sport === 'hockey' && teamSettings.refreshmentDutyIs21Plus !== false
+                        ? 'Post Game Beer Duty'
+                        : 'Refreshment Duty'}
+                    </Text>
                     {beerDutyPlayer ? (
                       <View className="flex-row items-center mt-1">
                         <Image
@@ -1597,7 +1601,11 @@ export default function GameDetailScreen() {
               <Pressable onPress={() => setIsBeerDutyModalVisible(false)}>
                 <X size={24} color="#64748b" />
               </Pressable>
-              <Text className="text-white text-lg font-semibold">Assign Refreshment Duty</Text>
+              <Text className="text-white text-lg font-semibold">
+                {teamSettings.sport === 'hockey' && teamSettings.refreshmentDutyIs21Plus !== false
+                  ? 'Assign Post Game Beer Duty'
+                  : 'Assign Refreshment Duty'}
+              </Text>
               <View style={{ width: 24 }} />
             </View>
 
