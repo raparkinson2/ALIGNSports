@@ -159,7 +159,7 @@ function GameCard({ game, index, onPress }: GameCardProps) {
       >
         <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
           {/* Jersey Color Bar */}
-          <View style={{ backgroundColor: jerseyColorHex, height: 8 }} />
+          <View style={{ backgroundColor: jerseyColorHex, height: 6 }} />
 
           <View className="p-4">
             {/* Date Badge & Opponent */}
