@@ -231,6 +231,8 @@ export default function AdminScreen() {
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const resetAllData = useTeamStore((s) => s.resetAllData);
+  const games = useTeamStore((s) => s.games);
+  const updateGame = useTeamStore((s) => s.updateGame);
 
   const positions = SPORT_POSITIONS[teamSettings.sport];
 
@@ -535,10 +537,25 @@ export default function AdminScreen() {
 
   const handleSaveEditJerseyColor = () => {
     if (editingColorIndex === null || !editColorName.trim()) return;
+
+    const oldColorName = teamSettings.jerseyColors[editingColorIndex].name;
+    const newColorName = editColorName.trim();
+
+    // Update the jersey color in settings
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const newColors = [...teamSettings.jerseyColors];
-    newColors[editingColorIndex] = { name: editColorName.trim(), color: editColorHex };
+    newColors[editingColorIndex] = { name: newColorName, color: editColorHex };
     setTeamSettings({ jerseyColors: newColors });
+
+    // Update all games that use the old color name
+    if (oldColorName !== newColorName) {
+      games.forEach((game) => {
+        if (game.jerseyColor === oldColorName) {
+          updateGame(game.id, { jerseyColor: newColorName });
+        }
+      });
+    }
+
     setEditingColorIndex(null);
     setEditColorName('');
     setEditColorHex('#ffffff');
