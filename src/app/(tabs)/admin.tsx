@@ -1351,7 +1351,7 @@ export default function AdminScreen() {
                         className="bg-slate-700 rounded-xl px-4 py-3 text-white mb-3"
                       />
                       <Text className="text-slate-400 text-sm mb-2">Select Color</Text>
-                      <View className="flex-row flex-wrap mb-3">
+                      <View className="flex-row justify-between mb-3">
                         {COLOR_PRESETS.map((hex) => (
                           <Pressable
                             key={hex}
@@ -1360,13 +1360,13 @@ export default function AdminScreen() {
                               setEditColorHex(hex);
                             }}
                             className={cn(
-                              'w-10 h-10 rounded-full mr-2 mb-2 border-2 items-center justify-center',
+                              'w-8 h-8 rounded-full border-2 items-center justify-center',
                               editColorHex === hex ? 'border-cyan-400' : 'border-slate-600'
                             )}
                             style={{ backgroundColor: hex }}
                           >
                             {editColorHex === hex && (
-                              <Check size={16} color={hex === '#ffffff' || hex === '#ca8a04' ? '#000' : '#fff'} />
+                              <Check size={14} color={hex === '#ffffff' || hex === '#ca8a04' ? '#000' : '#fff'} />
                             )}
                           </Pressable>
                         ))}
@@ -1426,7 +1426,7 @@ export default function AdminScreen() {
                 />
 
                 <Text className="text-slate-400 text-sm mb-2">Select Color</Text>
-                <View className="flex-row flex-wrap mb-4">
+                <View className="flex-row justify-between mb-4">
                   {COLOR_PRESETS.map((hex) => (
                     <Pressable
                       key={hex}
@@ -1435,13 +1435,13 @@ export default function AdminScreen() {
                         setNewColorHex(hex);
                       }}
                       className={cn(
-                        'w-12 h-12 rounded-full mr-3 mb-3 border-2 items-center justify-center',
+                        'w-8 h-8 rounded-full border-2 items-center justify-center',
                         newColorHex === hex ? 'border-cyan-400' : 'border-slate-600'
                       )}
                       style={{ backgroundColor: hex }}
                     >
                       {newColorHex === hex && (
-                        <Check size={20} color={hex === '#ffffff' || hex === '#ca8a04' ? '#000' : '#fff'} />
+                        <Check size={14} color={hex === '#ffffff' || hex === '#ca8a04' ? '#000' : '#fff'} />
                       )}
                     </Pressable>
                   ))}
