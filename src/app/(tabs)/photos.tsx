@@ -2,17 +2,18 @@ import { View, Text, ScrollView, Pressable, Dimensions, Modal } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
-import { Camera, Plus, ImageIcon, Trash2 } from 'lucide-react-native';
-import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import { Camera, Plus, ImageIcon, Trash2, X } from 'lucide-react-native';
+import Animated, { FadeInDown, FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Photo } from '@/lib/store';
 
-const { width } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
 const GAP = 4;
 const PADDING = 16;
-const imageSize = (width - PADDING * 2 - GAP * 2) / 3;
+const imageSize = (screenWidth - PADDING * 2 - GAP * 2) / 3;
 
 export default function PhotosScreen() {
   const storePhotos = useTeamStore((s) => s.photos);
@@ -22,6 +23,16 @@ export default function PhotosScreen() {
 
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [viewerPhoto, setViewerPhoto] = useState<Photo | null>(null);
+
+  const handlePhotoPress = (photo: Photo) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setViewerPhoto(photo);
+  };
+
+  const closeViewer = () => {
+    setViewerPhoto(null);
+  };
 
   const handleLongPress = (photo: Photo) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -157,6 +168,7 @@ export default function PhotosScreen() {
                 >
                   <Pressable
                     className="active:opacity-80"
+                    onPress={() => handlePhotoPress(photo)}
                     onLongPress={() => handleLongPress(photo)}
                     delayLongPress={300}
                   >
@@ -214,6 +226,57 @@ export default function PhotosScreen() {
               </View>
             </Pressable>
           </Pressable>
+        </Modal>
+
+        {/* Fullscreen Image Viewer Modal */}
+        <Modal
+          visible={viewerPhoto !== null}
+          transparent
+          animationType="none"
+          onRequestClose={closeViewer}
+          statusBarTranslucent
+        >
+          <Animated.View
+            entering={FadeIn.duration(200)}
+            exiting={FadeOut.duration(200)}
+            className="flex-1 bg-black"
+          >
+            <Pressable
+              className="flex-1 items-center justify-center"
+              onPress={closeViewer}
+            >
+              {viewerPhoto && (
+                <Animated.View
+                  entering={ZoomIn.duration(250).springify()}
+                  exiting={ZoomOut.duration(200)}
+                >
+                  <Image
+                    source={{ uri: viewerPhoto.uri }}
+                    style={{
+                      width: screenWidth,
+                      height: screenWidth,
+                    }}
+                    contentFit="contain"
+                  />
+                </Animated.View>
+              )}
+            </Pressable>
+
+            {/* Close button */}
+            <SafeAreaView
+              edges={['top']}
+              style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
+            >
+              <View className="flex-row justify-end px-4 pt-2">
+                <Pressable
+                  onPress={closeViewer}
+                  className="bg-black/50 w-10 h-10 rounded-full items-center justify-center active:bg-black/70"
+                >
+                  <X size={24} color="white" />
+                </Pressable>
+              </View>
+            </SafeAreaView>
+          </Animated.View>
         </Modal>
       </SafeAreaView>
     </View>
