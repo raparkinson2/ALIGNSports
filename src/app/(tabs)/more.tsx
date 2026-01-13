@@ -21,6 +21,7 @@ import {
   Bug,
   BarChart3,
   Lock,
+  Trash2,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -154,6 +155,18 @@ function EditProfileModal({ visible, onClose, player, onSave }: EditProfileModal
                   </View>
                 </Pressable>
                 <Text className="text-slate-400 text-sm mt-2">Tap to change photo</Text>
+                {avatar && (
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setAvatar('');
+                    }}
+                    className="flex-row items-center mt-3 px-4 py-2 bg-red-500/20 rounded-full active:bg-red-500/30"
+                  >
+                    <Trash2 size={14} color="#f87171" />
+                    <Text className="text-red-400 text-sm font-medium ml-2">Remove Photo</Text>
+                  </Pressable>
+                )}
               </View>
 
               {/* Player Name (read-only display) */}
