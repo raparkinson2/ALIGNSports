@@ -1,7 +1,7 @@
 import { View, Text, Pressable, ScrollView, Modal } from 'react-native';
 import { useState, useMemo } from 'react';
 import { Image } from 'expo-image';
-import { X, Plus, Minus, Check, User } from 'lucide-react-native';
+import { X, Plus, Minus, Check, User, Trash2 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -231,6 +231,16 @@ export function LineupEditor({
     setPlayerSelectModal(null);
   };
 
+  const handleClearAllLines = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setLineup((prev) => ({
+      ...prev,
+      forwardLines: prev.forwardLines.map(() => ({ lw: undefined, c: undefined, rw: undefined })),
+      defenseLines: prev.defenseLines.map(() => ({ ld: undefined, rd: undefined })),
+      goalieLines: prev.goalieLines.map(() => ({ g: undefined })),
+    }));
+  };
+
   const handleSave = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     onSave(lineup);
@@ -263,12 +273,25 @@ export function LineupEditor({
               <X size={24} color="#64748b" />
             </Pressable>
             <Text className="text-white text-lg font-semibold">Set Lines</Text>
-            <Pressable
-              onPress={handleSave}
-              className="bg-cyan-500 px-4 py-2 rounded-lg"
-            >
-              <Text className="text-slate-900 font-semibold">Save</Text>
-            </Pressable>
+            <View className="flex-row items-center gap-2">
+              <Pressable
+                onPress={handleClearAllLines}
+                className="bg-slate-800 px-3 py-2 rounded-lg flex-row items-center"
+                disabled={assignedPlayerIds.size === 0}
+              >
+                <Trash2 size={16} color={assignedPlayerIds.size === 0 ? '#475569' : '#f87171'} />
+                <Text className={cn(
+                  'ml-1.5 font-medium text-sm',
+                  assignedPlayerIds.size === 0 ? 'text-slate-600' : 'text-red-400'
+                )}>Clear</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSave}
+                className="bg-cyan-500 px-4 py-2 rounded-lg"
+              >
+                <Text className="text-slate-900 font-semibold">Save</Text>
+              </Pressable>
+            </View>
           </View>
 
           <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
