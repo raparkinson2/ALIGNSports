@@ -21,6 +21,7 @@ import {
   Settings,
   X,
   ChevronDown,
+  ChevronUp,
   Pencil,
   Check,
   Trash2,
@@ -195,6 +196,7 @@ export default function GameDetailScreen() {
   const [isSoccerLineupModalVisible, setIsSoccerLineupModalVisible] = useState(false);
   const [isSoccerDiamondLineupModalVisible, setIsSoccerDiamondLineupModalVisible] = useState(false);
   const [isSoccerFormationModalVisible, setIsSoccerFormationModalVisible] = useState(false);
+  const [isLinesExpanded, setIsLinesExpanded] = useState(false);
 
   // Edit form state
   const [editOpponent, setEditOpponent] = useState('');
@@ -747,115 +749,131 @@ export default function GameDetailScreen() {
               entering={FadeInUp.delay(125).springify()}
               className="mx-4 mb-4"
             >
-              <Pressable
-                onPress={canManageTeam() ? () => setIsLineupModalVisible(true) : undefined}
-                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30"
-              >
-                <View className="flex-row items-center justify-between mb-3">
-                  <View className="flex-row items-center">
-                    <ListOrdered size={20} color="#10b981" />
-                    <Text className="text-emerald-400 font-semibold ml-2">Lines</Text>
+              <View className="bg-emerald-500/20 rounded-2xl border border-emerald-500/30 overflow-hidden">
+                {/* Collapsible Header */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setIsLinesExpanded(!isLinesExpanded);
+                  }}
+                  className="p-4 active:bg-emerald-500/30"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <ListOrdered size={20} color="#10b981" />
+                      <Text className="text-emerald-400 font-semibold ml-2">Lines</Text>
+                    </View>
+                    {isLinesExpanded ? (
+                      <ChevronUp size={20} color="#10b981" />
+                    ) : (
+                      <ChevronDown size={20} color="#10b981" />
+                    )}
                   </View>
-                  {canManageTeam() && (
-                    <ChevronDown size={20} color="#10b981" />
-                  )}
-                </View>
+                </Pressable>
 
-                {/* Forward Lines Preview */}
-                {game.lineup.forwardLines.slice(0, game.lineup.numForwardLines).map((line, index) => {
-                  const lw = line.lw ? players.find((p) => p.id === line.lw) : null;
-                  const c = line.c ? players.find((p) => p.id === line.c) : null;
-                  const rw = line.rw ? players.find((p) => p.id === line.rw) : null;
-                  if (!lw && !c && !rw) return null;
-                  const positions = ['LW', 'C', 'RW'];
-                  return (
-                    <View key={`fwd-${index}`} className="mb-4">
-                      <Text className="text-slate-400 text-xs mb-2">Line {index + 1}</Text>
-                      <View className="flex-row justify-around">
-                        {[lw, c, rw].map((player, i) => (
-                          <View key={i} className="items-center">
-                            {player ? (
-                              <>
-                                <Image
-                                  source={{ uri: player.avatar }}
-                                  style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#10b981' }}
-                                  contentFit="cover"
-                                />
-                                <Text className="text-emerald-400 text-xs font-medium mt-1">{positions[i]}</Text>
-                                <Text className="text-white text-xs">#{player.number}</Text>
-                              </>
-                            ) : (
-                              <>
-                                <View className="w-12 h-12 rounded-full bg-slate-700/50 items-center justify-center border-2 border-slate-600">
-                                  <Text className="text-slate-500 text-xs">-</Text>
-                                </View>
-                                <Text className="text-slate-500 text-xs font-medium mt-1">{positions[i]}</Text>
-                              </>
-                            )}
+                {/* Expandable Content */}
+                {isLinesExpanded && (
+                  <Pressable
+                    onPress={canManageTeam() ? () => setIsLineupModalVisible(true) : undefined}
+                    className="px-4 pb-4"
+                  >
+                    {/* Forward Lines Preview */}
+                    {game.lineup.forwardLines.slice(0, game.lineup.numForwardLines).map((line, index) => {
+                      const lw = line.lw ? players.find((p) => p.id === line.lw) : null;
+                      const c = line.c ? players.find((p) => p.id === line.c) : null;
+                      const rw = line.rw ? players.find((p) => p.id === line.rw) : null;
+                      if (!lw && !c && !rw) return null;
+                      const positions = ['LW', 'C', 'RW'];
+                      return (
+                        <View key={`fwd-${index}`} className="mb-4">
+                          <Text className="text-slate-400 text-xs mb-2">Line {index + 1}</Text>
+                          <View className="flex-row justify-around">
+                            {[lw, c, rw].map((player, i) => (
+                              <View key={i} className="items-center">
+                                {player ? (
+                                  <>
+                                    <Image
+                                      source={{ uri: player.avatar }}
+                                      style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#10b981' }}
+                                      contentFit="cover"
+                                    />
+                                    <Text className="text-emerald-400 text-xs font-medium mt-1">{positions[i]}</Text>
+                                    <Text className="text-white text-xs">#{player.number}</Text>
+                                  </>
+                                ) : (
+                                  <>
+                                    <View className="w-12 h-12 rounded-full bg-slate-700/50 items-center justify-center border-2 border-slate-600">
+                                      <Text className="text-slate-500 text-xs">-</Text>
+                                    </View>
+                                    <Text className="text-slate-500 text-xs font-medium mt-1">{positions[i]}</Text>
+                                  </>
+                                )}
+                              </View>
+                            ))}
                           </View>
-                        ))}
-                      </View>
-                    </View>
-                  );
-                })}
+                        </View>
+                      );
+                    })}
 
-                {/* Defense Pairs Preview */}
-                {game.lineup.defenseLines.slice(0, game.lineup.numDefenseLines).map((line, index) => {
-                  const ld = line.ld ? players.find((p) => p.id === line.ld) : null;
-                  const rd = line.rd ? players.find((p) => p.id === line.rd) : null;
-                  if (!ld && !rd) return null;
-                  const positions = ['LD', 'RD'];
-                  return (
-                    <View key={`def-${index}`} className="mb-4">
-                      <Text className="text-slate-400 text-xs mb-2">D-Pair {index + 1}</Text>
-                      <View className="flex-row justify-around px-8">
-                        {[ld, rd].map((player, i) => (
-                          <View key={i} className="items-center">
-                            {player ? (
-                              <>
-                                <Image
-                                  source={{ uri: player.avatar }}
-                                  style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#10b981' }}
-                                  contentFit="cover"
-                                />
-                                <Text className="text-emerald-400 text-xs font-medium mt-1">{positions[i]}</Text>
-                                <Text className="text-white text-xs">#{player.number}</Text>
-                              </>
-                            ) : (
-                              <>
-                                <View className="w-12 h-12 rounded-full bg-slate-700/50 items-center justify-center border-2 border-slate-600">
-                                  <Text className="text-slate-500 text-xs">-</Text>
-                                </View>
-                                <Text className="text-slate-500 text-xs font-medium mt-1">{positions[i]}</Text>
-                              </>
-                            )}
+                    {/* Defense Pairs Preview */}
+                    {game.lineup.defenseLines.slice(0, game.lineup.numDefenseLines).map((line, index) => {
+                      const ld = line.ld ? players.find((p) => p.id === line.ld) : null;
+                      const rd = line.rd ? players.find((p) => p.id === line.rd) : null;
+                      if (!ld && !rd) return null;
+                      const positions = ['LD', 'RD'];
+                      return (
+                        <View key={`def-${index}`} className="mb-4">
+                          <Text className="text-slate-400 text-xs mb-2">D-Pair {index + 1}</Text>
+                          <View className="flex-row justify-around px-8">
+                            {[ld, rd].map((player, i) => (
+                              <View key={i} className="items-center">
+                                {player ? (
+                                  <>
+                                    <Image
+                                      source={{ uri: player.avatar }}
+                                      style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#10b981' }}
+                                      contentFit="cover"
+                                    />
+                                    <Text className="text-emerald-400 text-xs font-medium mt-1">{positions[i]}</Text>
+                                    <Text className="text-white text-xs">#{player.number}</Text>
+                                  </>
+                                ) : (
+                                  <>
+                                    <View className="w-12 h-12 rounded-full bg-slate-700/50 items-center justify-center border-2 border-slate-600">
+                                      <Text className="text-slate-500 text-xs">-</Text>
+                                    </View>
+                                    <Text className="text-slate-500 text-xs font-medium mt-1">{positions[i]}</Text>
+                                  </>
+                                )}
+                              </View>
+                            ))}
                           </View>
-                        ))}
-                      </View>
-                    </View>
-                  );
-                })}
+                        </View>
+                      );
+                    })}
 
-                {/* Goalies Preview */}
-                {game.lineup.goalieLines.slice(0, game.lineup.numGoalieLines).map((line, index) => {
-                  const g = line.g ? players.find((p) => p.id === line.g) : null;
-                  if (!g) return null;
-                  return (
-                    <View key={`goal-${index}`} className="mb-4">
-                      <Text className="text-slate-400 text-xs mb-2">{index === 0 ? 'Starter' : 'Backup'}</Text>
-                      <View className="items-center">
-                        <Image
-                          source={{ uri: g.avatar }}
-                          style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#10b981' }}
-                          contentFit="cover"
-                        />
-                        <Text className="text-emerald-400 text-xs font-medium mt-1">G</Text>
-                        <Text className="text-white text-xs">#{g.number}</Text>
-                      </View>
-                    </View>
-                  );
-                })}
-              </Pressable>
+                    {/* Goalies Preview */}
+                    {game.lineup.goalieLines.slice(0, game.lineup.numGoalieLines).map((line, index) => {
+                      const g = line.g ? players.find((p) => p.id === line.g) : null;
+                      if (!g) return null;
+                      return (
+                        <View key={`goal-${index}`} className="mb-4">
+                          <Text className="text-slate-400 text-xs mb-2">{index === 0 ? 'Starter' : 'Backup'}</Text>
+                          <View className="items-center">
+                            <Image
+                              source={{ uri: g.avatar }}
+                              style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#10b981' }}
+                              contentFit="cover"
+                            />
+                            <Text className="text-emerald-400 text-xs font-medium mt-1">G</Text>
+                            <Text className="text-white text-xs">#{g.number}</Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </Pressable>
+                )}
+              </View>
             </Animated.View>
           )}
 
