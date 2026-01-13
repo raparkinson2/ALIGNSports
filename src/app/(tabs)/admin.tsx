@@ -27,11 +27,12 @@ import {
   Beer,
   Edit3,
 } from 'lucide-react-native';
-import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeIn, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Path, Circle as SvgCircle, Line, Rect, Ellipse } from 'react-native-svg';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import {
@@ -165,57 +166,136 @@ function PlayerManageCard({ player, index, onPress, isCurrentUser }: PlayerManag
   const roles = player.roles ?? [];
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
-      <Pressable
-        onPress={onPress}
-        className="bg-slate-800/80 rounded-xl p-4 mb-2 border border-slate-700/50 active:bg-slate-700/80"
-      >
-        <View className="flex-row items-center">
-          <Image
-            source={{ uri: player.avatar }}
-            style={{ width: 44, height: 44, borderRadius: 22 }}
-            contentFit="cover"
-          />
-          <View className="flex-1 ml-3">
-            <View className="flex-row items-center">
-              <Text className="text-white font-semibold">{getPlayerName(player)}</Text>
-              {isCurrentUser && (
-                <View className="ml-2 bg-cyan-500/20 rounded-full px-2 py-0.5">
-                  <Text className="text-cyan-400 text-xs">You</Text>
-                </View>
-              )}
-            </View>
-            <View className="flex-row items-center mt-1 flex-wrap">
-              {roles.includes('admin') && (
-                <View className="flex-row items-center bg-purple-500/20 rounded-full px-2 py-0.5 mr-2">
-                  <Shield size={10} color="#a78bfa" />
-                  <Text className="text-purple-400 text-xs ml-1">Admin</Text>
-                </View>
-              )}
-              {roles.includes('captain') && (
-                <View className="flex-row items-center bg-amber-500/20 rounded-full px-2 py-0.5 mr-2">
-                  <View className="w-3 h-3 rounded-full bg-amber-500/30 items-center justify-center">
-                    <Text className="text-amber-500 text-[8px] font-black">C</Text>
-                  </View>
-                  <Text className="text-amber-400 text-xs ml-1">Captain</Text>
-                </View>
-              )}
-              <View className={cn(
-                'rounded-full px-2 py-0.5',
-                player.status === 'active' ? 'bg-green-500/20' : 'bg-slate-600/50'
-              )}>
-                <Text className={cn(
-                  'text-xs',
-                  player.status === 'active' ? 'text-green-400' : 'text-slate-400'
-                )}>
-                  {player.status === 'active' ? 'Active' : 'Reserve'}
-                </Text>
+    <Pressable
+      onPress={onPress}
+      className="bg-slate-800/80 rounded-xl p-4 border border-slate-700/50 active:bg-slate-700/80"
+    >
+      <View className="flex-row items-center">
+        <Image
+          source={{ uri: player.avatar }}
+          style={{ width: 44, height: 44, borderRadius: 22 }}
+          contentFit="cover"
+        />
+        <View className="flex-1 ml-3">
+          <View className="flex-row items-center">
+            <Text className="text-white font-semibold">{getPlayerName(player)}</Text>
+            {isCurrentUser && (
+              <View className="ml-2 bg-cyan-500/20 rounded-full px-2 py-0.5">
+                <Text className="text-cyan-400 text-xs">You</Text>
               </View>
+            )}
+          </View>
+          <View className="flex-row items-center mt-1 flex-wrap">
+            {roles.includes('admin') && (
+              <View className="flex-row items-center bg-purple-500/20 rounded-full px-2 py-0.5 mr-2">
+                <Shield size={10} color="#a78bfa" />
+                <Text className="text-purple-400 text-xs ml-1">Admin</Text>
+              </View>
+            )}
+            {roles.includes('captain') && (
+              <View className="flex-row items-center bg-amber-500/20 rounded-full px-2 py-0.5 mr-2">
+                <View className="w-3 h-3 rounded-full bg-amber-500/30 items-center justify-center">
+                  <Text className="text-amber-500 text-[8px] font-black">C</Text>
+                </View>
+                <Text className="text-amber-400 text-xs ml-1">Captain</Text>
+              </View>
+            )}
+            <View className={cn(
+              'rounded-full px-2 py-0.5',
+              player.status === 'active' ? 'bg-green-500/20' : 'bg-slate-600/50'
+            )}>
+              <Text className={cn(
+                'text-xs',
+                player.status === 'active' ? 'text-green-400' : 'text-slate-400'
+              )}>
+                {player.status === 'active' ? 'Active' : 'Reserve'}
+              </Text>
             </View>
           </View>
-          <ChevronRight size={20} color="#64748b" />
         </View>
-      </Pressable>
+        <ChevronRight size={20} color="#64748b" />
+      </View>
+    </Pressable>
+  );
+}
+
+interface SwipeablePlayerManageCardProps extends PlayerManageCardProps {
+  onDelete: () => void;
+  canDelete: boolean;
+}
+
+function SwipeablePlayerManageCard({
+  onDelete,
+  canDelete,
+  ...cardProps
+}: SwipeablePlayerManageCardProps) {
+  const translateX = useSharedValue(0);
+  const DELETE_THRESHOLD = -80;
+
+  const handleDelete = () => {
+    translateX.value = withSpring(0);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onDelete();
+  };
+
+  const panGesture = Gesture.Pan()
+    .enabled(canDelete)
+    .activeOffsetX([-10, 10])
+    .onUpdate((event) => {
+      if (event.translationX < 0) {
+        translateX.value = Math.max(event.translationX, -100);
+      } else {
+        translateX.value = withSpring(0);
+      }
+    })
+    .onEnd((event) => {
+      if (event.translationX < DELETE_THRESHOLD) {
+        translateX.value = withSpring(-80);
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const deleteButtonStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, Math.abs(translateX.value) / 40),
+  }));
+
+  if (!canDelete) {
+    return (
+      <Animated.View entering={FadeInDown.delay(cardProps.index * 50).springify()} className="mb-2">
+        <PlayerManageCard {...cardProps} />
+      </Animated.View>
+    );
+  }
+
+  return (
+    <Animated.View entering={FadeInDown.delay(cardProps.index * 50).springify()}>
+      <View className="relative mb-2 overflow-hidden rounded-xl">
+        {/* Delete button behind */}
+        <Animated.View
+          style={[deleteButtonStyle]}
+          className="absolute right-0 top-0 bottom-0 w-20 bg-red-500 items-center justify-center rounded-r-xl"
+        >
+          <Pressable
+            onPress={handleDelete}
+            className="flex-1 w-full items-center justify-center"
+          >
+            <Trash2 size={24} color="white" />
+            <Text className="text-white text-xs font-medium mt-1">Delete</Text>
+          </Pressable>
+        </Animated.View>
+
+        {/* Swipeable row */}
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={animatedStyle}>
+            <PlayerManageCard {...cardProps} />
+          </Animated.View>
+        </GestureDetector>
+      </View>
     </Animated.View>
   );
 }
@@ -225,6 +305,7 @@ export default function AdminScreen() {
   const players = useTeamStore((s) => s.players);
   const addPlayer = useTeamStore((s) => s.addPlayer);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
+  const removePlayer = useTeamStore((s) => s.removePlayer);
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const teamName = useTeamStore((s) => s.teamName);
@@ -1992,12 +2073,30 @@ export default function AdminScreen() {
 
             <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false}>
               {players.map((player, index) => (
-                <PlayerManageCard
+                <SwipeablePlayerManageCard
                   key={player.id}
                   player={player}
                   index={index}
                   onPress={() => openPlayerModal(player)}
                   isCurrentUser={player.id === currentPlayerId}
+                  canDelete={player.id !== currentPlayerId}
+                  onDelete={() => {
+                    Alert.alert(
+                      'Delete Player',
+                      `Are you sure you want to remove ${getPlayerName(player)} from the roster? This cannot be undone.`,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Delete',
+                          style: 'destructive',
+                          onPress: () => {
+                            removePlayer(player.id);
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                          },
+                        },
+                      ]
+                    );
+                  }}
                 />
               ))}
             </ScrollView>
