@@ -14,6 +14,7 @@ import {
   HockeyGoalieLine,
   SPORT_POSITION_NAMES,
   getPlayerName,
+  getPlayerInitials,
 } from '@/lib/store';
 
 interface LineupEditorProps {
@@ -36,6 +37,7 @@ interface PositionSlotProps {
 
 function PositionSlot({ position, playerId, players, onSelect, label }: PositionSlotProps) {
   const player = playerId ? players.find((p) => p.id === playerId) : undefined;
+  const hasPhotoUrl = player?.avatar && player.avatar.startsWith('http');
 
   return (
     <Pressable
@@ -49,11 +51,17 @@ function PositionSlot({ position, playerId, players, onSelect, label }: Position
         )}
       >
         {player ? (
-          <Image
-            source={{ uri: player.avatar }}
-            style={{ width: 60, height: 60, borderRadius: 30 }}
-            contentFit="cover"
-          />
+          hasPhotoUrl ? (
+            <Image
+              source={{ uri: player.avatar }}
+              style={{ width: 60, height: 60, borderRadius: 30 }}
+              contentFit="cover"
+            />
+          ) : (
+            <Text className="text-cyan-400 text-lg font-bold">
+              {getPlayerInitials(player)}
+            </Text>
+          )
         ) : (
           <User size={24} color="#64748b" />
         )}
@@ -61,7 +69,7 @@ function PositionSlot({ position, playerId, players, onSelect, label }: Position
       <Text className="text-slate-400 text-xs mt-1 font-medium">{label}</Text>
       {player && (
         <Text className="text-white text-xs font-semibold" numberOfLines={1}>
-          #{player.number}
+          {player.firstName}
         </Text>
       )}
     </Pressable>
@@ -508,6 +516,7 @@ export function LineupEditor({
                 getPlayersForPosition(playerSelectModal.position).map((player, index) => {
                   const isAssigned = assignedPlayerIds.has(player.id);
                   const positionName = SPORT_POSITION_NAMES.hockey[player.position] || player.position;
+                  const hasPhotoUrl = player.avatar && player.avatar.startsWith('http');
 
                   return (
                     <Animated.View
@@ -523,11 +532,19 @@ export function LineupEditor({
                             : 'bg-slate-800/60 border-slate-700/50'
                         )}
                       >
-                        <Image
-                          source={{ uri: player.avatar }}
-                          style={{ width: 48, height: 48, borderRadius: 24 }}
-                          contentFit="cover"
-                        />
+                        {hasPhotoUrl ? (
+                          <Image
+                            source={{ uri: player.avatar }}
+                            style={{ width: 48, height: 48, borderRadius: 24 }}
+                            contentFit="cover"
+                          />
+                        ) : (
+                          <View className="w-12 h-12 rounded-full bg-slate-700 items-center justify-center">
+                            <Text className="text-cyan-400 text-base font-bold">
+                              {getPlayerInitials(player)}
+                            </Text>
+                          </View>
+                        )}
                         <View className="flex-1 ml-4">
                           <Text
                             className={cn(
