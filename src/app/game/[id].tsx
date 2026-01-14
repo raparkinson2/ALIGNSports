@@ -581,7 +581,7 @@ export default function GameDetailScreen() {
                   {teamSettings.refreshmentDutyIs21Plus !== false ? (
                     <Beer size={24} color="#f59e0b" />
                   ) : (
-                    <JuiceBoxIcon size={30} color="#f59e0b" />
+                    <JuiceBoxIcon size={38} color="#f59e0b" />
                   )}
                   <View className="flex-1 ml-3">
                     <Text className="text-amber-400 font-semibold">
