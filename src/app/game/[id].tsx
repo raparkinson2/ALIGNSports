@@ -10,6 +10,7 @@ import {
   Users,
   ChevronLeft,
   CheckCircle2,
+  XCircle,
   Circle,
   Navigation,
   Shirt,
@@ -104,14 +105,14 @@ const hexToColorName = (hex: string): string => {
 
 interface PlayerRowProps {
   player: Player;
-  isCheckedIn: boolean;
-  onToggleCheckIn: () => void;
+  status: 'in' | 'out' | 'none'; // IN, OUT, or no response
+  onToggle: () => void;
   index: number;
   canToggle: boolean; // Whether the current user can toggle this player's check-in
   isSelf: boolean; // Whether this is the current user's row
 }
 
-function PlayerRow({ player, isCheckedIn, onToggleCheckIn, index, canToggle, isSelf }: PlayerRowProps) {
+function PlayerRow({ player, status, onToggle, index, canToggle, isSelf }: PlayerRowProps) {
   const sport = useTeamStore((s) => s.teamSettings.sport);
   const positionName = SPORT_POSITION_NAMES[sport][player.position] || player.position;
 
@@ -121,7 +122,7 @@ function PlayerRow({ player, isCheckedIn, onToggleCheckIn, index, canToggle, isS
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onToggleCheckIn();
+    onToggle();
   };
 
   return (
@@ -131,15 +132,20 @@ function PlayerRow({ player, isCheckedIn, onToggleCheckIn, index, canToggle, isS
         disabled={!canToggle}
         className={cn(
           'flex-row items-center p-3 rounded-xl mb-2',
-          isCheckedIn ? 'bg-green-500/20' : 'bg-slate-800/60',
+          status === 'in' ? 'bg-green-500/20' : status === 'out' ? 'bg-red-500/20' : 'bg-slate-800/60',
           !canToggle && 'opacity-60'
         )}
       >
         <View className="relative">
           <PlayerAvatar player={player} size={44} />
-          {isCheckedIn && (
+          {status === 'in' && (
             <View className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5">
               <CheckCircle2 size={14} color="white" />
+            </View>
+          )}
+          {status === 'out' && (
+            <View className="absolute -bottom-1 -right-1 bg-red-500 rounded-full p-0.5">
+              <XCircle size={14} color="white" />
             </View>
           )}
           {isSelf && (
@@ -154,8 +160,10 @@ function PlayerRow({ player, isCheckedIn, onToggleCheckIn, index, canToggle, isS
           <Text className="text-slate-400 text-xs">#{player.number} · {positionName}</Text>
         </View>
 
-        {isCheckedIn ? (
+        {status === 'in' ? (
           <CheckCircle2 size={24} color="#22c55e" />
+        ) : status === 'out' ? (
+          <XCircle size={24} color="#ef4444" />
         ) : (
           <Circle size={24} color={canToggle ? '#475569' : '#334155'} />
         )}
@@ -174,6 +182,7 @@ export default function GameDetailScreen() {
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const checkInToGame = useTeamStore((s) => s.checkInToGame);
   const checkOutFromGame = useTeamStore((s) => s.checkOutFromGame);
+  const clearPlayerResponse = useTeamStore((s) => s.clearPlayerResponse);
   const addNotification = useTeamStore((s) => s.addNotification);
   const updateGame = useTeamStore((s) => s.updateGame);
   const removeGame = useTeamStore((s) => s.removeGame);
@@ -229,12 +238,27 @@ export default function GameDetailScreen() {
   const jerseyColorHex = jerseyColorInfo?.color || game.jerseyColor;
 
   const handleToggleCheckIn = (playerId: string) => {
-    if (game.checkedInPlayers?.includes(playerId)) {
+    const isIn = game.checkedInPlayers?.includes(playerId);
+    const isOut = game.checkedOutPlayers?.includes(playerId);
+
+    // Cycle through: none -> in -> out -> none
+    if (!isIn && !isOut) {
+      // Currently no response, mark as IN
+      checkInToGame(game.id, playerId);
+    } else if (isIn) {
+      // Currently IN, mark as OUT
       checkOutFromGame(game.id, playerId);
     } else {
-      checkInToGame(game.id, playerId);
+      // Currently OUT, clear response
+      clearPlayerResponse(game.id, playerId);
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const getPlayerStatus = (playerId: string): 'in' | 'out' | 'none' => {
+    if (game.checkedInPlayers?.includes(playerId)) return 'in';
+    if (game.checkedOutPlayers?.includes(playerId)) return 'out';
+    return 'none';
   };
 
   const handleOpenMaps = () => {
@@ -1361,8 +1385,8 @@ export default function GameDetailScreen() {
                   <PlayerRow
                     key={player.id}
                     player={player}
-                    isCheckedIn={game.checkedInPlayers?.includes(player.id) ?? false}
-                    onToggleCheckIn={() => handleToggleCheckIn(player.id)}
+                    status={getPlayerStatus(player.id)}
+                    onToggle={() => handleToggleCheckIn(player.id)}
                     index={index}
                     canToggle={canToggle}
                     isSelf={isSelf}

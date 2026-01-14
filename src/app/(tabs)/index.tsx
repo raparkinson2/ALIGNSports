@@ -481,6 +481,7 @@ export default function ScheduleScreen() {
       jerseyColor: selectedJersey,
       notes: notes.trim() || undefined,
       checkedInPlayers: [],
+      checkedOutPlayers: [],
       invitedPlayers: invitedPlayerIds,
       photos: [],
       showBeerDuty: showBeerDuty,

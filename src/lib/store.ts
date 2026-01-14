@@ -354,7 +354,8 @@ export interface Game {
   address: string;
   jerseyColor: string;
   notes?: string;
-  checkedInPlayers: string[]; // player ids
+  checkedInPlayers: string[]; // player ids marked as IN
+  checkedOutPlayers: string[]; // player ids marked as OUT
   invitedPlayers: string[]; // player ids
   photos: string[];
   showBeerDuty: boolean; // Admin toggle for beer/refreshment duty display
@@ -490,6 +491,7 @@ interface TeamStore {
   removeGame: (id: string) => void;
   checkInToGame: (gameId: string, playerId: string) => void;
   checkOutFromGame: (gameId: string, playerId: string) => void;
+  clearPlayerResponse: (gameId: string, playerId: string) => void;
   invitePlayersToGame: (gameId: string, playerIds: string[]) => void;
 
   events: Event[];
@@ -583,6 +585,7 @@ const mockGames: Game[] = [
     address: '1234 Frozen Lake Drive',
     jerseyColor: 'White',
     checkedInPlayers: ['1', '3', '4', '6'],
+    checkedOutPlayers: [],
     invitedPlayers: ['1', '2', '3', '4', '5', '6'],
     photos: [],
     showBeerDuty: true,
@@ -597,6 +600,7 @@ const mockGames: Game[] = [
     address: '567 Winter Road',
     jerseyColor: 'Black',
     checkedInPlayers: ['2', '5'],
+    checkedOutPlayers: [],
     invitedPlayers: ['1', '2', '3', '4', '5', '6', '7', '8'],
     photos: [],
     showBeerDuty: true,
@@ -611,6 +615,7 @@ const mockGames: Game[] = [
     address: '890 Main Street',
     jerseyColor: 'White',
     checkedInPlayers: [],
+    checkedOutPlayers: [],
     invitedPlayers: ['1', '2', '3', '4', '5', '6'],
     photos: [],
     showBeerDuty: false,
@@ -681,15 +686,38 @@ export const useTeamStore = create<TeamStore>()(
 
       checkInToGame: (gameId, playerId) => set((state) => ({
         games: state.games.map((g) =>
-          g.id === gameId && !g.checkedInPlayers.includes(playerId)
-            ? { ...g, checkedInPlayers: [...g.checkedInPlayers, playerId] }
+          g.id === gameId
+            ? {
+                ...g,
+                checkedInPlayers: g.checkedInPlayers.includes(playerId)
+                  ? g.checkedInPlayers
+                  : [...g.checkedInPlayers, playerId],
+                checkedOutPlayers: g.checkedOutPlayers.filter((id) => id !== playerId)
+              }
             : g
         ),
       })),
       checkOutFromGame: (gameId, playerId) => set((state) => ({
         games: state.games.map((g) =>
           g.id === gameId
-            ? { ...g, checkedInPlayers: g.checkedInPlayers.filter((id) => id !== playerId) }
+            ? {
+                ...g,
+                checkedInPlayers: g.checkedInPlayers.filter((id) => id !== playerId),
+                checkedOutPlayers: g.checkedOutPlayers.includes(playerId)
+                  ? g.checkedOutPlayers
+                  : [...g.checkedOutPlayers, playerId]
+              }
+            : g
+        ),
+      })),
+      clearPlayerResponse: (gameId: string, playerId: string) => set((state) => ({
+        games: state.games.map((g) =>
+          g.id === gameId
+            ? {
+                ...g,
+                checkedInPlayers: g.checkedInPlayers.filter((id) => id !== playerId),
+                checkedOutPlayers: g.checkedOutPlayers.filter((id) => id !== playerId)
+              }
             : g
         ),
       })),
