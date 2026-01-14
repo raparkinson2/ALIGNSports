@@ -13,8 +13,6 @@ import {
   Circle,
   Navigation,
   Shirt,
-  Send,
-  Mail,
   Bell,
   BellRing,
   Beer,
@@ -272,63 +270,6 @@ export default function GameDetailScreen() {
       'Notifications Sent',
       `${type === 'invite' ? 'Game invites' : 'Reminders'} sent to ${invitedPlayers.length} players!`
     );
-  };
-
-  const handleSendTextInvite = () => {
-    const gameDate = new Date(game.date);
-    const dateStr = gameDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-
-    const phoneNumbers = invitedPlayers
-      .filter((p) => p.phone)
-      .map((p) => p.phone)
-      .join(',');
-
-    let message = `Hey! You're invited to play with ${teamName}!\n\n`;
-    message += `Game Details:\n`;
-    message += `vs ${game.opponent}\n`;
-    message += `${dateStr} at ${game.time}\n`;
-    message += `${game.location}\n`;
-    message += `${game.address}\n\n`;
-    message += `Wear your ${jerseyColorName} jersey!\n\n`;
-    message += `Let me know if you can make it!`;
-
-    const smsUrl = Platform.select({
-      ios: `sms:${phoneNumbers}&body=${encodeURIComponent(message)}`,
-      android: `sms:${phoneNumbers}?body=${encodeURIComponent(message)}`,
-      default: `sms:${phoneNumbers}?body=${encodeURIComponent(message)}`,
-    });
-
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Linking.openURL(smsUrl).catch(() => {
-      Alert.alert('Error', 'Could not open messaging app');
-    });
-  };
-
-  const handleSendEmailInvite = () => {
-    const gameDate = new Date(game.date);
-    const dateStr = gameDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-
-    const emails = invitedPlayers
-      .filter((p) => p.email)
-      .map((p) => p.email)
-      .join(',');
-
-    const subject = encodeURIComponent(`Game Invite - ${teamName} vs ${game.opponent}`);
-    let body = `Hey!\n\nYou're invited to play with ${teamName}!\n\n`;
-    body += `Game Details:\n`;
-    body += `vs ${game.opponent}\n`;
-    body += `${dateStr} at ${game.time}\n`;
-    body += `${game.location}\n`;
-    body += `${game.address}\n\n`;
-    body += `Wear your ${jerseyColorName} jersey!\n\n`;
-    body += `Let me know if you can make it!`;
-
-    const mailtoUrl = `mailto:${emails}?subject=${subject}&body=${encodeURIComponent(body)}`;
-
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Linking.openURL(mailtoUrl).catch(() => {
-      Alert.alert('Error', 'Could not open email app');
-    });
   };
 
   const handleInvitePlayer = (playerId: string, sendNotification: boolean = true) => {
@@ -1437,37 +1378,6 @@ export default function GameDetailScreen() {
                 >
                   <BellRing size={18} color="#22c55e" />
                   <Text className="text-green-400 font-semibold ml-2">Reminder</Text>
-                </Pressable>
-              </View>
-            </Animated.View>
-          )}
-
-          {/* External Invite Section - Only for captains and admins */}
-          {canManageTeam() && (
-            <Animated.View
-              entering={FadeInUp.delay(175).springify()}
-              className="mx-4 mb-4"
-            >
-              <View className="flex-row items-center mb-3">
-                <Send size={18} color="#a78bfa" />
-                <Text className="text-purple-400 text-lg font-semibold ml-2">
-                  Invite Someone
-                </Text>
-              </View>
-              <View className="flex-row">
-                <Pressable
-                  onPress={handleSendTextInvite}
-                  className="flex-1 bg-purple-500/20 rounded-xl p-4 mr-2 border border-purple-500/30 active:bg-purple-500/30 flex-row items-center justify-center"
-                >
-                  <Send size={18} color="#a78bfa" />
-                  <Text className="text-purple-400 font-semibold ml-2">Text Invite</Text>
-                </Pressable>
-                <Pressable
-                  onPress={handleSendEmailInvite}
-                  className="flex-1 bg-purple-500/20 rounded-xl p-4 ml-2 border border-purple-500/30 active:bg-purple-500/30 flex-row items-center justify-center"
-                >
-                  <Mail size={18} color="#a78bfa" />
-                  <Text className="text-purple-400 font-semibold ml-2">Email Invite</Text>
                 </Pressable>
               </View>
             </Animated.View>
