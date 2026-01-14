@@ -1483,6 +1483,8 @@ export default function PaymentsScreen() {
                       {isAdmin() && playersNotInPeriod.length > 0 && (
                         <Pressable
                           onPress={() => {
+                            console.log('Add Player button pressed');
+                            console.log('playersNotInPeriod:', playersNotInPeriod.length);
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             setIsAddPlayerModalVisible(true);
                           }}
@@ -1581,6 +1583,7 @@ export default function PaymentsScreen() {
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={() => setIsAddPlayerModalVisible(false)}
+        onShow={() => console.log('Add Player Modal shown')}
       >
         <View className="flex-1 bg-slate-900">
           <SafeAreaView className="flex-1">
