@@ -21,6 +21,7 @@ import * as Linking from 'expo-linking';
 import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, PlayerStats, getPlayerPositions, getPrimaryPosition, getPlayerName } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 // Check if player is a goalie
 function isGoalie(position: string): boolean {
@@ -223,11 +224,7 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
       >
         <View className="flex-row items-center">
           <View className="relative">
-            <Image
-              source={{ uri: player.avatar }}
-              style={{ width: 56, height: 56, borderRadius: 28 }}
-              contentFit="cover"
-            />
+            <PlayerAvatar player={player} size={56} />
             <View className="absolute -bottom-1 -right-1 bg-slate-700 rounded-full px-2 py-0.5">
               <Text className="text-white text-xs font-bold">#{player.number}</Text>
             </View>
