@@ -214,6 +214,7 @@ export default function GameDetailScreen() {
   }
 
   const checkedInCount = game.checkedInPlayers?.length ?? 0;
+  const checkedInPlayers = players.filter((p) => game.checkedInPlayers?.includes(p.id));
   const invitedPlayers = players.filter((p) => game.invitedPlayers?.includes(p.id));
   const uninvitedPlayers = players.filter((p) => !game.invitedPlayers?.includes(p.id));
   const uninvitedActive = uninvitedPlayers.filter((p) => p.status === 'active');
@@ -1769,7 +1770,7 @@ export default function GameDetailScreen() {
         onClose={() => setIsLineupModalVisible(false)}
         onSave={handleSaveLineup}
         initialLineup={game.lineup}
-        availablePlayers={players}
+        availablePlayers={checkedInPlayers}
       />
 
       {/* Basketball Lineup Editor Modal */}
@@ -1778,7 +1779,7 @@ export default function GameDetailScreen() {
         onClose={() => setIsBasketballLineupModalVisible(false)}
         onSave={handleSaveBasketballLineup}
         initialLineup={game.basketballLineup}
-        availablePlayers={players}
+        availablePlayers={checkedInPlayers}
       />
 
       {/* Baseball Lineup Editor Modal */}
@@ -1787,7 +1788,7 @@ export default function GameDetailScreen() {
         onClose={() => setIsBaseballLineupModalVisible(false)}
         onSave={handleSaveBaseballLineup}
         initialLineup={game.baseballLineup}
-        players={players}
+        players={checkedInPlayers}
       />
 
       {/* Soccer Lineup Editor Modal */}
@@ -1796,7 +1797,7 @@ export default function GameDetailScreen() {
         onClose={() => setIsSoccerLineupModalVisible(false)}
         onSave={handleSaveSoccerLineup}
         initialLineup={game.soccerLineup}
-        players={players}
+        players={checkedInPlayers}
       />
 
       {/* Soccer Diamond Lineup Editor Modal */}
@@ -1805,7 +1806,7 @@ export default function GameDetailScreen() {
         onClose={() => setIsSoccerDiamondLineupModalVisible(false)}
         onSave={handleSaveSoccerDiamondLineup}
         initialLineup={game.soccerDiamondLineup}
-        players={players}
+        players={checkedInPlayers}
       />
 
       {/* Soccer Formation Selector Modal */}
