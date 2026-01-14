@@ -17,6 +17,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 
 ### Login
 - Select your player profile to log in
+- **Sign In with Apple**: iOS users can sign in with their Apple ID for quick, secure authentication
 - Personalized experience based on your role
 - Admin users see additional Admin tab
 

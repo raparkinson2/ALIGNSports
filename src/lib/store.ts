@@ -544,6 +544,7 @@ interface TeamStore {
   registerAdmin: (name: string, email: string, password: string, teamName: string) => { success: boolean; error?: string };
   registerInvitedPlayer: (email: string, password: string) => { success: boolean; error?: string; playerId?: string };
   findPlayerByEmail: (email: string) => Player | undefined;
+  loginWithApple: (appleUser: string, email: string | null, fullName: { givenName: string | null; familyName: string | null } | null) => { success: boolean; error?: string; playerId?: string; isNewUser?: boolean };
 
   // Helper to check if current user has admin/captain privileges
   canManageTeam: () => boolean;
@@ -1022,6 +1023,66 @@ export const useTeamStore = create<TeamStore>()(
       findPlayerByEmail: (email) => {
         const state = get();
         return state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+      },
+
+      loginWithApple: (appleUser, email, fullName) => {
+        const state = get();
+
+        // First, check if we already have a player with this Apple ID
+        const existingPlayerByAppleId = state.players.find((p) => (p as Player & { appleUserId?: string }).appleUserId === appleUser);
+        if (existingPlayerByAppleId) {
+          set({ currentPlayerId: existingPlayerByAppleId.id, isLoggedIn: true });
+          return { success: true, playerId: existingPlayerByAppleId.id, isNewUser: false };
+        }
+
+        // Check if email matches an existing player (link Apple ID to existing account)
+        if (email) {
+          const existingPlayerByEmail = state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+          if (existingPlayerByEmail) {
+            // Link Apple ID to existing account
+            const updatedPlayers = state.players.map((p) =>
+              p.id === existingPlayerByEmail.id ? { ...p, appleUserId: appleUser } as Player : p
+            );
+            set({
+              players: updatedPlayers,
+              currentPlayerId: existingPlayerByEmail.id,
+              isLoggedIn: true,
+            });
+            return { success: true, playerId: existingPlayerByEmail.id, isNewUser: false };
+          }
+        }
+
+        // No existing account found - create a new admin user (first user scenario)
+        // or return error if team exists (user needs to be invited first)
+        if (state.players.length > 0) {
+          return { success: false, error: 'No account found. Ask your team admin to add you first.' };
+        }
+
+        // Create new admin user for new team
+        const firstName = fullName?.givenName || 'User';
+        const lastName = fullName?.familyName || '';
+
+        const newPlayer: Player = {
+          id: Date.now().toString(),
+          firstName,
+          lastName,
+          email: email || undefined,
+          number: '1',
+          position: SPORT_POSITIONS[state.teamSettings.sport][0],
+          roles: ['admin'],
+          status: 'active',
+        };
+
+        // Add appleUserId to the player object
+        const playerWithApple = { ...newPlayer, appleUserId: appleUser } as Player;
+
+        set({
+          players: [playerWithApple],
+          currentPlayerId: newPlayer.id,
+          isLoggedIn: true,
+        });
+
+        return { success: true, playerId: newPlayer.id, isNewUser: true };
       },
 
       canManageTeam: () => {

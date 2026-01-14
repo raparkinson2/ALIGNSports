@@ -7,6 +7,7 @@ import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight } from 'lucide-r
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useTeamStore, Player, getPlayerName } from '@/lib/store';
 
 interface PlayerLoginCardProps {
@@ -51,6 +52,7 @@ function PlayerLoginCard({ player, index, onSelect }: PlayerLoginCardProps) {
 export default function LoginScreen() {
   const router = useRouter();
   const loginWithEmail = useTeamStore((s) => s.loginWithEmail);
+  const loginWithApple = useTeamStore((s) => s.loginWithApple);
   const players = useTeamStore((s) => s.players);
   const teamName = useTeamStore((s) => s.teamName);
   const setCurrentPlayerId = useTeamStore((s) => s.setCurrentPlayerId);
@@ -69,6 +71,39 @@ export default function LoginScreen() {
 
   // Players without passwords (legacy)
   const legacyPlayers = players.filter(p => !p.password);
+
+  const handleAppleSignIn = async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      const result = loginWithApple(
+        credential.user,
+        credential.email,
+        credential.fullName
+      );
+
+      if (result.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.replace('/(tabs)');
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setError(result.error || 'Apple Sign In failed');
+      }
+    } catch (e: unknown) {
+      const error = e as { code?: string };
+      if (error.code === 'ERR_REQUEST_CANCELED') {
+        // User canceled - no error needed
+        return;
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError('Apple Sign In failed. Please try again.');
+    }
+  };
 
   const handleLogin = () => {
     setError('');
@@ -309,6 +344,17 @@ export default function LoginScreen() {
                   </Text>
                 </Pressable>
 
+                {/* Sign In with Apple */}
+                {Platform.OS === 'ios' && (
+                  <AppleAuthentication.AppleAuthenticationButton
+                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                    cornerRadius={12}
+                    style={{ width: '100%', height: 52, marginTop: 12 }}
+                    onPress={handleAppleSignIn}
+                  />
+                )}
+
                 {/* Quick Login for Legacy Players */}
                 {legacyPlayers.length > 0 && (
                   <>
@@ -380,6 +426,24 @@ export default function LoginScreen() {
                     I Was Invited to a Team
                   </Text>
                 </Pressable>
+
+                {/* Sign In with Apple for new users */}
+                {Platform.OS === 'ios' && (
+                  <>
+                    <View className="flex-row items-center my-6">
+                      <View className="flex-1 h-px bg-slate-700" />
+                      <Text className="text-slate-500 mx-4">or</Text>
+                      <View className="flex-1 h-px bg-slate-700" />
+                    </View>
+                    <AppleAuthentication.AppleAuthenticationButton
+                      buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                      cornerRadius={12}
+                      style={{ width: '100%', height: 52 }}
+                      onPress={handleAppleSignIn}
+                    />
+                  </>
+                )}
               </>
             )}
           </Animated.View>
