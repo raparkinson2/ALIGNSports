@@ -1483,8 +1483,6 @@ export default function PaymentsScreen() {
                       {isAdmin() && playersNotInPeriod.length > 0 && (
                         <Pressable
                           onPress={() => {
-                            console.log('Add Player button pressed');
-                            console.log('playersNotInPeriod:', playersNotInPeriod.length);
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             setIsAddPlayerModalVisible(true);
                           }}
@@ -1524,6 +1522,68 @@ export default function PaymentsScreen() {
                 )}
               </>
             )}
+
+            {/* Add Player to Period Modal - Nested inside parent modal */}
+            <Modal
+              visible={isAddPlayerModalVisible}
+              animationType="slide"
+              presentationStyle="pageSheet"
+              onRequestClose={() => setIsAddPlayerModalVisible(false)}
+            >
+              <View className="flex-1 bg-slate-900">
+                <SafeAreaView className="flex-1">
+                  <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+                    <Pressable onPress={() => setIsAddPlayerModalVisible(false)}>
+                      <X size={24} color="#64748b" />
+                    </Pressable>
+                    <Text className="text-white text-lg font-semibold">Add Players</Text>
+                    <Pressable onPress={() => setIsAddPlayerModalVisible(false)}>
+                      <Text className="text-cyan-400 font-semibold">Done</Text>
+                    </Pressable>
+                  </View>
+
+                  <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
+                    {playersNotInPeriod.length === 0 ? (
+                      <View className="items-center py-12">
+                        <Users size={48} color="#64748b" />
+                        <Text className="text-slate-400 text-center mt-4">
+                          All players are already in this payment period
+                        </Text>
+                      </View>
+                    ) : (
+                      <>
+                        <Text className="text-slate-400 text-sm mb-4">
+                          Tap a player to add them to this payment period
+                        </Text>
+                        {playersNotInPeriod.map((player) => (
+                          <Pressable
+                            key={player.id}
+                            onPress={() => {
+                              handleAddPlayerToPeriod(player.id);
+                            }}
+                            className="flex-row items-center p-3 rounded-xl mb-2 bg-slate-800/60 border border-slate-700/50 active:bg-slate-700/60"
+                          >
+                            <PlayerAvatar player={player} size={44} />
+                            <View className="flex-1 ml-3">
+                              <Text className="text-white font-medium">{getPlayerName(player)}</Text>
+                              <Text className={cn(
+                                'text-xs',
+                                player.status === 'active' ? 'text-green-400' : 'text-slate-400'
+                              )}>
+                                {player.status === 'active' ? 'Active' : 'Reserve'} · #{player.number}
+                              </Text>
+                            </View>
+                            <View className="bg-cyan-500/20 rounded-lg px-3 py-1.5">
+                              <Plus size={16} color="#67e8f9" />
+                            </View>
+                          </Pressable>
+                        ))}
+                      </>
+                    )}
+                  </ScrollView>
+                </SafeAreaView>
+              </View>
+            </Modal>
           </SafeAreaView>
         </View>
       </Modal>
@@ -1573,69 +1633,6 @@ export default function PaymentsScreen() {
                 This will update the amount due for all players in this period.
               </Text>
             </View>
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      {/* Add Player to Period Modal */}
-      <Modal
-        visible={isAddPlayerModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsAddPlayerModalVisible(false)}
-        onShow={() => console.log('Add Player Modal shown')}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsAddPlayerModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Add Players</Text>
-              <Pressable onPress={() => setIsAddPlayerModalVisible(false)}>
-                <Text className="text-cyan-400 font-semibold">Done</Text>
-              </Pressable>
-            </View>
-
-            <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
-              {playersNotInPeriod.length === 0 ? (
-                <View className="items-center py-12">
-                  <Users size={48} color="#64748b" />
-                  <Text className="text-slate-400 text-center mt-4">
-                    All players are already in this payment period
-                  </Text>
-                </View>
-              ) : (
-                <>
-                  <Text className="text-slate-400 text-sm mb-4">
-                    Tap a player to add them to this payment period
-                  </Text>
-                  {playersNotInPeriod.map((player) => (
-                    <Pressable
-                      key={player.id}
-                      onPress={() => {
-                        handleAddPlayerToPeriod(player.id);
-                      }}
-                      className="flex-row items-center p-3 rounded-xl mb-2 bg-slate-800/60 border border-slate-700/50 active:bg-slate-700/60"
-                    >
-                      <PlayerAvatar player={player} size={44} />
-                      <View className="flex-1 ml-3">
-                        <Text className="text-white font-medium">{getPlayerName(player)}</Text>
-                        <Text className={cn(
-                          'text-xs',
-                          player.status === 'active' ? 'text-green-400' : 'text-slate-400'
-                        )}>
-                          {player.status === 'active' ? 'Active' : 'Reserve'} · #{player.number}
-                        </Text>
-                      </View>
-                      <View className="bg-cyan-500/20 rounded-lg px-3 py-1.5">
-                        <Plus size={16} color="#67e8f9" />
-                      </View>
-                    </Pressable>
-                  ))}
-                </>
-              )}
-            </ScrollView>
           </SafeAreaView>
         </View>
       </Modal>
