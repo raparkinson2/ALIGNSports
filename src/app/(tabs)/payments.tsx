@@ -87,8 +87,10 @@ function PaymentMethodButton({ method, amount }: PaymentMethodButtonProps) {
   const info = PAYMENT_APP_INFO[method.app];
 
   const handlePress = async () => {
+    console.log('Payment button pressed:', method.app);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const url = info.urlScheme(method.username, amount);
+    console.log('Opening URL:', url);
 
     try {
       // For PayPal, always use the HTTPS URL directly (no app scheme)
@@ -131,6 +133,7 @@ function PaymentMethodButton({ method, amount }: PaymentMethodButtonProps) {
         return;
       }
     } catch (error) {
+      console.log('Error opening payment:', error);
       Alert.alert('Error', `Could not open ${info.name}`);
     }
   };
