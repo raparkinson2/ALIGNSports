@@ -1869,11 +1869,7 @@ export default function GameDetailScreen() {
                           onPress={() => handleInvitePlayer(player.id)}
                           className="flex-row items-center bg-slate-800/60 rounded-xl p-3 mb-2 border border-slate-700/50 active:bg-slate-700/80"
                         >
-                          <Image
-                            source={{ uri: player.avatar }}
-                            style={{ width: 44, height: 44, borderRadius: 22 }}
-                            contentFit="cover"
-                          />
+                          <PlayerAvatar player={player} size={44} />
                           <View className="flex-1 ml-3">
                             <Text className="text-white font-medium">{getPlayerName(player)}</Text>
                             <Text className="text-slate-400 text-sm">#{player.number}</Text>
@@ -1898,11 +1894,7 @@ export default function GameDetailScreen() {
                           onPress={() => handleInvitePlayer(player.id)}
                           className="flex-row items-center bg-slate-800/60 rounded-xl p-3 mb-2 border border-slate-700/50 active:bg-slate-700/80"
                         >
-                          <Image
-                            source={{ uri: player.avatar }}
-                            style={{ width: 44, height: 44, borderRadius: 22 }}
-                            contentFit="cover"
-                          />
+                          <PlayerAvatar player={player} size={44} />
                           <View className="flex-1 ml-3">
                             <Text className="text-white font-medium">{getPlayerName(player)}</Text>
                             <Text className="text-slate-400 text-sm">#{player.number}</Text>

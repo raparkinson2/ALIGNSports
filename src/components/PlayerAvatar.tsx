@@ -12,8 +12,9 @@ interface PlayerAvatarProps {
 export function PlayerAvatar({ player, size, borderWidth = 0, borderColor = 'transparent' }: PlayerAvatarProps) {
   const initials = player ? getPlayerInitials(player) : '';
   const fontSize = size * 0.38;
+  const hasPhotoUrl = player?.avatar && player.avatar.startsWith('http');
 
-  if (player?.avatar) {
+  if (hasPhotoUrl) {
     return (
       <Image
         source={{ uri: player.avatar }}
