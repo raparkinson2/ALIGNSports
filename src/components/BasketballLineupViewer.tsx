@@ -4,6 +4,7 @@ import { X } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { BasketballLineup, Player, getPlayerName } from '@/lib/store';
+import { PlayerAvatar } from './PlayerAvatar';
 
 interface BasketballLineupViewerProps {
   visible: boolean;
@@ -65,11 +66,7 @@ export function BasketballLineupViewer({
                     <View className="items-center">
                       {pg ? (
                         <>
-                          <Image
-                            source={{ uri: pg.avatar }}
-                            style={{ width: 56, height: 56, borderRadius: 28 }}
-                            contentFit="cover"
-                          />
+                          <PlayerAvatar player={pg} size={56} />
                           <Text className="text-white text-sm font-semibold mt-1">#{pg.number}</Text>
                           <Text className="text-slate-400 text-xs">{pg.firstName}</Text>
                         </>
@@ -96,11 +93,7 @@ export function BasketballLineupViewer({
                           <View key={`guard-${index}`} className="items-center">
                             {player ? (
                               <>
-                                <Image
-                                  source={{ uri: player.avatar }}
-                                  style={{ width: 56, height: 56, borderRadius: 28 }}
-                                  contentFit="cover"
-                                />
+                                <PlayerAvatar player={player} size={56} />
                                 <Text className="text-white text-sm font-semibold mt-1">#{player.number}</Text>
                                 <Text className="text-slate-400 text-xs">{getPlayerName(player).split(' ')[0]}</Text>
                               </>
@@ -131,11 +124,7 @@ export function BasketballLineupViewer({
                           <View key={`forward-${index}`} className="items-center">
                             {player ? (
                               <>
-                                <Image
-                                  source={{ uri: player.avatar }}
-                                  style={{ width: 56, height: 56, borderRadius: 28 }}
-                                  contentFit="cover"
-                                />
+                                <PlayerAvatar player={player} size={56} />
                                 <Text className="text-white text-sm font-semibold mt-1">#{player.number}</Text>
                                 <Text className="text-slate-400 text-xs">{getPlayerName(player).split(' ')[0]}</Text>
                               </>
@@ -166,11 +155,7 @@ export function BasketballLineupViewer({
                           <View key={`center-${index}`} className="items-center">
                             {player ? (
                               <>
-                                <Image
-                                  source={{ uri: player.avatar }}
-                                  style={{ width: 56, height: 56, borderRadius: 28 }}
-                                  contentFit="cover"
-                                />
+                                <PlayerAvatar player={player} size={56} />
                                 <Text className="text-white text-sm font-semibold mt-1">#{player.number}</Text>
                                 <Text className="text-slate-400 text-xs">{getPlayerName(player).split(' ')[0]}</Text>
                               </>
@@ -207,11 +192,7 @@ export function BasketballLineupViewer({
                       if (!player) return null;
                       return (
                         <View key={`bench-${index}`} className="w-1/4 items-center mb-4">
-                          <Image
-                            source={{ uri: player.avatar }}
-                            style={{ width: 48, height: 48, borderRadius: 24 }}
-                            contentFit="cover"
-                          />
+                          <PlayerAvatar player={player} size={48} />
                           <Text className="text-white text-xs font-semibold mt-1">#{player.number}</Text>
                           <Text className="text-slate-400 text-[10px]">{getPlayerName(player).split(' ')[0]}</Text>
                         </View>

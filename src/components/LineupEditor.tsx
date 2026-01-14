@@ -16,6 +16,7 @@ import {
   getPlayerName,
   getPlayerInitials,
 } from '@/lib/store';
+import { PlayerAvatar } from './PlayerAvatar';
 
 interface LineupEditorProps {
   visible: boolean;
@@ -37,7 +38,6 @@ interface PositionSlotProps {
 
 function PositionSlot({ position, playerId, players, onSelect, label }: PositionSlotProps) {
   const player = playerId ? players.find((p) => p.id === playerId) : undefined;
-  const hasPhotoUrl = player?.avatar && player.avatar.startsWith('http');
 
   return (
     <Pressable
@@ -51,17 +51,7 @@ function PositionSlot({ position, playerId, players, onSelect, label }: Position
         )}
       >
         {player ? (
-          hasPhotoUrl ? (
-            <Image
-              source={{ uri: player.avatar }}
-              style={{ width: 60, height: 60, borderRadius: 30 }}
-              contentFit="cover"
-            />
-          ) : (
-            <Text className="text-cyan-400 text-lg font-bold">
-              {getPlayerInitials(player)}
-            </Text>
-          )
+          <PlayerAvatar player={player} size={60} />
         ) : (
           <User size={24} color="#64748b" />
         )}
@@ -516,7 +506,6 @@ export function LineupEditor({
                 getPlayersForPosition(playerSelectModal.position).map((player, index) => {
                   const isAssigned = assignedPlayerIds.has(player.id);
                   const positionName = SPORT_POSITION_NAMES.hockey[player.position] || player.position;
-                  const hasPhotoUrl = player.avatar && player.avatar.startsWith('http');
 
                   return (
                     <Animated.View
@@ -532,19 +521,7 @@ export function LineupEditor({
                             : 'bg-slate-800/60 border-slate-700/50'
                         )}
                       >
-                        {hasPhotoUrl ? (
-                          <Image
-                            source={{ uri: player.avatar }}
-                            style={{ width: 48, height: 48, borderRadius: 24 }}
-                            contentFit="cover"
-                          />
-                        ) : (
-                          <View className="w-12 h-12 rounded-full bg-slate-700 items-center justify-center">
-                            <Text className="text-cyan-400 text-base font-bold">
-                              {getPlayerInitials(player)}
-                            </Text>
-                          </View>
-                        )}
+                        <PlayerAvatar player={player} size={48} />
                         <View className="flex-1 ml-4">
                           <Text
                             className={cn(

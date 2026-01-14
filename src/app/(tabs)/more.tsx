@@ -29,9 +29,10 @@ import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences, getPlayerName } from '@/lib/store';
+import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences, getPlayerName, getPlayerInitials } from '@/lib/store';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 import { sendTestNotification, registerForPushNotificationsAsync } from '@/lib/notifications';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 interface MenuItemProps {
   icon: React.ReactNode;
@@ -744,17 +745,7 @@ export default function MoreScreen() {
               >
                 <View className="flex-row items-center">
                   <View className="relative">
-                    {currentPlayer.avatar ? (
-                      <Image
-                        source={{ uri: currentPlayer.avatar }}
-                        style={{ width: 60, height: 60, borderRadius: 30 }}
-                        contentFit="cover"
-                      />
-                    ) : (
-                      <View className="w-15 h-15 rounded-full bg-cyan-500/20 items-center justify-center">
-                        <User size={30} color="#67e8f9" />
-                      </View>
-                    )}
+                    <PlayerAvatar player={currentPlayer} size={60} />
                     <View className="absolute -bottom-1 -right-1 bg-cyan-500 rounded-full px-2 py-0.5">
                       <Text className="text-white text-xs font-bold">#{currentPlayer.number}</Text>
                     </View>

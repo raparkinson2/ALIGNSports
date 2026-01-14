@@ -1192,11 +1192,7 @@ export default function PaymentsScreen() {
                           : 'bg-slate-800/60 border-slate-700/50'
                       )}
                     >
-                      <Image
-                        source={{ uri: player.avatar }}
-                        style={{ width: 40, height: 40, borderRadius: 20 }}
-                        contentFit="cover"
-                      />
+                      <PlayerAvatar player={player} size={40} />
                       <View className="flex-1 ml-3">
                         <Text className="text-white font-medium">{getPlayerName(player)}</Text>
                         <Text className={cn(

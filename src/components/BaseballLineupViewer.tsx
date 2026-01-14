@@ -4,6 +4,7 @@ import { X } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { BaseballLineup, Player, getPlayerName } from '@/lib/store';
+import { PlayerAvatar } from './PlayerAvatar';
 
 interface BaseballLineupViewerProps {
   visible: boolean;
@@ -46,11 +47,7 @@ export function BaseballLineupViewer({
       <View className="items-center">
         {player ? (
           <>
-            <Image
-              source={{ uri: player.avatar }}
-              style={{ width: slotSize, height: slotSize, borderRadius: slotSize / 2 }}
-              contentFit="cover"
-            />
+            <PlayerAvatar player={player} size={slotSize} />
             <Text className="text-white text-xs font-semibold mt-1">#{player.number}</Text>
             <Text className="text-slate-400 text-[10px]">{getPlayerName(player).split(' ')[0]}</Text>
           </>

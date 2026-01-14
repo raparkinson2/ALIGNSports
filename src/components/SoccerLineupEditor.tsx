@@ -5,8 +5,9 @@ import { X, Trash2 } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { SoccerLineup, Player, getPlayerName } from '@/lib/store';
+import { SoccerLineup, Player, getPlayerName, getPlayerInitials } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { PlayerAvatar } from './PlayerAvatar';
 
 interface SoccerLineupEditorProps {
   visible: boolean;
@@ -164,11 +165,7 @@ export function SoccerLineupEditor({
               className="border-2 border-emerald-500 rounded-full"
               style={{ width: slotSize + 4, height: slotSize + 4 }}
             >
-              <Image
-                source={{ uri: player.avatar }}
-                style={{ width: slotSize, height: slotSize, borderRadius: slotSize / 2 }}
-                contentFit="cover"
-              />
+              <PlayerAvatar player={player} size={slotSize} />
             </View>
             <Text className="text-white text-xs font-semibold mt-1">#{player.number}</Text>
           </>
@@ -288,11 +285,7 @@ export function SoccerLineupEditor({
                           index < availablePlayers.length - 1 ? 'border-b border-slate-700/50' : ''
                         }`}
                       >
-                        <Image
-                          source={{ uri: player.avatar }}
-                          style={{ width: 40, height: 40, borderRadius: 20 }}
-                          contentFit="cover"
-                        />
+                        <PlayerAvatar player={player} size={40} />
                         <View className="ml-3 flex-1">
                           <Text className="text-white font-medium">{getPlayerName(player)}</Text>
                           <Text className="text-slate-400 text-xs">#{player.number}</Text>

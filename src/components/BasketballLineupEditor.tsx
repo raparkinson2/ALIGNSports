@@ -11,7 +11,9 @@ import {
   BasketballLineup,
   SPORT_POSITION_NAMES,
   getPlayerName,
+  getPlayerInitials,
 } from '@/lib/store';
+import { PlayerAvatar } from './PlayerAvatar';
 
 interface BasketballLineupEditorProps {
   visible: boolean;
@@ -46,11 +48,7 @@ function PositionSlot({ position, playerId, players, onSelect, label }: Position
         )}
       >
         {player ? (
-          <Image
-            source={{ uri: player.avatar }}
-            style={{ width: 60, height: 60, borderRadius: 30 }}
-            contentFit="cover"
-          />
+          <PlayerAvatar player={player} size={60} />
         ) : (
           <User size={24} color="#64748b" />
         )}
@@ -596,11 +594,7 @@ export function BasketballLineupEditor({
                             : 'bg-slate-800/60 border-slate-700/50'
                         )}
                       >
-                        <Image
-                          source={{ uri: player.avatar }}
-                          style={{ width: 48, height: 48, borderRadius: 24 }}
-                          contentFit="cover"
-                        />
+                        <PlayerAvatar player={player} size={48} />
                         <View className="flex-1 ml-4">
                           <Text
                             className={cn(

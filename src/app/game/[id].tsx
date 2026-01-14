@@ -566,11 +566,7 @@ export default function GameDetailScreen() {
                     </Text>
                     {beerDutyPlayer ? (
                       <View className="flex-row items-center mt-1">
-                        <Image
-                          source={{ uri: beerDutyPlayer.avatar }}
-                          style={{ width: 24, height: 24, borderRadius: 12 }}
-                          contentFit="cover"
-                        />
+                        <PlayerAvatar player={beerDutyPlayer} size={24} />
                         <Text className="text-white ml-2">{getPlayerName(beerDutyPlayer)}</Text>
                       </View>
                     ) : (
@@ -940,11 +936,7 @@ export default function GameDetailScreen() {
                       <View key={pos} className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -972,11 +964,7 @@ export default function GameDetailScreen() {
                       <View key={key} className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -1002,11 +990,7 @@ export default function GameDetailScreen() {
                       <View key={key} className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -1052,11 +1036,7 @@ export default function GameDetailScreen() {
                       <View key={pos} className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -1084,11 +1064,7 @@ export default function GameDetailScreen() {
                       <View key={key} className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -1116,11 +1092,7 @@ export default function GameDetailScreen() {
                       <View key={key} className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -1142,11 +1114,7 @@ export default function GameDetailScreen() {
                       <View className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -1192,11 +1160,7 @@ export default function GameDetailScreen() {
                       <View key={pos} className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -1218,11 +1182,7 @@ export default function GameDetailScreen() {
                       <View className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -1248,11 +1208,7 @@ export default function GameDetailScreen() {
                       <View key={key} className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -1274,11 +1230,7 @@ export default function GameDetailScreen() {
                       <View className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -1306,11 +1258,7 @@ export default function GameDetailScreen() {
                       <View key={key} className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -1332,11 +1280,7 @@ export default function GameDetailScreen() {
                       <View className="items-center">
                         {player ? (
                           <>
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 32, height: 32, borderRadius: 16 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={32} />
                             <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
                           </>
                         ) : (
@@ -1551,11 +1495,7 @@ export default function GameDetailScreen() {
                       : 'bg-slate-800/60 border-slate-700/50'
                   )}
                 >
-                  <Image
-                    source={{ uri: player.avatar }}
-                    style={{ width: 44, height: 44, borderRadius: 22 }}
-                    contentFit="cover"
-                  />
+                  <PlayerAvatar player={player} size={44} />
                   <Text className="text-white font-semibold ml-3 flex-1">{getPlayerName(player)}</Text>
                   {game.beerDutyPlayerId === player.id && (
                     <CheckCircle2 size={24} color="#f59e0b" />

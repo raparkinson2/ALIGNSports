@@ -4,6 +4,7 @@ import { X } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { SoccerLineup, Player } from '@/lib/store';
+import { PlayerAvatar } from './PlayerAvatar';
 
 interface SoccerLineupViewerProps {
   visible: boolean;
@@ -48,11 +49,7 @@ export function SoccerLineupViewer({
       <View className="items-center">
         {player ? (
           <>
-            <Image
-              source={{ uri: player.avatar }}
-              style={{ width: slotSize, height: slotSize, borderRadius: slotSize / 2 }}
-              contentFit="cover"
-            />
+            <PlayerAvatar player={player} size={slotSize} />
             <Text className="text-white text-xs font-semibold mt-1">#{player.number}</Text>
           </>
         ) : (
