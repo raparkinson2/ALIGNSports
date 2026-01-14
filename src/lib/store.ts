@@ -689,10 +689,10 @@ export const useTeamStore = create<TeamStore>()(
           g.id === gameId
             ? {
                 ...g,
-                checkedInPlayers: g.checkedInPlayers.includes(playerId)
+                checkedInPlayers: (g.checkedInPlayers || []).includes(playerId)
                   ? g.checkedInPlayers
-                  : [...g.checkedInPlayers, playerId],
-                checkedOutPlayers: g.checkedOutPlayers.filter((id) => id !== playerId)
+                  : [...(g.checkedInPlayers || []), playerId],
+                checkedOutPlayers: (g.checkedOutPlayers || []).filter((id) => id !== playerId)
               }
             : g
         ),
@@ -702,10 +702,10 @@ export const useTeamStore = create<TeamStore>()(
           g.id === gameId
             ? {
                 ...g,
-                checkedInPlayers: g.checkedInPlayers.filter((id) => id !== playerId),
-                checkedOutPlayers: g.checkedOutPlayers.includes(playerId)
+                checkedInPlayers: (g.checkedInPlayers || []).filter((id) => id !== playerId),
+                checkedOutPlayers: (g.checkedOutPlayers || []).includes(playerId)
                   ? g.checkedOutPlayers
-                  : [...g.checkedOutPlayers, playerId]
+                  : [...(g.checkedOutPlayers || []), playerId]
               }
             : g
         ),
@@ -715,8 +715,8 @@ export const useTeamStore = create<TeamStore>()(
           g.id === gameId
             ? {
                 ...g,
-                checkedInPlayers: g.checkedInPlayers.filter((id) => id !== playerId),
-                checkedOutPlayers: g.checkedOutPlayers.filter((id) => id !== playerId)
+                checkedInPlayers: (g.checkedInPlayers || []).filter((id) => id !== playerId),
+                checkedOutPlayers: (g.checkedOutPlayers || []).filter((id) => id !== playerId)
               }
             : g
         ),
