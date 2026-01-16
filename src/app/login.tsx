@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound } from 'lucide-react-native';
+import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, Apple } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
@@ -74,7 +74,12 @@ export default function LoginScreen() {
 
   // Check if Apple Authentication is available on this device
   useEffect(() => {
-    AppleAuthentication.isAvailableAsync().then(setIsAppleAuthAvailable);
+    const checkAppleAuth = async () => {
+      const available = await AppleAuthentication.isAvailableAsync();
+      console.log('[Apple Sign In] isAvailableAsync result:', available);
+      setIsAppleAuthAvailable(available);
+    };
+    checkAppleAuth();
   }, []);
 
   const hasTeam = players.length > 0;
@@ -440,15 +445,28 @@ export default function LoginScreen() {
               <Text className="text-cyan-400 text-center text-sm">Forgot Password?</Text>
             </Pressable>
 
-            {/* Sign In with Apple - only when available */}
-            {isAppleAuthAvailable && (
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
-                cornerRadius={12}
-                style={{ width: '100%', height: 52, marginTop: 8 }}
-                onPress={handleAppleSignIn}
-              />
+            {/* Sign In with Apple - show on iOS */}
+            {Platform.OS === 'ios' && (
+              isAppleAuthAvailable ? (
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                  cornerRadius={12}
+                  style={{ width: '100%', height: 52, marginTop: 8 }}
+                  onPress={handleAppleSignIn}
+                />
+              ) : (
+                // Custom fallback button when native button isn't available
+                <Pressable
+                  onPress={handleAppleSignIn}
+                  className="bg-white rounded-xl py-4 flex-row items-center justify-center mt-2 active:bg-gray-100"
+                >
+                  <Apple size={20} color="#000000" />
+                  <Text className="text-black font-semibold text-base ml-2">
+                    Sign in with Apple
+                  </Text>
+                </Pressable>
+              )
             )}
 
             {/* Divider */}
