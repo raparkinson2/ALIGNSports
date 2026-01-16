@@ -280,19 +280,18 @@ export default function LoginScreen() {
           {/* Header */}
           <Animated.View
             entering={FadeInUp.delay(50).springify()}
-            className="items-center pt-12 pb-8"
+            className="items-center pt-8 pb-6"
           >
             <Image
-              source={require('../../assets/icon-1767991107153.png')}
-              style={{ width: 100, height: 100, borderRadius: 20, marginBottom: 16 }}
+              source={require('../../assets/align-logo.png')}
+              style={{ width: 160, height: 160, marginBottom: 24 }}
               contentFit="contain"
             />
-            <Text className="text-white text-3xl font-bold mb-2">
-              ALIGN Sports
-            </Text>
-            <Text className="text-slate-400 text-base text-center px-8">
-              {hasTeam ? 'Sign in to access your team' : 'Log in or create a team to get started'}
-            </Text>
+            {!hasTeam && (
+              <Text className="text-slate-300 text-lg text-center px-10 leading-relaxed">
+                Log in or create a new team to get started
+              </Text>
+            )}
           </Animated.View>
 
           {/* Login Form */}
