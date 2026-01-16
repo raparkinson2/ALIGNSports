@@ -450,19 +450,19 @@ export default function LoginScreen() {
               isAppleAuthAvailable ? (
                 <AppleAuthentication.AppleAuthenticationButton
                   buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
                   cornerRadius={12}
                   style={{ width: '100%', height: 52, marginTop: 8 }}
                   onPress={handleAppleSignIn}
                 />
               ) : (
-                // Custom fallback button when native button isn't available
+                // Custom fallback button when native button isn't available - Apple's black branding
                 <Pressable
                   onPress={handleAppleSignIn}
-                  className="bg-white rounded-xl py-4 flex-row items-center justify-center mt-2 active:bg-gray-100"
+                  className="bg-black rounded-xl py-4 flex-row items-center justify-center mt-2 active:opacity-80"
                 >
-                  <Apple size={20} color="#000000" />
-                  <Text className="text-black font-semibold text-base ml-2">
+                  <Apple size={20} color="#FFFFFF" />
+                  <Text className="text-white font-semibold text-base ml-2">
                     Sign in with Apple
                   </Text>
                 </Pressable>
