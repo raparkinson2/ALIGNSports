@@ -1036,34 +1036,45 @@ export const useTeamStore = create<TeamStore>()(
       })),
 
       // Reset all data to defaults
-      resetAllData: () => set({
-        teamName: 'My Team',
-        teamSettings: {
-          sport: 'hockey',
-          jerseyColors: [
-            { name: 'White', color: '#ffffff' },
-            { name: 'Black', color: '#1a1a1a' },
-          ],
-          paymentMethods: [],
-          teamLogo: undefined,
-          record: undefined,
-          showTeamStats: true,
-          showPayments: true,
-          showTeamChat: true,
-          showPhotos: true,
-          showRefreshmentDuty: true,
-          refreshmentDutyIs21Plus: true,
-        },
-        players: [],
-        games: [],
-        events: [],
-        photos: [],
-        notifications: [],
-        chatMessages: [],
-        chatLastReadAt: {},
-        paymentPeriods: [],
-        currentPlayerId: null,
-        isLoggedIn: false,
+      resetAllData: () => set((state) => {
+        // Preserve the current user's account and permissions
+        const currentPlayer = state.players.find(p => p.id === state.currentPlayerId);
+        const preservedPlayer = currentPlayer ? {
+          ...currentPlayer,
+          // Clear player stats but keep their identity and permissions
+          stats: undefined,
+        } : null;
+
+        return {
+          teamName: 'My Team',
+          teamSettings: {
+            sport: state.teamSettings.sport, // Keep the sport setting
+            jerseyColors: [
+              { name: 'White', color: '#ffffff' },
+              { name: 'Black', color: '#1a1a1a' },
+            ],
+            paymentMethods: [],
+            teamLogo: undefined,
+            record: undefined,
+            showTeamStats: true,
+            showPayments: true,
+            showTeamChat: true,
+            showPhotos: true,
+            showRefreshmentDuty: true,
+            refreshmentDutyIs21Plus: true,
+          },
+          players: preservedPlayer ? [preservedPlayer] : [],
+          games: [],
+          events: [],
+          photos: [],
+          notifications: [],
+          chatMessages: [],
+          chatLastReadAt: {},
+          paymentPeriods: [],
+          // Keep the current user logged in
+          currentPlayerId: preservedPlayer ? state.currentPlayerId : null,
+          isLoggedIn: preservedPlayer ? true : false,
+        };
       }),
     }),
     {
