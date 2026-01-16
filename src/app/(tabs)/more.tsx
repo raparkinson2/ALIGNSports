@@ -616,7 +616,9 @@ export default function MoreScreen() {
   const getNotificationPreferences = useTeamStore((s) => s.getNotificationPreferences);
   const showTeamStats = useTeamStore((s) => s.teamSettings.showTeamStats !== false);
 
-  const currentPlayer = players.find((p) => p.id === currentPlayerId);
+  // Fallback: if currentPlayerId is null but there are players, use the first player
+  const effectivePlayerId = currentPlayerId || (players.length > 0 ? players[0].id : null);
+  const currentPlayer = players.find((p) => p.id === effectivePlayerId);
   const canManageTeam = currentPlayer?.roles?.includes('admin') || currentPlayer?.roles?.includes('captain');
 
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -626,7 +628,7 @@ export default function MoreScreen() {
 
   const handleEditProfile = (player: Player) => {
     // Can edit own profile, or any profile if admin/captain
-    const canEdit = player.id === currentPlayerId || canManageTeam;
+    const canEdit = player.id === effectivePlayerId || canManageTeam;
     if (canEdit) {
       setPlayerToEdit(player);
       setEditModalVisible(true);
@@ -641,12 +643,12 @@ export default function MoreScreen() {
   };
 
   const handleSaveNotificationPrefs = (prefs: Partial<NotificationPreferences>) => {
-    if (currentPlayerId) {
-      updateNotificationPreferences(currentPlayerId, prefs);
+    if (effectivePlayerId) {
+      updateNotificationPreferences(effectivePlayerId, prefs);
     }
   };
 
-  const unreadCount = notifications.filter((n) => n.toPlayerId === currentPlayerId && !n.read).length;
+  const unreadCount = notifications.filter((n) => n.toPlayerId === effectivePlayerId && !n.read).length;
 
   const handleEmailTeam = () => {
     const emails = players
@@ -908,9 +910,9 @@ export default function MoreScreen() {
 
       {/* Notification Preferences Modal */}
       <NotificationPreferencesModal
-        visible={notifPrefsVisible && !!currentPlayerId}
+        visible={notifPrefsVisible && !!effectivePlayerId}
         onClose={() => setNotifPrefsVisible(false)}
-        preferences={currentPlayerId ? getNotificationPreferences(currentPlayerId) : defaultNotificationPreferences}
+        preferences={effectivePlayerId ? getNotificationPreferences(effectivePlayerId) : defaultNotificationPreferences}
         onSave={handleSaveNotificationPrefs}
       />
 
