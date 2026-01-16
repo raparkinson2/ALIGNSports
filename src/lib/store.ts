@@ -990,20 +990,15 @@ export const useTeamStore = create<TeamStore>()(
         ),
       })),
 
-      // Reset all data to defaults
-      resetAllData: () => set((state) => {
-        // Preserve the current user's account and permissions
-        const currentPlayer = state.players.find(p => p.id === state.currentPlayerId);
-        const preservedPlayer = currentPlayer ? {
-          ...currentPlayer,
-          // Clear player stats but keep their identity and permissions
-          stats: undefined,
-        } : null;
+      // Reset all data to defaults - completely wipes everything and signs everyone out
+      resetAllData: () => set(() => {
+        // Clear AsyncStorage completely to ensure no data remains
+        AsyncStorage.clear().catch((err) => console.log('Error clearing AsyncStorage:', err));
 
         return {
           teamName: 'My Team',
           teamSettings: {
-            sport: state.teamSettings.sport, // Keep the sport setting
+            sport: 'hockey',
             jerseyColors: [
               { name: 'White', color: '#ffffff' },
               { name: 'Black', color: '#1a1a1a' },
@@ -1018,17 +1013,17 @@ export const useTeamStore = create<TeamStore>()(
             showRefreshmentDuty: true,
             refreshmentDutyIs21Plus: true,
           },
-          players: preservedPlayer ? [preservedPlayer] : [],
-          games: [],
-          events: [],
-          photos: [],
-          notifications: [],
-          chatMessages: [],
-          chatLastReadAt: {},
-          paymentPeriods: [],
-          // Keep the current user logged in
-          currentPlayerId: preservedPlayer ? state.currentPlayerId : null,
-          isLoggedIn: preservedPlayer ? true : false,
+          players: [], // Delete ALL players
+          games: [], // Delete ALL games
+          events: [], // Delete ALL events
+          photos: [], // Delete ALL photos
+          notifications: [], // Delete ALL notifications
+          chatMessages: [], // Delete ALL chat messages
+          chatLastReadAt: {}, // Reset all read tracking
+          paymentPeriods: [], // Delete ALL payment records
+          // Sign EVERYONE out
+          currentPlayerId: null,
+          isLoggedIn: false,
         };
       }),
     }),

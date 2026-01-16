@@ -2159,6 +2159,8 @@ export default function AdminScreen() {
                     resetAllData();
                     setIsDeleteTeamModalVisible(false);
                     setDeleteConfirmText('');
+                    // Navigate to login screen after deleting all data
+                    router.replace('/login');
                   }
                 }}
                 disabled={deleteConfirmText !== 'DELETE'}
