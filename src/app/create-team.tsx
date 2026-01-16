@@ -70,13 +70,20 @@ export default function CreateTeamScreen() {
   const router = useRouter();
   const registerAdmin = useTeamStore((s) => s.registerAdmin);
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
+  const setTeamName = useTeamStore((s) => s.setTeamName);
+  const isLoggedIn = useTeamStore((s) => s.isLoggedIn);
+  const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
+  const players = useTeamStore((s) => s.players);
 
-  const [step, setStep] = useState(1);
+  // Check if user came from Apple Sign In (already logged in with a player created)
+  const isAppleUser = isLoggedIn && currentPlayerId && players.length > 0;
+
+  const [step, setStep] = useState(isAppleUser ? 3 : 1);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [teamName, setTeamName] = useState('');
+  const [teamNameInput, setTeamNameInput] = useState('');
   const [sport, setSport] = useState<Sport>('hockey');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -115,7 +122,7 @@ export default function CreateTeamScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setStep(3);
     } else if (step === 3) {
-      if (!teamName.trim()) {
+      if (!teamNameInput.trim()) {
         setError('Please enter a team name');
         return;
       }
@@ -130,8 +137,18 @@ export default function CreateTeamScreen() {
       // First set the sport
       setTeamSettings({ sport });
 
-      // Then register the admin
-      const result = registerAdmin(name.trim(), email.trim(), password, teamName.trim());
+      // If user came from Apple Sign In, they're already registered
+      // Just set the team name and navigate
+      if (isAppleUser) {
+        setTeamName(teamNameInput.trim());
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.replace('/(tabs)');
+        setIsLoading(false);
+        return;
+      }
+
+      // Otherwise register the admin with email/password
+      const result = registerAdmin(name.trim(), email.trim(), password, teamNameInput.trim());
 
       if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -166,7 +183,8 @@ export default function CreateTeamScreen() {
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                if (step > 1) {
+                // Apple users start at step 3 and can't go back to steps 1-2
+                if (step > 1 && !isAppleUser) {
                   setStep(step - 1);
                   setError('');
                 } else {
@@ -180,40 +198,42 @@ export default function CreateTeamScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Progress Indicator */}
-          <Animated.View
-            entering={FadeInDown.delay(100).springify()}
-            className="px-6 mb-6"
-          >
-            <View className="flex-row items-center justify-center">
-              {[1, 2, 3].map((s) => (
-                <View key={s} className="flex-row items-center">
-                  <View
-                    className={cn(
-                      'w-8 h-8 rounded-full items-center justify-center',
-                      step >= s ? 'bg-cyan-500' : 'bg-slate-700'
-                    )}
-                  >
-                    {step > s ? (
-                      <Check size={16} color="white" />
-                    ) : (
-                      <Text className={cn('font-bold', step >= s ? 'text-white' : 'text-slate-400')}>
-                        {s}
-                      </Text>
-                    )}
-                  </View>
-                  {s < 3 && (
+          {/* Progress Indicator - hide for Apple users who only see step 3 */}
+          {!isAppleUser && (
+            <Animated.View
+              entering={FadeInDown.delay(100).springify()}
+              className="px-6 mb-6"
+            >
+              <View className="flex-row items-center justify-center">
+                {[1, 2, 3].map((s) => (
+                  <View key={s} className="flex-row items-center">
                     <View
                       className={cn(
-                        'w-12 h-1 mx-2',
-                        step > s ? 'bg-cyan-500' : 'bg-slate-700'
+                        'w-8 h-8 rounded-full items-center justify-center',
+                        step >= s ? 'bg-cyan-500' : 'bg-slate-700'
                       )}
-                    />
-                  )}
-                </View>
-              ))}
-            </View>
-          </Animated.View>
+                    >
+                      {step > s ? (
+                        <Check size={16} color="white" />
+                      ) : (
+                        <Text className={cn('font-bold', step >= s ? 'text-white' : 'text-slate-400')}>
+                          {s}
+                        </Text>
+                      )}
+                    </View>
+                    {s < 3 && (
+                      <View
+                        className={cn(
+                          'w-12 h-1 mx-2',
+                          step > s ? 'bg-cyan-500' : 'bg-slate-700'
+                        )}
+                      />
+                    )}
+                  </View>
+                ))}
+              </View>
+            </Animated.View>
+          )}
 
           <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
             {/* Step 1: Personal Info */}
@@ -326,8 +346,8 @@ export default function CreateTeamScreen() {
                   <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
                     <Users size={20} color="#64748b" />
                     <TextInput
-                      value={teamName}
-                      onChangeText={setTeamName}
+                      value={teamNameInput}
+                      onChangeText={setTeamNameInput}
                       placeholder="Enter team name"
                       placeholderTextColor="#64748b"
                       className="flex-1 py-4 px-3 text-white text-base"

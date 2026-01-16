@@ -562,66 +562,9 @@ interface TeamStore {
   resetAllData: () => void;
 }
 
-// Mock data
-const mockPlayers: Player[] = [
-  { id: '1', firstName: 'Mike', lastName: 'Johnson', email: 'mike.johnson@email.com', phone: '555-0101', number: '12', position: 'C', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', roles: ['admin', 'captain'], status: 'active', stats: { gamesPlayed: 9, goals: 12, assists: 18, pim: 8, plusMinus: 5 } },
-  { id: '2', firstName: 'Dave', lastName: 'Williams', email: 'dave.williams@email.com', phone: '555-0102', number: '7', position: 'LW', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', roles: ['captain'], status: 'active', stats: { gamesPlayed: 8, goals: 8, assists: 14, pim: 12, plusMinus: 3 } },
-  { id: '3', firstName: 'Chris', lastName: 'Brown', email: 'chris.brown@email.com', phone: '555-0103', number: '22', position: 'RW', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', roles: [], status: 'active', stats: { gamesPlayed: 9, goals: 15, assists: 9, pim: 4, plusMinus: 8 } },
-  { id: '4', firstName: 'Jake', lastName: 'Miller', email: 'jake.miller@email.com', phone: '555-0104', number: '4', position: 'LD', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', roles: [], status: 'active', stats: { gamesPlayed: 9, goals: 2, assists: 11, pim: 18, plusMinus: -2 } },
-  { id: '5', firstName: 'Ryan', lastName: 'Davis', email: 'ryan.davis@email.com', phone: '555-0105', number: '8', position: 'RD', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', roles: [], status: 'active', stats: { gamesPlayed: 7, goals: 3, assists: 8, pim: 14, plusMinus: 1 } },
-  { id: '6', firstName: 'Tom', lastName: 'Wilson', email: 'tom.wilson@email.com', phone: '555-0106', number: '31', position: 'G', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150', roles: [], status: 'active', stats: { games: 8, wins: 6, losses: 1, ties: 1, minutesPlayed: 480, shotsAgainst: 240, saves: 218, goalsAgainst: 22 } },
-  { id: '7', firstName: 'Steve', lastName: 'Anderson', email: 'steve.anderson@email.com', phone: '555-0107', number: '15', position: 'C', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150', roles: [], status: 'reserve', stats: { gamesPlayed: 5, goals: 4, assists: 6, pim: 6, plusMinus: 2 } },
-  { id: '8', firstName: 'Kevin', lastName: 'Martinez', email: 'kevin.martinez@email.com', phone: '555-0108', number: '19', position: 'LW', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150', roles: [], status: 'reserve', stats: { gamesPlayed: 6, goals: 5, assists: 7, pim: 10, plusMinus: 0 } },
-  { id: '9', firstName: 'Alex', lastName: 'Thompson', email: 'alex.thompson@email.com', phone: '555-0109', number: '30', position: 'G', roles: [], status: 'reserve', stats: { games: 2, wins: 1, losses: 1, ties: 0, minutesPlayed: 120, shotsAgainst: 60, saves: 54, goalsAgainst: 6 } },
-  { id: '10', firstName: 'Brian', lastName: 'Lee', email: 'brian.lee@email.com', phone: '555-0110', number: '25', position: 'RW', roles: [], status: 'active', stats: { gamesPlayed: 4, goals: 2, assists: 3, pim: 2, plusMinus: 1 } },
-];
-
-const mockGames: Game[] = [
-  {
-    id: '1',
-    opponent: 'Ice Wolves',
-    date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    time: '8:30 PM',
-    location: 'Glacier Ice Arena',
-    address: '1234 Frozen Lake Drive',
-    jerseyColor: 'White',
-    checkedInPlayers: ['1', '3', '4', '6'],
-    checkedOutPlayers: [],
-    invitedPlayers: ['1', '2', '3', '4', '5', '6'],
-    photos: [],
-    showBeerDuty: true,
-    beerDutyPlayerId: '3',
-  },
-  {
-    id: '2',
-    opponent: 'Polar Bears',
-    date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    time: '9:15 PM',
-    location: 'Northside Ice Complex',
-    address: '567 Winter Road',
-    jerseyColor: 'Black',
-    checkedInPlayers: ['2', '5'],
-    checkedOutPlayers: [],
-    invitedPlayers: ['1', '2', '3', '4', '5', '6', '7', '8'],
-    photos: [],
-    showBeerDuty: true,
-    beerDutyPlayerId: '4',
-  },
-  {
-    id: '3',
-    opponent: 'Frost Giants',
-    date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-    time: '7:45 PM',
-    location: 'Downtown Ice Center',
-    address: '890 Main Street',
-    jerseyColor: 'White',
-    checkedInPlayers: [],
-    checkedOutPlayers: [],
-    invitedPlayers: ['1', '2', '3', '4', '5', '6'],
-    photos: [],
-    showBeerDuty: false,
-  },
-];
+// Empty initial data for fresh start
+const initialPlayers: Player[] = [];
+const initialGames: Game[] = [];
 
 const defaultTeamSettings: TeamSettings = {
   sport: 'hockey',
@@ -641,7 +584,7 @@ const defaultTeamSettings: TeamSettings = {
 export const useTeamStore = create<TeamStore>()(
   persist(
     (set, get) => ({
-      teamName: 'Blue Line Bandits',
+      teamName: 'My Team',
       setTeamName: (name) => set({ teamName: name }),
 
       teamSettings: defaultTeamSettings,
@@ -671,14 +614,14 @@ export const useTeamStore = create<TeamStore>()(
         return { teamSettings: newSettings };
       }),
 
-      players: mockPlayers,
+      players: initialPlayers,
       addPlayer: (player) => set((state) => ({ players: [...state.players, player] })),
       updatePlayer: (id, updates) => set((state) => ({
         players: state.players.map((p) => (p.id === id ? { ...p, ...updates } : p)),
       })),
       removePlayer: (id) => set((state) => ({ players: state.players.filter((p) => p.id !== id) })),
 
-      games: mockGames,
+      games: initialGames,
       addGame: (game) => set((state) => ({ games: [...state.games, game] })),
       updateGame: (id, updates) => set((state) => ({
         games: state.games.map((g) => (g.id === id ? { ...g, ...updates } : g)),
@@ -758,29 +701,8 @@ export const useTeamStore = create<TeamStore>()(
       addPhoto: (photo) => set((state) => ({ photos: [...state.photos, photo] })),
       removePhoto: (id) => set((state) => ({ photos: state.photos.filter((p) => p.id !== id) })),
 
-      // Notifications - start with some mock notifications
-      notifications: [
-        {
-          id: 'notif-1',
-          type: 'game_invite',
-          title: 'Game Invite',
-          message: 'You\'ve been invited to play vs Ice Wolves',
-          gameId: '1',
-          toPlayerId: '1',
-          createdAt: new Date().toISOString(),
-          read: false,
-        },
-        {
-          id: 'notif-2',
-          type: 'game_reminder',
-          title: 'Game Tomorrow',
-          message: 'Don\'t forget: Game vs Ice Wolves tomorrow at 8:30 PM',
-          gameId: '1',
-          toPlayerId: '1',
-          createdAt: new Date(Date.now() - 3600000).toISOString(),
-          read: false,
-        },
-      ],
+      // Notifications - start empty
+      notifications: [],
       addNotification: (notification) => set((state) => ({
         notifications: [notification, ...state.notifications]
       })),
@@ -798,27 +720,8 @@ export const useTeamStore = create<TeamStore>()(
         ).length;
       },
 
-      // Chat - start with some mock messages
-      chatMessages: [
-        {
-          id: 'chat-1',
-          senderId: '7', // Steve Anderson
-          message: 'Whats up brother?',
-          createdAt: new Date(Date.now() - 3600000).toISOString(),
-        },
-        {
-          id: 'chat-2',
-          senderId: '4', // Jake Miller
-          message: 'We better fucking win.',
-          createdAt: new Date(Date.now() - 2400000).toISOString(),
-        },
-        {
-          id: 'chat-3',
-          senderId: '3', // Chris Brown
-          message: 'Thats dusty.',
-          createdAt: new Date(Date.now() - 1200000).toISOString(),
-        },
-      ],
+      // Chat - start empty
+      chatMessages: [],
       addChatMessage: (message) => set((state) => ({
         chatMessages: [...state.chatMessages, message],
       })),
@@ -1166,32 +1069,41 @@ export const useTeamStore = create<TeamStore>()(
     {
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 5, // Increment to fix corrupted player positions from sport switching
+      version: 6, // Reset to fresh state - no mock data
       migrate: (persistedState: unknown, version: number) => {
-        const state = persistedState as Partial<TeamStore>;
-        // Fix corrupted positions from mixing sports
-        if (version < 5 && state.players && state.teamSettings) {
-          const currentSport = state.teamSettings.sport || 'hockey';
-          const validPositions = SPORT_POSITIONS[currentSport];
-          const cleanedPlayers = state.players.map((player) => {
-            // Filter positions to only include valid ones for current sport
-            const currentPositions = player.positions || [player.position];
-            const validPlayerPositions = currentPositions.filter(p => validPositions.includes(p));
-            // If no valid positions, assign first position of the sport
-            const finalPositions = validPlayerPositions.length > 0 ? validPlayerPositions : [validPositions[0]];
-            return {
-              ...player,
-              position: finalPositions[0],
-              positions: finalPositions,
-              stats: undefined, // Clear stats to start fresh
-            };
-          });
+        // Version 6: Complete reset to fresh state
+        if (version < 6) {
           return {
-            ...state,
-            players: cleanedPlayers,
+            teamName: 'My Team',
+            teamSettings: {
+              sport: 'hockey' as Sport,
+              jerseyColors: [
+                { name: 'White', color: '#ffffff' },
+                { name: 'Black', color: '#1a1a1a' },
+              ],
+              paymentMethods: [],
+              teamLogo: undefined,
+              record: undefined,
+              showTeamStats: true,
+              showPayments: true,
+              showTeamChat: true,
+              showPhotos: true,
+              showRefreshmentDuty: true,
+              refreshmentDutyIs21Plus: true,
+            },
+            players: [],
+            games: [],
+            events: [],
+            photos: [],
+            notifications: [],
+            chatMessages: [],
+            chatLastReadAt: {},
+            paymentPeriods: [],
+            currentPlayerId: null,
+            isLoggedIn: false,
           };
         }
-        return state as TeamStore;
+        return persistedState;
       },
     }
   )

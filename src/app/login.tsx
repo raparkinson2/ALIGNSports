@@ -89,7 +89,12 @@ export default function LoginScreen() {
 
       if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace('/(tabs)');
+        if (result.isNewUser) {
+          // New user needs to create/name their team
+          router.replace('/create-team');
+        } else {
+          router.replace('/(tabs)');
+        }
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError(result.error || 'Apple Sign In failed');
