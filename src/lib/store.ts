@@ -215,6 +215,7 @@ export interface Player {
   lastName: string;
   email?: string;
   password?: string; // For authentication
+  appleUserId?: string; // Apple Sign In user identifier
   phone?: string;
   number: string;
   position: string; // Primary position (first in positions array)
@@ -930,10 +931,12 @@ export const useTeamStore = create<TeamStore>()(
 
       loginWithApple: (appleUser, email, fullName) => {
         const state = get();
+        console.log('[Apple Sign In] Starting loginWithApple', { appleUser: appleUser?.substring(0, 10) + '...', email, fullName });
 
         // First, check if we already have a player with this Apple ID
-        const existingPlayerByAppleId = state.players.find((p) => (p as Player & { appleUserId?: string }).appleUserId === appleUser);
+        const existingPlayerByAppleId = state.players.find((p) => p.appleUserId === appleUser);
         if (existingPlayerByAppleId) {
+          console.log('[Apple Sign In] Found existing player by Apple ID:', existingPlayerByAppleId.id);
           set({ currentPlayerId: existingPlayerByAppleId.id, isLoggedIn: true });
           return { success: true, playerId: existingPlayerByAppleId.id, isNewUser: false };
         }
@@ -942,9 +945,10 @@ export const useTeamStore = create<TeamStore>()(
         if (email) {
           const existingPlayerByEmail = state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
           if (existingPlayerByEmail) {
+            console.log('[Apple Sign In] Found existing player by email, linking Apple ID:', existingPlayerByEmail.id);
             // Link Apple ID to existing account
             const updatedPlayers = state.players.map((p) =>
-              p.id === existingPlayerByEmail.id ? { ...p, appleUserId: appleUser } as Player : p
+              p.id === existingPlayerByEmail.id ? { ...p, appleUserId: appleUser } : p
             );
             set({
               players: updatedPlayers,
@@ -961,26 +965,27 @@ export const useTeamStore = create<TeamStore>()(
         const lastName = fullName?.familyName || '';
         const isFirstUser = state.players.length === 0;
 
+        console.log('[Apple Sign In] Creating new player:', { firstName, lastName, isFirstUser });
+
         const newPlayer: Player = {
           id: Date.now().toString(),
           firstName,
           lastName,
           email: email || undefined,
+          appleUserId: appleUser,
           number: String(state.players.length + 1),
           position: SPORT_POSITIONS[state.teamSettings.sport][0],
           roles: isFirstUser ? ['admin'] : [], // First user is admin, others are regular players
           status: 'active',
         };
 
-        // Add appleUserId to the player object
-        const playerWithApple = { ...newPlayer, appleUserId: appleUser } as Player;
-
         set({
-          players: [...state.players, playerWithApple],
+          players: [...state.players, newPlayer],
           currentPlayerId: newPlayer.id,
           isLoggedIn: true,
         });
 
+        console.log('[Apple Sign In] New player created successfully:', newPlayer.id);
         return { success: true, playerId: newPlayer.id, isNewUser: true };
       },
 

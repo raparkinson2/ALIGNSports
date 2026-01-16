@@ -127,7 +127,9 @@ export default function LoginScreen() {
 
   const handleAppleSignIn = async () => {
     try {
-      console.log('Starting Apple Sign In...');
+      console.log('[Apple Sign In] Starting Apple Sign In flow...');
+      console.log('[Apple Sign In] isAppleAuthAvailable:', isAppleAuthAvailable);
+
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
@@ -135,14 +137,17 @@ export default function LoginScreen() {
         ],
       });
 
-      console.log('Apple credential received:', {
-        user: credential.user ? 'present' : 'missing',
-        email: credential.email || 'not provided',
-        fullName: credential.fullName?.givenName || 'not provided',
+      console.log('[Apple Sign In] Credential received:', {
+        user: credential.user ? 'present (' + credential.user.substring(0, 10) + '...)' : 'missing',
+        email: credential.email || 'not provided (normal for returning users)',
+        fullName: credential.fullName?.givenName || 'not provided (normal for returning users)',
+        identityToken: credential.identityToken ? 'present' : 'missing',
+        authorizationCode: credential.authorizationCode ? 'present' : 'missing',
       });
 
       // Check if this is the first user (creating a new team)
       const isCreatingNewTeam = players.length === 0;
+      console.log('[Apple Sign In] isCreatingNewTeam:', isCreatingNewTeam, 'players.length:', players.length);
 
       const result = loginWithApple(
         credential.user,
@@ -150,29 +155,36 @@ export default function LoginScreen() {
         credential.fullName
       );
 
-      console.log('Login result:', result);
+      console.log('[Apple Sign In] Login result:', result);
 
       if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         if (result.isNewUser && isCreatingNewTeam) {
           // First user - needs to set up team
+          console.log('[Apple Sign In] Redirecting to create-team (new user, no team)');
           router.replace('/create-team');
         } else if (result.isNewUser) {
           // New user joining existing team - go to app, they can edit profile from settings
+          console.log('[Apple Sign In] Redirecting to tabs (new user, existing team)');
           router.replace('/(tabs)');
         } else {
           // Existing user - go to app
+          console.log('[Apple Sign In] Redirecting to tabs (existing user)');
           router.replace('/(tabs)');
         }
       } else {
+        console.log('[Apple Sign In] Login failed:', result.error);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError(result.error || 'Apple Sign In failed');
       }
     } catch (e: unknown) {
-      console.log('Apple Sign In error:', e);
-      const error = e as { code?: string };
+      console.log('[Apple Sign In] Error caught:', e);
+      const error = e as { code?: string; message?: string };
+      console.log('[Apple Sign In] Error details:', { code: error.code, message: error.message });
+
       if (error.code === 'ERR_REQUEST_CANCELED') {
         // User canceled - no error needed
+        console.log('[Apple Sign In] User canceled sign in');
         return;
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
