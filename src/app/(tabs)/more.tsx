@@ -879,7 +879,6 @@ export default function MoreScreen() {
           <MenuItem
             icon={<LogOut size={20} color="#f87171" />}
             title="Log Out"
-            subtitle="Switch to a different player"
             onPress={handleLogout}
             index={7}
             variant="danger"
