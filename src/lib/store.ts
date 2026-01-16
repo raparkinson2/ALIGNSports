@@ -209,12 +209,28 @@ export interface GameLogEntry {
 }
 
 // Types
+// Security Questions for password recovery
+export const SECURITY_QUESTIONS = [
+  "What was the name of your first pet?",
+  "What city were you born in?",
+  "What is your mother's maiden name?",
+  "What was the name of your elementary school?",
+  "What is your favorite sports team?",
+  "What was the make of your first car?",
+  "What street did you grow up on?",
+  "What is your favorite movie?",
+] as const;
+
+export type SecurityQuestion = typeof SECURITY_QUESTIONS[number];
+
 export interface Player {
   id: string;
   firstName: string;
   lastName: string;
   email?: string;
   password?: string; // For authentication
+  securityQuestion?: SecurityQuestion; // For password recovery
+  securityAnswer?: string; // Answer to security question (stored lowercase for comparison)
   appleUserId?: string; // Apple Sign In user identifier
   phone?: string;
   number: string;

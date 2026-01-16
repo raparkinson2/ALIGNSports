@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, Apple } from 'lucide-react-native';
+import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, Apple, ShieldQuestion } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
@@ -67,9 +67,10 @@ export default function LoginScreen() {
   const [isAppleAuthAvailable, setIsAppleAuthAvailable] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [securityAnswer, setSecurityAnswer] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [resetStep, setResetStep] = useState<'email' | 'password'>('email');
+  const [resetStep, setResetStep] = useState<'email' | 'security' | 'password'>('email');
   const [foundPlayer, setFoundPlayer] = useState<Player | null>(null);
 
   // Check if Apple Authentication is available on this device
@@ -93,6 +94,7 @@ export default function LoginScreen() {
   const handleForgotPassword = () => {
     setShowForgotPassword(true);
     setResetEmail('');
+    setSecurityAnswer('');
     setNewPassword('');
     setConfirmPassword('');
     setResetStep('email');
@@ -103,11 +105,32 @@ export default function LoginScreen() {
     const player = players.find(p => p.email?.toLowerCase() === resetEmail.toLowerCase().trim());
     if (player) {
       setFoundPlayer(player);
-      setResetStep('password');
+      // If player has a security question, go to security step; otherwise skip to password
+      if (player.securityQuestion && player.securityAnswer) {
+        setResetStep('security');
+      } else {
+        setResetStep('password');
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Account Not Found', 'No account found with this email address. Please check and try again.');
+    }
+  };
+
+  const handleVerifySecurityAnswer = () => {
+    if (!securityAnswer.trim()) {
+      Alert.alert('Answer Required', 'Please enter your answer to the security question.');
+      return;
+    }
+    if (foundPlayer && foundPlayer.securityAnswer) {
+      if (securityAnswer.trim().toLowerCase() === foundPlayer.securityAnswer.toLowerCase()) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setResetStep('password');
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert('Incorrect Answer', 'The answer you provided does not match. Please try again.');
+      }
     }
   };
 
@@ -566,6 +589,56 @@ export default function LoginScreen() {
                       className="bg-cyan-500 rounded-xl py-4 items-center active:bg-cyan-600 disabled:opacity-50"
                     >
                       <Text className="text-white font-semibold text-base">Find Account</Text>
+                    </Pressable>
+                  </>
+                ) : resetStep === 'security' ? (
+                  <>
+                    {/* Security Question Step */}
+                    <View className="w-16 h-16 rounded-full bg-amber-500/20 items-center justify-center self-center mb-4">
+                      <ShieldQuestion size={32} color="#f59e0b" />
+                    </View>
+                    <Text className="text-white text-center text-lg font-semibold mb-2">
+                      Security Question
+                    </Text>
+                    <Text className="text-slate-400 text-center mb-2">
+                      Account found for {getPlayerName(foundPlayer!)}
+                    </Text>
+                    <Text className="text-slate-300 text-center mb-6 font-medium">
+                      {foundPlayer?.securityQuestion}
+                    </Text>
+
+                    <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4 mb-2">
+                      <Lock size={20} color="#64748b" />
+                      <TextInput
+                        value={securityAnswer}
+                        onChangeText={setSecurityAnswer}
+                        placeholder="Your answer"
+                        placeholderTextColor="#64748b"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        className="flex-1 py-4 px-3 text-white text-base"
+                      />
+                    </View>
+                    <Text className="text-slate-500 text-xs mb-4">
+                      Answers are not case-sensitive
+                    </Text>
+
+                    <Pressable
+                      onPress={handleVerifySecurityAnswer}
+                      disabled={!securityAnswer.trim()}
+                      className="bg-cyan-500 rounded-xl py-4 items-center active:bg-cyan-600 disabled:opacity-50 mb-3"
+                    >
+                      <Text className="text-white font-semibold text-base">Verify Answer</Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() => {
+                        setResetStep('email');
+                        setSecurityAnswer('');
+                      }}
+                      className="py-3"
+                    >
+                      <Text className="text-slate-400 text-center">Use a different email</Text>
                     </Pressable>
                   </>
                 ) : (
