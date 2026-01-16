@@ -3,9 +3,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { useState } from 'react';
-import { ChevronLeft, User, Mail, Lock, Users, Check, ShieldQuestion, ChevronDown, Palette, Plus, X } from 'lucide-react-native';
+import { ChevronLeft, User, Mail, Lock, Users, Check, ShieldQuestion, ChevronDown, Palette, Plus, X, Camera, ImageIcon } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 import { useTeamStore, Sport, SPORT_NAMES, SECURITY_QUESTIONS, SecurityQuestion } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg';
@@ -104,8 +106,49 @@ export default function CreateTeamScreen() {
     { name: 'White', color: '#ffffff' },
     { name: 'Black', color: '#1a1a1a' },
   ]);
+  const [avatar, setAvatar] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Image picker functions
+  const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      setError('Please allow access to your photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setAvatar(result.assets[0].uri);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      setError('Please allow access to your camera');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setAvatar(result.assets[0].uri);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
 
   // Password validation
   const validatePassword = (pwd: string): string[] => {
@@ -223,10 +266,13 @@ export default function CreateTeamScreen() {
         // Get the current state to find the newly created player
         const currentState = useTeamStore.getState();
         const newPlayer = currentState.players.find(p => p.email?.toLowerCase() === email.trim().toLowerCase());
-        if (newPlayer && securityQuestion) {
+        if (newPlayer) {
           updatePlayer(newPlayer.id, {
-            securityQuestion: securityQuestion as SecurityQuestion,
-            securityAnswer: securityAnswer.trim().toLowerCase(),
+            ...(securityQuestion && {
+              securityQuestion: securityQuestion as SecurityQuestion,
+              securityAnswer: securityAnswer.trim().toLowerCase(),
+            }),
+            ...(avatar && { avatar }),
           });
         }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -315,13 +361,41 @@ export default function CreateTeamScreen() {
             {step === 1 && (
               <Animated.View entering={FadeInDown.delay(150).springify()}>
                 <View className="items-center mb-8">
-                  <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
-                    <User size={32} color="#67e8f9" />
-                  </View>
+                  {/* Tappable Avatar */}
+                  <Pressable
+                    onPress={handlePickImage}
+                    className="relative mb-4"
+                  >
+                    {avatar ? (
+                      <View className="relative">
+                        <Image
+                          source={{ uri: avatar }}
+                          style={{ width: 80, height: 80, borderRadius: 40 }}
+                          contentFit="cover"
+                        />
+                        <Pressable
+                          onPress={() => setAvatar(null)}
+                          className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 items-center justify-center"
+                        >
+                          <X size={12} color="white" />
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <View className="w-20 h-20 rounded-full bg-cyan-500/20 items-center justify-center border-2 border-cyan-500/50">
+                        <User size={32} color="#67e8f9" />
+                        <View className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-cyan-500 items-center justify-center border-2 border-slate-900">
+                          <Camera size={14} color="white" />
+                        </View>
+                      </View>
+                    )}
+                  </Pressable>
                   <Text className="text-white text-2xl font-bold">Your Info</Text>
                   <Text className="text-slate-400 text-center mt-2">
                     Tell us about yourself
                   </Text>
+                  {!avatar && (
+                    <Text className="text-cyan-400 text-sm mt-1">Tap photo to add</Text>
+                  )}
                 </View>
 
                 <View className="mb-4">
