@@ -119,7 +119,7 @@ export async function scheduleGameReminderHourBefore(
   return scheduleGameReminder(
     gameId,
     'Game in 1 Hour!',
-    `Get ready! You're playing vs ${opponent} at ${gameTime}`,
+    `Get ready! You're playing vs ${opponent} at ${gameTime}. Make sure to check in or out in the app.`,
     reminderDate
   );
 }
@@ -138,7 +138,7 @@ export async function scheduleGameReminderDayBefore(
   return scheduleGameReminder(
     gameId,
     'Game Tomorrow',
-    `Reminder: You have a game vs ${opponent} tomorrow at ${gameTime}`,
+    `Reminder: You have a game vs ${opponent} tomorrow at ${gameTime}. Make sure to check in or out in the app.`,
     reminderDate
   );
 }
@@ -148,6 +148,30 @@ export async function scheduleGameReminderDayBefore(
  */
 export async function cancelScheduledNotification(identifier: string): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(identifier);
+}
+
+/**
+ * Send a game invite notification immediately
+ */
+export async function sendGameInviteNotification(
+  gameId: string,
+  opponent: string,
+  gameDate: string,
+  gameTime: string
+): Promise<void> {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'New Game Added!',
+        body: `You've been invited to play vs ${opponent} on ${gameDate} at ${gameTime}. Make sure to check in or out in the app.`,
+        data: { gameId, type: 'game_invite' },
+        sound: true,
+      },
+      trigger: null, // Sends immediately
+    });
+  } catch (error) {
+    console.log('Error sending game invite notification:', error);
+  }
 }
 
 /**

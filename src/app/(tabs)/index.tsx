@@ -38,6 +38,7 @@ import { BaseballLineupViewer } from '@/components/BaseballLineupViewer';
 import { hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
 import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
 import { hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
+import { sendGameInviteNotification } from '@/lib/notifications';
 
 const getDateLabel = (dateString: string): string => {
   const date = parseISO(dateString);
@@ -490,6 +491,11 @@ export default function ScheduleScreen() {
     };
 
     addGame(newGame);
+
+    // Send push notification for game invite
+    const formattedDate = format(gameDate, 'EEE, MMM d');
+    sendGameInviteNotification(newGame.id, opponent.trim(), formattedDate, gameTime.trim() || '7:00 PM');
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsModalVisible(false);
     resetForm();
