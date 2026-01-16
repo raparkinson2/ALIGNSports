@@ -282,14 +282,16 @@ export default function LoginScreen() {
             entering={FadeInUp.delay(50).springify()}
             className="items-center pt-12 pb-8"
           >
-            <View className="w-20 h-20 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
-              <Users size={40} color="#67e8f9" />
-            </View>
-            <Text className="text-cyan-400 text-sm font-medium uppercase tracking-wider mb-1">
-              {hasTeam ? 'Welcome Back' : 'Team Manager'}
+            <Image
+              source={require('../../assets/icon-1767991107153.png')}
+              style={{ width: 100, height: 100, borderRadius: 20, marginBottom: 16 }}
+              contentFit="contain"
+            />
+            <Text className="text-white text-3xl font-bold mb-2">
+              ALIGN Sports
             </Text>
-            <Text className="text-white text-3xl font-bold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-              {hasTeam ? teamName : 'Get Started'}
+            <Text className="text-slate-400 text-base text-center px-8">
+              {hasTeam ? 'Sign in to access your team' : 'Log in or create a team to get started'}
             </Text>
           </Animated.View>
 
@@ -300,9 +302,6 @@ export default function LoginScreen() {
           >
             {hasTeam ? (
               <>
-                <Text className="text-slate-400 text-base mb-6 text-center">
-                  Sign in to access your team
-                </Text>
 
                 {/* Email Input */}
                 <View className="mb-4">
@@ -406,10 +405,6 @@ export default function LoginScreen() {
               </>
             ) : (
               <>
-                <Text className="text-slate-400 text-base mb-8 text-center">
-                  Create a new team or join an existing one
-                </Text>
-
                 {/* Create Team Button */}
                 <Pressable
                   onPress={() => {
