@@ -104,6 +104,7 @@ export default function CreateTeamScreen() {
   const [sport, setSport] = useState<Sport>('hockey');
   const [jerseyColors, setJerseyColors] = useState<{ name: string; color: string }[]>([]);
   const [avatar, setAvatar] = useState<string | null>(null);
+  const [teamLogo, setTeamLogo] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -143,6 +144,46 @@ export default function CreateTeamScreen() {
 
     if (!result.canceled && result.assets[0]) {
       setAvatar(result.assets[0].uri);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  // Team logo picker functions
+  const handlePickTeamLogo = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      setError('Please allow access to your photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setTeamLogo(result.assets[0].uri);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const handleTakeTeamLogoPhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      setError('Please allow access to your camera');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setTeamLogo(result.assets[0].uri);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   };
@@ -221,6 +262,10 @@ export default function CreateTeamScreen() {
         setError('Please enter a team name');
         return;
       }
+      if (!teamLogo) {
+        setError('Please upload a team logo');
+        return;
+      }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setStep(5);
     } else if (step === 5) {
@@ -253,8 +298,8 @@ export default function CreateTeamScreen() {
     setIsLoading(true);
 
     setTimeout(() => {
-      // First set the sport and jersey colors
-      setTeamSettings({ sport, jerseyColors });
+      // First set the sport, jersey colors, and team logo
+      setTeamSettings({ sport, jerseyColors, teamLogo: teamLogo ?? undefined });
 
       // Register the admin with email/password
       const result = registerAdmin(name.trim(), email.trim(), password, teamNameInput.trim());
@@ -573,7 +618,7 @@ export default function CreateTeamScreen() {
                 </View>
 
                 <View className="mb-6">
-                  <Text className="text-slate-400 text-sm mb-2">Team Name</Text>
+                  <Text className="text-slate-400 text-sm mb-2">Team Name <Text className="text-red-400">*</Text></Text>
                   <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
                     <Users size={20} color="#64748b" />
                     <TextInput
@@ -584,6 +629,39 @@ export default function CreateTeamScreen() {
                       className="flex-1 py-4 px-3 text-white text-base"
                     />
                   </View>
+                </View>
+
+                {/* Team Logo */}
+                <View className="mb-6">
+                  <Text className="text-slate-400 text-sm mb-2">Team Logo <Text className="text-red-400">*</Text></Text>
+                  <Pressable
+                    onPress={handlePickTeamLogo}
+                    className="items-center"
+                  >
+                    {teamLogo ? (
+                      <View className="relative">
+                        <Image
+                          source={{ uri: teamLogo }}
+                          style={{ width: 100, height: 100, borderRadius: 16 }}
+                          contentFit="cover"
+                        />
+                        <Pressable
+                          onPress={() => setTeamLogo(null)}
+                          className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-500 items-center justify-center"
+                        >
+                          <X size={14} color="white" />
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <View className="w-24 h-24 rounded-2xl bg-slate-800/80 border-2 border-dashed border-slate-600 items-center justify-center">
+                        <ImageIcon size={32} color="#64748b" />
+                        <Text className="text-slate-500 text-xs mt-2">Add Logo</Text>
+                      </View>
+                    )}
+                  </Pressable>
+                  {!teamLogo && (
+                    <Text className="text-cyan-400 text-xs text-center mt-2">Tap to upload your team logo</Text>
+                  )}
                 </View>
 
                 <View className="mb-4">
