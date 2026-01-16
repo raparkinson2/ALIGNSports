@@ -22,6 +22,7 @@ import {
   BarChart3,
   Lock,
   Trash2,
+  Check,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -274,11 +275,16 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave }:
   const [prefs, setPrefs] = useState<NotificationPreferences>(preferences);
   const [isTestingNotif, setIsTestingNotif] = useState(false);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+  const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'undetermined'>('undetermined');
 
-  // Reset prefs when modal opens or preferences change
+  // Check permission status when modal opens
   useEffect(() => {
     if (visible) {
       setPrefs(preferences);
+      // Check current permission status
+      Notifications.getPermissionsAsync().then(({ status }) => {
+        setPermissionStatus(status as 'granted' | 'denied' | 'undetermined');
+      });
     }
   }, [visible, preferences]);
 
@@ -314,6 +320,7 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave }:
 
       if (existingStatus === 'granted') {
         // Already have permission
+        setPermissionStatus('granted');
         Alert.alert('Already Enabled', 'Push notifications are already enabled for this app!');
         setIsRequestingPermission(false);
         return;
@@ -321,6 +328,7 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave }:
 
       if (existingStatus === 'denied') {
         // Permission was denied before - must go to Settings
+        setPermissionStatus('denied');
         Alert.alert(
           'Permission Required',
           'You previously denied notification permissions. Please enable them in Settings to receive game reminders.',
@@ -338,7 +346,12 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave }:
 
       // Permission is 'undetermined' - request it (this will show the iOS popup)
       const token = await registerForPushNotificationsAsync();
-      if (token) {
+
+      // Re-check permission status after request
+      const { status: newStatus } = await Notifications.getPermissionsAsync();
+      setPermissionStatus(newStatus as 'granted' | 'denied' | 'undetermined');
+
+      if (newStatus === 'granted') {
         Alert.alert('Success', 'Push notifications are now enabled!');
       } else {
         // User denied in the popup or something went wrong
@@ -380,17 +393,37 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave }:
             {/* Enable Notifications Button */}
             <Pressable
               onPress={handleRequestPermission}
-              disabled={isRequestingPermission}
-              className="bg-cyan-500/20 border border-cyan-500/30 rounded-xl p-4 mt-4 mb-2 flex-row items-center active:bg-cyan-500/30"
+              disabled={isRequestingPermission || permissionStatus === 'granted'}
+              className={`rounded-xl p-4 mt-4 mb-2 flex-row items-center ${
+                permissionStatus === 'granted'
+                  ? 'bg-green-500/20 border border-green-500/30'
+                  : 'bg-cyan-500/20 border border-cyan-500/30 active:bg-cyan-500/30'
+              }`}
             >
-              <View className="w-10 h-10 rounded-full bg-cyan-500/30 items-center justify-center mr-3">
-                <Bell size={20} color="#67e8f9" />
+              <View className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${
+                permissionStatus === 'granted' ? 'bg-green-500/30' : 'bg-cyan-500/30'
+              }`}>
+                {permissionStatus === 'granted' ? (
+                  <Check size={20} color="#22c55e" />
+                ) : (
+                  <Bell size={20} color="#67e8f9" />
+                )}
               </View>
               <View className="flex-1">
-                <Text className="text-cyan-400 font-semibold">
-                  {isRequestingPermission ? 'Requesting...' : 'Enable Push Notifications'}
+                <Text className={`font-semibold ${
+                  permissionStatus === 'granted' ? 'text-green-400' : 'text-cyan-400'
+                }`}>
+                  {isRequestingPermission
+                    ? 'Requesting...'
+                    : permissionStatus === 'granted'
+                    ? 'Notifications Enabled'
+                    : 'Enable Push Notifications'}
                 </Text>
-                <Text className="text-slate-400 text-sm">Tap to grant notification permissions</Text>
+                <Text className="text-slate-400 text-sm">
+                  {permissionStatus === 'granted'
+                    ? 'You will receive game reminders and updates'
+                    : 'Tap to grant notification permissions'}
+                </Text>
               </View>
             </Pressable>
 

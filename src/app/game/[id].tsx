@@ -32,6 +32,7 @@ import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated'
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
+import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, SoccerLineup, SoccerDiamondLineup, getPlayerName } from '@/lib/store';
 import { cn } from '@/lib/cn';
@@ -269,18 +270,37 @@ export default function GameDetailScreen() {
     Linking.openURL(`https://maps.apple.com/?q=${encodedAddress}`);
   };
 
-  const handleSendInAppNotification = (type: 'invite' | 'reminder') => {
+  const handleSendInAppNotification = async (type: 'invite' | 'reminder') => {
     const gameDate = parseISO(game.date);
     const dateStr = format(gameDate, 'EEEE, MMMM d');
 
+    const title = type === 'invite' ? 'Game Invite' : 'Game Reminder';
+    const message = type === 'invite'
+      ? `You're invited to play vs ${game.opponent} on ${dateStr} at ${game.time}. Wear your ${jerseyColorName} jersey!`
+      : `Reminder: Game vs ${game.opponent} is coming up on ${dateStr} at ${game.time}. Don't forget your ${jerseyColorName} jersey!`;
+
+    // Send push notification (local)
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body: message,
+          data: { gameId: game.id, type: type === 'invite' ? 'game_invite' : 'game_reminder' },
+          sound: true,
+        },
+        trigger: null, // Send immediately
+      });
+    } catch (error) {
+      console.log('Could not send push notification:', error);
+    }
+
+    // Also add to in-app notifications
     invitedPlayers.forEach((player) => {
       const notification: AppNotification = {
         id: `${Date.now()}-${player.id}`,
         type: type === 'invite' ? 'game_invite' : 'game_reminder',
-        title: type === 'invite' ? 'Game Invite' : 'Game Reminder',
-        message: type === 'invite'
-          ? `You're invited to play vs ${game.opponent} on ${dateStr} at ${game.time}. Wear your ${jerseyColorName} jersey!`
-          : `Reminder: Game vs ${game.opponent} is coming up on ${dateStr} at ${game.time}. Don't forget your ${jerseyColorName} jersey!`,
+        title,
+        message,
         gameId: game.id,
         fromPlayerId: currentPlayerId ?? undefined,
         toPlayerId: player.id,
@@ -297,7 +317,7 @@ export default function GameDetailScreen() {
     );
   };
 
-  const handleInvitePlayer = (playerId: string, sendNotification: boolean = true) => {
+  const handleInvitePlayer = async (playerId: string, sendNotification: boolean = true) => {
     const currentInvited = game.invitedPlayers ?? [];
     if (currentInvited.includes(playerId)) return;
 
@@ -308,11 +328,30 @@ export default function GameDetailScreen() {
     if (sendNotification) {
       const gameDate = parseISO(game.date);
       const dateStr = format(gameDate, 'EEEE, MMMM d');
+      const title = 'Game Invite';
+      const message = `You're invited to play vs ${game.opponent} on ${dateStr} at ${game.time}. Wear your ${jerseyColorName} jersey!`;
+
+      // Send push notification
+      try {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title,
+            body: message,
+            data: { gameId: game.id, type: 'game_invite' },
+            sound: true,
+          },
+          trigger: null,
+        });
+      } catch (error) {
+        console.log('Could not send push notification:', error);
+      }
+
+      // Add to in-app notifications
       const notification: AppNotification = {
         id: `${Date.now()}-${playerId}`,
         type: 'game_invite',
-        title: 'Game Invite',
-        message: `You're invited to play vs ${game.opponent} on ${dateStr} at ${game.time}. Wear your ${jerseyColorName} jersey!`,
+        title,
+        message,
         gameId: game.id,
         fromPlayerId: currentPlayerId ?? undefined,
         toPlayerId: playerId,
@@ -325,7 +364,7 @@ export default function GameDetailScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const handleInviteMultiplePlayers = (playerIds: string[]) => {
+  const handleInviteMultiplePlayers = async (playerIds: string[]) => {
     const currentInvited = game.invitedPlayers ?? [];
     const newInvites = playerIds.filter((id) => !currentInvited.includes(id));
     if (newInvites.length === 0) return;
@@ -336,13 +375,31 @@ export default function GameDetailScreen() {
 
     const gameDate = parseISO(game.date);
     const dateStr = format(gameDate, 'EEEE, MMMM d');
+    const title = 'Game Invite';
+    const message = `You're invited to play vs ${game.opponent} on ${dateStr} at ${game.time}. Wear your ${jerseyColorName} jersey!`;
 
+    // Send push notification
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body: message,
+          data: { gameId: game.id, type: 'game_invite' },
+          sound: true,
+        },
+        trigger: null,
+      });
+    } catch (error) {
+      console.log('Could not send push notification:', error);
+    }
+
+    // Add to in-app notifications
     newInvites.forEach((playerId) => {
       const notification: AppNotification = {
         id: `${Date.now()}-${playerId}`,
         type: 'game_invite',
-        title: 'Game Invite',
-        message: `You're invited to play vs ${game.opponent} on ${dateStr} at ${game.time}. Wear your ${jerseyColorName} jersey!`,
+        title,
+        message,
         gameId: game.id,
         fromPlayerId: currentPlayerId ?? undefined,
         toPlayerId: playerId,
