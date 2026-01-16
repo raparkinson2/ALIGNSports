@@ -317,11 +317,9 @@ export default function LoginScreen() {
               style={{ width: 160, height: 160, marginBottom: 24 }}
               contentFit="contain"
             />
-            {!hasTeam && (
-              <Text className="text-slate-300 text-lg text-center px-10 leading-relaxed">
-                Log in or create a new team to get started
-              </Text>
-            )}
+            <Text className="text-slate-300 text-lg text-center px-10 leading-relaxed">
+              Sign in or create a new team to get started
+            </Text>
           </Animated.View>
 
           {/* Login Form */}

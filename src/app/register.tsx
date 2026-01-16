@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useTeamStore, SECURITY_QUESTIONS, SecurityQuestion } from '@/lib/store';
+import { cn } from '@/lib/cn';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -31,6 +32,19 @@ export default function RegisterScreen() {
   const [foundPlayer, setFoundPlayer] = useState<{ id: string; firstName: string; lastName: string; number: string } | null>(null);
 
   const hasTeam = players.length > 0;
+
+  // Password validation
+  const validatePassword = (pwd: string): string[] => {
+    const errors: string[] = [];
+    if (pwd.length < 8) errors.push('At least 8 characters');
+    if (!/[A-Z]/.test(pwd)) errors.push('At least one uppercase letter');
+    if (!/[a-z]/.test(pwd)) errors.push('At least one lowercase letter');
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)) errors.push('At least one special symbol');
+    return errors;
+  };
+
+  const passwordErrors = password.length > 0 ? validatePassword(password) : [];
+  const isPasswordValid = passwordErrors.length === 0 && password.length > 0;
 
   const handleCheckEmail = () => {
     setError('');
@@ -70,8 +84,9 @@ export default function RegisterScreen() {
       setError('Please create a password');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    const errors = validatePassword(password);
+    if (errors.length > 0) {
+      setError('Password does not meet requirements');
       return;
     }
     if (password !== confirmPassword) {
@@ -323,6 +338,32 @@ export default function RegisterScreen() {
                   </View>
                 </View>
 
+                {/* Password Requirements */}
+                <View className="mb-4 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+                  <Text className="text-slate-400 text-sm mb-2">Password must have:</Text>
+                  {[
+                    { label: 'At least 8 characters', met: password.length >= 8 },
+                    { label: 'At least one uppercase letter', met: /[A-Z]/.test(password) },
+                    { label: 'At least one lowercase letter', met: /[a-z]/.test(password) },
+                    { label: 'At least one special symbol', met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) },
+                  ].map((req) => (
+                    <View key={req.label} className="flex-row items-center mt-1">
+                      <View className={cn(
+                        'w-4 h-4 rounded-full items-center justify-center mr-2',
+                        password.length > 0 && req.met ? 'bg-green-500' : 'bg-slate-600'
+                      )}>
+                        {password.length > 0 && req.met && <Check size={10} color="white" />}
+                      </View>
+                      <Text className={cn(
+                        'text-sm',
+                        password.length > 0 && req.met ? 'text-green-400' : 'text-slate-500'
+                      )}>
+                        {req.label}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
                 <View className="mb-6">
                   <Text className="text-slate-400 text-sm mb-2">Confirm Password</Text>
                   <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
@@ -336,6 +377,12 @@ export default function RegisterScreen() {
                       className="flex-1 py-4 px-3 text-white text-base"
                     />
                   </View>
+                  {confirmPassword.length > 0 && password !== confirmPassword && (
+                    <Text className="text-red-400 text-sm mt-2">Passwords do not match</Text>
+                  )}
+                  {confirmPassword.length > 0 && password === confirmPassword && isPasswordValid && (
+                    <Text className="text-green-400 text-sm mt-2">Passwords match</Text>
+                  )}
                 </View>
 
                 {/* Error Message */}
