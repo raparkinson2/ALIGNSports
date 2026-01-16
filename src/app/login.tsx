@@ -10,6 +10,9 @@ import * as Haptics from 'expo-haptics';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useTeamStore, Player, getPlayerName } from '@/lib/store';
 
+// Check if we're on native iOS (not web)
+const isNativeIOS = Platform.OS === 'ios';
+
 interface PlayerLoginCardProps {
   player: Player;
   index: number;
@@ -349,8 +352,8 @@ export default function LoginScreen() {
                   </Text>
                 </Pressable>
 
-                {/* Sign In with Apple */}
-                {Platform.OS === 'ios' && (
+                {/* Sign In with Apple - only on native iOS */}
+                {isNativeIOS && (
                   <AppleAuthentication.AppleAuthenticationButton
                     buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
                     buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
@@ -432,8 +435,8 @@ export default function LoginScreen() {
                   </Text>
                 </Pressable>
 
-                {/* Sign In with Apple for new users */}
-                {Platform.OS === 'ios' && (
+                {/* Sign In with Apple for new users - only on native iOS, not web */}
+                {isNativeIOS && (
                   <>
                     <View className="flex-row items-center my-6">
                       <View className="flex-1 h-px bg-slate-700" />
