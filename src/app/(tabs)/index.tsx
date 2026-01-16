@@ -975,11 +975,12 @@ export default function ScheduleScreen() {
                       <Pressable
                         onPress={() => setSelectedBeerDutyPlayer(null)}
                         className={cn(
-                          'px-4 py-2 rounded-xl mr-2 border',
+                          'px-4 py-2 rounded-xl mr-2 border items-center justify-center',
                           selectedBeerDutyPlayer === null
                             ? 'bg-amber-500/20 border-amber-500/50'
                             : 'bg-slate-800 border-slate-700'
                         )}
+                        style={{ height: 40 }}
                       >
                         <Text className={cn(
                           'font-medium',
