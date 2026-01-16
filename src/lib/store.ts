@@ -1030,19 +1030,14 @@ export const useTeamStore = create<TeamStore>()(
     {
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 7, // Force logout for fresh testing
+      version: 7,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Partial<TeamStore> | null;
-        // Version 7: Force logout for fresh testing but preserve team data
-        if (version < 7) {
-          return {
-            ...(state || {}),
-            isLoggedIn: false,
-            currentPlayerId: null,
-          };
-        }
-        // Version 6: Complete reset to fresh state
+
+        // For any version, preserve all existing data including player roles
+        // Only apply specific migrations when needed
         if (version < 6) {
+          // Version 6: Complete reset to fresh state (for very old versions)
           return {
             teamName: 'My Team',
             teamSettings: {
@@ -1073,6 +1068,17 @@ export const useTeamStore = create<TeamStore>()(
             isLoggedIn: false,
           };
         }
+
+        if (version < 7) {
+          // Version 7: Force logout but preserve ALL team data including player roles
+          return {
+            ...(state || {}),
+            isLoggedIn: false,
+            currentPlayerId: null,
+          };
+        }
+
+        // For current version or higher, return state as-is (preserves all data)
         return persistedState;
       },
     }
