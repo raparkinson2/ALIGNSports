@@ -2,16 +2,13 @@ import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, Scrol
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useTeamStore, Player, getPlayerName } from '@/lib/store';
-
-// Check if we're on native iOS (not web)
-const isNativeIOS = Platform.OS === 'ios';
 
 interface PlayerLoginCardProps {
   player: Player;
@@ -66,6 +63,12 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPlayerSelect, setShowPlayerSelect] = useState(false);
+  const [isAppleAuthAvailable, setIsAppleAuthAvailable] = useState(false);
+
+  // Check if Apple Authentication is available on this device
+  useEffect(() => {
+    AppleAuthentication.isAvailableAsync().then(setIsAppleAuthAvailable);
+  }, []);
 
   const hasTeam = players.length > 0;
 
@@ -352,8 +355,8 @@ export default function LoginScreen() {
                   </Text>
                 </Pressable>
 
-                {/* Sign In with Apple - only on native iOS */}
-                {isNativeIOS && (
+                {/* Sign In with Apple - only when available */}
+                {isAppleAuthAvailable && (
                   <AppleAuthentication.AppleAuthenticationButton
                     buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
                     buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
@@ -435,8 +438,8 @@ export default function LoginScreen() {
                   </Text>
                 </Pressable>
 
-                {/* Sign In with Apple for new users - only on native iOS, not web */}
-                {isNativeIOS && (
+                {/* Sign In with Apple for new users - only when available */}
+                {isAppleAuthAvailable && (
                   <>
                     <View className="flex-row items-center my-6">
                       <View className="flex-1 h-px bg-slate-700" />
