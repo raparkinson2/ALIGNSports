@@ -1,9 +1,9 @@
-import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView, Modal, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight } from 'lucide-react-native';
+import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
@@ -57,6 +57,7 @@ export default function LoginScreen() {
   const teamName = useTeamStore((s) => s.teamName);
   const setCurrentPlayerId = useTeamStore((s) => s.setCurrentPlayerId);
   const setIsLoggedIn = useTeamStore((s) => s.setIsLoggedIn);
+  const updatePlayer = useTeamStore((s) => s.updatePlayer);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -64,6 +65,12 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPlayerSelect, setShowPlayerSelect] = useState(false);
   const [isAppleAuthAvailable, setIsAppleAuthAvailable] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetStep, setResetStep] = useState<'email' | 'password'>('email');
+  const [foundPlayer, setFoundPlayer] = useState<Player | null>(null);
 
   // Check if Apple Authentication is available on this device
   useEffect(() => {
@@ -77,6 +84,46 @@ export default function LoginScreen() {
 
   // Players without passwords (legacy)
   const legacyPlayers = players.filter(p => !p.password);
+
+  const handleForgotPassword = () => {
+    setShowForgotPassword(true);
+    setResetEmail('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setResetStep('email');
+    setFoundPlayer(null);
+  };
+
+  const handleFindAccount = () => {
+    const player = players.find(p => p.email?.toLowerCase() === resetEmail.toLowerCase().trim());
+    if (player) {
+      setFoundPlayer(player);
+      setResetStep('password');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Account Not Found', 'No account found with this email address. Please check and try again.');
+    }
+  };
+
+  const handleResetPassword = () => {
+    if (newPassword.length < 6) {
+      Alert.alert('Invalid Password', 'Password must be at least 6 characters long.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Passwords Do Not Match', 'Please make sure your passwords match.');
+      return;
+    }
+    if (foundPlayer) {
+      updatePlayer(foundPlayer.id, { password: newPassword });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Password Reset', 'Your password has been reset. You can now sign in with your new password.');
+      setShowForgotPassword(false);
+      setEmail(resetEmail);
+      setPassword('');
+    }
+  };
 
   const handleAppleSignIn = async () => {
     try {
@@ -373,13 +420,21 @@ export default function LoginScreen() {
               </Text>
             </Pressable>
 
+            {/* Forgot Password Link */}
+            <Pressable
+              onPress={handleForgotPassword}
+              className="py-3 mt-2"
+            >
+              <Text className="text-cyan-400 text-center text-sm">Forgot Password?</Text>
+            </Pressable>
+
             {/* Sign In with Apple - only when available */}
             {isAppleAuthAvailable && (
               <AppleAuthentication.AppleAuthenticationButton
                 buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
                 buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
                 cornerRadius={12}
-                style={{ width: '100%', height: 52, marginTop: 12 }}
+                style={{ width: '100%', height: 52, marginTop: 8 }}
                 onPress={handleAppleSignIn}
               />
             )}
@@ -422,6 +477,131 @@ export default function LoginScreen() {
           </KeyboardAvoidingView>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Forgot Password Modal */}
+      <Modal
+        visible={showForgotPassword}
+        animationType="slide"
+        transparent
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1"
+        >
+          <View className="flex-1 bg-black/60 justify-end">
+            <View className="bg-slate-900 rounded-t-3xl">
+              {/* Header */}
+              <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+                <Text className="text-white text-lg font-bold">Reset Password</Text>
+                <Pressable
+                  onPress={() => setShowForgotPassword(false)}
+                  className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center"
+                >
+                  <X size={18} color="#94a3b8" />
+                </Pressable>
+              </View>
+
+              <View className="px-5 py-6">
+                {resetStep === 'email' ? (
+                  <>
+                    {/* Email Step */}
+                    <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center self-center mb-4">
+                      <Mail size={32} color="#67e8f9" />
+                    </View>
+                    <Text className="text-white text-center text-lg font-semibold mb-2">
+                      Find Your Account
+                    </Text>
+                    <Text className="text-slate-400 text-center mb-6">
+                      Enter the email address associated with your account
+                    </Text>
+
+                    <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4 mb-4">
+                      <Mail size={20} color="#64748b" />
+                      <TextInput
+                        value={resetEmail}
+                        onChangeText={setResetEmail}
+                        placeholder="Email address"
+                        placeholderTextColor="#64748b"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        className="flex-1 py-4 px-3 text-white text-base"
+                      />
+                    </View>
+
+                    <Pressable
+                      onPress={handleFindAccount}
+                      disabled={!resetEmail.trim()}
+                      className="bg-cyan-500 rounded-xl py-4 items-center active:bg-cyan-600 disabled:opacity-50"
+                    >
+                      <Text className="text-white font-semibold text-base">Find Account</Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <>
+                    {/* Password Reset Step */}
+                    <View className="w-16 h-16 rounded-full bg-green-500/20 items-center justify-center self-center mb-4">
+                      <KeyRound size={32} color="#22c55e" />
+                    </View>
+                    <Text className="text-white text-center text-lg font-semibold mb-2">
+                      Create New Password
+                    </Text>
+                    <Text className="text-slate-400 text-center mb-6">
+                      Account found for {getPlayerName(foundPlayer!)}. Enter your new password below.
+                    </Text>
+
+                    <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4 mb-4">
+                      <Lock size={20} color="#64748b" />
+                      <TextInput
+                        value={newPassword}
+                        onChangeText={setNewPassword}
+                        placeholder="New password"
+                        placeholderTextColor="#64748b"
+                        secureTextEntry
+                        className="flex-1 py-4 px-3 text-white text-base"
+                      />
+                    </View>
+
+                    <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4 mb-4">
+                      <Lock size={20} color="#64748b" />
+                      <TextInput
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        placeholder="Confirm password"
+                        placeholderTextColor="#64748b"
+                        secureTextEntry
+                        className="flex-1 py-4 px-3 text-white text-base"
+                      />
+                    </View>
+
+                    {newPassword.length > 0 && newPassword.length < 6 && (
+                      <Text className="text-amber-400 text-sm mb-4">Password must be at least 6 characters</Text>
+                    )}
+                    {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+                      <Text className="text-red-400 text-sm mb-4">Passwords do not match</Text>
+                    )}
+
+                    <Pressable
+                      onPress={handleResetPassword}
+                      disabled={newPassword.length < 6 || newPassword !== confirmPassword}
+                      className="bg-cyan-500 rounded-xl py-4 items-center active:bg-cyan-600 disabled:opacity-50 mb-3"
+                    >
+                      <Text className="text-white font-semibold text-base">Reset Password</Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() => setResetStep('email')}
+                      className="py-3"
+                    >
+                      <Text className="text-slate-400 text-center">Use a different email</Text>
+                    </Pressable>
+                  </>
+                )}
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
