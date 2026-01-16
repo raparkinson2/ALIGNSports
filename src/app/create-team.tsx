@@ -102,10 +102,7 @@ export default function CreateTeamScreen() {
   const [showQuestionPicker, setShowQuestionPicker] = useState(false);
   const [teamNameInput, setTeamNameInput] = useState('');
   const [sport, setSport] = useState<Sport>('hockey');
-  const [jerseyColors, setJerseyColors] = useState<{ name: string; color: string }[]>([
-    { name: 'White', color: '#ffffff' },
-    { name: 'Black', color: '#1a1a1a' },
-  ]);
+  const [jerseyColors, setJerseyColors] = useState<{ name: string; color: string }[]>([]);
   const [avatar, setAvatar] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
