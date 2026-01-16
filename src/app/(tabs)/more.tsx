@@ -28,6 +28,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import * as ImagePicker from 'expo-image-picker';
+import * as Notifications from 'expo-notifications';
 import { useState, useEffect } from 'react';
 import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences, getPlayerName, getPlayerInitials } from '@/lib/store';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
@@ -308,13 +309,49 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave }:
     setIsRequestingPermission(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
+      // First check current permission status
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+
+      if (existingStatus === 'granted') {
+        // Already have permission
+        Alert.alert('Already Enabled', 'Push notifications are already enabled for this app!');
+        setIsRequestingPermission(false);
+        return;
+      }
+
+      if (existingStatus === 'denied') {
+        // Permission was denied before - must go to Settings
+        Alert.alert(
+          'Permission Required',
+          'You previously denied notification permissions. Please enable them in Settings to receive game reminders.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Open Settings',
+              onPress: () => Linking.openSettings()
+            }
+          ]
+        );
+        setIsRequestingPermission(false);
+        return;
+      }
+
+      // Permission is 'undetermined' - request it (this will show the iOS popup)
       const token = await registerForPushNotificationsAsync();
       if (token) {
         Alert.alert('Success', 'Push notifications are now enabled!');
       } else {
+        // User denied in the popup or something went wrong
         Alert.alert(
           'Permission Required',
-          'Please enable notifications in your device settings to receive game reminders and updates.'
+          'Please enable notifications in your device settings to receive game reminders and updates.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Open Settings',
+              onPress: () => Linking.openSettings()
+            }
+          ]
         );
       }
     } catch (error) {
