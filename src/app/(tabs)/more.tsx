@@ -28,7 +28,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import * as ImagePicker from 'expo-image-picker';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences, getPlayerName, getPlayerInitials } from '@/lib/store';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 import { sendTestNotification, registerForPushNotificationsAsync } from '@/lib/notifications';
@@ -273,6 +273,13 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave }:
   const [prefs, setPrefs] = useState<NotificationPreferences>(preferences);
   const [isTestingNotif, setIsTestingNotif] = useState(false);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+
+  // Reset prefs when modal opens or preferences change
+  useEffect(() => {
+    if (visible) {
+      setPrefs(preferences);
+    }
+  }, [visible, preferences]);
 
   const handleToggle = (key: keyof NotificationPreferences, value: boolean) => {
     setPrefs((prev) => ({ ...prev, [key]: value }));
@@ -900,14 +907,12 @@ export default function MoreScreen() {
       )}
 
       {/* Notification Preferences Modal */}
-      {currentPlayerId && (
-        <NotificationPreferencesModal
-          visible={notifPrefsVisible}
-          onClose={() => setNotifPrefsVisible(false)}
-          preferences={getNotificationPreferences(currentPlayerId)}
-          onSave={handleSaveNotificationPrefs}
-        />
-      )}
+      <NotificationPreferencesModal
+        visible={notifPrefsVisible && !!currentPlayerId}
+        onClose={() => setNotifPrefsVisible(false)}
+        preferences={currentPlayerId ? getNotificationPreferences(currentPlayerId) : defaultNotificationPreferences}
+        onSave={handleSaveNotificationPrefs}
+      />
 
       {/* Change Password Modal */}
       <ChangePasswordModal
