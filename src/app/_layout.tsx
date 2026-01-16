@@ -37,6 +37,8 @@ function AuthNavigator() {
   const segments = useSegments();
   const isLoggedIn = useTeamStore((s) => s.isLoggedIn);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
+  const players = useTeamStore((s) => s.players);
+  const logout = useTeamStore((s) => s.logout);
   const updateNotificationPreferences = useTeamStore((s) => s.updateNotificationPreferences);
   const addNotification = useTeamStore((s) => s.addNotification);
   const navigationRef = useNavigationContainerRef();
@@ -50,6 +52,25 @@ function AuthNavigator() {
       setIsReady(true);
     }
   }, [navigationRef]);
+
+  // Validate login state on hydration - ensure logged in user actually exists
+  // This prevents stale login state from persisting across builds
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    if (isLoggedIn && currentPlayerId) {
+      // Check if the player still exists in the store
+      const playerExists = players.some((p) => p.id === currentPlayerId);
+      if (!playerExists) {
+        console.log('Logged in player not found, forcing logout');
+        logout();
+      }
+    } else if (isLoggedIn && !currentPlayerId) {
+      // Logged in but no player ID - invalid state
+      console.log('Invalid login state (no player ID), forcing logout');
+      logout();
+    }
+  }, [isHydrated, isLoggedIn, currentPlayerId, players, logout]);
 
   // Hide splash screen once hydration is complete
   useEffect(() => {
