@@ -7,7 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useEffect, useState, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
-import { useTeamStore } from '@/lib/store';
+import { useTeamStore, useStoreHydrated } from '@/lib/store';
 import { registerForPushNotificationsAsync } from '@/lib/notifications';
 
 export const unstable_settings = {
@@ -41,6 +41,7 @@ function AuthNavigator() {
   const addNotification = useTeamStore((s) => s.addNotification);
   const navigationRef = useNavigationContainerRef();
   const [isReady, setIsReady] = useState(false);
+  const isHydrated = useStoreHydrated();
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
@@ -49,6 +50,13 @@ function AuthNavigator() {
       setIsReady(true);
     }
   }, [navigationRef]);
+
+  // Hide splash screen once hydration is complete
+  useEffect(() => {
+    if (isHydrated) {
+      SplashScreen.hideAsync();
+    }
+  }, [isHydrated]);
 
   // Register for push notifications when logged in
   useEffect(() => {
@@ -103,7 +111,8 @@ function AuthNavigator() {
   }, [isLoggedIn, currentPlayerId, isReady]);
 
   useEffect(() => {
-    if (!isReady) return;
+    // Wait for both navigation and store hydration before making auth decisions
+    if (!isReady || !isHydrated) return;
 
     const inAuthGroup = segments[0] === 'login';
 
@@ -112,7 +121,7 @@ function AuthNavigator() {
     } else if (isLoggedIn && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [isLoggedIn, segments, isReady, router]);
+  }, [isLoggedIn, segments, isReady, isHydrated, router]);
 
   return (
     <Stack>

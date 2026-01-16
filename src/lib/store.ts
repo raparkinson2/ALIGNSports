@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useState, useEffect } from 'react';
 
 // Sport Types and Positions
 export type Sport = 'hockey' | 'baseball' | 'basketball' | 'soccer';
@@ -1034,6 +1035,39 @@ export const useTeamStore = create<TeamStore>()(
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Partial<TeamStore> | null;
 
+        // Fresh install or no persisted state - return null to use defaults
+        if (!state || version === 0) {
+          return {
+            teamName: 'My Team',
+            teamSettings: {
+              sport: 'hockey' as Sport,
+              jerseyColors: [
+                { name: 'White', color: '#ffffff' },
+                { name: 'Black', color: '#1a1a1a' },
+              ],
+              paymentMethods: [],
+              teamLogo: undefined,
+              record: undefined,
+              showTeamStats: true,
+              showPayments: true,
+              showTeamChat: true,
+              showPhotos: true,
+              showRefreshmentDuty: true,
+              refreshmentDutyIs21Plus: true,
+            },
+            players: [],
+            games: [],
+            events: [],
+            photos: [],
+            notifications: [],
+            chatMessages: [],
+            chatLastReadAt: {},
+            paymentPeriods: [],
+            currentPlayerId: null,
+            isLoggedIn: false,
+          };
+        }
+
         // For any version, preserve all existing data including player roles
         // Only apply specific migrations when needed
         if (version < 6) {
@@ -1084,3 +1118,26 @@ export const useTeamStore = create<TeamStore>()(
     }
   )
 );
+
+// Export a hook to check if the store has been hydrated from AsyncStorage
+export const useStoreHydrated = () => {
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    // Check if already hydrated
+    const unsubFinishHydration = useTeamStore.persist.onFinishHydration(() => {
+      setHydrated(true);
+    });
+
+    // Also check if hydration already completed before subscription
+    if (useTeamStore.persist.hasHydrated()) {
+      setHydrated(true);
+    }
+
+    return () => {
+      unsubFinishHydration();
+    };
+  }, []);
+
+  return hydrated;
+};
