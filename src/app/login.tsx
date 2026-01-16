@@ -2,12 +2,11 @@ import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, Scrol
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
-import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, Apple, ShieldQuestion } from 'lucide-react-native';
+import { useState } from 'react';
+import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, ShieldQuestion } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import { useTeamStore, Player, getPlayerName } from '@/lib/store';
 
 interface PlayerLoginCardProps {
@@ -52,7 +51,6 @@ function PlayerLoginCard({ player, index, onSelect }: PlayerLoginCardProps) {
 export default function LoginScreen() {
   const router = useRouter();
   const loginWithEmail = useTeamStore((s) => s.loginWithEmail);
-  const loginWithApple = useTeamStore((s) => s.loginWithApple);
   const players = useTeamStore((s) => s.players);
   const teamName = useTeamStore((s) => s.teamName);
   const setCurrentPlayerId = useTeamStore((s) => s.setCurrentPlayerId);
@@ -64,7 +62,6 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPlayerSelect, setShowPlayerSelect] = useState(false);
-  const [isAppleAuthAvailable, setIsAppleAuthAvailable] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [securityAnswer, setSecurityAnswer] = useState('');
@@ -72,16 +69,6 @@ export default function LoginScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetStep, setResetStep] = useState<'email' | 'security' | 'password'>('email');
   const [foundPlayer, setFoundPlayer] = useState<Player | null>(null);
-
-  // Check if Apple Authentication is available on this device
-  useEffect(() => {
-    const checkAppleAuth = async () => {
-      const available = await AppleAuthentication.isAvailableAsync();
-      console.log('[Apple Sign In] isAvailableAsync result:', available);
-      setIsAppleAuthAvailable(available);
-    };
-    checkAppleAuth();
-  }, []);
 
   const hasTeam = players.length > 0;
 
@@ -150,73 +137,6 @@ export default function LoginScreen() {
       setShowForgotPassword(false);
       setEmail(resetEmail);
       setPassword('');
-    }
-  };
-
-  const handleAppleSignIn = async () => {
-    try {
-      console.log('[Apple Sign In] Starting Apple Sign In flow...');
-      console.log('[Apple Sign In] isAppleAuthAvailable:', isAppleAuthAvailable);
-
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
-
-      console.log('[Apple Sign In] Credential received:', {
-        user: credential.user ? 'present (' + credential.user.substring(0, 10) + '...)' : 'missing',
-        email: credential.email || 'not provided (normal for returning users)',
-        fullName: credential.fullName?.givenName || 'not provided (normal for returning users)',
-        identityToken: credential.identityToken ? 'present' : 'missing',
-        authorizationCode: credential.authorizationCode ? 'present' : 'missing',
-      });
-
-      // Check if this is the first user (creating a new team)
-      const isCreatingNewTeam = players.length === 0;
-      console.log('[Apple Sign In] isCreatingNewTeam:', isCreatingNewTeam, 'players.length:', players.length);
-
-      const result = loginWithApple(
-        credential.user,
-        credential.email,
-        credential.fullName
-      );
-
-      console.log('[Apple Sign In] Login result:', result);
-
-      if (result.success) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        if (result.isNewUser && isCreatingNewTeam) {
-          // First user - needs to set up team
-          console.log('[Apple Sign In] Redirecting to create-team (new user, no team)');
-          router.replace('/create-team');
-        } else if (result.isNewUser) {
-          // New user joining existing team - go to app, they can edit profile from settings
-          console.log('[Apple Sign In] Redirecting to tabs (new user, existing team)');
-          router.replace('/(tabs)');
-        } else {
-          // Existing user - go to app
-          console.log('[Apple Sign In] Redirecting to tabs (existing user)');
-          router.replace('/(tabs)');
-        }
-      } else {
-        console.log('[Apple Sign In] Login failed:', result.error);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setError(result.error || 'Apple Sign In failed');
-      }
-    } catch (e: unknown) {
-      console.log('[Apple Sign In] Error caught:', e);
-      const error = e as { code?: string; message?: string };
-      console.log('[Apple Sign In] Error details:', { code: error.code, message: error.message });
-
-      if (error.code === 'ERR_REQUEST_CANCELED') {
-        // User canceled - no error needed
-        console.log('[Apple Sign In] User canceled sign in');
-        return;
-      }
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError('Apple Sign In failed. Please try again.');
     }
   };
 
@@ -467,31 +387,6 @@ export default function LoginScreen() {
             >
               <Text className="text-cyan-400 text-center text-sm">Forgot Password?</Text>
             </Pressable>
-
-            {/* Sign In with Apple - show on iOS */}
-            {Platform.OS === 'ios' && (
-              isAppleAuthAvailable ? (
-                <AppleAuthentication.AppleAuthenticationButton
-                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                  cornerRadius={12}
-                  style={{ width: '100%', height: 52, marginTop: 8 }}
-                  onPress={handleAppleSignIn}
-                />
-              ) : (
-                // Custom fallback button when native button isn't available - Apple's white branding (HIG compliant)
-                <Pressable
-                  onPress={handleAppleSignIn}
-                  className="bg-white rounded-xl py-4 flex-row items-center justify-center mt-2 active:opacity-90"
-                  style={{ height: 52 }}
-                >
-                  <Apple size={20} color="#000000" fill="#000000" />
-                  <Text className="text-black font-semibold text-base ml-2">
-                    Sign in with Apple
-                  </Text>
-                </Pressable>
-              )
-            )}
 
             {/* Divider */}
             <View className="flex-row items-center my-6">

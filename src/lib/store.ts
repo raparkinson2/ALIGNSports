@@ -231,7 +231,6 @@ export interface Player {
   password?: string; // For authentication
   securityQuestion?: SecurityQuestion; // For password recovery
   securityAnswer?: string; // Answer to security question (stored lowercase for comparison)
-  appleUserId?: string; // Apple Sign In user identifier
   phone?: string;
   number: string;
   position: string; // Primary position (first in positions array)
@@ -561,7 +560,6 @@ interface TeamStore {
   registerAdmin: (name: string, email: string, password: string, teamName: string) => { success: boolean; error?: string };
   registerInvitedPlayer: (email: string, password: string) => { success: boolean; error?: string; playerId?: string };
   findPlayerByEmail: (email: string) => Player | undefined;
-  loginWithApple: (appleUser: string, email: string | null, fullName: { givenName: string | null; familyName: string | null } | null) => { success: boolean; error?: string; playerId?: string; isNewUser?: boolean };
 
   // Helper to check if current user has admin/captain privileges
   canManageTeam: () => boolean;
@@ -943,66 +941,6 @@ export const useTeamStore = create<TeamStore>()(
       findPlayerByEmail: (email) => {
         const state = get();
         return state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
-      },
-
-      loginWithApple: (appleUser, email, fullName) => {
-        const state = get();
-        console.log('[Apple Sign In] Starting loginWithApple', { appleUser: appleUser?.substring(0, 10) + '...', email, fullName });
-
-        // First, check if we already have a player with this Apple ID
-        const existingPlayerByAppleId = state.players.find((p) => p.appleUserId === appleUser);
-        if (existingPlayerByAppleId) {
-          console.log('[Apple Sign In] Found existing player by Apple ID:', existingPlayerByAppleId.id);
-          set({ currentPlayerId: existingPlayerByAppleId.id, isLoggedIn: true });
-          return { success: true, playerId: existingPlayerByAppleId.id, isNewUser: false };
-        }
-
-        // Check if email matches an existing player (link Apple ID to existing account)
-        if (email) {
-          const existingPlayerByEmail = state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
-          if (existingPlayerByEmail) {
-            console.log('[Apple Sign In] Found existing player by email, linking Apple ID:', existingPlayerByEmail.id);
-            // Link Apple ID to existing account
-            const updatedPlayers = state.players.map((p) =>
-              p.id === existingPlayerByEmail.id ? { ...p, appleUserId: appleUser } : p
-            );
-            set({
-              players: updatedPlayers,
-              currentPlayerId: existingPlayerByEmail.id,
-              isLoggedIn: true,
-            });
-            return { success: true, playerId: existingPlayerByEmail.id, isNewUser: false };
-          }
-        }
-
-        // No existing account found - create a new user
-        // If team exists, add as a regular player; if no team, create as admin
-        const firstName = fullName?.givenName || 'User';
-        const lastName = fullName?.familyName || '';
-        const isFirstUser = state.players.length === 0;
-
-        console.log('[Apple Sign In] Creating new player:', { firstName, lastName, isFirstUser });
-
-        const newPlayer: Player = {
-          id: Date.now().toString(),
-          firstName,
-          lastName,
-          email: email || undefined,
-          appleUserId: appleUser,
-          number: String(state.players.length + 1),
-          position: SPORT_POSITIONS[state.teamSettings.sport][0],
-          roles: isFirstUser ? ['admin'] : [], // First user is admin, others are regular players
-          status: 'active',
-        };
-
-        set({
-          players: [...state.players, newPlayer],
-          currentPlayerId: newPlayer.id,
-          isLoggedIn: true,
-        });
-
-        console.log('[Apple Sign In] New player created successfully:', newPlayer.id);
-        return { success: true, playerId: newPlayer.id, isNewUser: true };
       },
 
       canManageTeam: () => {

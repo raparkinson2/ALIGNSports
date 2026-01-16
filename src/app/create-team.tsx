@@ -72,14 +72,8 @@ export default function CreateTeamScreen() {
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const setTeamName = useTeamStore((s) => s.setTeamName);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
-  const isLoggedIn = useTeamStore((s) => s.isLoggedIn);
-  const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
-  const players = useTeamStore((s) => s.players);
 
-  // Check if user came from Apple Sign In (already logged in with a player created)
-  const isAppleUser = isLoggedIn && currentPlayerId && players.length > 0;
-
-  const [step, setStep] = useState(isAppleUser ? 4 : 1);
+  const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -156,17 +150,7 @@ export default function CreateTeamScreen() {
       // First set the sport
       setTeamSettings({ sport });
 
-      // If user came from Apple Sign In, they're already registered
-      // Just set the team name and navigate
-      if (isAppleUser) {
-        setTeamName(teamNameInput.trim());
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace('/(tabs)');
-        setIsLoading(false);
-        return;
-      }
-
-      // Otherwise register the admin with email/password
+      // Register the admin with email/password
       const result = registerAdmin(name.trim(), email.trim(), password, teamNameInput.trim());
 
       if (result.success) {
@@ -211,8 +195,7 @@ export default function CreateTeamScreen() {
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                // Apple users start at step 4 and can't go back to steps 1-3
-                if (step > 1 && !isAppleUser) {
+                if (step > 1) {
                   setStep(step - 1);
                   setError('');
                 } else {
@@ -226,42 +209,40 @@ export default function CreateTeamScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Progress Indicator - hide for Apple users who only see step 4 */}
-          {!isAppleUser && (
-            <Animated.View
-              entering={FadeInDown.delay(100).springify()}
-              className="px-6 mb-6"
-            >
-              <View className="flex-row items-center justify-center">
-                {[1, 2, 3, 4].map((s) => (
-                  <View key={s} className="flex-row items-center">
-                    <View
-                      className={cn(
-                        'w-8 h-8 rounded-full items-center justify-center',
-                        step >= s ? 'bg-cyan-500' : 'bg-slate-700'
-                      )}
-                    >
-                      {step > s ? (
-                        <Check size={16} color="white" />
-                      ) : (
-                        <Text className={cn('font-bold', step >= s ? 'text-white' : 'text-slate-400')}>
-                          {s}
-                        </Text>
-                      )}
-                    </View>
-                    {s < 4 && (
-                      <View
-                        className={cn(
-                          'w-8 h-1 mx-1',
-                          step > s ? 'bg-cyan-500' : 'bg-slate-700'
-                        )}
-                      />
+          {/* Progress Indicator */}
+          <Animated.View
+            entering={FadeInDown.delay(100).springify()}
+            className="px-6 mb-6"
+          >
+            <View className="flex-row items-center justify-center">
+              {[1, 2, 3, 4].map((s) => (
+                <View key={s} className="flex-row items-center">
+                  <View
+                    className={cn(
+                      'w-8 h-8 rounded-full items-center justify-center',
+                      step >= s ? 'bg-cyan-500' : 'bg-slate-700'
+                    )}
+                  >
+                    {step > s ? (
+                      <Check size={16} color="white" />
+                    ) : (
+                      <Text className={cn('font-bold', step >= s ? 'text-white' : 'text-slate-400')}>
+                        {s}
+                      </Text>
                     )}
                   </View>
-                ))}
-              </View>
-            </Animated.View>
-          )}
+                  {s < 4 && (
+                    <View
+                      className={cn(
+                        'w-8 h-1 mx-1',
+                        step > s ? 'bg-cyan-500' : 'bg-slate-700'
+                      )}
+                    />
+                  )}
+                </View>
+              ))}
+            </View>
+          </Animated.View>
 
           <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
             {/* Step 1: Personal Info */}
