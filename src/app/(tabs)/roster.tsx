@@ -632,6 +632,7 @@ export default function RosterScreen() {
                     onChangeText={setFirstName}
                     placeholder="First"
                     placeholderTextColor="#64748b"
+                    autoCapitalize="words"
                     className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                   />
                 </View>
@@ -644,6 +645,7 @@ export default function RosterScreen() {
                     onChangeText={setLastName}
                     placeholder="Last"
                     placeholderTextColor="#64748b"
+                    autoCapitalize="words"
                     className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                   />
                 </View>

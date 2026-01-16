@@ -211,6 +211,7 @@ export default function ReportBugScreen() {
                 onChangeText={setTitle}
                 placeholder="e.g., App crashes when opening photos"
                 placeholderTextColor="#64748b"
+                autoCapitalize="sentences"
                 className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
                 maxLength={100}
               />
@@ -228,6 +229,7 @@ export default function ReportBugScreen() {
                 onChangeText={setDescription}
                 placeholder="Describe what went wrong. What did you expect to happen vs what actually happened?"
                 placeholderTextColor="#64748b"
+                autoCapitalize="sentences"
                 className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
                 multiline
                 numberOfLines={4}
@@ -249,6 +251,7 @@ export default function ReportBugScreen() {
                 onChangeText={setStepsToReproduce}
                 placeholder="1. Go to Photos tab&#10;2. Tap on a photo&#10;3. App crashes"
                 placeholderTextColor="#64748b"
+                autoCapitalize="sentences"
                 className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
                 multiline
                 numberOfLines={4}

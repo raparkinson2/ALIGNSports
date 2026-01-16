@@ -1624,6 +1624,7 @@ export default function GameDetailScreen() {
                   onChangeText={setEditOpponent}
                   placeholder="e.g., Ice Wolves"
                   placeholderTextColor="#64748b"
+                  autoCapitalize="words"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                 />
               </View>
@@ -1734,6 +1735,7 @@ export default function GameDetailScreen() {
                   onChangeText={setEditNotes}
                   placeholder="Any additional info..."
                   placeholderTextColor="#64748b"
+                  autoCapitalize="sentences"
                   multiline
                   numberOfLines={3}
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"

@@ -1182,6 +1182,7 @@ export default function AdminScreen() {
                     onChangeText={setEditPlayerFirstName}
                     placeholder="Enter first name"
                     placeholderTextColor="#64748b"
+                    autoCapitalize="words"
                     className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg mb-3"
                     onBlur={handleSavePlayerName}
                     onSubmitEditing={handleSavePlayerName}
@@ -1193,6 +1194,7 @@ export default function AdminScreen() {
                     onChangeText={setEditPlayerLastName}
                     placeholder="Enter last name"
                     placeholderTextColor="#64748b"
+                    autoCapitalize="words"
                     className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                     onBlur={handleSavePlayerName}
                     onSubmitEditing={handleSavePlayerName}
@@ -1437,6 +1439,7 @@ export default function AdminScreen() {
                   onChangeText={setEditTeamName}
                   placeholder="Enter team name"
                   placeholderTextColor="#64748b"
+                  autoCapitalize="words"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                 />
               </View>
@@ -1478,6 +1481,7 @@ export default function AdminScreen() {
                         onChangeText={setEditColorName}
                         placeholder="Description (e.g. Home)"
                         placeholderTextColor="#64748b"
+                        autoCapitalize="words"
                         className="bg-slate-700 rounded-xl px-4 py-3 text-white mb-3"
                       />
                       <Text className="text-slate-400 text-sm mb-2">Select Color</Text>
@@ -1552,6 +1556,7 @@ export default function AdminScreen() {
                   onChangeText={setNewColorName}
                   placeholder="Description (e.g. Home)"
                   placeholderTextColor="#64748b"
+                  autoCapitalize="words"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white mb-3"
                 />
 
@@ -1626,6 +1631,7 @@ export default function AdminScreen() {
                   onChangeText={setNewPlayerFirstName}
                   placeholder="Enter first name"
                   placeholderTextColor="#64748b"
+                  autoCapitalize="words"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg mb-3"
                 />
                 <Text className="text-slate-400 text-sm mb-2">Last Name<Text className="text-red-400">*</Text></Text>
@@ -1634,6 +1640,7 @@ export default function AdminScreen() {
                   onChangeText={setNewPlayerLastName}
                   placeholder="Enter last name"
                   placeholderTextColor="#64748b"
+                  autoCapitalize="words"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                 />
               </View>

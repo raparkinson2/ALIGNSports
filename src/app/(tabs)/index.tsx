@@ -704,6 +704,7 @@ export default function ScheduleScreen() {
                   onChangeText={setOpponent}
                   placeholder="e.g., Ice Wolves"
                   placeholderTextColor="#64748b"
+                  autoCapitalize="words"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                 />
               </View>
@@ -1023,6 +1024,7 @@ export default function ScheduleScreen() {
                   onChangeText={setNotes}
                   placeholder="Any additional info..."
                   placeholderTextColor="#64748b"
+                  autoCapitalize="sentences"
                   multiline
                   numberOfLines={3}
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"

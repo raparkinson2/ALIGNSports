@@ -207,6 +207,7 @@ export default function FeatureRequestScreen() {
                 onChangeText={setTitle}
                 placeholder="e.g., Add team stats dashboard"
                 placeholderTextColor="#64748b"
+                autoCapitalize="sentences"
                 className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
                 maxLength={100}
               />
@@ -224,6 +225,7 @@ export default function FeatureRequestScreen() {
                 onChangeText={setDescription}
                 placeholder="Describe the feature you'd like to see. Include any specific details that would help us understand your request..."
                 placeholderTextColor="#64748b"
+                autoCapitalize="sentences"
                 className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
                 multiline
                 numberOfLines={6}

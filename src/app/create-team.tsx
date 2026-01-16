@@ -626,6 +626,7 @@ export default function CreateTeamScreen() {
                       onChangeText={setTeamNameInput}
                       placeholder="Enter team name"
                       placeholderTextColor="#64748b"
+                      autoCapitalize="words"
                       className="flex-1 py-4 px-3 text-white text-base"
                     />
                   </View>

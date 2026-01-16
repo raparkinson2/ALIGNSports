@@ -418,6 +418,7 @@ export default function ChatScreen() {
                   onChangeText={setMessageText}
                   placeholder="Type a message..."
                   placeholderTextColor="#64748b"
+                  autoCapitalize="sentences"
                   className="text-white text-base py-2.5"
                   multiline
                   maxLength={500}
