@@ -955,26 +955,20 @@ export const useTeamStore = create<TeamStore>()(
           }
         }
 
-        // No existing account found - create a new admin user for a new team
-        // This handles both first-time users and users who want to create a new team
-        if (state.players.length > 0) {
-          // Team exists but this Apple ID isn't linked - they need an invitation
-          // OR they can create a new team from the Create Team screen
-          return { success: false, error: 'No account found with this Apple ID. Ask your team admin to add you, or create a new team.' };
-        }
-
-        // Create new admin user for new team
+        // No existing account found - create a new user
+        // If team exists, add as a regular player; if no team, create as admin
         const firstName = fullName?.givenName || 'User';
         const lastName = fullName?.familyName || '';
+        const isFirstUser = state.players.length === 0;
 
         const newPlayer: Player = {
           id: Date.now().toString(),
           firstName,
           lastName,
           email: email || undefined,
-          number: '1',
+          number: String(state.players.length + 1),
           position: SPORT_POSITIONS[state.teamSettings.sport][0],
-          roles: ['admin'],
+          roles: isFirstUser ? ['admin'] : [], // First user is admin, others are regular players
           status: 'active',
         };
 
@@ -982,7 +976,7 @@ export const useTeamStore = create<TeamStore>()(
         const playerWithApple = { ...newPlayer, appleUserId: appleUser } as Player;
 
         set({
-          players: [playerWithApple],
+          players: [...state.players, playerWithApple],
           currentPlayerId: newPlayer.id,
           isLoggedIn: true,
         });
