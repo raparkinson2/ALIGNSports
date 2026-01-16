@@ -3,12 +3,28 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { useState } from 'react';
-import { ChevronLeft, User, Mail, Lock, Users, Check, ShieldQuestion, ChevronDown } from 'lucide-react-native';
+import { ChevronLeft, User, Mail, Lock, Users, Check, ShieldQuestion, ChevronDown, Palette, Plus, X } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Sport, SPORT_NAMES, SECURITY_QUESTIONS, SecurityQuestion } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg';
+
+// Preset jersey colors for quick selection
+const PRESET_COLORS = [
+  { name: 'White', color: '#ffffff' },
+  { name: 'Black', color: '#1a1a1a' },
+  { name: 'Red', color: '#dc2626' },
+  { name: 'Blue', color: '#2563eb' },
+  { name: 'Navy', color: '#1e3a5f' },
+  { name: 'Green', color: '#16a34a' },
+  { name: 'Yellow', color: '#eab308' },
+  { name: 'Orange', color: '#ea580c' },
+  { name: 'Purple', color: '#7c3aed' },
+  { name: 'Teal', color: '#0d9488' },
+  { name: 'Maroon', color: '#7f1d1d' },
+  { name: 'Gold', color: '#ca8a04' },
+];
 
 // Sport Icons
 function HockeyIcon({ color, size = 24 }: { color: string; size?: number }) {
@@ -83,6 +99,10 @@ export default function CreateTeamScreen() {
   const [showQuestionPicker, setShowQuestionPicker] = useState(false);
   const [teamNameInput, setTeamNameInput] = useState('');
   const [sport, setSport] = useState<Sport>('hockey');
+  const [jerseyColors, setJerseyColors] = useState<{ name: string; color: string }[]>([
+    { name: 'White', color: '#ffffff' },
+    { name: 'Black', color: '#1a1a1a' },
+  ]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -139,16 +159,40 @@ export default function CreateTeamScreen() {
         setError('Please enter a team name');
         return;
       }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setStep(5);
+    } else if (step === 5) {
+      if (jerseyColors.length < 1) {
+        setError('Please add at least one jersey color');
+        return;
+      }
       handleCreateTeam();
     }
+  };
+
+  const handleAddJerseyColor = (preset: { name: string; color: string }) => {
+    // Check if already added
+    if (jerseyColors.some(c => c.name === preset.name)) {
+      // Remove it
+      setJerseyColors(jerseyColors.filter(c => c.name !== preset.name));
+    } else {
+      // Add it
+      setJerseyColors([...jerseyColors, preset]);
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleRemoveJerseyColor = (name: string) => {
+    setJerseyColors(jerseyColors.filter(c => c.name !== name));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handleCreateTeam = () => {
     setIsLoading(true);
 
     setTimeout(() => {
-      // First set the sport
-      setTeamSettings({ sport });
+      // First set the sport and jersey colors
+      setTeamSettings({ sport, jerseyColors });
 
       // Register the admin with email/password
       const result = registerAdmin(name.trim(), email.trim(), password, teamNameInput.trim());
@@ -215,26 +259,26 @@ export default function CreateTeamScreen() {
             className="px-6 mb-6"
           >
             <View className="flex-row items-center justify-center">
-              {[1, 2, 3, 4].map((s) => (
+              {[1, 2, 3, 4, 5].map((s) => (
                 <View key={s} className="flex-row items-center">
                   <View
                     className={cn(
-                      'w-8 h-8 rounded-full items-center justify-center',
+                      'w-7 h-7 rounded-full items-center justify-center',
                       step >= s ? 'bg-cyan-500' : 'bg-slate-700'
                     )}
                   >
                     {step > s ? (
-                      <Check size={16} color="white" />
+                      <Check size={14} color="white" />
                     ) : (
-                      <Text className={cn('font-bold', step >= s ? 'text-white' : 'text-slate-400')}>
+                      <Text className={cn('font-bold text-sm', step >= s ? 'text-white' : 'text-slate-400')}>
                         {s}
                       </Text>
                     )}
                   </View>
-                  {s < 4 && (
+                  {s < 5 && (
                     <View
                       className={cn(
-                        'w-8 h-1 mx-1',
+                        'w-6 h-1 mx-0.5',
                         step > s ? 'bg-cyan-500' : 'bg-slate-700'
                       )}
                     />
@@ -454,6 +498,96 @@ export default function CreateTeamScreen() {
               </Animated.View>
             )}
 
+            {/* Step 5: Jersey Colors */}
+            {step === 5 && (
+              <Animated.View entering={FadeInDown.delay(150).springify()}>
+                <View className="items-center mb-6">
+                  <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
+                    <Palette size={32} color="#67e8f9" />
+                  </View>
+                  <Text className="text-white text-2xl font-bold">Jersey Colors</Text>
+                  <Text className="text-slate-400 text-center mt-2">
+                    Select your team's jersey colors
+                  </Text>
+                </View>
+
+                {/* Selected Colors */}
+                {jerseyColors.length > 0 && (
+                  <View className="mb-4">
+                    <Text className="text-slate-400 text-sm mb-2">Selected Colors</Text>
+                    <View className="flex-row flex-wrap">
+                      {jerseyColors.map((color) => (
+                        <View
+                          key={color.name}
+                          className="flex-row items-center bg-slate-800/80 rounded-full px-3 py-2 mr-2 mb-2 border border-slate-700/50"
+                        >
+                          <View
+                            className="w-5 h-5 rounded-full mr-2"
+                            style={{
+                              backgroundColor: color.color,
+                              borderWidth: color.color === '#ffffff' ? 1 : 0,
+                              borderColor: '#64748b',
+                            }}
+                          />
+                          <Text className="text-white text-sm">{color.name}</Text>
+                          <Pressable
+                            onPress={() => handleRemoveJerseyColor(color.name)}
+                            className="ml-2 p-1"
+                          >
+                            <X size={14} color="#ef4444" />
+                          </Pressable>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Available Colors */}
+                <View className="mb-4">
+                  <Text className="text-slate-400 text-sm mb-3">Tap to add colors</Text>
+                  <View className="flex-row flex-wrap justify-between">
+                    {PRESET_COLORS.map((preset) => {
+                      const isSelected = jerseyColors.some(c => c.name === preset.name);
+                      return (
+                        <Pressable
+                          key={preset.name}
+                          onPress={() => handleAddJerseyColor(preset)}
+                          className={cn(
+                            'w-[31%] items-center py-3 rounded-xl mb-3 border',
+                            isSelected
+                              ? 'bg-cyan-500/20 border-cyan-500/50'
+                              : 'bg-slate-800/80 border-slate-700/50'
+                          )}
+                        >
+                          <View
+                            className="w-10 h-10 rounded-full mb-2"
+                            style={{
+                              backgroundColor: preset.color,
+                              borderWidth: preset.color === '#ffffff' ? 2 : 0,
+                              borderColor: '#64748b',
+                            }}
+                          />
+                          <Text
+                            className={cn(
+                              'text-xs font-medium',
+                              isSelected ? 'text-cyan-400' : 'text-slate-400'
+                            )}
+                          >
+                            {preset.name}
+                          </Text>
+                          {isSelected && (
+                            <View className="absolute top-1 right-1">
+                              <Check size={14} color="#67e8f9" />
+                            </View>
+                          )}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              </Animated.View>
+            )}
+
             {/* Error Message */}
             {error ? (
               <Animated.View entering={FadeInDown.springify()}>
@@ -468,7 +602,7 @@ export default function CreateTeamScreen() {
               className="bg-cyan-500 rounded-xl py-4 flex-row items-center justify-center active:bg-cyan-600 disabled:opacity-50 mb-8"
             >
               <Text className="text-white font-semibold text-lg">
-                {isLoading ? 'Creating Team...' : step === 4 ? 'Create Team' : 'Continue'}
+                {isLoading ? 'Creating Team...' : step === 5 ? 'Create Team' : 'Continue'}
               </Text>
             </Pressable>
           </ScrollView>

@@ -20,9 +20,18 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Sign In with Apple**: iOS users can sign in with their Apple ID for quick, secure authentication
 - **Email/Password**: Create an account with email and password
 - **Security Questions**: Set up a security question during registration to help recover your account if you forget your password
+- **Profile Photo Setup**: New players can optionally add a profile photo during account setup (can skip)
 - **Password Reset**: Forgot your password? Enter your email, answer your security question, and set a new password
 - Personalized experience based on your role
 - Admin users see additional Admin tab
+
+### Team Creation
+- **5-Step Setup Flow**:
+  1. Your Info: Name and email
+  2. Password: Create secure password
+  3. Security Question: For account recovery
+  4. Team Details: Team name and sport selection
+  5. Jersey Colors: Select your team's jersey colors from presets
 
 ### Schedule Tab
 - View upcoming games with opponent, date, time, and location

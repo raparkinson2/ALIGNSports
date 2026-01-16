@@ -3,9 +3,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { useState } from 'react';
-import { ChevronLeft, Mail, Lock, UserPlus, Check, AlertCircle, ShieldQuestion, ChevronDown } from 'lucide-react-native';
+import { ChevronLeft, Mail, Lock, UserPlus, Check, AlertCircle, ShieldQuestion, ChevronDown, Camera, ImageIcon, SkipForward } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 import { useTeamStore, SECURITY_QUESTIONS, SecurityQuestion } from '@/lib/store';
 
 export default function RegisterScreen() {
@@ -23,6 +25,7 @@ export default function RegisterScreen() {
   const [securityQuestion, setSecurityQuestion] = useState<SecurityQuestion | ''>('');
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [showQuestionPicker, setShowQuestionPicker] = useState(false);
+  const [avatar, setAvatar] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [foundPlayer, setFoundPlayer] = useState<{ id: string; firstName: string; lastName: string; number: string } | null>(null);
@@ -97,16 +100,62 @@ export default function RegisterScreen() {
       return;
     }
 
+    // Move to photo step
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setStep(4);
+  };
+
+  const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      setError('Please allow access to your photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setAvatar(result.assets[0].uri);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      setError('Please allow access to your camera');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setAvatar(result.assets[0].uri);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const handleCompleteRegistration = () => {
     setIsLoading(true);
 
     setTimeout(() => {
       const result = registerInvitedPlayer(email.trim(), password);
 
       if (result.success && result.playerId) {
-        // Save security question and answer
+        // Save security question, answer, and optional avatar
         updatePlayer(result.playerId, {
           securityQuestion: securityQuestion as SecurityQuestion,
           securityAnswer: securityAnswer.trim().toLowerCase(),
+          ...(avatar && { avatar }),
         });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.replace('/(tabs)');
@@ -140,7 +189,10 @@ export default function RegisterScreen() {
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                if (step === 3) {
+                if (step === 4) {
+                  setStep(3);
+                  setError('');
+                } else if (step === 3) {
                   setStep(2);
                   setError('');
                 } else if (step === 2) {
@@ -361,16 +413,100 @@ export default function RegisterScreen() {
                   </Animated.View>
                 ) : null}
 
-                {/* Finish Registration Button */}
+                {/* Continue Button */}
                 <Pressable
                   onPress={handleFinishRegistration}
+                  className="bg-cyan-500 rounded-xl py-4 flex-row items-center justify-center active:bg-cyan-600 mb-8"
+                >
+                  <Text className="text-white font-semibold text-lg">Continue</Text>
+                </Pressable>
+              </Animated.View>
+            )}
+
+            {/* Step 4: Profile Photo (Optional) */}
+            {step === 4 && foundPlayer && (
+              <Animated.View entering={FadeInDown.delay(150).springify()}>
+                <View className="items-center mb-8 mt-4">
+                  <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
+                    <Camera size={32} color="#67e8f9" />
+                  </View>
+                  <Text className="text-white text-2xl font-bold">Profile Photo</Text>
+                  <Text className="text-slate-400 text-center mt-2">
+                    Add a photo so your teammates can recognize you
+                  </Text>
+                </View>
+
+                {/* Photo Preview */}
+                <View className="items-center mb-6">
+                  {avatar ? (
+                    <View className="relative">
+                      <Image
+                        source={{ uri: avatar }}
+                        style={{ width: 120, height: 120, borderRadius: 60 }}
+                        contentFit="cover"
+                      />
+                      <Pressable
+                        onPress={() => setAvatar(null)}
+                        className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-red-500 items-center justify-center"
+                      >
+                        <Text className="text-white font-bold">X</Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <View className="w-32 h-32 rounded-full bg-slate-800 items-center justify-center border-2 border-dashed border-slate-600">
+                      <ImageIcon size={40} color="#64748b" />
+                    </View>
+                  )}
+                </View>
+
+                {/* Photo Buttons */}
+                <View className="flex-row justify-center mb-6">
+                  <Pressable
+                    onPress={handleTakePhoto}
+                    className="flex-row items-center bg-slate-800/80 rounded-xl px-5 py-3 mr-3 border border-slate-700/50 active:bg-slate-700"
+                  >
+                    <Camera size={20} color="#67e8f9" />
+                    <Text className="text-cyan-400 font-medium ml-2">Camera</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={handlePickImage}
+                    className="flex-row items-center bg-slate-800/80 rounded-xl px-5 py-3 border border-slate-700/50 active:bg-slate-700"
+                  >
+                    <ImageIcon size={20} color="#67e8f9" />
+                    <Text className="text-cyan-400 font-medium ml-2">Gallery</Text>
+                  </Pressable>
+                </View>
+
+                {/* Error Message */}
+                {error ? (
+                  <Animated.View entering={FadeInDown.springify()}>
+                    <Text className="text-red-400 text-center mb-4">{error}</Text>
+                  </Animated.View>
+                ) : null}
+
+                {/* Complete Registration Button */}
+                <Pressable
+                  onPress={handleCompleteRegistration}
                   disabled={isLoading}
-                  className="bg-cyan-500 rounded-xl py-4 flex-row items-center justify-center active:bg-cyan-600 disabled:opacity-50 mb-8"
+                  className="bg-cyan-500 rounded-xl py-4 flex-row items-center justify-center active:bg-cyan-600 disabled:opacity-50 mb-3"
                 >
                   <Text className="text-white font-semibold text-lg">
-                    {isLoading ? 'Creating Account...' : 'Create Account'}
+                    {isLoading ? 'Creating Account...' : 'Complete Setup'}
                   </Text>
                 </Pressable>
+
+                {/* Skip Button */}
+                {!avatar && (
+                  <Pressable
+                    onPress={handleCompleteRegistration}
+                    disabled={isLoading}
+                    className="flex-row items-center justify-center py-3 mb-8"
+                  >
+                    <SkipForward size={18} color="#64748b" />
+                    <Text className="text-slate-400 font-medium ml-2">Skip for now</Text>
+                  </Pressable>
+                )}
               </Animated.View>
             )}
           </ScrollView>
