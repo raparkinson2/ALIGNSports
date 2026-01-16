@@ -30,6 +30,7 @@ import { cn } from '@/lib/cn';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { AddressSearch } from '@/components/AddressSearch';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { LineupViewer, hasAssignedPlayers } from '@/components/LineupViewer';
 import { BasketballLineupViewer } from '@/components/BasketballLineupViewer';
 import { hasAssignedBasketballPlayers } from '@/components/BasketballLineupEditor';
@@ -894,11 +895,7 @@ export default function ScheduleScreen() {
                                 : 'bg-slate-700/50 border-slate-600'
                             )}
                           >
-                            <Image
-                              source={{ uri: player.avatar }}
-                              style={{ width: 24, height: 24, borderRadius: 12 }}
-                              contentFit="cover"
-                            />
+                            <PlayerAvatar player={player} size={24} />
                             <Text className={cn(
                               'font-medium ml-2 text-sm',
                               isSelected ? 'text-green-400' : 'text-slate-400'
@@ -931,11 +928,7 @@ export default function ScheduleScreen() {
                                     : 'bg-slate-700/50 border-slate-600'
                                 )}
                               >
-                                <Image
-                                  source={{ uri: player.avatar }}
-                                  style={{ width: 24, height: 24, borderRadius: 12 }}
-                                  contentFit="cover"
-                                />
+                                <PlayerAvatar player={player} size={24} />
                                 <Text className={cn(
                                   'font-medium ml-2 text-sm',
                                   isSelected ? 'text-amber-400' : 'text-slate-400'
@@ -1002,11 +995,7 @@ export default function ScheduleScreen() {
                               : 'bg-slate-800 border-slate-700'
                           )}
                         >
-                          <Image
-                            source={{ uri: player.avatar }}
-                            style={{ width: 24, height: 24, borderRadius: 12 }}
-                            contentFit="cover"
-                          />
+                          <PlayerAvatar player={player} size={24} />
                           <Text className={cn(
                             'font-medium ml-2',
                             selectedBeerDutyPlayer === player.id ? 'text-amber-400' : 'text-slate-400'
