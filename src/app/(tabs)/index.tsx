@@ -692,7 +692,7 @@ export default function ScheduleScreen() {
             <ScrollView className="flex-1 px-5 pt-6">
               {/* Opponent */}
               <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Opponent</Text>
+                <Text className="text-slate-400 text-sm mb-2">Opponent <Text className="text-red-400">*</Text></Text>
                 <TextInput
                   value={opponent}
                   onChangeText={setOpponent}
@@ -704,7 +704,7 @@ export default function ScheduleScreen() {
 
               {/* Date */}
               <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Date</Text>
+                <Text className="text-slate-400 text-sm mb-2">Date <Text className="text-red-400">*</Text></Text>
                 <Pressable
                   onPress={() => setShowDatePicker(!showDatePicker)}
                   className="bg-slate-800 rounded-xl px-4 py-3"
@@ -733,7 +733,7 @@ export default function ScheduleScreen() {
 
               {/* Time */}
               <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Time (e.g., 7:30 PM)</Text>
+                <Text className="text-slate-400 text-sm mb-2">Time <Text className="text-red-400">*</Text></Text>
                 <TextInput
                   value={gameTime}
                   onChangeText={setGameTime}
@@ -746,7 +746,7 @@ export default function ScheduleScreen() {
 
               {/* Location */}
               <View className="mb-5" style={{ zIndex: 50 }}>
-                <Text className="text-slate-400 text-sm mb-2">Location</Text>
+                <Text className="text-slate-400 text-sm mb-2">Location <Text className="text-red-400">*</Text></Text>
                 <AddressSearch
                   value={location}
                   onChangeText={setLocation}
