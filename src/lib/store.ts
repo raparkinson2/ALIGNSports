@@ -955,10 +955,12 @@ export const useTeamStore = create<TeamStore>()(
           }
         }
 
-        // No existing account found - create a new admin user (first user scenario)
-        // or return error if team exists (user needs to be invited first)
+        // No existing account found - create a new admin user for a new team
+        // This handles both first-time users and users who want to create a new team
         if (state.players.length > 0) {
-          return { success: false, error: 'No account found. Ask your team admin to add you first.' };
+          // Team exists but this Apple ID isn't linked - they need an invitation
+          // OR they can create a new team from the Create Team screen
+          return { success: false, error: 'No account found with this Apple ID. Ask your team admin to add you, or create a new team.' };
         }
 
         // Create new admin user for new team
@@ -1080,8 +1082,17 @@ export const useTeamStore = create<TeamStore>()(
     {
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 6, // Reset to fresh state - no mock data
+      version: 7, // Force logout for fresh testing
       migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as Partial<TeamStore> | null;
+        // Version 7: Force logout for fresh testing but preserve team data
+        if (version < 7) {
+          return {
+            ...(state || {}),
+            isLoggedIn: false,
+            currentPlayerId: null,
+          };
+        }
         // Version 6: Complete reset to fresh state
         if (version < 6) {
           return {
