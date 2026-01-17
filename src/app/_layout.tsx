@@ -49,10 +49,19 @@ function AuthNavigator() {
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
-    if (navigationRef?.isReady()) {
-      setIsReady(true);
-    }
-  }, [navigationRef]);
+    // Check immediately and on interval until ready
+    const checkReady = () => {
+      if (navigationRef?.isReady() && !isReady) {
+        console.log('Navigation is ready');
+        setIsReady(true);
+      }
+    };
+
+    checkReady();
+    const interval = setInterval(checkReady, 100);
+
+    return () => clearInterval(interval);
+  }, [navigationRef, isReady]);
 
   // Validate login state on hydration - ensure logged in user actually exists
   // This prevents stale login state from persisting across builds
@@ -143,14 +152,16 @@ function AuthNavigator() {
     // Wait for navigation and hydration before making auth decisions
     if (!isReady || !isHydrated) return;
 
-    console.log('AUTH CHECK - isLoggedIn:', isLoggedIn, 'segments:', segments);
-
     const inAuthGroup = segments[0] === 'login';
+    console.log('AUTH CHECK - isLoggedIn:', isLoggedIn, 'inAuthGroup:', inAuthGroup, 'segments:', segments);
 
-    if (!isLoggedIn && !inAuthGroup) {
-      console.log('NOT LOGGED IN - redirecting to login');
-      router.replace('/login');
-    } else if (isLoggedIn && inAuthGroup) {
+    // Always redirect to login if not logged in
+    if (!isLoggedIn) {
+      if (!inAuthGroup) {
+        console.log('NOT LOGGED IN - redirecting to login');
+        router.replace('/login');
+      }
+    } else if (inAuthGroup) {
       console.log('LOGGED IN - redirecting to tabs');
       router.replace('/(tabs)');
     }
