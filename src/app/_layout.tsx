@@ -58,6 +58,13 @@ function AuthNavigator() {
   useEffect(() => {
     if (!isHydrated) return;
 
+    // Additional safety: if somehow isLoggedIn is true but no players exist, force logout
+    if (isLoggedIn && players.length === 0) {
+      console.log('No players exist but isLoggedIn is true, forcing logout');
+      logout();
+      return;
+    }
+
     if (isLoggedIn && currentPlayerId) {
       // Check if the player still exists in the store
       const playerExists = players.some((p) => p.id === currentPlayerId);

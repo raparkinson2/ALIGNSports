@@ -1031,7 +1031,7 @@ export const useTeamStore = create<TeamStore>()(
     {
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 8,
+      version: 9,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Partial<TeamStore> | null;
 
@@ -1103,9 +1103,9 @@ export const useTeamStore = create<TeamStore>()(
           };
         }
 
-        if (version < 8) {
-          // Version 8: Force logout but preserve ALL team data including player roles
-          // This ensures fresh TestFlight installs start at login screen
+        // Version 9: Force logout on ALL existing installs
+        // This ensures TestFlight users start at login screen after update
+        if (version < 9) {
           return {
             ...(state || {}),
             isLoggedIn: false,
