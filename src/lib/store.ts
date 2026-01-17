@@ -1054,14 +1054,19 @@ export const useStoreHydrated = () => {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    // Check if already hydrated
-    const unsubFinishHydration = useTeamStore.persist.onFinishHydration(() => {
+    const handleHydration = () => {
+      // Force logout on hydration - app always starts logged out
+      console.log('HYDRATION COMPLETE - forcing logout');
+      useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null });
       setHydrated(true);
-    });
+    };
+
+    // Check if already hydrated
+    const unsubFinishHydration = useTeamStore.persist.onFinishHydration(handleHydration);
 
     // Also check if hydration already completed before subscription
     if (useTeamStore.persist.hasHydrated()) {
-      setHydrated(true);
+      handleHydration();
     }
 
     return () => {
