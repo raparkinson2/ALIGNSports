@@ -1121,10 +1121,7 @@ export const useStoreHydrated = () => {
     const handleHydration = () => {
       // FORCE logout after hydration - no matter what state was restored
       // This guarantees app ALWAYS starts at login screen
-      const state = useTeamStore.getState();
-      if (state.isLoggedIn || state.currentPlayerId) {
-        useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null });
-      }
+      useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null });
       setHydrated(true);
     };
 
@@ -1143,3 +1140,11 @@ export const useStoreHydrated = () => {
 
   return hydrated;
 };
+
+// Force logout on module load - runs before any component mounts
+// This is the nuclear option to ensure we NEVER start logged in
+if (typeof window !== 'undefined') {
+  useTeamStore.persist.onFinishHydration(() => {
+    useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null });
+  });
+}
