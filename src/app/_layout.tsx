@@ -18,23 +18,6 @@ export const unstable_settings = {
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-// FORCE clear login state from AsyncStorage before anything else runs
-AsyncStorage.getItem('team-storage').then((data) => {
-  if (data) {
-    try {
-      const parsed = JSON.parse(data);
-      if (parsed.state) {
-        // Remove login state from persisted data
-        delete parsed.state.isLoggedIn;
-        delete parsed.state.currentPlayerId;
-        AsyncStorage.setItem('team-storage', JSON.stringify(parsed));
-      }
-    } catch (e) {
-      // Ignore parse errors
-    }
-  }
-});
-
 const queryClient = new QueryClient();
 
 // Custom dark theme for hockey app
@@ -62,16 +45,8 @@ function AuthNavigator() {
   const navigationRef = useNavigationContainerRef();
   const [isReady, setIsReady] = useState(false);
   const isHydrated = useStoreHydrated();
-  const [forcedLogout, setForcedLogout] = useState(false);
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
-
-  // FORCE LOGOUT ON EVERY APP START - runs once on mount
-  useEffect(() => {
-    console.log('FORCING LOGOUT ON APP START');
-    useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null });
-    setForcedLogout(true);
-  }, []);
 
   useEffect(() => {
     if (navigationRef?.isReady()) {
@@ -165,8 +140,8 @@ function AuthNavigator() {
   }, [isLoggedIn, currentPlayerId, isReady]);
 
   useEffect(() => {
-    // Wait for navigation, hydration, AND forced logout before making auth decisions
-    if (!isReady || !isHydrated || !forcedLogout) return;
+    // Wait for navigation and hydration before making auth decisions
+    if (!isReady || !isHydrated) return;
 
     const inAuthGroup = segments[0] === 'login';
 
@@ -175,7 +150,7 @@ function AuthNavigator() {
     } else if (isLoggedIn && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [isLoggedIn, segments, isReady, isHydrated, forcedLogout, router]);
+  }, [isLoggedIn, segments, isReady, isHydrated, router]);
 
   return (
     <Stack>
