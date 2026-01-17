@@ -62,8 +62,16 @@ function AuthNavigator() {
   const navigationRef = useNavigationContainerRef();
   const [isReady, setIsReady] = useState(false);
   const isHydrated = useStoreHydrated();
+  const [forcedLogout, setForcedLogout] = useState(false);
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
+
+  // FORCE LOGOUT ON EVERY APP START - runs once on mount
+  useEffect(() => {
+    console.log('FORCING LOGOUT ON APP START');
+    useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null });
+    setForcedLogout(true);
+  }, []);
 
   useEffect(() => {
     if (navigationRef?.isReady()) {
@@ -157,8 +165,8 @@ function AuthNavigator() {
   }, [isLoggedIn, currentPlayerId, isReady]);
 
   useEffect(() => {
-    // Wait for both navigation and store hydration before making auth decisions
-    if (!isReady || !isHydrated) return;
+    // Wait for navigation, hydration, AND forced logout before making auth decisions
+    if (!isReady || !isHydrated || !forcedLogout) return;
 
     const inAuthGroup = segments[0] === 'login';
 
@@ -167,7 +175,7 @@ function AuthNavigator() {
     } else if (isLoggedIn && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [isLoggedIn, segments, isReady, isHydrated, router]);
+  }, [isLoggedIn, segments, isReady, isHydrated, forcedLogout, router]);
 
   return (
     <Stack>
