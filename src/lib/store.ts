@@ -1032,7 +1032,7 @@ export const useTeamStore = create<TeamStore>()(
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
       version: 10,
-      // Restore all state including login state
+      // Don't save login state - always start logged out
       partialize: (state) => ({
         teamName: state.teamName,
         teamSettings: state.teamSettings,
@@ -1044,8 +1044,6 @@ export const useTeamStore = create<TeamStore>()(
         chatMessages: state.chatMessages,
         chatLastReadAt: state.chatLastReadAt,
         paymentPeriods: state.paymentPeriods,
-        isLoggedIn: state.isLoggedIn,
-        currentPlayerId: state.currentPlayerId,
       }),
     }
   )
