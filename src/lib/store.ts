@@ -1032,28 +1032,7 @@ export const useTeamStore = create<TeamStore>()(
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
       version: 10,
-      // CRITICAL: Custom merge that NEVER restores login state
-      merge: (persistedState, currentState) => {
-        const persisted = persistedState as Partial<TeamStore> | null;
-        return {
-          ...currentState,
-          // Only merge data fields from persisted state
-          teamName: persisted?.teamName ?? currentState.teamName,
-          teamSettings: persisted?.teamSettings ?? currentState.teamSettings,
-          players: persisted?.players ?? currentState.players,
-          games: persisted?.games ?? currentState.games,
-          events: persisted?.events ?? currentState.events,
-          photos: persisted?.photos ?? currentState.photos,
-          notifications: persisted?.notifications ?? currentState.notifications,
-          chatMessages: persisted?.chatMessages ?? currentState.chatMessages,
-          chatLastReadAt: persisted?.chatLastReadAt ?? currentState.chatLastReadAt,
-          paymentPeriods: persisted?.paymentPeriods ?? currentState.paymentPeriods,
-          // ALWAYS force logged out state - NEVER restore from storage
-          isLoggedIn: false,
-          currentPlayerId: null,
-        };
-      },
-      // Don't save login state
+      // Restore all state including login state
       partialize: (state) => ({
         teamName: state.teamName,
         teamSettings: state.teamSettings,
@@ -1065,30 +1044,26 @@ export const useTeamStore = create<TeamStore>()(
         chatMessages: state.chatMessages,
         chatLastReadAt: state.chatLastReadAt,
         paymentPeriods: state.paymentPeriods,
+        isLoggedIn: state.isLoggedIn,
+        currentPlayerId: state.currentPlayerId,
       }),
     }
   )
 );
 
 // Export a hook to check if the store has been hydrated from AsyncStorage
-// ALSO forces logout after hydration to ensure app always starts at login
 export const useStoreHydrated = () => {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const handleHydration = () => {
-      // FORCE logout after hydration - no matter what state was restored
-      // This guarantees app ALWAYS starts at login screen
-      useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null });
-      setHydrated(true);
-    };
-
     // Check if already hydrated
-    const unsubFinishHydration = useTeamStore.persist.onFinishHydration(handleHydration);
+    const unsubFinishHydration = useTeamStore.persist.onFinishHydration(() => {
+      setHydrated(true);
+    });
 
     // Also check if hydration already completed before subscription
     if (useTeamStore.persist.hasHydrated()) {
-      handleHydration();
+      setHydrated(true);
     }
 
     return () => {
@@ -1098,11 +1073,3 @@ export const useStoreHydrated = () => {
 
   return hydrated;
 };
-
-// Force logout on module load - runs before any component mounts
-// This is the nuclear option to ensure we NEVER start logged in
-if (typeof window !== 'undefined') {
-  useTeamStore.persist.onFinishHydration(() => {
-    useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null });
-  });
-}
