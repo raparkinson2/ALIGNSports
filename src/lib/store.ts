@@ -1032,7 +1032,28 @@ export const useTeamStore = create<TeamStore>()(
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
       version: 10,
-      // CRITICAL: Never persist login state - users must log in every time the app launches
+      // CRITICAL: Custom merge that NEVER restores login state
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<TeamStore> | null;
+        return {
+          ...currentState,
+          // Only merge data fields from persisted state
+          teamName: persisted?.teamName ?? currentState.teamName,
+          teamSettings: persisted?.teamSettings ?? currentState.teamSettings,
+          players: persisted?.players ?? currentState.players,
+          games: persisted?.games ?? currentState.games,
+          events: persisted?.events ?? currentState.events,
+          photos: persisted?.photos ?? currentState.photos,
+          notifications: persisted?.notifications ?? currentState.notifications,
+          chatMessages: persisted?.chatMessages ?? currentState.chatMessages,
+          chatLastReadAt: persisted?.chatLastReadAt ?? currentState.chatLastReadAt,
+          paymentPeriods: persisted?.paymentPeriods ?? currentState.paymentPeriods,
+          // ALWAYS force logged out state - NEVER restore from storage
+          isLoggedIn: false,
+          currentPlayerId: null,
+        };
+      },
+      // Don't save login state
       partialize: (state) => ({
         teamName: state.teamName,
         teamSettings: state.teamSettings,
@@ -1044,70 +1065,7 @@ export const useTeamStore = create<TeamStore>()(
         chatMessages: state.chatMessages,
         chatLastReadAt: state.chatLastReadAt,
         paymentPeriods: state.paymentPeriods,
-        // isLoggedIn and currentPlayerId are intentionally NOT persisted
-        // This ensures app ALWAYS starts at login screen
       }),
-      migrate: (persistedState: unknown) => {
-        const state = persistedState as Partial<TeamStore> | null;
-
-        // No matter what version, ALWAYS strip out login state
-        // Only keep the data fields, never auth state
-        if (!state) {
-          return {
-            teamName: 'My Team',
-            teamSettings: {
-              sport: 'hockey' as Sport,
-              jerseyColors: [
-                { name: 'White', color: '#ffffff' },
-                { name: 'Black', color: '#1a1a1a' },
-              ],
-              paymentMethods: [],
-              showTeamStats: true,
-              showPayments: true,
-              showTeamChat: true,
-              showPhotos: true,
-              showRefreshmentDuty: true,
-              refreshmentDutyIs21Plus: true,
-            },
-            players: [],
-            games: [],
-            events: [],
-            photos: [],
-            notifications: [],
-            chatMessages: [],
-            chatLastReadAt: {},
-            paymentPeriods: [],
-          };
-        }
-
-        // Return ONLY data fields, explicitly excluding isLoggedIn and currentPlayerId
-        return {
-          teamName: state.teamName ?? 'My Team',
-          teamSettings: state.teamSettings ?? {
-            sport: 'hockey' as Sport,
-            jerseyColors: [
-              { name: 'White', color: '#ffffff' },
-              { name: 'Black', color: '#1a1a1a' },
-            ],
-            paymentMethods: [],
-            showTeamStats: true,
-            showPayments: true,
-            showTeamChat: true,
-            showPhotos: true,
-            showRefreshmentDuty: true,
-            refreshmentDutyIs21Plus: true,
-          },
-          players: state.players ?? [],
-          games: state.games ?? [],
-          events: state.events ?? [],
-          photos: state.photos ?? [],
-          notifications: state.notifications ?? [],
-          chatMessages: state.chatMessages ?? [],
-          chatLastReadAt: state.chatLastReadAt ?? {},
-          paymentPeriods: state.paymentPeriods ?? [],
-          // NEVER include isLoggedIn or currentPlayerId from old state
-        };
-      },
     }
   )
 );
