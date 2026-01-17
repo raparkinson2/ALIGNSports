@@ -279,7 +279,18 @@ export default function GameDetailScreen() {
       ? `You're invited to play vs ${game.opponent} on ${dateStr} at ${game.time}. Wear your ${jerseyColorName} jersey!`
       : `Reminder: Game vs ${game.opponent} is coming up on ${dateStr} at ${game.time}. Don't forget your ${jerseyColorName} jersey!`;
 
-    // Send push notification (local)
+    // For reminders, only send to players who haven't checked out
+    // For invites (mass), send to all invited players
+    const targetPlayers = type === 'reminder'
+      ? invitedPlayers.filter((p) => !game.checkedOutPlayers?.includes(p.id))
+      : invitedPlayers;
+
+    if (targetPlayers.length === 0) {
+      Alert.alert('No Players', 'No players to send reminders to.');
+      return;
+    }
+
+    // Send push notification (local - only displays on this device)
     try {
       await Notifications.scheduleNotificationAsync({
         content: {
@@ -294,8 +305,8 @@ export default function GameDetailScreen() {
       console.log('Could not send push notification:', error);
     }
 
-    // Also add to in-app notifications
-    invitedPlayers.forEach((player) => {
+    // Add to in-app notifications for target players only
+    targetPlayers.forEach((player) => {
       const notification: AppNotification = {
         id: `${Date.now()}-${player.id}`,
         type: type === 'invite' ? 'game_invite' : 'game_reminder',
@@ -313,7 +324,7 @@ export default function GameDetailScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert(
       'Notifications Sent',
-      `${type === 'invite' ? 'Game invites' : 'Reminders'} sent to ${invitedPlayers.length} players!`
+      `${type === 'invite' ? 'Game invites' : 'Reminders'} sent to ${targetPlayers.length} player${targetPlayers.length !== 1 ? 's' : ''}!`
     );
   };
 
