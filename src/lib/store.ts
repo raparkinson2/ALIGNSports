@@ -1113,18 +1113,27 @@ export const useTeamStore = create<TeamStore>()(
 );
 
 // Export a hook to check if the store has been hydrated from AsyncStorage
+// ALSO forces logout after hydration to ensure app always starts at login
 export const useStoreHydrated = () => {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    // Check if already hydrated
-    const unsubFinishHydration = useTeamStore.persist.onFinishHydration(() => {
+    const handleHydration = () => {
+      // FORCE logout after hydration - no matter what state was restored
+      // This guarantees app ALWAYS starts at login screen
+      const state = useTeamStore.getState();
+      if (state.isLoggedIn || state.currentPlayerId) {
+        useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null });
+      }
       setHydrated(true);
-    });
+    };
+
+    // Check if already hydrated
+    const unsubFinishHydration = useTeamStore.persist.onFinishHydration(handleHydration);
 
     // Also check if hydration already completed before subscription
     if (useTeamStore.persist.hasHydrated()) {
-      setHydrated(true);
+      handleHydration();
     }
 
     return () => {
