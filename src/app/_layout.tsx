@@ -143,11 +143,15 @@ function AuthNavigator() {
     // Wait for navigation and hydration before making auth decisions
     if (!isReady || !isHydrated) return;
 
+    console.log('AUTH CHECK - isLoggedIn:', isLoggedIn, 'segments:', segments);
+
     const inAuthGroup = segments[0] === 'login';
 
     if (!isLoggedIn && !inAuthGroup) {
+      console.log('NOT LOGGED IN - redirecting to login');
       router.replace('/login');
     } else if (isLoggedIn && inAuthGroup) {
+      console.log('LOGGED IN - redirecting to tabs');
       router.replace('/(tabs)');
     }
   }, [isLoggedIn, segments, isReady, isHydrated, router]);
