@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useEffect, useState, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTeamStore, useStoreHydrated } from '@/lib/store';
 import { registerForPushNotificationsAsync } from '@/lib/notifications';
 
@@ -16,6 +17,23 @@ export const unstable_settings = {
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+// FORCE clear login state from AsyncStorage before anything else runs
+AsyncStorage.getItem('team-storage').then((data) => {
+  if (data) {
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed.state) {
+        // Remove login state from persisted data
+        delete parsed.state.isLoggedIn;
+        delete parsed.state.currentPlayerId;
+        AsyncStorage.setItem('team-storage', JSON.stringify(parsed));
+      }
+    } catch (e) {
+      // Ignore parse errors
+    }
+  }
+});
 
 const queryClient = new QueryClient();
 
