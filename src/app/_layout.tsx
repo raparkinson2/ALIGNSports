@@ -152,10 +152,10 @@ function AuthNavigator() {
     // Wait for navigation and hydration before making auth decisions
     if (!isReady || !isHydrated) return;
 
-    const inAuthGroup = segments[0] === 'login';
+    const inAuthGroup = segments[0] === 'login' || segments[0] === 'create-team' || segments[0] === 'register';
     console.log('AUTH CHECK - isLoggedIn:', isLoggedIn, 'inAuthGroup:', inAuthGroup, 'segments:', segments);
 
-    // Always redirect to login if not logged in
+    // Always redirect to login if not logged in and not in auth flow
     if (!isLoggedIn) {
       if (!inAuthGroup) {
         console.log('NOT LOGGED IN - redirecting to login');
