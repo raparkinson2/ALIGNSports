@@ -1032,6 +1032,21 @@ export const useTeamStore = create<TeamStore>()(
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
       version: 9,
+      // CRITICAL: Never persist login state - users must log in every time the app launches
+      partialize: (state) => ({
+        teamName: state.teamName,
+        teamSettings: state.teamSettings,
+        players: state.players,
+        games: state.games,
+        events: state.events,
+        photos: state.photos,
+        notifications: state.notifications,
+        chatMessages: state.chatMessages,
+        chatLastReadAt: state.chatLastReadAt,
+        paymentPeriods: state.paymentPeriods,
+        // isLoggedIn and currentPlayerId are intentionally NOT persisted
+        // This ensures app ALWAYS starts at login screen
+      }),
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Partial<TeamStore> | null;
 
