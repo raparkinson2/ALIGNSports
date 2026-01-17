@@ -1058,7 +1058,11 @@ export const useStoreHydrated = () => {
       // Force logout on hydration - app always starts logged out
       console.log('HYDRATION COMPLETE - forcing logout');
       useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null });
-      setHydrated(true);
+      // Delay setting hydrated to ensure state update propagates
+      setTimeout(() => {
+        console.log('Setting hydrated true, isLoggedIn:', useTeamStore.getState().isLoggedIn);
+        setHydrated(true);
+      }, 50);
     };
 
     // Check if already hydrated
