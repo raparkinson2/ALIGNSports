@@ -1031,7 +1031,7 @@ export const useTeamStore = create<TeamStore>()(
     {
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 9,
+      version: 10,
       // CRITICAL: Never persist login state - users must log in every time the app launches
       partialize: (state) => ({
         teamName: state.teamName,
@@ -1047,11 +1047,12 @@ export const useTeamStore = create<TeamStore>()(
         // isLoggedIn and currentPlayerId are intentionally NOT persisted
         // This ensures app ALWAYS starts at login screen
       }),
-      migrate: (persistedState: unknown, version: number) => {
+      migrate: (persistedState: unknown) => {
         const state = persistedState as Partial<TeamStore> | null;
 
-        // Fresh install or no persisted state - return defaults with logged out state
-        if (!state || version === 0) {
+        // No matter what version, ALWAYS strip out login state
+        // Only keep the data fields, never auth state
+        if (!state) {
           return {
             teamName: 'My Team',
             teamSettings: {
@@ -1061,8 +1062,6 @@ export const useTeamStore = create<TeamStore>()(
                 { name: 'Black', color: '#1a1a1a' },
               ],
               paymentMethods: [],
-              teamLogo: undefined,
-              record: undefined,
               showTeamStats: true,
               showPayments: true,
               showTeamChat: true,
@@ -1078,58 +1077,36 @@ export const useTeamStore = create<TeamStore>()(
             chatMessages: [],
             chatLastReadAt: {},
             paymentPeriods: [],
-            currentPlayerId: null,
-            isLoggedIn: false,
           };
         }
 
-        // For any version, preserve all existing data including player roles
-        // Only apply specific migrations when needed
-        if (version < 6) {
-          // Version 6: Complete reset to fresh state (for very old versions)
-          return {
-            teamName: 'My Team',
-            teamSettings: {
-              sport: 'hockey' as Sport,
-              jerseyColors: [
-                { name: 'White', color: '#ffffff' },
-                { name: 'Black', color: '#1a1a1a' },
-              ],
-              paymentMethods: [],
-              teamLogo: undefined,
-              record: undefined,
-              showTeamStats: true,
-              showPayments: true,
-              showTeamChat: true,
-              showPhotos: true,
-              showRefreshmentDuty: true,
-              refreshmentDutyIs21Plus: true,
-            },
-            players: [],
-            games: [],
-            events: [],
-            photos: [],
-            notifications: [],
-            chatMessages: [],
-            chatLastReadAt: {},
-            paymentPeriods: [],
-            currentPlayerId: null,
-            isLoggedIn: false,
-          };
-        }
-
-        // Version 9: Force logout on ALL existing installs
-        // This ensures TestFlight users start at login screen after update
-        if (version < 9) {
-          return {
-            ...(state || {}),
-            isLoggedIn: false,
-            currentPlayerId: null,
-          };
-        }
-
-        // For current version or higher, return state as-is (preserves all data)
-        return persistedState;
+        // Return ONLY data fields, explicitly excluding isLoggedIn and currentPlayerId
+        return {
+          teamName: state.teamName ?? 'My Team',
+          teamSettings: state.teamSettings ?? {
+            sport: 'hockey' as Sport,
+            jerseyColors: [
+              { name: 'White', color: '#ffffff' },
+              { name: 'Black', color: '#1a1a1a' },
+            ],
+            paymentMethods: [],
+            showTeamStats: true,
+            showPayments: true,
+            showTeamChat: true,
+            showPhotos: true,
+            showRefreshmentDuty: true,
+            refreshmentDutyIs21Plus: true,
+          },
+          players: state.players ?? [],
+          games: state.games ?? [],
+          events: state.events ?? [],
+          photos: state.photos ?? [],
+          notifications: state.notifications ?? [],
+          chatMessages: state.chatMessages ?? [],
+          chatLastReadAt: state.chatLastReadAt ?? {},
+          paymentPeriods: state.paymentPeriods ?? [],
+          // NEVER include isLoggedIn or currentPlayerId from old state
+        };
       },
     }
   )
