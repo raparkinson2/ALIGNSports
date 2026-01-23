@@ -1026,6 +1026,20 @@ export const useTeamStore = create<TeamStore>()(
         if (player.password !== password) {
           return { success: false, error: 'Incorrect password' };
         }
+
+        // Even in fallback, check if user belongs to multiple teams by searching all teams
+        const allUserTeams = state.teams.filter((team) =>
+          team.players.some((p) => p.email?.toLowerCase() === email.toLowerCase())
+        );
+
+        if (allUserTeams.length > 1) {
+          set({
+            userEmail: email.toLowerCase(),
+            pendingTeamIds: allUserTeams.map((t) => t.id),
+          });
+          return { success: true, multipleTeams: true, teamCount: allUserTeams.length };
+        }
+
         set({ currentPlayerId: player.id, isLoggedIn: true, userEmail: email.toLowerCase() });
         return { success: true, playerId: player.id };
       },
@@ -1086,6 +1100,20 @@ export const useTeamStore = create<TeamStore>()(
         if (player.password !== password) {
           return { success: false, error: 'Incorrect password' };
         }
+
+        // Even in fallback, check if user belongs to multiple teams by searching all teams
+        const allUserTeams = state.teams.filter((team) =>
+          team.players.some((p) => p.phone?.replace(/\D/g, '') === normalizedPhone)
+        );
+
+        if (allUserTeams.length > 1) {
+          set({
+            userPhone: normalizedPhone,
+            pendingTeamIds: allUserTeams.map((t) => t.id),
+          });
+          return { success: true, multipleTeams: true, teamCount: allUserTeams.length };
+        }
+
         set({ currentPlayerId: player.id, isLoggedIn: true, userPhone: normalizedPhone });
         return { success: true, playerId: player.id };
       },
