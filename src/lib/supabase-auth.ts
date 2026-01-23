@@ -103,9 +103,8 @@ export async function signOut(): Promise<AuthResult> {
  */
 export async function resetPassword(email: string): Promise<AuthResult> {
   try {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'alignsports://reset-password',
-    });
+    // Use Supabase's default redirect (configured in dashboard)
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
 
     if (error) {
       return { success: false, error: error.message };
