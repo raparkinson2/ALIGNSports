@@ -495,6 +495,7 @@ export interface TeamSettings {
   showPhotos?: boolean; // Toggle to show/hide photos tab
   showRefreshmentDuty?: boolean; // Toggle to show/hide refreshment duty feature
   refreshmentDutyIs21Plus?: boolean; // If true, use beer icon; if false, use juice box icon
+  showLineups?: boolean; // Toggle to show/hide lines/lineups feature
 }
 
 interface TeamStore {
@@ -602,6 +603,7 @@ const defaultTeamSettings: TeamSettings = {
   showPhotos: true,
   showRefreshmentDuty: true,
   refreshmentDutyIs21Plus: true,
+  showLineups: true,
 };
 
 export const useTeamStore = create<TeamStore>()(
@@ -1020,6 +1022,7 @@ export const useTeamStore = create<TeamStore>()(
             showPhotos: true,
             showRefreshmentDuty: true,
             refreshmentDutyIs21Plus: true,
+            showLineups: true,
           },
           players: [], // Delete ALL players
           games: [], // Delete ALL games

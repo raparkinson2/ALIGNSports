@@ -26,6 +26,7 @@ import {
   AlertTriangle,
   Beer,
   Edit3,
+  ListOrdered,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -939,6 +940,36 @@ export default function AdminScreen() {
                     setTeamSettings({ showTeamChat: value });
                   }}
                   trackColor={{ false: '#334155', true: '#67e8f9' }}
+                  thumbColor="#ffffff"
+                />
+              </View>
+            </View>
+
+            {/* Create Lines/Lineups Toggle */}
+            <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View className="bg-emerald-500/20 p-2 rounded-full">
+                    <ListOrdered size={20} color="#10b981" />
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-white font-semibold">
+                      Use Create {teamSettings.sport === 'hockey' ? 'Lines' : 'Lineups'}
+                    </Text>
+                    <Text className="text-slate-400 text-sm">
+                      {teamSettings.sport === 'hockey'
+                        ? 'Set forward, defense, and goalie lines'
+                        : 'Set starting lineups for games'}
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={teamSettings.showLineups !== false}
+                  onValueChange={(value) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setTeamSettings({ showLineups: value });
+                  }}
+                  trackColor={{ false: '#334155', true: '#10b981' }}
                   thumbColor="#ffffff"
                 />
               </View>

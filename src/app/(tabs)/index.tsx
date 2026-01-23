@@ -168,13 +168,13 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false }: 
   const jerseyColorHex = jerseyColorInfo?.color || game.jerseyColor;
 
   // Check if lines are set (for hockey only)
-  const showLinesButton = teamSettings.sport === 'hockey' && hasAssignedPlayers(game.lineup);
+  const showLinesButton = teamSettings.showLineups !== false && teamSettings.sport === 'hockey' && hasAssignedPlayers(game.lineup);
   // Check if lineup is set (for basketball)
-  const showBasketballLineupButton = teamSettings.sport === 'basketball' && hasAssignedBasketballPlayers(game.basketballLineup);
+  const showBasketballLineupButton = teamSettings.showLineups !== false && teamSettings.sport === 'basketball' && hasAssignedBasketballPlayers(game.basketballLineup);
   // Check if lineup is set (for baseball)
-  const showBaseballLineupButton = teamSettings.sport === 'baseball' && hasAssignedBaseballPlayers(game.baseballLineup);
+  const showBaseballLineupButton = teamSettings.showLineups !== false && teamSettings.sport === 'baseball' && hasAssignedBaseballPlayers(game.baseballLineup);
   // Check if lineup is set (for soccer)
-  const showSoccerLineupButton = teamSettings.sport === 'soccer' && hasAssignedSoccerPlayers(game.soccerLineup);
+  const showSoccerLineupButton = teamSettings.showLineups !== false && teamSettings.sport === 'soccer' && hasAssignedSoccerPlayers(game.soccerLineup);
 
   const cardContent = (
     <Pressable

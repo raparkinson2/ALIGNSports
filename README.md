@@ -154,6 +154,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Jersey Colors**: Add/remove team jersey colors
 - **Payment Methods**: Configure Venmo/PayPal/Zelle/Cash App for the team
 - **Refreshment Duty Toggle**: Enable/disable per game
+- **Create Lines/Lineups Toggle**: Enable/disable the ability to set game lines (hockey) or lineups (other sports)
 - **Player Management**:
   - **Add new players** with name, jersey number, position, phone, and email
   - Send text/email invites to new players after creation

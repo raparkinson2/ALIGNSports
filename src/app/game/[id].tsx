@@ -675,7 +675,7 @@ export default function GameDetailScreen() {
           )}
 
           {/* Set Lines Button - Only for hockey and captains/admins */}
-          {teamSettings.sport === 'hockey' && canManageTeam() && (
+          {teamSettings.sport === 'hockey' && teamSettings.showLineups !== false && canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(115).springify()}
               className="mx-4 mb-4"
@@ -699,7 +699,7 @@ export default function GameDetailScreen() {
           )}
 
           {/* Set Lineup Button - Only for basketball and captains/admins */}
-          {teamSettings.sport === 'basketball' && canManageTeam() && (
+          {teamSettings.sport === 'basketball' && teamSettings.showLineups !== false && canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(115).springify()}
               className="mx-4 mb-4"
@@ -723,7 +723,7 @@ export default function GameDetailScreen() {
           )}
 
           {/* Set Lineup Button - Only for baseball and captains/admins */}
-          {teamSettings.sport === 'baseball' && canManageTeam() && (
+          {teamSettings.sport === 'baseball' && teamSettings.showLineups !== false && canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(115).springify()}
               className="mx-4 mb-4"
@@ -747,7 +747,7 @@ export default function GameDetailScreen() {
           )}
 
           {/* Set Lineup Button - Only for soccer and captains/admins */}
-          {teamSettings.sport === 'soccer' && canManageTeam() && (
+          {teamSettings.sport === 'soccer' && teamSettings.showLineups !== false && canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(115).springify()}
               className="mx-4 mb-4"
@@ -771,7 +771,7 @@ export default function GameDetailScreen() {
           )}
 
           {/* Lines Display - Only for hockey when lineup is set and has players */}
-          {teamSettings.sport === 'hockey' && game.lineup && hasAssignedPlayers(game.lineup) && (
+          {teamSettings.sport === 'hockey' && teamSettings.showLineups !== false && game.lineup && hasAssignedPlayers(game.lineup) && (
             <Animated.View
               entering={FadeInUp.delay(125).springify()}
               className="mx-4 mb-4"
@@ -896,7 +896,7 @@ export default function GameDetailScreen() {
           )}
 
           {/* Basketball Lineup Display - Only when lineup is set and has players */}
-          {teamSettings.sport === 'basketball' && game.basketballLineup && hasAssignedBasketballPlayers(game.basketballLineup) && (
+          {teamSettings.sport === 'basketball' && teamSettings.showLineups !== false && game.basketballLineup && hasAssignedBasketballPlayers(game.basketballLineup) && (
             <Animated.View
               entering={FadeInUp.delay(125).springify()}
               className="mx-4 mb-4"
@@ -1000,7 +1000,7 @@ export default function GameDetailScreen() {
           )}
 
           {/* Baseball Lineup Display - Only when lineup is set and has players */}
-          {teamSettings.sport === 'baseball' && game.baseballLineup && hasAssignedBaseballPlayers(game.baseballLineup) && (
+          {teamSettings.sport === 'baseball' && teamSettings.showLineups !== false && game.baseballLineup && hasAssignedBaseballPlayers(game.baseballLineup) && (
             <Animated.View
               entering={FadeInUp.delay(125).springify()}
               className="mx-4 mb-4"
@@ -1100,7 +1100,7 @@ export default function GameDetailScreen() {
           )}
 
           {/* Soccer Lineup Display - Only when lineup is set and has players */}
-          {teamSettings.sport === 'soccer' && game.soccerLineup && hasAssignedSoccerPlayers(game.soccerLineup) && (
+          {teamSettings.sport === 'soccer' && teamSettings.showLineups !== false && game.soccerLineup && hasAssignedSoccerPlayers(game.soccerLineup) && (
             <Animated.View
               entering={FadeInUp.delay(125).springify()}
               className="mx-4 mb-4"
@@ -1224,7 +1224,7 @@ export default function GameDetailScreen() {
           )}
 
           {/* Soccer Diamond Lineup Display - Only when lineup is set and has players */}
-          {teamSettings.sport === 'soccer' && game.soccerDiamondLineup && hasAssignedSoccerDiamondPlayers(game.soccerDiamondLineup) && (
+          {teamSettings.sport === 'soccer' && teamSettings.showLineups !== false && game.soccerDiamondLineup && hasAssignedSoccerDiamondPlayers(game.soccerDiamondLineup) && (
             <Animated.View
               entering={FadeInUp.delay(125).springify()}
               className="mx-4 mb-4"
