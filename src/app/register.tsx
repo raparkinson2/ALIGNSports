@@ -11,6 +11,7 @@ import { Image } from 'expo-image';
 import { useTeamStore, SECURITY_QUESTIONS, SecurityQuestion } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
+import { signUpWithEmail } from '@/lib/supabase-auth';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -206,11 +207,24 @@ export default function RegisterScreen() {
     }
   };
 
-  const handleCompleteRegistration = () => {
+  const handleCompleteRegistration = async () => {
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
       const trimmedIdentifier = identifier.trim();
+
+      // For email users, also register with Supabase
+      if (!isPhoneNumber(trimmedIdentifier)) {
+        const supabaseResult = await signUpWithEmail(trimmedIdentifier, password);
+        if (!supabaseResult.success) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setError(supabaseResult.error || 'Failed to create account');
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Register locally
       const result = isPhoneNumber(trimmedIdentifier)
         ? registerInvitedPlayerByPhone(unformatPhone(trimmedIdentifier), password)
         : registerInvitedPlayer(trimmedIdentifier, password);
@@ -228,8 +242,12 @@ export default function RegisterScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError(result.error || 'Failed to create account');
       }
-      setIsLoading(false);
-    }, 300);
+    } catch (err) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError('Something went wrong. Please try again.');
+    }
+
+    setIsLoading(false);
   };
 
   return (

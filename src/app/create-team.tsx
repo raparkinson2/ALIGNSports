@@ -12,6 +12,7 @@ import { useTeamStore, Sport, SPORT_NAMES, SECURITY_QUESTIONS, SecurityQuestion 
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg';
+import { signUpWithEmail } from '@/lib/supabase-auth';
 
 // Preset jersey colors for quick selection
 const PRESET_COLORS = [
@@ -315,11 +316,21 @@ export default function CreateTeamScreen() {
     }
   };
 
-  const handleCreateTeam = () => {
+  const handleCreateTeam = async () => {
     setIsLoading(true);
 
-    setTimeout(() => {
-      // First set the sport, jersey colors, and team logo
+    try {
+      // First, create the user in Supabase
+      const supabaseResult = await signUpWithEmail(email.trim(), password);
+
+      if (!supabaseResult.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setError(supabaseResult.error || 'Failed to create account');
+        setIsLoading(false);
+        return;
+      }
+
+      // Set the sport, jersey colors, and team logo
       setTeamSettings({ sport, jerseyColors, teamLogo: teamLogo ?? undefined });
 
       // Register the admin with email/password and additional options
@@ -348,8 +359,12 @@ export default function CreateTeamScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError(result.error || 'Failed to create team');
       }
-      setIsLoading(false);
-    }, 300);
+    } catch (err) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError('Something went wrong. Please try again.');
+    }
+
+    setIsLoading(false);
   };
 
   return (

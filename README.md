@@ -18,10 +18,10 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 ### Login
 - Select your player profile to log in
 - **Sign In with Apple**: iOS users can sign in with their Apple ID for quick, secure authentication
-- **Email/Password**: Create an account with email and password
+- **Email/Password**: Create an account with email and password (synced with Supabase cloud authentication)
 - **Security Questions**: Set up a security question during registration to help recover your account if you forget your password
 - **Profile Photo Setup**: New players can optionally add a profile photo during account setup (can skip)
-- **Password Reset**: Forgot your password? Enter your email, answer your security question, and set a new password
+- **Password Reset**: Forgot your password? Enter your email to receive a reset link via Supabase, or use security questions for offline recovery
 - Personalized experience based on your role
 - Admin users see additional Admin tab
 
@@ -167,6 +167,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Payment Methods**: Configure Venmo/PayPal/Zelle/Cash App for the team
 - **Refreshment Duty Toggle**: Enable/disable per game
 - **Create Lines/Lineups Toggle**: Enable/disable the ability to set game lines (hockey) or lineups (other sports)
+- **Email Team**: Send an email to all players at once - opens your email app with all player emails pre-filled
 - **Manage Team**:
   - **Add new players** with name, jersey number, position(s), phone, and email
   - **Position Selection**: Tap to select multiple positions for a player

@@ -9,6 +9,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Player, getPlayerName } from '@/lib/store';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
+import { signInWithEmail, resetPassword as supabaseResetPassword } from '@/lib/supabase-auth';
 
 interface PlayerLoginCardProps {
   player: Player;
@@ -116,8 +117,27 @@ export default function LoginScreen() {
     setFoundPlayer(null);
   };
 
-  const handleFindAccount = () => {
+  const handleFindAccount = async () => {
     const trimmedInput = resetIdentifier.trim();
+
+    // For email, send Supabase password reset
+    if (!isPhoneNumber(trimmedInput) && trimmedInput.includes('@')) {
+      setIsLoading(true);
+      const result = await supabaseResetPassword(trimmedInput);
+      setIsLoading(false);
+
+      if (result.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert(
+          'Check Your Email',
+          'We sent a password reset link to your email. Please check your inbox and follow the instructions.',
+          [{ text: 'OK', onPress: () => setShowForgotPassword(false) }]
+        );
+        return;
+      }
+    }
+
+    // Fallback to local security question flow
     let player: Player | undefined;
 
     if (isPhoneNumber(trimmedInput)) {
@@ -176,11 +196,11 @@ export default function LoginScreen() {
     }
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError('');
 
     if (!identifier.trim()) {
-      setError('Please enter your email or phone number');
+      setError('Please enter your email');
       return;
     }
     if (!password.trim()) {
@@ -190,8 +210,34 @@ export default function LoginScreen() {
 
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
       const trimmedIdentifier = identifier.trim();
+
+      // Try Supabase authentication first (for email)
+      if (!isPhoneNumber(trimmedIdentifier)) {
+        const supabaseResult = await signInWithEmail(trimmedIdentifier, password);
+
+        if (supabaseResult.success) {
+          // Also update local store for offline capability
+          const localResult = loginWithEmail(trimmedIdentifier, password);
+          if (localResult.success) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            router.replace('/(tabs)');
+            setIsLoading(false);
+            return;
+          }
+          // If local store doesn't have the user, still proceed
+          // The user exists in Supabase but may need to sync locally
+          setCurrentPlayerId('');
+          setIsLoggedIn(true);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          router.replace('/(tabs)');
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Fallback to local authentication (for phone or if Supabase fails)
       const result = isPhoneNumber(trimmedIdentifier)
         ? loginWithPhone(unformatPhone(trimmedIdentifier), password)
         : loginWithEmail(trimmedIdentifier, password);
@@ -201,10 +247,14 @@ export default function LoginScreen() {
         router.replace('/(tabs)');
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setError(result.error || 'Login failed');
+        setError(result.error || 'Invalid email or password');
       }
-      setIsLoading(false);
-    }, 300);
+    } catch (err) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError('Something went wrong. Please try again.');
+    }
+
+    setIsLoading(false);
   };
 
   const handleSelectPlayer = (playerId: string) => {

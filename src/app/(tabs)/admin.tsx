@@ -1042,6 +1042,48 @@ export default function AdminScreen() {
               </View>
             </Pressable>
 
+            {/* Email Team Button */}
+            <Pressable
+              onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                // Get all player emails
+                const emails = players
+                  .filter(p => p.email && p.email.trim())
+                  .map(p => p.email?.trim())
+                  .filter(Boolean)
+                  .join(',');
+
+                if (!emails) {
+                  Alert.alert('No Emails', 'No players have email addresses. Add emails to your roster to use this feature.');
+                  return;
+                }
+
+                const subject = encodeURIComponent(`${teamName} - Team Update`);
+                const mailtoUrl = `mailto:${emails}?subject=${subject}`;
+
+                const canOpen = await Linking.canOpenURL(mailtoUrl);
+                if (canOpen) {
+                  await Linking.openURL(mailtoUrl);
+                } else {
+                  Alert.alert('Unable to Open Email', 'Please make sure you have an email app installed.');
+                }
+              }}
+              className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <View className="bg-blue-500/20 p-2 rounded-full">
+                    <Send size={20} color="#3b82f6" />
+                  </View>
+                  <View className="ml-3">
+                    <Text className="text-white font-semibold">Email Team</Text>
+                    <Text className="text-slate-400 text-sm">Send an email to all players</Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color="#64748b" />
+              </View>
+            </Pressable>
+
             {/* Team Chat Toggle */}
             <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
