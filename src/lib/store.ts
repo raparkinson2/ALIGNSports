@@ -1042,7 +1042,7 @@ export const useTeamStore = create<TeamStore>()(
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
       version: 10,
-      // Don't save login state - always start logged out
+      // Persist login state so users stay logged in
       partialize: (state) => ({
         teamName: state.teamName,
         teamSettings: state.teamSettings,
@@ -1054,6 +1054,8 @@ export const useTeamStore = create<TeamStore>()(
         chatMessages: state.chatMessages,
         chatLastReadAt: state.chatLastReadAt,
         paymentPeriods: state.paymentPeriods,
+        currentPlayerId: state.currentPlayerId,
+        isLoggedIn: state.isLoggedIn,
       }),
     }
   )
@@ -1065,14 +1067,11 @@ export const useStoreHydrated = () => {
 
   useEffect(() => {
     const handleHydration = () => {
-      // Force logout on hydration - app always starts logged out
-      console.log('HYDRATION COMPLETE - forcing logout');
-      useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null });
-      // Delay setting hydrated to ensure state update propagates
-      setTimeout(() => {
-        console.log('Setting hydrated true, isLoggedIn:', useTeamStore.getState().isLoggedIn);
-        setHydrated(true);
-      }, 50);
+      // Keep users logged in - don't force logout on hydration
+      console.log('HYDRATION COMPLETE - preserving login state');
+      const state = useTeamStore.getState();
+      console.log('Current login state - isLoggedIn:', state.isLoggedIn, 'currentPlayerId:', state.currentPlayerId);
+      setHydrated(true);
     };
 
     // Check if already hydrated
