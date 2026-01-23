@@ -29,6 +29,7 @@ import {
   UserPlus,
   ListOrdered,
   Send,
+  Calendar,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -1398,6 +1399,47 @@ export default function GameDetailScreen() {
                   })()}
                 </View>
               </Pressable>
+            </Animated.View>
+          )}
+
+          {/* Invite Release Status - Visible to admins/captains */}
+          {canManageTeam() && (
+            <Animated.View
+              entering={FadeInUp.delay(155).springify()}
+              className="mx-4 mb-4"
+            >
+              <View className="bg-slate-800/60 rounded-2xl p-4 border border-slate-700/50">
+                <View className="flex-row items-center mb-2">
+                  <Calendar size={16} color="#67e8f9" />
+                  <Text className="text-cyan-400 font-semibold ml-2">Invite Release</Text>
+                </View>
+                {game.invitesSent ? (
+                  <View className="flex-row items-center">
+                    <Check size={16} color="#22c55e" />
+                    <Text className="text-green-400 ml-2">Invites sent</Text>
+                  </View>
+                ) : game.inviteReleaseOption === 'scheduled' && game.inviteReleaseDate ? (
+                  <View>
+                    <View className="flex-row items-center">
+                      <Bell size={16} color="#f59e0b" />
+                      <Text className="text-amber-400 ml-2">Scheduled for:</Text>
+                    </View>
+                    <Text className="text-white mt-1 ml-6">
+                      {format(parseISO(game.inviteReleaseDate), 'EEE, MMM d, yyyy h:mm a')}
+                    </Text>
+                  </View>
+                ) : game.inviteReleaseOption === 'none' ? (
+                  <View className="flex-row items-center">
+                    <BellOff size={16} color="#64748b" />
+                    <Text className="text-slate-400 ml-2">Not scheduled - send manually</Text>
+                  </View>
+                ) : (
+                  <View className="flex-row items-center">
+                    <Send size={16} color="#22c55e" />
+                    <Text className="text-green-400 ml-2">Ready to send</Text>
+                  </View>
+                )}
+              </View>
             </Animated.View>
           )}
 
