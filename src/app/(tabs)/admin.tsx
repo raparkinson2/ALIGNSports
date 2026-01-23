@@ -1328,38 +1328,45 @@ export default function AdminScreen() {
 
             {selectedPlayer && (
               <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
-                {/* Name Inputs */}
-                <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">First Name<Text className="text-red-400">*</Text></Text>
-                  <TextInput
-                    value={editPlayerFirstName}
-                    onChangeText={setEditPlayerFirstName}
-                    placeholder="Enter first name"
-                    placeholderTextColor="#64748b"
-                    autoCapitalize="words"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg mb-3"
-                    onBlur={handleSavePlayerName}
-                    onSubmitEditing={handleSavePlayerName}
-                    returnKeyType="done"
-                  />
-                  <Text className="text-slate-400 text-sm mb-2">Last Name<Text className="text-red-400">*</Text></Text>
-                  <TextInput
-                    value={editPlayerLastName}
-                    onChangeText={setEditPlayerLastName}
-                    placeholder="Enter last name"
-                    placeholderTextColor="#64748b"
-                    autoCapitalize="words"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                    onBlur={handleSavePlayerName}
-                    onSubmitEditing={handleSavePlayerName}
-                    returnKeyType="done"
-                  />
+                {/* First Name and Last Name Row */}
+                <View className="flex-row mb-5">
+                  {/* First Name Input */}
+                  <View className="flex-1 mr-2">
+                    <Text className="text-slate-400 text-sm mb-2">First Name<Text className="text-red-400">*</Text></Text>
+                    <TextInput
+                      value={editPlayerFirstName}
+                      onChangeText={setEditPlayerFirstName}
+                      placeholder="First"
+                      placeholderTextColor="#64748b"
+                      autoCapitalize="words"
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                      onBlur={handleSavePlayerName}
+                      onSubmitEditing={handleSavePlayerName}
+                      returnKeyType="done"
+                    />
+                  </View>
+
+                  {/* Last Name Input */}
+                  <View className="flex-1 ml-2">
+                    <Text className="text-slate-400 text-sm mb-2">Last Name<Text className="text-red-400">*</Text></Text>
+                    <TextInput
+                      value={editPlayerLastName}
+                      onChangeText={setEditPlayerLastName}
+                      placeholder="Last"
+                      placeholderTextColor="#64748b"
+                      autoCapitalize="words"
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                      onBlur={handleSavePlayerName}
+                      onSubmitEditing={handleSavePlayerName}
+                      returnKeyType="done"
+                    />
+                  </View>
                 </View>
 
-                {/* Number Input - Hidden for coaches */}
+                {/* Jersey Number Row - Hidden for coaches */}
                 {!editPlayerIsCoach && (
                   <View className="mb-5">
-                    <Text className="text-slate-400 text-sm mb-2">Jersey #<Text className="text-red-400">*</Text></Text>
+                    <Text className="text-slate-400 text-sm mb-2">Jersey Number<Text className="text-red-400">*</Text></Text>
                     <TextInput
                       value={editPlayerNumber}
                       onChangeText={setEditPlayerNumber}
@@ -1368,6 +1375,7 @@ export default function AdminScreen() {
                       keyboardType="number-pad"
                       maxLength={2}
                       className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                      style={{ width: 100 }}
                       onBlur={handleSavePlayerNumber}
                       onSubmitEditing={handleSavePlayerNumber}
                       returnKeyType="done"
@@ -1846,32 +1854,39 @@ export default function AdminScreen() {
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
-              {/* Name Inputs */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">First Name<Text className="text-red-400">*</Text></Text>
-                <TextInput
-                  value={newPlayerFirstName}
-                  onChangeText={setNewPlayerFirstName}
-                  placeholder="Enter first name"
-                  placeholderTextColor="#64748b"
-                  autoCapitalize="words"
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg mb-3"
-                />
-                <Text className="text-slate-400 text-sm mb-2">Last Name<Text className="text-red-400">*</Text></Text>
-                <TextInput
-                  value={newPlayerLastName}
-                  onChangeText={setNewPlayerLastName}
-                  placeholder="Enter last name"
-                  placeholderTextColor="#64748b"
-                  autoCapitalize="words"
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                />
+              {/* First Name and Last Name Row */}
+              <View className="flex-row mb-5">
+                {/* First Name Input */}
+                <View className="flex-1 mr-2">
+                  <Text className="text-slate-400 text-sm mb-2">First Name<Text className="text-red-400">*</Text></Text>
+                  <TextInput
+                    value={newPlayerFirstName}
+                    onChangeText={setNewPlayerFirstName}
+                    placeholder="First"
+                    placeholderTextColor="#64748b"
+                    autoCapitalize="words"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  />
+                </View>
+
+                {/* Last Name Input */}
+                <View className="flex-1 ml-2">
+                  <Text className="text-slate-400 text-sm mb-2">Last Name<Text className="text-red-400">*</Text></Text>
+                  <TextInput
+                    value={newPlayerLastName}
+                    onChangeText={setNewPlayerLastName}
+                    placeholder="Last"
+                    placeholderTextColor="#64748b"
+                    autoCapitalize="words"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  />
+                </View>
               </View>
 
-              {/* Number Input - Hidden for coaches */}
+              {/* Jersey Number Row - Hidden for coaches */}
               {!newPlayerIsCoach && (
                 <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Jersey #<Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-400 text-sm mb-2">Jersey Number<Text className="text-red-400">*</Text></Text>
                   <TextInput
                     value={newPlayerNumber}
                     onChangeText={setNewPlayerNumber}
@@ -1880,6 +1895,7 @@ export default function AdminScreen() {
                     keyboardType="number-pad"
                     maxLength={2}
                     className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    style={{ width: 100 }}
                   />
                 </View>
               )}
