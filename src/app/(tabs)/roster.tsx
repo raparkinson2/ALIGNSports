@@ -336,7 +336,11 @@ export default function RosterScreen() {
   const teamName = useTeamStore((s) => s.teamName);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const isAdmin = useTeamStore((s) => s.isAdmin);
+  const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const showTeamStats = teamSettings.showTeamStats !== false;
+
+  // Count how many admins exist
+  const adminCount = players.filter((p) => p.roles?.includes('admin')).length;
 
   const positions = SPORT_POSITIONS[teamSettings.sport];
 
@@ -899,7 +903,34 @@ export default function RosterScreen() {
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         if (playerRoles.includes('admin')) {
-                          setPlayerRoles(playerRoles.filter((r) => r !== 'admin'));
+                          // Check if this is the only admin and they're editing themselves
+                          const isEditingSelf = editingPlayer?.id === currentPlayerId;
+                          const isOnlyAdmin = adminCount === 1 && editingPlayer?.roles?.includes('admin');
+
+                          if (isOnlyAdmin && isEditingSelf) {
+                            Alert.alert(
+                              'Cannot Remove Admin',
+                              'You are the only admin on the team. You cannot remove your own admin role. Please make another team member an admin first.',
+                              [{ text: 'OK' }]
+                            );
+                            return;
+                          }
+
+                          // Show confirmation for removing admin
+                          Alert.alert(
+                            'Remove Admin Role?',
+                            `Are you sure you want to remove admin privileges from ${editingPlayer ? getPlayerName(editingPlayer) : 'this player'}?\n\nThey will no longer be able to:\n• Manage players and roles\n• Edit team settings\n• Create payment periods\n• Access the Admin panel`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Remove Admin',
+                                style: 'destructive',
+                                onPress: () => {
+                                  setPlayerRoles(playerRoles.filter((r) => r !== 'admin'));
+                                },
+                              },
+                            ]
+                          );
                         } else {
                           setPlayerRoles([...playerRoles, 'admin']);
                         }

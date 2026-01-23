@@ -100,6 +100,8 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
   - Set player status: Active or Reserve
   - Toggle player roles: Captain and/or Admin
   - Players can have multiple roles simultaneously
+  - **Admin Protection**: Cannot remove your own admin role if you're the only admin
+  - **Confirmation Dialog**: Removing admin role shows a warning explaining what privileges will be lost
 
 ### Chat Tab
 - Real-time team chat within the app
