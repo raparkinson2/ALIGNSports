@@ -591,7 +591,7 @@ export default function ChatScreen() {
           {/* Input Area */}
           <View className="px-4 pb-4 pt-2 border-t border-slate-800 bg-slate-900/95 relative">
             {/* Inline Mention Autocomplete */}
-            {showMentionPicker && filteredMentionSuggestions.length > 0 && (
+            {showMentionPicker && (filteredMentionSuggestions.length > 0 || mentionQuery === '' || 'everyone'.includes(mentionQuery.toLowerCase())) && (
               <Animated.View
                 entering={SlideInDown.springify().damping(20)}
                 exiting={FadeOut.duration(150)}
@@ -600,7 +600,7 @@ export default function ChatScreen() {
                 <View className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl max-h-52">
                   <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                     {/* @everyone option */}
-                    {mentionQuery === '' || 'everyone'.includes(mentionQuery.toLowerCase()) ? (
+                    {(mentionQuery === '' || 'everyone'.includes(mentionQuery.toLowerCase())) && (
                       <Pressable
                         onPress={() => handleSelectMention('everyone')}
                         className="flex-row items-center px-4 py-3 border-b border-slate-700/50 active:bg-slate-700/50"
@@ -613,7 +613,7 @@ export default function ChatScreen() {
                           <Text className="text-slate-400 text-sm">Notify all team members</Text>
                         </View>
                       </Pressable>
-                    ) : null}
+                    )}
                     {/* Player list */}
                     {filteredMentionSuggestions.map((player) => (
                       <Pressable

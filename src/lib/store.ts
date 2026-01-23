@@ -1029,6 +1029,21 @@ export const useTeamStore = create<TeamStore>()(
       isAdmin: () => {
         const state = get();
         const currentPlayer = state.players.find((p) => p.id === state.currentPlayerId);
+
+        // Auto-recovery: If there are no admins at all, make the current player an admin
+        const hasAnyAdmin = state.players.some((p) => p.roles?.includes('admin'));
+        if (!hasAnyAdmin && currentPlayer && state.isLoggedIn) {
+          // Promote current player to admin
+          set((s) => ({
+            players: s.players.map((p) =>
+              p.id === s.currentPlayerId
+                ? { ...p, roles: [...(p.roles || []), 'admin'] }
+                : p
+            ),
+          }));
+          return true;
+        }
+
         return currentPlayer?.roles?.includes('admin') || false;
       },
 

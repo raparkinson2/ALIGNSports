@@ -903,14 +903,16 @@ export default function RosterScreen() {
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         if (playerRoles.includes('admin')) {
-                          // Check if this is the only admin and they're editing themselves
-                          const isEditingSelf = editingPlayer?.id === currentPlayerId;
-                          const isOnlyAdmin = adminCount === 1 && editingPlayer?.roles?.includes('admin');
+                          // Check if this player is currently an admin in the database
+                          const playerIsCurrentlyAdmin = editingPlayer?.roles?.includes('admin');
 
-                          if (isOnlyAdmin && isEditingSelf) {
+                          // Check if removing this admin would leave zero admins
+                          const wouldLeaveNoAdmins = adminCount === 1 && playerIsCurrentlyAdmin;
+
+                          if (wouldLeaveNoAdmins) {
                             Alert.alert(
                               'Cannot Remove Admin',
-                              'You are the only admin on the team. You cannot remove your own admin role. Please make another team member an admin first.',
+                              'This is the only admin on the team. You must make another team member an admin before removing this admin role.',
                               [{ text: 'OK' }]
                             );
                             return;
