@@ -518,6 +518,7 @@ interface TeamStore {
   checkOutFromGame: (gameId: string, playerId: string) => void;
   clearPlayerResponse: (gameId: string, playerId: string) => void;
   invitePlayersToGame: (gameId: string, playerIds: string[]) => void;
+  releaseScheduledGameInvites: () => Game[]; // Returns games that were released
 
   events: Event[];
   addEvent: (event: Event) => void;
@@ -695,6 +696,65 @@ export const useTeamStore = create<TeamStore>()(
           g.id === gameId ? { ...g, invitedPlayers: playerIds } : g
         ),
       })),
+      releaseScheduledGameInvites: () => {
+        const state = get();
+        const now = new Date();
+        const gamesToRelease: Game[] = [];
+
+        // Find games with scheduled invites that are past due
+        state.games.forEach((game) => {
+          if (
+            game.inviteReleaseOption === 'scheduled' &&
+            game.inviteReleaseDate &&
+            !game.invitesSent
+          ) {
+            const releaseDate = new Date(game.inviteReleaseDate);
+            if (releaseDate <= now) {
+              gamesToRelease.push(game);
+            }
+          }
+        });
+
+        if (gamesToRelease.length > 0) {
+          // Update the games to mark invites as sent
+          set((state) => ({
+            games: state.games.map((g) => {
+              const shouldRelease = gamesToRelease.some((gr) => gr.id === g.id);
+              if (shouldRelease) {
+                return { ...g, invitesSent: true };
+              }
+              return g;
+            }),
+          }));
+
+          // Create in-app notifications for each game
+          gamesToRelease.forEach((game) => {
+            const gameDate = new Date(game.date);
+            const formattedDate = gameDate.toLocaleDateString('en-US', {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+            });
+
+            // Create notification for each invited player
+            game.invitedPlayers?.forEach((playerId) => {
+              const notification: AppNotification = {
+                id: `game-invite-${game.id}-${playerId}-${Date.now()}`,
+                type: 'game_invite',
+                title: 'New Game Added!',
+                message: `You've been invited to play vs ${game.opponent} on ${formattedDate} at ${game.time}`,
+                gameId: game.id,
+                toPlayerId: playerId,
+                read: false,
+                createdAt: new Date().toISOString(),
+              };
+              get().addNotification(notification);
+            });
+          });
+        }
+
+        return gamesToRelease;
+      },
 
       events: [],
       addEvent: (event) => set((state) => ({ events: [...state.events, event] })),

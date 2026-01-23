@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Calendar,
   MapPin,
@@ -404,6 +404,15 @@ export default function ScheduleScreen() {
   const removeGame = useTeamStore((s) => s.removeGame);
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
+  const releaseScheduledGameInvites = useTeamStore((s) => s.releaseScheduledGameInvites);
+
+  // Check for scheduled invites that need to be released on mount
+  useEffect(() => {
+    const releasedGames = releaseScheduledGameInvites();
+    if (releasedGames.length > 0) {
+      console.log('Released scheduled invites for', releasedGames.length, 'games');
+    }
+  }, [releaseScheduledGameInvites]);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isRecordModalVisible, setIsRecordModalVisible] = useState(false);
