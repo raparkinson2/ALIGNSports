@@ -328,6 +328,8 @@ export default function AdminScreen() {
   const [editPlayerNumber, setEditPlayerNumber] = useState('');
   const [editPlayerPhone, setEditPlayerPhone] = useState('');
   const [editPlayerEmail, setEditPlayerEmail] = useState('');
+  const [editPlayerPositions, setEditPlayerPositions] = useState<string[]>([positions[0]]);
+  const [editPlayerIsCoach, setEditPlayerIsCoach] = useState(false);
 
   // New player form
   const [isNewPlayerModalVisible, setIsNewPlayerModalVisible] = useState(false);
@@ -389,6 +391,11 @@ export default function AdminScreen() {
     setEditPlayerNumber(player.number);
     setEditPlayerPhone(formatPhoneNumber(player.phone));
     setEditPlayerEmail(player.email || '');
+    // Set positions from player data
+    const playerPositions = player.positions || [player.position];
+    setEditPlayerPositions(playerPositions.length > 0 ? playerPositions : [positions[0]]);
+    // Set coach status
+    setEditPlayerIsCoach(player.roles?.includes('coach') || player.position === 'Coach' || false);
     // Close manage players modal first, then open player edit modal
     setIsManagePlayersModalVisible(false);
     setTimeout(() => {
@@ -428,6 +435,65 @@ export default function AdminScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     updatePlayer(selectedPlayer.id, { email: editPlayerEmail.trim() || undefined });
     setSelectedPlayer({ ...selectedPlayer, email: editPlayerEmail.trim() || undefined });
+  };
+
+  const handleSavePlayerPositions = (newPositions: string[]) => {
+    if (!selectedPlayer) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    updatePlayer(selectedPlayer.id, {
+      position: newPositions[0],
+      positions: newPositions
+    });
+    setSelectedPlayer({ ...selectedPlayer, position: newPositions[0], positions: newPositions });
+  };
+
+  const handleToggleEditCoach = () => {
+    if (!selectedPlayer) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newIsCoach = !editPlayerIsCoach;
+    setEditPlayerIsCoach(newIsCoach);
+
+    // Update roles
+    const currentRoles = selectedPlayer.roles ?? [];
+    let newRoles: PlayerRole[];
+
+    if (newIsCoach) {
+      // Add coach role
+      newRoles = currentRoles.includes('coach') ? currentRoles : [...currentRoles, 'coach'];
+      // Update position to Coach
+      updatePlayer(selectedPlayer.id, {
+        roles: newRoles,
+        position: 'Coach',
+        positions: ['Coach'],
+        number: ''
+      });
+      setSelectedPlayer({
+        ...selectedPlayer,
+        roles: newRoles,
+        position: 'Coach',
+        positions: ['Coach'],
+        number: ''
+      });
+      setEditPlayerNumber('');
+      setEditPlayerPositions(['Coach']);
+    } else {
+      // Remove coach role
+      newRoles = currentRoles.filter((r) => r !== 'coach');
+      // Reset to first position
+      const defaultPos = positions[0];
+      updatePlayer(selectedPlayer.id, {
+        roles: newRoles,
+        position: defaultPos,
+        positions: [defaultPos]
+      });
+      setSelectedPlayer({
+        ...selectedPlayer,
+        roles: newRoles,
+        position: defaultPos,
+        positions: [defaultPos]
+      });
+      setEditPlayerPositions([defaultPos]);
+    }
   };
 
   // New Player Functions
@@ -1242,22 +1308,24 @@ export default function AdminScreen() {
                   />
                 </View>
 
-                {/* Number Input */}
-                <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Jersey #<Text className="text-red-400">*</Text></Text>
-                  <TextInput
-                    value={editPlayerNumber}
-                    onChangeText={setEditPlayerNumber}
-                    placeholder="00"
-                    placeholderTextColor="#64748b"
-                    keyboardType="number-pad"
-                    maxLength={2}
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                    onBlur={handleSavePlayerNumber}
-                    onSubmitEditing={handleSavePlayerNumber}
-                    returnKeyType="done"
-                  />
-                </View>
+                {/* Number Input - Hidden for coaches */}
+                {!editPlayerIsCoach && (
+                  <View className="mb-5">
+                    <Text className="text-slate-400 text-sm mb-2">Jersey #<Text className="text-red-400">*</Text></Text>
+                    <TextInput
+                      value={editPlayerNumber}
+                      onChangeText={setEditPlayerNumber}
+                      placeholder="00"
+                      placeholderTextColor="#64748b"
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                      onBlur={handleSavePlayerNumber}
+                      onSubmitEditing={handleSavePlayerNumber}
+                      returnKeyType="done"
+                    />
+                  </View>
+                )}
 
                 {/* Phone */}
                 <View className="mb-5">
@@ -1297,6 +1365,51 @@ export default function AdminScreen() {
                     returnKeyType="done"
                   />
                 </View>
+
+                {/* Position Selector - Hidden for coaches */}
+                {!editPlayerIsCoach && (
+                  <View className="mb-5">
+                    <Text className="text-slate-400 text-sm mb-1">Positions</Text>
+                    <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
+                    <View className="flex-row flex-wrap">
+                      {positions.map((pos) => {
+                        const isSelected = editPlayerPositions.includes(pos);
+                        return (
+                          <Pressable
+                            key={pos}
+                            onPress={() => {
+                              if (isSelected) {
+                                // Don't allow deselecting if it's the only position
+                                if (editPlayerPositions.length > 1) {
+                                  const newPositions = editPlayerPositions.filter(p => p !== pos);
+                                  setEditPlayerPositions(newPositions);
+                                  handleSavePlayerPositions(newPositions);
+                                }
+                              } else {
+                                const newPositions = [...editPlayerPositions, pos];
+                                setEditPlayerPositions(newPositions);
+                                handleSavePlayerPositions(newPositions);
+                              }
+                            }}
+                            className={cn(
+                              'py-3 px-4 rounded-xl mr-2 mb-2 items-center',
+                              isSelected ? 'bg-cyan-500' : 'bg-slate-800'
+                            )}
+                          >
+                            <Text
+                              className={cn(
+                                'font-semibold',
+                                isSelected ? 'text-white' : 'text-slate-400'
+                              )}
+                            >
+                              {pos}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
 
                 <Text className="text-slate-500 text-xs mb-4"><Text className="text-red-400">*</Text> Required</Text>
 
@@ -1398,18 +1511,19 @@ export default function AdminScreen() {
                   </View>
                 </View>
 
-                {/* Player Roles */}
+                {/* Roles */}
                 <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Player Roles</Text>
+                  <Text className="text-slate-400 text-sm mb-2">Roles</Text>
                   <View className="flex-row">
+                    {/* Captain */}
                     <Pressable
                       onPress={() => handleToggleRole('captain')}
                       className={cn(
-                        'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
                         selectedRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
                       )}
                     >
-                      <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center">
+                      <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center mb-1">
                         <Text className={cn(
                           'text-xs font-black',
                           selectedRoles.includes('captain') ? 'text-white' : 'text-amber-500'
@@ -1417,33 +1531,54 @@ export default function AdminScreen() {
                       </View>
                       <Text
                         className={cn(
-                          'font-semibold ml-2',
+                          'font-semibold text-sm',
                           selectedRoles.includes('captain') ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Captain
                       </Text>
                     </Pressable>
+                    {/* Admin */}
                     <Pressable
                       onPress={() => handleToggleRole('admin')}
                       className={cn(
-                        'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
+                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
                         selectedRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
                       )}
                     >
                       <Shield size={16} color={selectedRoles.includes('admin') ? 'white' : '#a78bfa'} />
                       <Text
                         className={cn(
-                          'font-semibold ml-2',
+                          'font-semibold text-sm mt-1',
                           selectedRoles.includes('admin') ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Admin
                       </Text>
                     </Pressable>
+                    {/* Coach */}
+                    <Pressable
+                      onPress={handleToggleEditCoach}
+                      className={cn(
+                        'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                        editPlayerIsCoach ? 'bg-cyan-500' : 'bg-slate-800'
+                      )}
+                    >
+                      <UserCog size={16} color={editPlayerIsCoach ? 'white' : '#67e8f9'} />
+                      <Text
+                        className={cn(
+                          'font-semibold text-sm mt-1',
+                          editPlayerIsCoach ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Coach
+                      </Text>
+                    </Pressable>
                   </View>
                   <Text className="text-slate-500 text-xs mt-2">
-                    Tap to toggle roles. Players can have multiple roles.
+                    {editPlayerIsCoach
+                      ? 'Coaches don\'t need jersey numbers or positions'
+                      : 'Tap to toggle roles. Members can have multiple roles.'}
                   </Text>
                 </View>
               </ScrollView>
