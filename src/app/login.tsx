@@ -200,6 +200,8 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
+    console.log('LOGIN: handleLogin called');
+    console.log('LOGIN: identifier:', identifier, 'password length:', password.length);
     setError('');
 
     if (!identifier.trim()) {
