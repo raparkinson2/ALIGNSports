@@ -109,16 +109,29 @@ function AuthNavigator() {
       }
     });
 
+    // Check for notification that opened the app (when app was completely closed)
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) {
+        console.log('App opened from notification:', response);
+        const data = response.notification.request.content.data;
+        if (data?.gameId && isReady) {
+          router.push(`/game/${data.gameId}`);
+        }
+      }
+    });
+
     // Listen for incoming notifications while app is open
     notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
       console.log('Notification received:', notification);
-      // Could add to in-app notifications here
       const data = notification.request.content.data;
-      if (data?.type === 'game_reminder' && data?.gameId) {
+      const notificationType = data?.type as string;
+
+      // Add to in-app notifications for game-related notifications
+      if ((notificationType === 'game_reminder' || notificationType === 'game_invite') && data?.gameId) {
         addNotification({
           id: `notif-${Date.now()}`,
-          type: 'game_reminder',
-          title: notification.request.content.title || 'Game Reminder',
+          type: notificationType as 'game_reminder' | 'game_invite',
+          title: notification.request.content.title || (notificationType === 'game_invite' ? 'New Game Added!' : 'Game Reminder'),
           message: notification.request.content.body || '',
           gameId: data.gameId as string,
           toPlayerId: currentPlayerId,
@@ -128,13 +141,18 @@ function AuthNavigator() {
       }
     });
 
-    // Listen for notification taps
+    // Listen for notification taps (when app is in background or foreground)
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
       console.log('Notification tapped:', response);
       const data = response.notification.request.content.data;
       // Navigate to game if it's a game notification
-      if (data?.gameId && isReady) {
-        router.push(`/game/${data.gameId}`);
+      if (data?.gameId) {
+        // Small delay to ensure navigation is ready
+        setTimeout(() => {
+          if (isReady) {
+            router.push(`/game/${data.gameId}`);
+          }
+        }, 100);
       }
     });
 
