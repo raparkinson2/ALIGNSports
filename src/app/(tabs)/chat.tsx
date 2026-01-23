@@ -351,46 +351,54 @@ export default function ChatScreen() {
   }, [showMentionPicker, players, currentPlayerId, mentionQuery]);
 
   // Handle text input change and detect @ mentions
-  const handleMessageChange = useCallback((text: string) => {
+  const handleMessageChange = (text: string) => {
     setMessageText(text);
 
-    // Find the last @ symbol that might be starting a mention
-    const lastAtIndex = text.lastIndexOf('@');
+    // Find all @ symbols and check each one (from the end) to find an active mention
+    let foundActiveMention = false;
 
-    if (lastAtIndex !== -1) {
-      // Check if this @ is at the start or preceded by a space (start of a mention)
-      const charBefore = lastAtIndex > 0 ? text[lastAtIndex - 1] : ' ';
-      if (charBefore === ' ' || charBefore === '\n' || lastAtIndex === 0) {
-        // Get the text after @
-        const afterAt = text.substring(lastAtIndex + 1);
-        // Check if there's a space after the query (mention completed)
-        const spaceIndex = afterAt.indexOf(' ');
-        const newlineIndex = afterAt.indexOf('\n');
-        const endIndex = spaceIndex === -1 && newlineIndex === -1
-          ? afterAt.length
-          : Math.min(
-              spaceIndex === -1 ? Infinity : spaceIndex,
-              newlineIndex === -1 ? Infinity : newlineIndex
-            );
+    for (let i = text.length - 1; i >= 0; i--) {
+      if (text[i] === '@') {
+        // Check if this @ is at the start or preceded by a space/newline
+        const charBefore = i > 0 ? text[i - 1] : ' ';
+        if (charBefore === ' ' || charBefore === '\n' || i === 0) {
+          // Get the text after this @
+          const afterAt = text.substring(i + 1);
+          // Find where the mention query ends (at space, newline, or end of string)
+          const spaceIndex = afterAt.indexOf(' ');
+          const newlineIndex = afterAt.indexOf('\n');
 
-        if (endIndex === afterAt.length) {
-          // Still typing the mention
-          setMentionQuery(afterAt);
-          setMentionStartIndex(lastAtIndex);
-          setShowMentionPicker(true);
-          return;
+          let mentionEnd = afterAt.length;
+          if (spaceIndex !== -1 && newlineIndex !== -1) {
+            mentionEnd = Math.min(spaceIndex, newlineIndex);
+          } else if (spaceIndex !== -1) {
+            mentionEnd = spaceIndex;
+          } else if (newlineIndex !== -1) {
+            mentionEnd = newlineIndex;
+          }
+
+          // If the mention extends to the end of text, it's an active mention being typed
+          if (i + 1 + mentionEnd === text.length) {
+            const query = afterAt.substring(0, mentionEnd);
+            setMentionQuery(query);
+            setMentionStartIndex(i);
+            setShowMentionPicker(true);
+            foundActiveMention = true;
+            break;
+          }
         }
       }
     }
 
-    // No active mention being typed
-    setShowMentionPicker(false);
-    setMentionQuery('');
-    setMentionStartIndex(-1);
-  }, []);
+    if (!foundActiveMention) {
+      setShowMentionPicker(false);
+      setMentionQuery('');
+      setMentionStartIndex(-1);
+    }
+  };
 
   // Handle selecting a mention from the dropdown
-  const handleSelectMention = useCallback((selection: Player | 'everyone') => {
+  const handleSelectMention = (selection: Player | 'everyone') => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     const mentionText = selection === 'everyone'
@@ -405,7 +413,7 @@ export default function ChatScreen() {
     setShowMentionPicker(false);
     setMentionQuery('');
     setMentionStartIndex(-1);
-  }, [messageText, mentionStartIndex, mentionQuery]);
+  };
 
   const handleSendMessage = () => {
     if (!messageText.trim() || !currentPlayerId) return;
