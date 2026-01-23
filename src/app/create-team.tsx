@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { useState } from 'react';
-import { ChevronLeft, User, Mail, Lock, Users, Check, ShieldQuestion, ChevronDown, Palette, Plus, X, Camera, ImageIcon, Phone, Hash, UserCog } from 'lucide-react-native';
+import { ChevronLeft, User, Mail, Lock, Users, Check, ShieldQuestion, ChevronDown, Palette, Plus, X, Camera, ImageIcon, Phone, Hash, UserCog, Edit3 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -111,6 +111,8 @@ export default function CreateTeamScreen() {
   const [teamLogo, setTeamLogo] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
+  const [editingColorName, setEditingColorName] = useState('');
 
   // Image picker functions
   const handlePickImage = async () => {
@@ -293,9 +295,24 @@ export default function CreateTeamScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const handleRemoveJerseyColor = (name: string) => {
-    setJerseyColors(jerseyColors.filter(c => c.name !== name));
+  const handleRemoveJerseyColor = (index: number) => {
+    setJerseyColors(jerseyColors.filter((_, i) => i !== index));
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Reset editing state if we're removing the one being edited
+    if (editingColorIndex === index) {
+      setEditingColorIndex(null);
+      setEditingColorName('');
+    } else if (editingColorIndex !== null && editingColorIndex > index) {
+      // Adjust editing index if removing an item before it
+      setEditingColorIndex(editingColorIndex - 1);
+    }
+  };
+
+  const handleRemoveJerseyColorByName = (name: string) => {
+    const index = jerseyColors.findIndex(c => c.name === name);
+    if (index !== -1) {
+      handleRemoveJerseyColor(index);
+    }
   };
 
   const handleCreateTeam = () => {
@@ -800,31 +817,69 @@ export default function CreateTeamScreen() {
                 {/* Selected Colors */}
                 {jerseyColors.length > 0 && (
                   <View className="mb-4">
-                    <Text className="text-slate-400 text-sm mb-2">Selected Colors</Text>
-                    <View className="flex-row flex-wrap">
-                      {jerseyColors.map((color) => (
+                    <Text className="text-slate-400 text-sm mb-2">Selected Colors (tap name to edit)</Text>
+                    {jerseyColors.map((color, index) => (
+                      <View
+                        key={`${color.color}-${index}`}
+                        className="flex-row items-center bg-slate-800/80 rounded-xl px-4 py-3 mb-2 border border-slate-700/50"
+                      >
                         <View
-                          key={color.name}
-                          className="flex-row items-center bg-slate-800/80 rounded-full px-3 py-2 mr-2 mb-2 border border-slate-700/50"
-                        >
-                          <View
-                            className="w-5 h-5 rounded-full mr-2"
-                            style={{
-                              backgroundColor: color.color,
-                              borderWidth: color.color === '#ffffff' ? 1 : 0,
-                              borderColor: '#64748b',
+                          className="w-8 h-8 rounded-full mr-3"
+                          style={{
+                            backgroundColor: color.color,
+                            borderWidth: color.color === '#ffffff' ? 2 : 0,
+                            borderColor: '#64748b',
+                          }}
+                        />
+                        {editingColorIndex === index ? (
+                          <TextInput
+                            value={editingColorName}
+                            onChangeText={setEditingColorName}
+                            onBlur={() => {
+                              if (editingColorName.trim()) {
+                                const updated = [...jerseyColors];
+                                updated[index] = { ...updated[index], name: editingColorName.trim() };
+                                setJerseyColors(updated);
+                              }
+                              setEditingColorIndex(null);
+                              setEditingColorName('');
                             }}
+                            onSubmitEditing={() => {
+                              if (editingColorName.trim()) {
+                                const updated = [...jerseyColors];
+                                updated[index] = { ...updated[index], name: editingColorName.trim() };
+                                setJerseyColors(updated);
+                              }
+                              setEditingColorIndex(null);
+                              setEditingColorName('');
+                            }}
+                            autoFocus
+                            selectTextOnFocus
+                            className="flex-1 text-white text-base bg-slate-700 rounded-lg px-3 py-2"
+                            placeholderTextColor="#64748b"
+                            placeholder="Enter name"
                           />
-                          <Text className="text-white text-sm">{color.name}</Text>
+                        ) : (
                           <Pressable
-                            onPress={() => handleRemoveJerseyColor(color.name)}
-                            className="ml-2 p-1"
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              setEditingColorIndex(index);
+                              setEditingColorName(color.name);
+                            }}
+                            className="flex-1 flex-row items-center"
                           >
-                            <X size={14} color="#ef4444" />
+                            <Text className="text-white text-base flex-1">{color.name}</Text>
+                            <Edit3 size={16} color="#67e8f9" />
                           </Pressable>
-                        </View>
-                      ))}
-                    </View>
+                        )}
+                        <Pressable
+                          onPress={() => handleRemoveJerseyColor(index)}
+                          className="ml-3 p-2"
+                        >
+                          <X size={18} color="#ef4444" />
+                        </Pressable>
+                      </View>
+                    ))}
                   </View>
                 )}
 
