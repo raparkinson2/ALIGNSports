@@ -354,47 +354,33 @@ export default function ChatScreen() {
   const handleMessageChange = (text: string) => {
     setMessageText(text);
 
-    // Find all @ symbols and check each one (from the end) to find an active mention
-    let foundActiveMention = false;
+    // Check if there's an @ at the end that we're actively typing
+    const lastAtIndex = text.lastIndexOf('@');
 
-    for (let i = text.length - 1; i >= 0; i--) {
-      if (text[i] === '@') {
-        // Check if this @ is at the start or preceded by a space/newline
-        const charBefore = i > 0 ? text[i - 1] : ' ';
-        if (charBefore === ' ' || charBefore === '\n' || i === 0) {
-          // Get the text after this @
-          const afterAt = text.substring(i + 1);
-          // Find where the mention query ends (at space, newline, or end of string)
-          const spaceIndex = afterAt.indexOf(' ');
-          const newlineIndex = afterAt.indexOf('\n');
+    if (lastAtIndex !== -1) {
+      // Check if this @ is at the start or preceded by a space/newline
+      const charBefore = lastAtIndex > 0 ? text[lastAtIndex - 1] : ' ';
+      const isValidStart = charBefore === ' ' || charBefore === '\n' || lastAtIndex === 0;
 
-          let mentionEnd = afterAt.length;
-          if (spaceIndex !== -1 && newlineIndex !== -1) {
-            mentionEnd = Math.min(spaceIndex, newlineIndex);
-          } else if (spaceIndex !== -1) {
-            mentionEnd = spaceIndex;
-          } else if (newlineIndex !== -1) {
-            mentionEnd = newlineIndex;
-          }
+      if (isValidStart) {
+        // Get the text after this @
+        const afterAt = text.substring(lastAtIndex + 1);
 
-          // If the mention extends to the end of text, it's an active mention being typed
-          if (i + 1 + mentionEnd === text.length) {
-            const query = afterAt.substring(0, mentionEnd);
-            setMentionQuery(query);
-            setMentionStartIndex(i);
-            setShowMentionPicker(true);
-            foundActiveMention = true;
-            break;
-          }
+        // Check if the cursor is still in the mention (no space after)
+        // If afterAt has no space, we're still typing the mention
+        if (!afterAt.includes(' ') && !afterAt.includes('\n')) {
+          setMentionQuery(afterAt);
+          setMentionStartIndex(lastAtIndex);
+          setShowMentionPicker(true);
+          return;
         }
       }
     }
 
-    if (!foundActiveMention) {
-      setShowMentionPicker(false);
-      setMentionQuery('');
-      setMentionStartIndex(-1);
-    }
+    // No active mention being typed
+    setShowMentionPicker(false);
+    setMentionQuery('');
+    setMentionStartIndex(-1);
   };
 
   // Handle selecting a mention from the dropdown
