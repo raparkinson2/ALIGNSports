@@ -974,73 +974,77 @@ export const useTeamStore = create<TeamStore>()(
       loginWithEmail: (email, password) => {
         const state = get();
 
-        // First, check all teams for this user
-        const teamsWithUser: { team: Team; player: Player }[] = [];
+        // First, find ALL teams where this email exists (regardless of password)
+        const teamsWithEmail: { team: Team; player: Player }[] = [];
+        let hasValidPassword = false;
+
         state.teams.forEach((team) => {
           const player = team.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
-          if (player && player.password === password) {
-            teamsWithUser.push({ team, player });
+          if (player) {
+            teamsWithEmail.push({ team, player });
+            if (player.password === password) {
+              hasValidPassword = true;
+            }
           }
         });
 
-        // If found in multiple teams, set up pending selection
-        if (teamsWithUser.length > 1) {
-          set({
-            userEmail: email.toLowerCase(),
-            pendingTeamIds: teamsWithUser.map((t) => t.team.id),
-          });
-          return { success: true, multipleTeams: true, teamCount: teamsWithUser.length };
-        }
-
-        // If found in exactly one team, switch to it
-        if (teamsWithUser.length === 1) {
-          const { team, player } = teamsWithUser[0];
-          set({
-            activeTeamId: team.id,
-            teamName: team.teamName,
-            teamSettings: team.teamSettings,
-            players: team.players,
-            games: team.games,
-            events: team.events,
-            photos: team.photos,
-            notifications: team.notifications,
-            chatMessages: team.chatMessages,
-            chatLastReadAt: team.chatLastReadAt,
-            paymentPeriods: team.paymentPeriods,
-            currentPlayerId: player.id,
-            isLoggedIn: true,
-            userEmail: email.toLowerCase(),
-            pendingTeamIds: null,
-          });
+        // If no teams found with this email, check fallback
+        if (teamsWithEmail.length === 0) {
+          const player = state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+          if (!player) {
+            return { success: false, error: 'No account found with this email' };
+          }
+          if (!player.password) {
+            return { success: false, error: 'Please create an account first' };
+          }
+          if (player.password !== password) {
+            return { success: false, error: 'Incorrect password' };
+          }
+          set({ currentPlayerId: player.id, isLoggedIn: true, userEmail: email.toLowerCase() });
           return { success: true, playerId: player.id };
         }
 
-        // Fallback: check the active/legacy single-team data
-        const player = state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
-        if (!player) {
-          return { success: false, error: 'No account found with this email' };
+        // Verify password matches in at least one team
+        if (!hasValidPassword) {
+          // Check legacy data for password
+          const legacyPlayer = state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+          if (legacyPlayer?.password === password) {
+            hasValidPassword = true;
+          }
         }
-        if (!player.password) {
-          return { success: false, error: 'Please create an account first' };
-        }
-        if (player.password !== password) {
+
+        if (!hasValidPassword) {
           return { success: false, error: 'Incorrect password' };
         }
 
-        // Even in fallback, check if user belongs to multiple teams by searching all teams
-        const allUserTeams = state.teams.filter((team) =>
-          team.players.some((p) => p.email?.toLowerCase() === email.toLowerCase())
-        );
-
-        if (allUserTeams.length > 1) {
+        // Password is valid - check if user exists in MULTIPLE teams
+        if (teamsWithEmail.length > 1) {
           set({
             userEmail: email.toLowerCase(),
-            pendingTeamIds: allUserTeams.map((t) => t.id),
+            pendingTeamIds: teamsWithEmail.map((t) => t.team.id),
           });
-          return { success: true, multipleTeams: true, teamCount: allUserTeams.length };
+          return { success: true, multipleTeams: true, teamCount: teamsWithEmail.length };
         }
 
-        set({ currentPlayerId: player.id, isLoggedIn: true, userEmail: email.toLowerCase() });
+        // User exists in exactly one team
+        const { team, player } = teamsWithEmail[0];
+        set({
+          activeTeamId: team.id,
+          teamName: team.teamName,
+          teamSettings: team.teamSettings,
+          players: team.players,
+          games: team.games,
+          events: team.events,
+          photos: team.photos,
+          notifications: team.notifications,
+          chatMessages: team.chatMessages,
+          chatLastReadAt: team.chatLastReadAt,
+          paymentPeriods: team.paymentPeriods,
+          currentPlayerId: player.id,
+          isLoggedIn: true,
+          userEmail: email.toLowerCase(),
+          pendingTeamIds: null,
+        });
         return { success: true, playerId: player.id };
       },
 
@@ -1051,80 +1055,82 @@ export const useTeamStore = create<TeamStore>()(
         console.log('LOGIN PHONE: Checking teams array, length:', state.teams.length);
         console.log('LOGIN PHONE: Looking for phone:', normalizedPhone);
 
-        // First, check all teams for this user
-        const teamsWithUser: { team: Team; player: Player }[] = [];
+        // First, find ALL teams where this phone number exists (regardless of password)
+        const teamsWithPhone: { team: Team; player: Player }[] = [];
+        let hasValidPassword = false;
+
         state.teams.forEach((team) => {
           const player = team.players.find((p) => p.phone?.replace(/\D/g, '') === normalizedPhone);
           console.log('LOGIN PHONE: Team', team.teamName, '- found player:', player ? 'yes' : 'no', player?.password ? 'has password' : 'no password');
-          if (player && player.password === password) {
-            teamsWithUser.push({ team, player });
+          if (player) {
+            teamsWithPhone.push({ team, player });
+            if (player.password === password) {
+              hasValidPassword = true;
+            }
           }
         });
 
-        console.log('LOGIN PHONE: Teams with matching user+password:', teamsWithUser.length);
+        console.log('LOGIN PHONE: Teams with this phone:', teamsWithPhone.length, 'has valid password in any:', hasValidPassword);
 
-        // If found in multiple teams, set up pending selection
-        if (teamsWithUser.length > 1) {
-          set({
-            userPhone: normalizedPhone,
-            pendingTeamIds: teamsWithUser.map((t) => t.team.id),
-          });
-          return { success: true, multipleTeams: true, teamCount: teamsWithUser.length };
-        }
-
-        // If found in exactly one team, switch to it
-        if (teamsWithUser.length === 1) {
-          const { team, player } = teamsWithUser[0];
-          set({
-            activeTeamId: team.id,
-            teamName: team.teamName,
-            teamSettings: team.teamSettings,
-            players: team.players,
-            games: team.games,
-            events: team.events,
-            photos: team.photos,
-            notifications: team.notifications,
-            chatMessages: team.chatMessages,
-            chatLastReadAt: team.chatLastReadAt,
-            paymentPeriods: team.paymentPeriods,
-            currentPlayerId: player.id,
-            isLoggedIn: true,
-            userPhone: normalizedPhone,
-            pendingTeamIds: null,
-          });
+        // If no teams found with this phone, check fallback
+        if (teamsWithPhone.length === 0) {
+          console.log('LOGIN PHONE: No teams found, checking legacy state.players');
+          const player = state.players.find((p) => p.phone?.replace(/\D/g, '') === normalizedPhone);
+          if (!player) {
+            return { success: false, error: 'No account found with this phone number' };
+          }
+          if (!player.password) {
+            return { success: false, error: 'Please create an account first' };
+          }
+          if (player.password !== password) {
+            return { success: false, error: 'Incorrect password' };
+          }
+          set({ currentPlayerId: player.id, isLoggedIn: true, userPhone: normalizedPhone });
           return { success: true, playerId: player.id };
         }
 
-        console.log('LOGIN PHONE: Using fallback path (checking state.players)');
-        // Fallback: check the active/legacy single-team data
-        const player = state.players.find((p) => p.phone?.replace(/\D/g, '') === normalizedPhone);
-        if (!player) {
-          return { success: false, error: 'No account found with this phone number' };
+        // Verify password matches in at least one team
+        if (!hasValidPassword) {
+          // Check legacy data for password
+          const legacyPlayer = state.players.find((p) => p.phone?.replace(/\D/g, '') === normalizedPhone);
+          if (legacyPlayer?.password === password) {
+            hasValidPassword = true;
+          }
         }
-        if (!player.password) {
-          return { success: false, error: 'Please create an account first' };
-        }
-        if (player.password !== password) {
+
+        if (!hasValidPassword) {
           return { success: false, error: 'Incorrect password' };
         }
 
-        // Even in fallback, check if user belongs to multiple teams by searching all teams
-        const allUserTeams = state.teams.filter((team) =>
-          team.players.some((p) => p.phone?.replace(/\D/g, '') === normalizedPhone)
-        );
-        console.log('LOGIN PHONE FALLBACK: Teams with this phone (ignoring password):', allUserTeams.length);
-
-        if (allUserTeams.length > 1) {
-          console.log('LOGIN PHONE FALLBACK: Multiple teams found, setting pendingTeamIds');
+        // Password is valid - check if user exists in MULTIPLE teams
+        if (teamsWithPhone.length > 1) {
+          console.log('LOGIN PHONE: User exists in multiple teams, showing team selection');
           set({
             userPhone: normalizedPhone,
-            pendingTeamIds: allUserTeams.map((t) => t.id),
+            pendingTeamIds: teamsWithPhone.map((t) => t.team.id),
           });
-          return { success: true, multipleTeams: true, teamCount: allUserTeams.length };
+          return { success: true, multipleTeams: true, teamCount: teamsWithPhone.length };
         }
 
-        console.log('LOGIN PHONE FALLBACK: Single team or no teams in array, logging in directly');
-        set({ currentPlayerId: player.id, isLoggedIn: true, userPhone: normalizedPhone });
+        // User exists in exactly one team
+        const { team, player } = teamsWithPhone[0];
+        set({
+          activeTeamId: team.id,
+          teamName: team.teamName,
+          teamSettings: team.teamSettings,
+          players: team.players,
+          games: team.games,
+          events: team.events,
+          photos: team.photos,
+          notifications: team.notifications,
+          chatMessages: team.chatMessages,
+          chatLastReadAt: team.chatLastReadAt,
+          paymentPeriods: team.paymentPeriods,
+          currentPlayerId: player.id,
+          isLoggedIn: true,
+          userPhone: normalizedPhone,
+          pendingTeamIds: null,
+        });
         return { success: true, playerId: player.id };
       },
 
