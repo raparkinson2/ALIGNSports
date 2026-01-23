@@ -37,6 +37,9 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
   4. Team Details: Team name and sport selection
   5. Jersey Colors: Select your team's jersey colors from presets
 - **Coach Role**: Select "Coach" if you're not a player - coaches don't need a jersey number
+- **Real-Time Validation**: Email and phone are validated immediately when you move to the next field
+  - If email or phone is already in use, you'll see an error right away
+  - No more waiting until the end to find out there's a conflict
 
 ### Schedule Tab
 - View upcoming games with opponent, date, time, and location

@@ -12,7 +12,7 @@ import { useTeamStore, Sport, SPORT_NAMES, Player, PlayerRole, SPORT_POSITIONS }
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg';
-import { signUpWithEmail } from '@/lib/supabase-auth';
+import { signUpWithEmail, checkEmailExists, checkPhoneExists } from '@/lib/supabase-auth';
 
 // Preset jersey colors for quick selection
 const PRESET_COLORS = [
@@ -110,6 +110,12 @@ export default function CreateTeamScreen() {
   const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
   const [editingColorName, setEditingColorName] = useState('');
 
+  // Real-time validation states
+  const [emailError, setEmailError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [isValidatingEmail, setIsValidatingEmail] = useState(false);
+  const [isValidatingPhone, setIsValidatingPhone] = useState(false);
+
   // Image picker functions
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -190,6 +196,96 @@ export default function CreateTeamScreen() {
     }
   };
 
+  // Real-time email validation
+  const validateEmail = async (emailValue: string) => {
+    const trimmedEmail = emailValue.trim();
+
+    // Clear error if empty
+    if (!trimmedEmail) {
+      setEmailError('');
+      return;
+    }
+
+    // Basic format check first
+    if (!trimmedEmail.includes('@')) {
+      setEmailError('Please enter a valid email');
+      return;
+    }
+
+    // Check locally first (across teams in local store)
+    const emailExistsLocally = teams.some(team =>
+      team.players.some(p => p.email?.toLowerCase() === trimmedEmail.toLowerCase())
+    );
+    if (emailExistsLocally) {
+      setEmailError('This email is already in use. Please sign in instead.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+
+    // Check with Supabase
+    setIsValidatingEmail(true);
+    try {
+      const result = await checkEmailExists(trimmedEmail);
+      if (result.exists) {
+        setEmailError('This email is already registered. Please sign in instead.');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      } else {
+        setEmailError('');
+      }
+    } catch {
+      // On error, allow to proceed (will be caught at submit)
+      setEmailError('');
+    }
+    setIsValidatingEmail(false);
+  };
+
+  // Real-time phone validation
+  const validatePhone = async (phoneValue: string) => {
+    const trimmedPhone = phoneValue.trim();
+
+    // Clear error if empty (phone is optional)
+    if (!trimmedPhone) {
+      setPhoneError('');
+      return;
+    }
+
+    // Basic format check - should have at least 10 digits
+    const digitsOnly = trimmedPhone.replace(/\D/g, '');
+    if (digitsOnly.length < 10) {
+      setPhoneError('Please enter a valid phone number');
+      return;
+    }
+
+    // Check locally first (across teams in local store)
+    const phoneExistsLocally = teams.some(team =>
+      team.players.some(p => {
+        const playerPhone = p.phone?.replace(/\D/g, '') || '';
+        return playerPhone === digitsOnly;
+      })
+    );
+    if (phoneExistsLocally) {
+      setPhoneError('This phone number is already in use.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+
+    // Check with Supabase
+    setIsValidatingPhone(true);
+    try {
+      const result = await checkPhoneExists(digitsOnly);
+      if (result.exists) {
+        setPhoneError('This phone number is already registered.');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      } else {
+        setPhoneError('');
+      }
+    } catch {
+      // On error, allow to proceed (will be caught at submit)
+      setPhoneError('');
+    }
+    setIsValidatingPhone(false);
+  };
+
   // Password validation
   const validatePassword = (pwd: string): string[] => {
     const errors: string[] = [];
@@ -219,7 +315,23 @@ export default function CreateTeamScreen() {
         setError('Please enter a valid email');
         return;
       }
-      // Check if email is already in use across all teams
+      // Check if there are real-time validation errors
+      if (emailError) {
+        setError(emailError);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
+      if (phoneError) {
+        setError(phoneError);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
+      // Check if still validating
+      if (isValidatingEmail || isValidatingPhone) {
+        setError('Please wait while we verify your information');
+        return;
+      }
+      // Check if email is already in use across all teams (local check)
       const emailExists = teams.some(team =>
         team.players.some(p => p.email?.toLowerCase() === email.trim().toLowerCase())
       );
@@ -489,11 +601,19 @@ export default function CreateTeamScreen() {
 
                 <View className="mb-4">
                   <Text className="text-slate-400 text-sm mb-2">Email Address</Text>
-                  <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
-                    <Mail size={20} color="#64748b" />
+                  <View className={cn(
+                    "flex-row items-center bg-slate-800/80 rounded-xl border px-4",
+                    emailError ? "border-red-500/70" : "border-slate-700/50"
+                  )}>
+                    <Mail size={20} color={emailError ? "#ef4444" : "#64748b"} />
                     <TextInput
                       value={email}
-                      onChangeText={setEmail}
+                      onChangeText={(text) => {
+                        setEmail(text);
+                        // Clear error when typing
+                        if (emailError) setEmailError('');
+                      }}
+                      onBlur={() => validateEmail(email)}
                       placeholder="your@email.com"
                       placeholderTextColor="#64748b"
                       keyboardType="email-address"
@@ -501,22 +621,42 @@ export default function CreateTeamScreen() {
                       autoCorrect={false}
                       className="flex-1 py-4 px-3 text-white text-base"
                     />
+                    {isValidatingEmail && (
+                      <Text className="text-cyan-400 text-xs">Checking...</Text>
+                    )}
                   </View>
+                  {emailError ? (
+                    <Text className="text-red-400 text-sm mt-2">{emailError}</Text>
+                  ) : null}
                 </View>
 
                 <View className="mb-4">
                   <Text className="text-slate-400 text-sm mb-2">Phone Number</Text>
-                  <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
-                    <Phone size={20} color="#64748b" />
+                  <View className={cn(
+                    "flex-row items-center bg-slate-800/80 rounded-xl border px-4",
+                    phoneError ? "border-red-500/70" : "border-slate-700/50"
+                  )}>
+                    <Phone size={20} color={phoneError ? "#ef4444" : "#64748b"} />
                     <TextInput
                       value={phone}
-                      onChangeText={(text) => setPhone(formatPhoneInput(text))}
+                      onChangeText={(text) => {
+                        setPhone(formatPhoneInput(text));
+                        // Clear error when typing
+                        if (phoneError) setPhoneError('');
+                      }}
+                      onBlur={() => validatePhone(phone)}
                       placeholder="(555) 123-4567"
                       placeholderTextColor="#64748b"
                       keyboardType="phone-pad"
                       className="flex-1 py-4 px-3 text-white text-base"
                     />
+                    {isValidatingPhone && (
+                      <Text className="text-cyan-400 text-xs">Checking...</Text>
+                    )}
                   </View>
+                  {phoneError ? (
+                    <Text className="text-red-400 text-sm mt-2">{phoneError}</Text>
+                  ) : null}
                 </View>
 
                 {/* Role Toggle: Coach or Player */}
