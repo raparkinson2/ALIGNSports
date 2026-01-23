@@ -502,6 +502,21 @@ export interface TeamSettings {
   showLineups?: boolean; // Toggle to show/hide lines/lineups feature
 }
 
+// Multi-team support: A complete team with all its data
+export interface Team {
+  id: string;
+  teamName: string;
+  teamSettings: TeamSettings;
+  players: Player[];
+  games: Game[];
+  events: Event[];
+  photos: Photo[];
+  notifications: AppNotification[];
+  chatMessages: ChatMessage[];
+  chatLastReadAt: Record<string, string>;
+  paymentPeriods: PaymentPeriod[];
+}
+
 interface TeamStore {
   teamName: string;
   setTeamName: (name: string) => void;
@@ -570,8 +585,8 @@ interface TeamStore {
   logout: () => void;
 
   // Authentication
-  loginWithEmail: (email: string, password: string) => { success: boolean; error?: string; playerId?: string };
-  loginWithPhone: (phone: string, password: string) => { success: boolean; error?: string; playerId?: string };
+  loginWithEmail: (email: string, password: string) => { success: boolean; error?: string; playerId?: string; multipleTeams?: boolean; teamCount?: number };
+  loginWithPhone: (phone: string, password: string) => { success: boolean; error?: string; playerId?: string; multipleTeams?: boolean; teamCount?: number };
   registerAdmin: (name: string, email: string, password: string, teamName: string, options?: { phone?: string; jerseyNumber?: string; isCoach?: boolean }) => { success: boolean; error?: string };
   registerInvitedPlayer: (email: string, password: string) => { success: boolean; error?: string; playerId?: string };
   registerInvitedPlayerByPhone: (phone: string, password: string) => { success: boolean; error?: string; playerId?: string };
@@ -592,6 +607,22 @@ interface TeamStore {
 
   // Reset all data
   resetAllData: () => void;
+
+  // Multi-team support
+  teams: Team[];
+  activeTeamId: string | null;
+  userEmail: string | null; // User's email for cross-team identity
+  userPhone: string | null; // User's phone for cross-team identity
+  pendingTeamIds: string[] | null; // Teams to choose from after login (null = no pending selection)
+
+  // Multi-team methods
+  addTeam: (team: Team) => void;
+  switchTeam: (teamId: string) => void;
+  getTeamsForUser: () => Team[];
+  getUserTeamCount: () => number;
+  setPendingTeamSelection: (teamIds: string[]) => void;
+  clearPendingTeamSelection: () => void;
+  createNewTeam: (teamName: string, sport: Sport, adminPlayer: Player) => string; // Returns new team ID
 }
 
 // Empty initial data for fresh start
@@ -937,11 +968,54 @@ export const useTeamStore = create<TeamStore>()(
 
       isLoggedIn: false,
       setIsLoggedIn: (loggedIn) => set({ isLoggedIn: loggedIn }),
-      logout: () => set({ isLoggedIn: false, currentPlayerId: null }),
+      logout: () => set({ isLoggedIn: false, currentPlayerId: null, userEmail: null, userPhone: null, pendingTeamIds: null }),
 
       // Authentication
       loginWithEmail: (email, password) => {
         const state = get();
+
+        // First, check all teams for this user
+        const teamsWithUser: { team: Team; player: Player }[] = [];
+        state.teams.forEach((team) => {
+          const player = team.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+          if (player && player.password === password) {
+            teamsWithUser.push({ team, player });
+          }
+        });
+
+        // If found in multiple teams, set up pending selection
+        if (teamsWithUser.length > 1) {
+          set({
+            userEmail: email.toLowerCase(),
+            pendingTeamIds: teamsWithUser.map((t) => t.team.id),
+          });
+          return { success: true, multipleTeams: true, teamCount: teamsWithUser.length };
+        }
+
+        // If found in exactly one team, switch to it
+        if (teamsWithUser.length === 1) {
+          const { team, player } = teamsWithUser[0];
+          set({
+            activeTeamId: team.id,
+            teamName: team.teamName,
+            teamSettings: team.teamSettings,
+            players: team.players,
+            games: team.games,
+            events: team.events,
+            photos: team.photos,
+            notifications: team.notifications,
+            chatMessages: team.chatMessages,
+            chatLastReadAt: team.chatLastReadAt,
+            paymentPeriods: team.paymentPeriods,
+            currentPlayerId: player.id,
+            isLoggedIn: true,
+            userEmail: email.toLowerCase(),
+            pendingTeamIds: null,
+          });
+          return { success: true, playerId: player.id };
+        }
+
+        // Fallback: check the active/legacy single-team data
         const player = state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
         if (!player) {
           return { success: false, error: 'No account found with this email' };
@@ -952,13 +1026,56 @@ export const useTeamStore = create<TeamStore>()(
         if (player.password !== password) {
           return { success: false, error: 'Incorrect password' };
         }
-        set({ currentPlayerId: player.id, isLoggedIn: true });
+        set({ currentPlayerId: player.id, isLoggedIn: true, userEmail: email.toLowerCase() });
         return { success: true, playerId: player.id };
       },
 
       loginWithPhone: (phone, password) => {
         const state = get();
         const normalizedPhone = phone.replace(/\D/g, '');
+
+        // First, check all teams for this user
+        const teamsWithUser: { team: Team; player: Player }[] = [];
+        state.teams.forEach((team) => {
+          const player = team.players.find((p) => p.phone?.replace(/\D/g, '') === normalizedPhone);
+          if (player && player.password === password) {
+            teamsWithUser.push({ team, player });
+          }
+        });
+
+        // If found in multiple teams, set up pending selection
+        if (teamsWithUser.length > 1) {
+          set({
+            userPhone: normalizedPhone,
+            pendingTeamIds: teamsWithUser.map((t) => t.team.id),
+          });
+          return { success: true, multipleTeams: true, teamCount: teamsWithUser.length };
+        }
+
+        // If found in exactly one team, switch to it
+        if (teamsWithUser.length === 1) {
+          const { team, player } = teamsWithUser[0];
+          set({
+            activeTeamId: team.id,
+            teamName: team.teamName,
+            teamSettings: team.teamSettings,
+            players: team.players,
+            games: team.games,
+            events: team.events,
+            photos: team.photos,
+            notifications: team.notifications,
+            chatMessages: team.chatMessages,
+            chatLastReadAt: team.chatLastReadAt,
+            paymentPeriods: team.paymentPeriods,
+            currentPlayerId: player.id,
+            isLoggedIn: true,
+            userPhone: normalizedPhone,
+            pendingTeamIds: null,
+          });
+          return { success: true, playerId: player.id };
+        }
+
+        // Fallback: check the active/legacy single-team data
         const player = state.players.find((p) => p.phone?.replace(/\D/g, '') === normalizedPhone);
         if (!player) {
           return { success: false, error: 'No account found with this phone number' };
@@ -969,7 +1086,7 @@ export const useTeamStore = create<TeamStore>()(
         if (player.password !== password) {
           return { success: false, error: 'Incorrect password' };
         }
-        set({ currentPlayerId: player.id, isLoggedIn: true });
+        set({ currentPlayerId: player.id, isLoggedIn: true, userPhone: normalizedPhone });
         return { success: true, playerId: player.id };
       },
 
@@ -1155,28 +1272,177 @@ export const useTeamStore = create<TeamStore>()(
           // Sign EVERYONE out
           currentPlayerId: null,
           isLoggedIn: false,
+          // Reset multi-team data
+          teams: [],
+          activeTeamId: null,
+          userEmail: null,
+          userPhone: null,
+          pendingTeamIds: null,
         };
       }),
+
+      // Multi-team support
+      teams: [],
+      activeTeamId: null,
+      userEmail: null,
+      userPhone: null,
+      pendingTeamIds: null,
+
+      addTeam: (team) => set((state) => ({
+        teams: [...state.teams, team],
+      })),
+
+      switchTeam: (teamId) => {
+        const state = get();
+        const team = state.teams.find((t) => t.id === teamId);
+        if (!team) return;
+
+        // Find the current user in the new team
+        const userInTeam = team.players.find(
+          (p) => (state.userEmail && p.email?.toLowerCase() === state.userEmail.toLowerCase()) ||
+                 (state.userPhone && p.phone?.replace(/\D/g, '') === state.userPhone.replace(/\D/g, ''))
+        );
+
+        set({
+          activeTeamId: teamId,
+          // Load team data into the "active" slots for backward compatibility
+          teamName: team.teamName,
+          teamSettings: team.teamSettings,
+          players: team.players,
+          games: team.games,
+          events: team.events,
+          photos: team.photos,
+          notifications: team.notifications,
+          chatMessages: team.chatMessages,
+          chatLastReadAt: team.chatLastReadAt,
+          paymentPeriods: team.paymentPeriods,
+          currentPlayerId: userInTeam?.id || null,
+          pendingTeamIds: null,
+        });
+      },
+
+      getTeamsForUser: () => {
+        const state = get();
+        if (!state.userEmail && !state.userPhone) return [];
+
+        return state.teams.filter((team) =>
+          team.players.some(
+            (p) => (state.userEmail && p.email?.toLowerCase() === state.userEmail.toLowerCase()) ||
+                   (state.userPhone && p.phone?.replace(/\D/g, '') === state.userPhone.replace(/\D/g, ''))
+          )
+        );
+      },
+
+      getUserTeamCount: () => {
+        return get().getTeamsForUser().length;
+      },
+
+      setPendingTeamSelection: (teamIds) => set({ pendingTeamIds: teamIds }),
+
+      clearPendingTeamSelection: () => set({ pendingTeamIds: null }),
+
+      createNewTeam: (teamName, sport, adminPlayer) => {
+        const teamId = `team-${Date.now()}`;
+        const newTeam: Team = {
+          id: teamId,
+          teamName,
+          teamSettings: {
+            sport,
+            jerseyColors: [
+              { name: 'White', color: '#ffffff' },
+              { name: 'Black', color: '#1a1a1a' },
+            ],
+            paymentMethods: [],
+            showTeamStats: true,
+            showPayments: true,
+            showTeamChat: true,
+            showPhotos: true,
+            showRefreshmentDuty: true,
+            refreshmentDutyIs21Plus: true,
+            showLineups: true,
+          },
+          players: [adminPlayer],
+          games: [],
+          events: [],
+          photos: [],
+          notifications: [],
+          chatMessages: [],
+          chatLastReadAt: {},
+          paymentPeriods: [],
+        };
+
+        set((state) => ({
+          teams: [...state.teams, newTeam],
+          activeTeamId: teamId,
+          teamName: newTeam.teamName,
+          teamSettings: newTeam.teamSettings,
+          players: newTeam.players,
+          games: newTeam.games,
+          events: newTeam.events,
+          photos: newTeam.photos,
+          notifications: newTeam.notifications,
+          chatMessages: newTeam.chatMessages,
+          chatLastReadAt: newTeam.chatLastReadAt,
+          paymentPeriods: newTeam.paymentPeriods,
+          currentPlayerId: adminPlayer.id,
+          isLoggedIn: true,
+          userEmail: adminPlayer.email || null,
+          userPhone: adminPlayer.phone || null,
+        }));
+
+        return teamId;
+      },
     }),
     {
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 10,
+      version: 11, // Bumped version for multi-team support
       // Persist login state so users stay logged in
-      partialize: (state) => ({
-        teamName: state.teamName,
-        teamSettings: state.teamSettings,
-        players: state.players,
-        games: state.games,
-        events: state.events,
-        photos: state.photos,
-        notifications: state.notifications,
-        chatMessages: state.chatMessages,
-        chatLastReadAt: state.chatLastReadAt,
-        paymentPeriods: state.paymentPeriods,
-        currentPlayerId: state.currentPlayerId,
-        isLoggedIn: state.isLoggedIn,
-      }),
+      // Also sync active team data back to teams array
+      partialize: (state) => {
+        // Sync active team data back to teams array before persisting
+        let syncedTeams = state.teams;
+        if (state.activeTeamId) {
+          syncedTeams = state.teams.map((team) =>
+            team.id === state.activeTeamId
+              ? {
+                  ...team,
+                  teamName: state.teamName,
+                  teamSettings: state.teamSettings,
+                  players: state.players,
+                  games: state.games,
+                  events: state.events,
+                  photos: state.photos,
+                  notifications: state.notifications,
+                  chatMessages: state.chatMessages,
+                  chatLastReadAt: state.chatLastReadAt,
+                  paymentPeriods: state.paymentPeriods,
+                }
+              : team
+          );
+        }
+
+        return {
+          teamName: state.teamName,
+          teamSettings: state.teamSettings,
+          players: state.players,
+          games: state.games,
+          events: state.events,
+          photos: state.photos,
+          notifications: state.notifications,
+          chatMessages: state.chatMessages,
+          chatLastReadAt: state.chatLastReadAt,
+          paymentPeriods: state.paymentPeriods,
+          currentPlayerId: state.currentPlayerId,
+          isLoggedIn: state.isLoggedIn,
+          // Multi-team data (with synced teams)
+          teams: syncedTeams,
+          activeTeamId: state.activeTeamId,
+          userEmail: state.userEmail,
+          userPhone: state.userPhone,
+          pendingTeamIds: state.pendingTeamIds,
+        };
+      },
     }
   )
 );

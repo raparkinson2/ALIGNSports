@@ -222,7 +222,12 @@ export default function LoginScreen() {
           const localResult = loginWithEmail(trimmedIdentifier, password);
           if (localResult.success) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.replace('/(tabs)');
+            // Check if user belongs to multiple teams
+            if (localResult.multipleTeams) {
+              router.replace('/select-team');
+            } else {
+              router.replace('/(tabs)');
+            }
             setIsLoading(false);
             return;
           }
@@ -244,7 +249,12 @@ export default function LoginScreen() {
 
       if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace('/(tabs)');
+        // Check if user belongs to multiple teams
+        if (result.multipleTeams) {
+          router.replace('/select-team');
+        } else {
+          router.replace('/(tabs)');
+        }
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError(result.error || 'Invalid email or password');

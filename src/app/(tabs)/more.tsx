@@ -23,6 +23,7 @@ import {
   Lock,
   Trash2,
   Check,
+  ArrowLeftRight,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -693,10 +694,27 @@ export default function MoreScreen() {
   const getNotificationPreferences = useTeamStore((s) => s.getNotificationPreferences);
   const showTeamStats = useTeamStore((s) => s.teamSettings.showTeamStats !== false);
 
+  // Multi-team support
+  const teams = useTeamStore((s) => s.teams);
+  const userEmail = useTeamStore((s) => s.userEmail);
+  const userPhone = useTeamStore((s) => s.userPhone);
+  const setPendingTeamSelection = useTeamStore((s) => s.setPendingTeamSelection);
+  const setIsLoggedIn = useTeamStore((s) => s.setIsLoggedIn);
+
   // Fallback: if currentPlayerId is null but there are players, use the first player
   const effectivePlayerId = currentPlayerId || (players.length > 0 ? players[0].id : null);
   const currentPlayer = players.find((p) => p.id === effectivePlayerId);
   const canManageTeam = currentPlayer?.roles?.includes('admin') || currentPlayer?.roles?.includes('captain');
+
+  // Check how many teams the user belongs to
+  const userTeams = teams.filter((team) =>
+    team.players.some(
+      (p) =>
+        (userEmail && p.email?.toLowerCase() === userEmail.toLowerCase()) ||
+        (userPhone && p.phone?.replace(/\D/g, '') === userPhone?.replace(/\D/g, ''))
+    )
+  );
+  const hasMultipleTeams = userTeams.length > 1;
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [playerToEdit, setPlayerToEdit] = useState<Player | null>(null);
@@ -798,6 +816,14 @@ export default function MoreScreen() {
         },
       ]
     );
+  };
+
+  const handleSwitchTeam = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // Set up pending selection with all user's teams
+    setPendingTeamSelection(userTeams.map((t) => t.id));
+    setIsLoggedIn(false);
+    router.replace('/select-team');
   };
 
   return (
@@ -922,6 +948,17 @@ export default function MoreScreen() {
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
             Team
           </Text>
+
+          {/* Switch Team - only show if user belongs to multiple teams */}
+          {hasMultipleTeams && (
+            <MenuItem
+              icon={<ArrowLeftRight size={20} color="#67e8f9" />}
+              title="Switch Team"
+              subtitle={`You're on ${userTeams.length} teams`}
+              onPress={handleSwitchTeam}
+              index={2}
+            />
+          )}
 
           <MenuItem
             icon={<Users size={20} color="#67e8f9" />}

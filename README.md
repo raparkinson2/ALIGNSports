@@ -22,6 +22,9 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Security Questions**: Set up a security question during registration to help recover your account if you forget your password
 - **Profile Photo Setup**: New players can optionally add a profile photo during account setup (can skip)
 - **Password Reset**: Forgot your password? Enter your email to receive a reset link via Supabase, or use security questions for offline recovery
+- **Multi-Team Support**: If you belong to multiple teams, you'll see a team selection screen after login
+  - Choose which team to view
+  - Switch teams anytime via More > Switch Team
 - Personalized experience based on your role
 - Admin users see additional Admin tab
 
@@ -184,6 +187,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 ### More Tab
 - View your current player profile
 - Access notifications with unread badge
+- **Switch Team**: If you belong to multiple teams, tap to switch between them
 - **Notification Settings**: Manage push notification preferences
 - Email the entire team at once
 - Send game invites to potential subs

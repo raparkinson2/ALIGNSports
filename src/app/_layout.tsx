@@ -39,6 +39,7 @@ function AuthNavigator() {
   const isLoggedIn = useTeamStore((s) => s.isLoggedIn);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const players = useTeamStore((s) => s.players);
+  const pendingTeamIds = useTeamStore((s) => s.pendingTeamIds);
   const logout = useTeamStore((s) => s.logout);
   const updateNotificationPreferences = useTeamStore((s) => s.updateNotificationPreferences);
   const addNotification = useTeamStore((s) => s.addNotification);
@@ -171,25 +172,34 @@ function AuthNavigator() {
     if (!isReady || !isHydrated) return;
 
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'create-team' || segments[0] === 'register';
-    console.log('AUTH CHECK - isLoggedIn:', isLoggedIn, 'inAuthGroup:', inAuthGroup, 'segments:', segments);
+    const inTeamSelection = segments[0] === 'select-team';
+    console.log('AUTH CHECK - isLoggedIn:', isLoggedIn, 'inAuthGroup:', inAuthGroup, 'pendingTeamIds:', pendingTeamIds, 'segments:', segments);
+
+    // If there are pending teams to select from, go to team selection
+    if (pendingTeamIds && pendingTeamIds.length > 0 && !inTeamSelection) {
+      console.log('PENDING TEAM SELECTION - redirecting to select-team');
+      router.replace('/select-team');
+      return;
+    }
 
     // Always redirect to login if not logged in and not in auth flow
-    if (!isLoggedIn) {
+    if (!isLoggedIn && !pendingTeamIds) {
       if (!inAuthGroup) {
         console.log('NOT LOGGED IN - redirecting to login');
         router.replace('/login');
       }
-    } else if (inAuthGroup) {
+    } else if (isLoggedIn && (inAuthGroup || inTeamSelection)) {
       console.log('LOGGED IN - redirecting to tabs');
       router.replace('/(tabs)');
     }
-  }, [isLoggedIn, segments, isReady, isHydrated, router]);
+  }, [isLoggedIn, pendingTeamIds, segments, isReady, isHydrated, router]);
 
   return (
     <Stack>
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="create-team" options={{ headerShown: false }} />
       <Stack.Screen name="register" options={{ headerShown: false }} />
+      <Stack.Screen name="select-team" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen
         name="game/[id]"

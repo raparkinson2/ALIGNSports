@@ -8,7 +8,7 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { useTeamStore, Sport, SPORT_NAMES, SECURITY_QUESTIONS, SecurityQuestion } from '@/lib/store';
+import { useTeamStore, Sport, SPORT_NAMES, SECURITY_QUESTIONS, SecurityQuestion, Player, PlayerRole, SPORT_POSITIONS } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg';
@@ -88,11 +88,11 @@ function SportIcon({ sport, color, size = 24 }: { sport: Sport; color: string; s
 
 export default function CreateTeamScreen() {
   const router = useRouter();
-  const registerAdmin = useTeamStore((s) => s.registerAdmin);
-  const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
-  const setTeamName = useTeamStore((s) => s.setTeamName);
+  const createNewTeam = useTeamStore((s) => s.createNewTeam);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
-  const players = useTeamStore((s) => s.players);
+  const teams = useTeamStore((s) => s.teams);
+  const userEmail = useTeamStore((s) => s.userEmail);
+  const userPhone = useTeamStore((s) => s.userPhone);
 
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
@@ -224,9 +224,11 @@ export default function CreateTeamScreen() {
         setError('Please enter a valid email');
         return;
       }
-      // Check if email is already in use
-      const existingPlayer = players.find(p => p.email?.toLowerCase() === email.trim().toLowerCase());
-      if (existingPlayer) {
+      // Check if email is already in use across all teams
+      const emailExists = teams.some(team =>
+        team.players.some(p => p.email?.toLowerCase() === email.trim().toLowerCase())
+      );
+      if (emailExists) {
         setError('An account with this email already exists. Please sign in instead.');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         return;
@@ -330,35 +332,47 @@ export default function CreateTeamScreen() {
         return;
       }
 
-      // Set the sport, jersey colors, and team logo
-      setTeamSettings({ sport, jerseyColors, teamLogo: teamLogo ?? undefined });
+      // Split name into firstName and lastName
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
 
-      // Register the admin with email/password and additional options
-      const result = registerAdmin(name.trim(), email.trim(), password, teamNameInput.trim(), {
+      const roles: PlayerRole[] = isCoach ? ['admin', 'coach'] : ['admin'];
+
+      // Create the admin player object
+      const adminPlayer: Player = {
+        id: Date.now().toString(),
+        firstName,
+        lastName,
+        email: email.trim().toLowerCase(),
+        password,
         phone: phone ? unformatPhone(phone) : undefined,
-        jerseyNumber: !isCoach ? jerseyNumber.trim() : undefined,
-        isCoach,
+        number: isCoach ? '' : (jerseyNumber.trim() || '1'),
+        position: isCoach ? 'Coach' : SPORT_POSITIONS[sport][0],
+        roles,
+        status: 'active',
+        ...(securityQuestion && {
+          securityQuestion: securityQuestion as SecurityQuestion,
+          securityAnswer: securityAnswer.trim().toLowerCase(),
+        }),
+        ...(avatar && { avatar }),
+      };
+
+      // Create the new team with the admin player
+      createNewTeam(teamNameInput.trim(), sport, adminPlayer);
+
+      // Update team settings with jersey colors and logo
+      const currentState = useTeamStore.getState();
+      useTeamStore.setState({
+        teamSettings: {
+          ...currentState.teamSettings,
+          jerseyColors,
+          teamLogo: teamLogo ?? undefined,
+        },
       });
 
-      if (result.success) {
-        // Get the current state to find the newly created player
-        const currentState = useTeamStore.getState();
-        const newPlayer = currentState.players.find(p => p.email?.toLowerCase() === email.trim().toLowerCase());
-        if (newPlayer) {
-          updatePlayer(newPlayer.id, {
-            ...(securityQuestion && {
-              securityQuestion: securityQuestion as SecurityQuestion,
-              securityAnswer: securityAnswer.trim().toLowerCase(),
-            }),
-            ...(avatar && { avatar }),
-          });
-        }
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace('/(tabs)');
-      } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setError(result.error || 'Failed to create team');
-      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace('/(tabs)');
     } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError('Something went wrong. Please try again.');
