@@ -411,7 +411,8 @@ export default function ScheduleScreen() {
   const [opponent, setOpponent] = useState('');
   const [location, setLocation] = useState('');
   const [gameDate, setGameDate] = useState(new Date());
-  const [gameTime, setGameTime] = useState('7:00 PM');
+  const [gameTimeValue, setGameTimeValue] = useState('7:00');
+  const [gameTimePeriod, setGameTimePeriod] = useState<'AM' | 'PM'>('PM');
   const [selectedJersey, setSelectedJersey] = useState(teamSettings.jerseyColors[0]?.name || '');
   const [notes, setNotes] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -461,7 +462,8 @@ export default function ScheduleScreen() {
     setOpponent('');
     setLocation('');
     setGameDate(new Date());
-    setGameTime('7:00 PM');
+    setGameTimeValue('7:00');
+    setGameTimePeriod('PM');
     setSelectedJersey(teamSettings.jerseyColors[0]?.name || '');
     setNotes('');
     setShowBeerDuty(false);
@@ -484,11 +486,14 @@ export default function ScheduleScreen() {
       ? selectedPlayerIds
       : activePlayers.map((p) => p.id);
 
+    // Combine time value and period
+    const fullGameTime = `${gameTimeValue.trim() || '7:00'} ${gameTimePeriod}`;
+
     const newGame: Game = {
       id: Date.now().toString(),
       opponent: opponent.trim(),
       date: gameDate.toISOString(),
-      time: gameTime.trim() || '7:00 PM',
+      time: fullGameTime,
       location: location.trim(),
       address: '', // Address is now part of location field
       jerseyColor: selectedJersey,
@@ -509,14 +514,13 @@ export default function ScheduleScreen() {
 
     // Handle notifications based on invite release option
     const formattedDate = format(gameDate, 'EEE, MMM d');
-    const timeStr = gameTime.trim() || '7:00 PM';
 
     if (inviteReleaseOption === 'now') {
       // Send notifications immediately
-      sendGameInviteNotification(newGame.id, opponent.trim(), formattedDate, timeStr);
+      sendGameInviteNotification(newGame.id, opponent.trim(), formattedDate, fullGameTime);
     } else if (inviteReleaseOption === 'scheduled') {
       // Schedule notifications for later
-      scheduleGameInviteNotification(newGame.id, opponent.trim(), formattedDate, timeStr, inviteReleaseDate);
+      scheduleGameInviteNotification(newGame.id, opponent.trim(), formattedDate, fullGameTime, inviteReleaseDate);
     }
     // If 'none', no notifications are sent - user can send manually from game details
 
@@ -765,14 +769,56 @@ export default function ScheduleScreen() {
               {/* Time */}
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Time <Text className="text-red-400">*</Text></Text>
-                <TextInput
-                  value={gameTime}
-                  onChangeText={setGameTime}
-                  placeholder="7:00 PM"
-                  placeholderTextColor="#64748b"
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                  autoCapitalize="characters"
-                />
+                <View className="flex-row items-center">
+                  <TextInput
+                    value={gameTimeValue}
+                    onChangeText={setGameTimeValue}
+                    placeholder="7:00"
+                    placeholderTextColor="#64748b"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg flex-1"
+                    keyboardType="numbers-and-punctuation"
+                  />
+                  <View className="flex-row ml-3">
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setGameTimePeriod('AM');
+                      }}
+                      className={cn(
+                        'px-4 py-3 rounded-l-xl border-r-0',
+                        gameTimePeriod === 'AM'
+                          ? 'bg-cyan-500/30 border border-cyan-500/50'
+                          : 'bg-slate-800 border border-slate-700'
+                      )}
+                    >
+                      <Text className={cn(
+                        'font-semibold text-lg',
+                        gameTimePeriod === 'AM' ? 'text-cyan-400' : 'text-slate-400'
+                      )}>
+                        AM
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setGameTimePeriod('PM');
+                      }}
+                      className={cn(
+                        'px-4 py-3 rounded-r-xl',
+                        gameTimePeriod === 'PM'
+                          ? 'bg-cyan-500/30 border border-cyan-500/50'
+                          : 'bg-slate-800 border border-slate-700'
+                      )}
+                    >
+                      <Text className={cn(
+                        'font-semibold text-lg',
+                        gameTimePeriod === 'PM' ? 'text-cyan-400' : 'text-slate-400'
+                      )}>
+                        PM
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
               </View>
 
               {/* Location */}
