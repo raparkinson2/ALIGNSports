@@ -57,7 +57,7 @@ function renderMessageWithMentions(
         {parts.map((part, idx) => {
           if (part.toLowerCase() === '@everyone') {
             return (
-              <Text key={idx} className="text-blue-800 font-semibold">
+              <Text key={idx} className={cn(isOwnMessage ? 'text-yellow-200' : 'text-cyan-300', 'font-semibold')}>
                 {part}
               </Text>
             );
@@ -98,7 +98,7 @@ function renderMessageWithMentions(
           );
           if (isHighlight) {
             return (
-              <Text key={idx} className="text-blue-800 font-semibold">
+              <Text key={idx} className={cn(isOwnMessage ? 'text-yellow-200' : 'text-cyan-300', 'font-semibold')}>
                 {part}
               </Text>
             );
