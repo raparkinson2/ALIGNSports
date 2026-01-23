@@ -1,14 +1,14 @@
-import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView, Modal } from 'react-native';
+import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { useState } from 'react';
-import { ChevronLeft, User, Mail, Lock, Users, Check, ShieldQuestion, ChevronDown, Palette, Plus, X, Camera, ImageIcon, Phone, Hash, UserCog, Edit3 } from 'lucide-react-native';
+import { ChevronLeft, User, Mail, Lock, Users, Check, Palette, X, Camera, ImageIcon, Phone, Hash, Edit3 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { useTeamStore, Sport, SPORT_NAMES, SECURITY_QUESTIONS, SecurityQuestion, Player, PlayerRole, SPORT_POSITIONS } from '@/lib/store';
+import { useTeamStore, Sport, SPORT_NAMES, Player, PlayerRole, SPORT_POSITIONS } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg';
@@ -91,8 +91,6 @@ export default function CreateTeamScreen() {
   const createNewTeam = useTeamStore((s) => s.createNewTeam);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
   const teams = useTeamStore((s) => s.teams);
-  const userEmail = useTeamStore((s) => s.userEmail);
-  const userPhone = useTeamStore((s) => s.userPhone);
 
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
@@ -102,9 +100,6 @@ export default function CreateTeamScreen() {
   const [isCoach, setIsCoach] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [securityQuestion, setSecurityQuestion] = useState<SecurityQuestion | ''>('');
-  const [securityAnswer, setSecurityAnswer] = useState('');
-  const [showQuestionPicker, setShowQuestionPicker] = useState(false);
   const [teamNameInput, setTeamNameInput] = useState('');
   const [sport, setSport] = useState<Sport>('hockey');
   const [jerseyColors, setJerseyColors] = useState<{ name: string; color: string }[]>([]);
@@ -252,21 +247,6 @@ export default function CreateTeamScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setStep(3);
     } else if (step === 3) {
-      if (!securityQuestion) {
-        setError('Please select a security question');
-        return;
-      }
-      if (!securityAnswer.trim()) {
-        setError('Please enter your answer');
-        return;
-      }
-      if (securityAnswer.trim().length < 2) {
-        setError('Answer must be at least 2 characters');
-        return;
-      }
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setStep(4);
-    } else if (step === 4) {
       if (!teamNameInput.trim()) {
         setError('Please enter a team name');
         return;
@@ -276,8 +256,8 @@ export default function CreateTeamScreen() {
         return;
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setStep(5);
-    } else if (step === 5) {
+      setStep(4);
+    } else if (step === 4) {
       if (jerseyColors.length < 1) {
         setError('Please add at least one jersey color');
         return;
@@ -308,13 +288,6 @@ export default function CreateTeamScreen() {
     } else if (editingColorIndex !== null && editingColorIndex > index) {
       // Adjust editing index if removing an item before it
       setEditingColorIndex(editingColorIndex - 1);
-    }
-  };
-
-  const handleRemoveJerseyColorByName = (name: string) => {
-    const index = jerseyColors.findIndex(c => c.name === name);
-    if (index !== -1) {
-      handleRemoveJerseyColor(index);
     }
   };
 
@@ -351,10 +324,6 @@ export default function CreateTeamScreen() {
         position: isCoach ? 'Coach' : SPORT_POSITIONS[sport][0],
         roles,
         status: 'active',
-        ...(securityQuestion && {
-          securityQuestion: securityQuestion as SecurityQuestion,
-          securityAnswer: securityAnswer.trim().toLowerCase(),
-        }),
         ...(avatar && { avatar }),
       };
 
@@ -423,7 +392,7 @@ export default function CreateTeamScreen() {
             className="px-6 mb-6"
           >
             <View className="flex-row items-center justify-center">
-              {[1, 2, 3, 4, 5].map((s) => (
+              {[1, 2, 3, 4].map((s) => (
                 <View key={s} className="flex-row items-center">
                   <View
                     className={cn(
@@ -439,10 +408,10 @@ export default function CreateTeamScreen() {
                       </Text>
                     )}
                   </View>
-                  {s < 5 && (
+                  {s < 4 && (
                     <View
                       className={cn(
-                        'w-6 h-1 mx-0.5',
+                        'w-8 h-1 mx-1',
                         step > s ? 'bg-cyan-500' : 'bg-slate-700'
                       )}
                     />
@@ -684,61 +653,8 @@ export default function CreateTeamScreen() {
               </Animated.View>
             )}
 
-            {/* Step 3: Security Question */}
+            {/* Step 3: Team Info */}
             {step === 3 && (
-              <Animated.View entering={FadeInDown.delay(150).springify()}>
-                <View className="items-center mb-8">
-                  <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
-                    <ShieldQuestion size={32} color="#67e8f9" />
-                  </View>
-                  <Text className="text-white text-2xl font-bold">Security Question</Text>
-                  <Text className="text-slate-400 text-center mt-2">
-                    This will help you recover your account
-                  </Text>
-                </View>
-
-                {/* Security Question Selector */}
-                <View className="mb-4">
-                  <Text className="text-slate-400 text-sm mb-2">Select a Question</Text>
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setShowQuestionPicker(true);
-                    }}
-                    className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4 py-4"
-                  >
-                    <ShieldQuestion size={20} color="#64748b" />
-                    <Text className={`flex-1 px-3 text-base ${securityQuestion ? 'text-white' : 'text-slate-500'}`}>
-                      {securityQuestion || 'Choose a security question'}
-                    </Text>
-                    <ChevronDown size={20} color="#64748b" />
-                  </Pressable>
-                </View>
-
-                {/* Security Answer */}
-                <View className="mb-4">
-                  <Text className="text-slate-400 text-sm mb-2">Your Answer</Text>
-                  <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
-                    <Lock size={20} color="#64748b" />
-                    <TextInput
-                      value={securityAnswer}
-                      onChangeText={setSecurityAnswer}
-                      placeholder="Enter your answer"
-                      placeholderTextColor="#64748b"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      className="flex-1 py-4 px-3 text-white text-base"
-                    />
-                  </View>
-                  <Text className="text-slate-500 text-xs mt-2">
-                    Answers are not case-sensitive
-                  </Text>
-                </View>
-              </Animated.View>
-            )}
-
-            {/* Step 4: Team Info */}
-            {step === 4 && (
               <Animated.View entering={FadeInDown.delay(150).springify()}>
                 <View className="items-center mb-8">
                   <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
@@ -830,8 +746,8 @@ export default function CreateTeamScreen() {
               </Animated.View>
             )}
 
-            {/* Step 5: Jersey Colors */}
-            {step === 5 && (
+            {/* Step 4: Jersey Colors */}
+            {step === 4 && (
               <Animated.View entering={FadeInDown.delay(150).springify()}>
                 <View className="items-center mb-6">
                   <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
@@ -972,55 +888,12 @@ export default function CreateTeamScreen() {
               className="bg-cyan-500 rounded-xl py-4 flex-row items-center justify-center active:bg-cyan-600 disabled:opacity-50 mb-8"
             >
               <Text className="text-white font-semibold text-lg">
-                {isLoading ? 'Creating Team...' : step === 5 ? 'Create Team' : 'Continue'}
+                {isLoading ? 'Creating Team...' : step === 4 ? 'Create Team' : 'Continue'}
               </Text>
             </Pressable>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-
-      {/* Security Question Picker Modal */}
-      <Modal
-        visible={showQuestionPicker}
-        animationType="slide"
-        transparent
-      >
-        <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl max-h-[70%]">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Text className="text-white text-lg font-bold">Select a Question</Text>
-              <Pressable
-                onPress={() => setShowQuestionPicker(false)}
-                className="px-4 py-2"
-              >
-                <Text className="text-cyan-400 font-semibold">Done</Text>
-              </Pressable>
-            </View>
-            <ScrollView className="px-5 py-4">
-              {SECURITY_QUESTIONS.map((question) => (
-                <Pressable
-                  key={question}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setSecurityQuestion(question);
-                    setShowQuestionPicker(false);
-                  }}
-                  className={`py-4 px-4 rounded-xl mb-2 ${
-                    securityQuestion === question
-                      ? 'bg-cyan-500/20 border border-cyan-500/50'
-                      : 'bg-slate-800/50'
-                  }`}
-                >
-                  <Text className={`text-base ${securityQuestion === question ? 'text-cyan-400' : 'text-white'}`}>
-                    {question}
-                  </Text>
-                </Pressable>
-              ))}
-              <View className="h-8" />
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
