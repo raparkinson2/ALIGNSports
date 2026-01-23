@@ -218,10 +218,13 @@ export default function LoginScreen() {
 
       // Try Supabase authentication first (for email)
       if (!isPhoneNumber(trimmedIdentifier)) {
+        console.log('LOGIN: Attempting Supabase auth for:', trimmedIdentifier);
         const supabaseResult = await signInWithEmail(trimmedIdentifier, password);
+        console.log('LOGIN: Supabase result:', JSON.stringify(supabaseResult));
 
         // Check if email confirmation is required
         if (supabaseResult.emailNotConfirmed) {
+          console.log('LOGIN: Email not confirmed');
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           setPendingConfirmEmail(trimmedIdentifier);
           setShowEmailConfirmation(true);
@@ -230,8 +233,10 @@ export default function LoginScreen() {
         }
 
         if (supabaseResult.success) {
+          console.log('LOGIN: Supabase auth successful, trying local login');
           // Also update local store for offline capability
           const localResult = loginWithEmail(trimmedIdentifier, password);
+          console.log('LOGIN: Local result:', JSON.stringify(localResult));
           if (localResult.success) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             // Check if user belongs to multiple teams
@@ -245,6 +250,7 @@ export default function LoginScreen() {
           }
           // If local store doesn't have the user, still proceed
           // The user exists in Supabase but may need to sync locally
+          console.log('LOGIN: Local login failed, proceeding with Supabase-only auth');
           setCurrentPlayerId('');
           setIsLoggedIn(true);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -255,6 +261,7 @@ export default function LoginScreen() {
 
         // If Supabase login failed with an error, show it
         if (supabaseResult.error) {
+          console.log('LOGIN: Supabase error:', supabaseResult.error);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           setError(supabaseResult.error);
           setIsLoading(false);
