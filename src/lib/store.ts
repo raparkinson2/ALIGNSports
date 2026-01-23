@@ -571,6 +571,7 @@ interface TeamStore {
 
   // Authentication
   loginWithEmail: (email: string, password: string) => { success: boolean; error?: string; playerId?: string };
+  loginWithPhone: (phone: string, password: string) => { success: boolean; error?: string; playerId?: string };
   registerAdmin: (name: string, email: string, password: string, teamName: string, options?: { phone?: string; jerseyNumber?: string; isCoach?: boolean }) => { success: boolean; error?: string };
   registerInvitedPlayer: (email: string, password: string) => { success: boolean; error?: string; playerId?: string };
   registerInvitedPlayerByPhone: (phone: string, password: string) => { success: boolean; error?: string; playerId?: string };
@@ -944,6 +945,23 @@ export const useTeamStore = create<TeamStore>()(
         const player = state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
         if (!player) {
           return { success: false, error: 'No account found with this email' };
+        }
+        if (!player.password) {
+          return { success: false, error: 'Please create an account first' };
+        }
+        if (player.password !== password) {
+          return { success: false, error: 'Incorrect password' };
+        }
+        set({ currentPlayerId: player.id, isLoggedIn: true });
+        return { success: true, playerId: player.id };
+      },
+
+      loginWithPhone: (phone, password) => {
+        const state = get();
+        const normalizedPhone = phone.replace(/\D/g, '');
+        const player = state.players.find((p) => p.phone?.replace(/\D/g, '') === normalizedPhone);
+        if (!player) {
+          return { success: false, error: 'No account found with this phone number' };
         }
         if (!player.password) {
           return { success: false, error: 'Please create an account first' };

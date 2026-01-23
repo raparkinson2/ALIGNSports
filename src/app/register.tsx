@@ -23,9 +23,7 @@ export default function RegisterScreen() {
   const players = useTeamStore((s) => s.players);
 
   const [step, setStep] = useState(1);
-  const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [identifier, setIdentifier] = useState(''); // Can be email or phone
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [securityQuestion, setSecurityQuestion] = useState<SecurityQuestion | ''>('');
@@ -37,6 +35,26 @@ export default function RegisterScreen() {
   const [foundPlayer, setFoundPlayer] = useState<{ id: string; firstName: string; lastName: string; number: string } | null>(null);
 
   const hasTeam = players.length > 0;
+
+  // Helper to detect if input is phone or email
+  const isPhoneNumber = (value: string): boolean => {
+    const digitsOnly = value.replace(/\D/g, '');
+    return digitsOnly.length >= 7 && !/[@]/.test(value);
+  };
+
+  // Format input as user types
+  const handleIdentifierChange = (text: string) => {
+    if (text.includes('@')) {
+      setIdentifier(text);
+      return;
+    }
+    const digitsOnly = text.replace(/\D/g, '');
+    if (digitsOnly.length > 0 && digitsOnly.length === text.replace(/[\s\-\(\)]/g, '').length) {
+      setIdentifier(formatPhoneInput(text));
+    } else {
+      setIdentifier(text);
+    }
+  };
 
   // Password validation
   const validatePassword = (pwd: string): string[] => {
@@ -54,39 +72,21 @@ export default function RegisterScreen() {
   const handleCheckInvitation = () => {
     setError('');
 
-    if (loginMethod === 'email') {
-      if (!email.trim()) {
-        setError('Please enter your email');
-        return;
-      }
-      if (!email.includes('@')) {
-        setError('Please enter a valid email');
-        return;
-      }
+    const trimmedIdentifier = identifier.trim();
 
-      const player = findPlayerByEmail(email.trim());
+    if (!trimmedIdentifier) {
+      setError('Please enter your email or phone number');
+      return;
+    }
 
-      if (!player) {
-        setError('No invitation found for this email. Please ask your team admin to add you first.');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        return;
-      }
-
-      if (player.password) {
-        setError('An account already exists for this email. Please sign in instead.');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        return;
-      }
-
-      setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
-    } else {
-      const rawPhone = unformatPhone(phone);
-      if (!rawPhone || rawPhone.length < 10) {
+    let player;
+    if (isPhoneNumber(trimmedIdentifier)) {
+      const rawPhone = unformatPhone(trimmedIdentifier);
+      if (rawPhone.length < 10) {
         setError('Please enter a valid phone number');
         return;
       }
-
-      const player = findPlayerByPhone(rawPhone);
+      player = findPlayerByPhone(rawPhone);
 
       if (!player) {
         setError('No invitation found for this phone number. Please ask your team admin to add you first.');
@@ -99,10 +99,27 @@ export default function RegisterScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         return;
       }
+    } else {
+      if (!trimmedIdentifier.includes('@')) {
+        setError('Please enter a valid email address');
+        return;
+      }
+      player = findPlayerByEmail(trimmedIdentifier);
 
-      setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
+      if (!player) {
+        setError('No invitation found for this email. Please ask your team admin to add you first.');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
+
+      if (player.password) {
+        setError('An account already exists for this email. Please sign in instead.');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
     }
 
+    setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setStep(2);
   };
@@ -193,9 +210,10 @@ export default function RegisterScreen() {
     setIsLoading(true);
 
     setTimeout(() => {
-      const result = loginMethod === 'email'
-        ? registerInvitedPlayer(email.trim(), password)
-        : registerInvitedPlayerByPhone(unformatPhone(phone), password);
+      const trimmedIdentifier = identifier.trim();
+      const result = isPhoneNumber(trimmedIdentifier)
+        ? registerInvitedPlayerByPhone(unformatPhone(trimmedIdentifier), password)
+        : registerInvitedPlayer(trimmedIdentifier, password);
 
       if (result.success && result.playerId) {
         // Save security question, answer, and optional avatar
@@ -273,88 +291,34 @@ export default function RegisterScreen() {
                   </Text>
                 </View>
 
-                {/* Email/Phone Toggle */}
-                <View className="flex-row mb-4 bg-slate-800/50 rounded-xl p-1">
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setLoginMethod('email');
-                      setError('');
-                    }}
-                    className={cn(
-                      'flex-1 py-3 rounded-lg flex-row items-center justify-center',
-                      loginMethod === 'email' ? 'bg-cyan-500' : 'bg-transparent'
-                    )}
-                  >
-                    <Mail size={18} color={loginMethod === 'email' ? 'white' : '#64748b'} />
-                    <Text className={cn(
-                      'font-semibold ml-2',
-                      loginMethod === 'email' ? 'text-white' : 'text-slate-400'
-                    )}>Email</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setLoginMethod('phone');
-                      setError('');
-                    }}
-                    className={cn(
-                      'flex-1 py-3 rounded-lg flex-row items-center justify-center',
-                      loginMethod === 'phone' ? 'bg-cyan-500' : 'bg-transparent'
-                    )}
-                  >
-                    <Phone size={18} color={loginMethod === 'phone' ? 'white' : '#64748b'} />
-                    <Text className={cn(
-                      'font-semibold ml-2',
-                      loginMethod === 'phone' ? 'text-white' : 'text-slate-400'
-                    )}>Phone</Text>
-                  </Pressable>
-                </View>
-
-                {/* Email Input */}
-                {loginMethod === 'email' && (
-                  <View className="mb-4">
-                    <Text className="text-slate-400 text-sm mb-2">Email Address</Text>
-                    <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
-                      <Mail size={20} color="#64748b" />
-                      <TextInput
-                        value={email}
-                        onChangeText={setEmail}
-                        placeholder="your@email.com"
-                        placeholderTextColor="#64748b"
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        className="flex-1 py-4 px-3 text-white text-base"
-                      />
-                    </View>
-                  </View>
-                )}
-
-                {/* Phone Input */}
-                {loginMethod === 'phone' && (
-                  <View className="mb-4">
-                    <Text className="text-slate-400 text-sm mb-2">Phone Number</Text>
-                    <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
+                {/* Email/Phone Input - Auto-detect */}
+                <View className="mb-4">
+                  <Text className="text-slate-400 text-sm mb-2">Email or Phone Number</Text>
+                  <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
+                    {isPhoneNumber(identifier) ? (
                       <Phone size={20} color="#64748b" />
-                      <TextInput
-                        value={phone}
-                        onChangeText={(text) => setPhone(formatPhoneInput(text))}
-                        placeholder="(555)123-4567"
-                        placeholderTextColor="#64748b"
-                        keyboardType="phone-pad"
-                        className="flex-1 py-4 px-3 text-white text-base"
-                      />
-                    </View>
+                    ) : (
+                      <Mail size={20} color="#64748b" />
+                    )}
+                    <TextInput
+                      value={identifier}
+                      onChangeText={handleIdentifierChange}
+                      placeholder="your@email.com or (555)123-4567"
+                      placeholderTextColor="#64748b"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      className="flex-1 py-4 px-3 text-white text-base"
+                    />
                   </View>
-                )}
+                </View>
 
                 {/* Info Box */}
                 <View className="bg-slate-800/50 rounded-xl p-4 mb-6 border border-slate-700/50">
                   <View className="flex-row items-start">
                     <AlertCircle size={20} color="#67e8f9" />
                     <Text className="text-slate-400 text-sm ml-3 flex-1">
-                      Your team admin needs to add you to the team first using this {loginMethod === 'email' ? 'email address' : 'phone number'}. If you haven't been invited yet, ask them to add you.
+                      Your team admin needs to add you to the team first using this email or phone number. If you haven't been invited yet, ask them to add you.
                     </Text>
                   </View>
                 </View>

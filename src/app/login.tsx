@@ -3,11 +3,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, ShieldQuestion } from 'lucide-react-native';
+import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, ShieldQuestion, Phone } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Player, getPlayerName } from '@/lib/store';
+import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 
 interface PlayerLoginCardProps {
   player: Player;
@@ -51,23 +52,26 @@ function PlayerLoginCard({ player, index, onSelect }: PlayerLoginCardProps) {
 export default function LoginScreen() {
   const router = useRouter();
   const loginWithEmail = useTeamStore((s) => s.loginWithEmail);
+  const loginWithPhone = useTeamStore((s) => s.loginWithPhone);
   const players = useTeamStore((s) => s.players);
   const teamName = useTeamStore((s) => s.teamName);
   const setCurrentPlayerId = useTeamStore((s) => s.setCurrentPlayerId);
   const setIsLoggedIn = useTeamStore((s) => s.setIsLoggedIn);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
+  const findPlayerByEmail = useTeamStore((s) => s.findPlayerByEmail);
+  const findPlayerByPhone = useTeamStore((s) => s.findPlayerByPhone);
 
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState(''); // Can be email or phone
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPlayerSelect, setShowPlayerSelect] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
+  const [resetIdentifier, setResetIdentifier] = useState('');
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [resetStep, setResetStep] = useState<'email' | 'security' | 'password'>('email');
+  const [resetStep, setResetStep] = useState<'identifier' | 'security' | 'password'>('identifier');
   const [foundPlayer, setFoundPlayer] = useState<Player | null>(null);
 
   const hasTeam = players.length > 0;
@@ -78,18 +82,50 @@ export default function LoginScreen() {
   // Players without passwords (legacy)
   const legacyPlayers = players.filter(p => !p.password);
 
+  // Helper to detect if input is phone or email
+  const isPhoneNumber = (value: string): boolean => {
+    const digitsOnly = value.replace(/\D/g, '');
+    // If it starts with digits and has mostly digits, treat as phone
+    return digitsOnly.length >= 7 && !/[@]/.test(value);
+  };
+
+  // Format input as user types (phone formatting if it looks like a phone)
+  const handleIdentifierChange = (text: string) => {
+    // If it contains @, it's definitely an email - don't format
+    if (text.includes('@')) {
+      setIdentifier(text);
+      return;
+    }
+
+    // If it's all digits or phone-like characters, format as phone
+    const digitsOnly = text.replace(/\D/g, '');
+    if (digitsOnly.length > 0 && digitsOnly.length === text.replace(/[\s\-\(\)]/g, '').length) {
+      setIdentifier(formatPhoneInput(text));
+    } else {
+      setIdentifier(text);
+    }
+  };
+
   const handleForgotPassword = () => {
     setShowForgotPassword(true);
-    setResetEmail('');
+    setResetIdentifier('');
     setSecurityAnswer('');
     setNewPassword('');
     setConfirmPassword('');
-    setResetStep('email');
+    setResetStep('identifier');
     setFoundPlayer(null);
   };
 
   const handleFindAccount = () => {
-    const player = players.find(p => p.email?.toLowerCase() === resetEmail.toLowerCase().trim());
+    const trimmedInput = resetIdentifier.trim();
+    let player: Player | undefined;
+
+    if (isPhoneNumber(trimmedInput)) {
+      player = findPlayerByPhone(unformatPhone(trimmedInput));
+    } else {
+      player = findPlayerByEmail(trimmedInput);
+    }
+
     if (player) {
       setFoundPlayer(player);
       // If player has a security question, go to security step; otherwise skip to password
@@ -101,7 +137,7 @@ export default function LoginScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Account Not Found', 'No account found with this email address. Please check and try again.');
+      Alert.alert('Account Not Found', 'No account found with this email or phone number. Please check and try again.');
     }
   };
 
@@ -135,7 +171,7 @@ export default function LoginScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Password Reset', 'Your password has been reset. You can now sign in with your new password.');
       setShowForgotPassword(false);
-      setEmail(resetEmail);
+      setIdentifier(resetIdentifier);
       setPassword('');
     }
   };
@@ -143,8 +179,8 @@ export default function LoginScreen() {
   const handleLogin = () => {
     setError('');
 
-    if (!email.trim()) {
-      setError('Please enter your email');
+    if (!identifier.trim()) {
+      setError('Please enter your email or phone number');
       return;
     }
     if (!password.trim()) {
@@ -155,7 +191,10 @@ export default function LoginScreen() {
     setIsLoading(true);
 
     setTimeout(() => {
-      const result = loginWithEmail(email.trim(), password);
+      const trimmedIdentifier = identifier.trim();
+      const result = isPhoneNumber(trimmedIdentifier)
+        ? loginWithPhone(unformatPhone(trimmedIdentifier), password)
+        : loginWithEmail(trimmedIdentifier, password);
 
       if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -327,14 +366,18 @@ export default function LoginScreen() {
             entering={FadeInDown.delay(150).springify()}
             className="flex-1 px-6"
           >
-            {/* Email Input */}
+            {/* Email/Phone Input */}
             <View className="mb-4">
               <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
-                <Mail size={20} color="#64748b" />
+                {isPhoneNumber(identifier) ? (
+                  <Phone size={20} color="#64748b" />
+                ) : (
+                  <Mail size={20} color="#64748b" />
+                )}
                 <TextInput
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="Email address"
+                  value={identifier}
+                  onChangeText={handleIdentifierChange}
+                  placeholder="Email or phone number"
                   placeholderTextColor="#64748b"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -449,9 +492,9 @@ export default function LoginScreen() {
               </View>
 
               <View className="px-5 py-6">
-                {resetStep === 'email' ? (
+                {resetStep === 'identifier' ? (
                   <>
-                    {/* Email Step */}
+                    {/* Identifier Step */}
                     <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center self-center mb-4">
                       <Mail size={32} color="#67e8f9" />
                     </View>
@@ -459,15 +502,30 @@ export default function LoginScreen() {
                       Find Your Account
                     </Text>
                     <Text className="text-slate-400 text-center mb-6">
-                      Enter the email address associated with your account
+                      Enter the email or phone number associated with your account
                     </Text>
 
                     <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4 mb-4">
-                      <Mail size={20} color="#64748b" />
+                      {isPhoneNumber(resetIdentifier) ? (
+                        <Phone size={20} color="#64748b" />
+                      ) : (
+                        <Mail size={20} color="#64748b" />
+                      )}
                       <TextInput
-                        value={resetEmail}
-                        onChangeText={setResetEmail}
-                        placeholder="Email address"
+                        value={resetIdentifier}
+                        onChangeText={(text) => {
+                          if (text.includes('@')) {
+                            setResetIdentifier(text);
+                          } else {
+                            const digitsOnly = text.replace(/\D/g, '');
+                            if (digitsOnly.length > 0 && digitsOnly.length === text.replace(/[\s\-\(\)]/g, '').length) {
+                              setResetIdentifier(formatPhoneInput(text));
+                            } else {
+                              setResetIdentifier(text);
+                            }
+                          }
+                        }}
+                        placeholder="Email or phone number"
                         placeholderTextColor="#64748b"
                         keyboardType="email-address"
                         autoCapitalize="none"
@@ -478,7 +536,7 @@ export default function LoginScreen() {
 
                     <Pressable
                       onPress={handleFindAccount}
-                      disabled={!resetEmail.trim()}
+                      disabled={!resetIdentifier.trim()}
                       className="bg-cyan-500 rounded-xl py-4 items-center active:bg-cyan-600 disabled:opacity-50"
                     >
                       <Text className="text-white font-semibold text-base">Find Account</Text>
@@ -526,12 +584,12 @@ export default function LoginScreen() {
 
                     <Pressable
                       onPress={() => {
-                        setResetStep('email');
+                        setResetStep('identifier');
                         setSecurityAnswer('');
                       }}
                       className="py-3"
                     >
-                      <Text className="text-slate-400 text-center">Use a different email</Text>
+                      <Text className="text-slate-400 text-center">Try a different email or phone</Text>
                     </Pressable>
                   </>
                 ) : (
@@ -587,10 +645,10 @@ export default function LoginScreen() {
                     </Pressable>
 
                     <Pressable
-                      onPress={() => setResetStep('email')}
+                      onPress={() => setResetStep('identifier')}
                       className="py-3"
                     >
-                      <Text className="text-slate-400 text-center">Use a different email</Text>
+                      <Text className="text-slate-400 text-center">Try a different email or phone</Text>
                     </Pressable>
                   </>
                 )}
