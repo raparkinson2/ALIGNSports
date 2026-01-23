@@ -1029,21 +1029,6 @@ export const useTeamStore = create<TeamStore>()(
       isAdmin: () => {
         const state = get();
         const currentPlayer = state.players.find((p) => p.id === state.currentPlayerId);
-
-        // Auto-recovery: If there are no admins at all, make the current player an admin
-        const hasAnyAdmin = state.players.some((p) => p.roles?.includes('admin'));
-        if (!hasAnyAdmin && currentPlayer && state.isLoggedIn) {
-          // Promote current player to admin
-          set((s) => ({
-            players: s.players.map((p) =>
-              p.id === s.currentPlayerId
-                ? { ...p, roles: [...(p.roles || []), 'admin'] }
-                : p
-            ),
-          }));
-          return true;
-        }
-
         return currentPlayer?.roles?.includes('admin') || false;
       },
 
@@ -1154,6 +1139,20 @@ export const useStoreHydrated = () => {
       console.log('HYDRATION COMPLETE - preserving login state');
       const state = useTeamStore.getState();
       console.log('Current login state - isLoggedIn:', state.isLoggedIn, 'currentPlayerId:', state.currentPlayerId);
+
+      // Auto-recovery: If there are no admins at all, make the current player an admin
+      const hasAnyAdmin = state.players.some((p) => p.roles?.includes('admin'));
+      if (!hasAnyAdmin && state.currentPlayerId && state.isLoggedIn && state.players.length > 0) {
+        console.log('AUTO-RECOVERY: No admins found, promoting current player to admin');
+        useTeamStore.setState((s) => ({
+          players: s.players.map((p) =>
+            p.id === s.currentPlayerId
+              ? { ...p, roles: [...(p.roles || []), 'admin'] }
+              : p
+          ),
+        }));
+      }
+
       setHydrated(true);
     };
 
