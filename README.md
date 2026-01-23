@@ -101,12 +101,20 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
   - Toggle player roles: Captain and/or Admin
   - Players can have multiple roles simultaneously
 
-### Chat Tab (NEW)
+### Chat Tab
 - Real-time team chat within the app
 - Send messages to the entire team
 - See who sent each message with avatars
 - Messages grouped by date
 - Modern chat interface with message bubbles
+- **@Mentions**: Tag teammates to notify them
+  - Tap the @ button to open the mention picker
+  - Select **@everyone** to notify all team members
+  - Select individual players for targeted notifications
+  - Mentions appear highlighted in cyan in messages
+  - Mention notifications can be toggled in notification settings
+- **GIF Support**: Send GIFs via GIPHY integration
+- **Image Sharing**: Share images from your camera roll
 
 ### Payments Tab
 - **Payment Methods**: Admin can add Venmo, PayPal, Zelle, or Cash App accounts

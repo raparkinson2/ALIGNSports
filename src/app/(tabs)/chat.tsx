@@ -1,15 +1,16 @@
 import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Send, ImageIcon, X, Search } from 'lucide-react-native';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { MessageSquare, Send, ImageIcon, X, Search, AtSign } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import { useTeamStore, ChatMessage, getPlayerName } from '@/lib/store';
+import { useTeamStore, ChatMessage, getPlayerName, Player } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
+import { MentionPicker } from '@/components/MentionPicker';
 
 // GIPHY API key
 const GIPHY_API_KEY = 'mUSMkXeohjZdAa2fSpTRGq7ljx5h00fI';
@@ -35,9 +36,89 @@ interface MessageBubbleProps {
   senderAvatar?: string;
   index: number;
   onDelete?: () => void;
+  players: Player[];
+  currentPlayerId: string | null;
 }
 
-function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index, onDelete }: MessageBubbleProps) {
+// Helper to render message text with highlighted @mentions
+function renderMessageWithMentions(
+  message: ChatMessage,
+  players: Player[],
+  isOwnMessage: boolean
+) {
+  const text = message.message;
+  if (!text) return null;
+
+  // Check if this message has mentions
+  if (message.mentionType === 'all') {
+    // Find @everyone in the text and highlight it
+    const parts = text.split(/(@everyone)/gi);
+    return (
+      <Text className={cn('text-base', isOwnMessage ? 'text-white' : 'text-slate-100')}>
+        {parts.map((part, idx) => {
+          if (part.toLowerCase() === '@everyone') {
+            return (
+              <Text key={idx} className="text-cyan-300 font-semibold">
+                {part}
+              </Text>
+            );
+          }
+          return part;
+        })}
+      </Text>
+    );
+  }
+
+  if (message.mentionType === 'specific' && message.mentionedPlayerIds?.length) {
+    // Build a regex to find all @mentions
+    const mentionedPlayers = players.filter((p) =>
+      message.mentionedPlayerIds?.includes(p.id)
+    );
+    const mentionNames = mentionedPlayers.map((p) => getPlayerName(p));
+
+    if (mentionNames.length === 0) {
+      return (
+        <Text className={cn('text-base', isOwnMessage ? 'text-white' : 'text-slate-100')}>
+          {text}
+        </Text>
+      );
+    }
+
+    // Create a regex pattern for all mention names
+    const escapedNames = mentionNames.map((name) =>
+      name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    );
+    const pattern = new RegExp(`(@(?:${escapedNames.join('|')}))`, 'gi');
+    const parts = text.split(pattern);
+
+    return (
+      <Text className={cn('text-base', isOwnMessage ? 'text-white' : 'text-slate-100')}>
+        {parts.map((part, idx) => {
+          const isHighlight = mentionNames.some(
+            (name) => part.toLowerCase() === `@${name.toLowerCase()}`
+          );
+          if (isHighlight) {
+            return (
+              <Text key={idx} className="text-cyan-300 font-semibold">
+                {part}
+              </Text>
+            );
+          }
+          return part;
+        })}
+      </Text>
+    );
+  }
+
+  // No mentions - render plain text
+  return (
+    <Text className={cn('text-base', isOwnMessage ? 'text-white' : 'text-slate-100')}>
+      {text}
+    </Text>
+  );
+}
+
+function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index, onDelete, players, currentPlayerId }: MessageBubbleProps) {
   const messageDate = parseISO(message.createdAt);
   const timeStr = format(messageDate, 'h:mm a');
   const hasMedia = message.imageUrl || message.gifUrl;
@@ -135,9 +216,7 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
               {/* Text message */}
               {message.message && (
                 <View className={hasMedia ? 'px-4 py-2.5' : ''}>
-                  <Text className={cn('text-base', isOwnMessage ? 'text-white' : 'text-slate-100')}>
-                    {message.message}
-                  </Text>
+                  {renderMessageWithMentions(message, players, isOwnMessage)}
                 </View>
               )}
             </View>
@@ -180,6 +259,11 @@ export default function ChatScreen() {
   const [gifs, setGifs] = useState<GiphyGif[]>([]);
   const [isLoadingGifs, setIsLoadingGifs] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Mention picker state
+  const [showMentionPicker, setShowMentionPicker] = useState(false);
+  const [selectedMentionIds, setSelectedMentionIds] = useState<string[]>([]);
+  const [isMentionAll, setIsMentionAll] = useState(false);
 
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
 
@@ -252,19 +336,105 @@ export default function ChatScreen() {
     return () => clearTimeout(timer);
   }, [gifSearchQuery, isGifModalVisible]);
 
+  // Mention picker handlers
+  const handleOpenMentionPicker = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowMentionPicker(true);
+  }, []);
+
+  const handleCloseMentionPicker = useCallback(() => {
+    setShowMentionPicker(false);
+    setSelectedMentionIds([]);
+    setIsMentionAll(false);
+  }, []);
+
+  const handleSelectMentionPlayer = useCallback((playerId: string) => {
+    // If selecting all was active, deselect it when picking individual players
+    if (isMentionAll) {
+      setIsMentionAll(false);
+    }
+    setSelectedMentionIds((prev) =>
+      prev.includes(playerId)
+        ? prev.filter((id) => id !== playerId)
+        : [...prev, playerId]
+    );
+  }, [isMentionAll]);
+
+  const handleSelectMentionAll = useCallback(() => {
+    if (isMentionAll) {
+      setIsMentionAll(false);
+    } else {
+      setIsMentionAll(true);
+      setSelectedMentionIds([]); // Clear individual selections when selecting all
+    }
+  }, [isMentionAll]);
+
+  const handleConfirmMentions = useCallback(() => {
+    // Build the mention text to insert
+    let mentionText = '';
+    if (isMentionAll) {
+      mentionText = '@everyone ';
+    } else if (selectedMentionIds.length > 0) {
+      const mentionedPlayers = players.filter((p) => selectedMentionIds.includes(p.id));
+      mentionText = mentionedPlayers.map((p) => `@${getPlayerName(p)}`).join(' ') + ' ';
+    }
+
+    // Add mention text to the message
+    setMessageText((prev) => mentionText + prev);
+    setShowMentionPicker(false);
+  }, [isMentionAll, selectedMentionIds, players]);
+
   const handleSendMessage = () => {
     if (!messageText.trim() || !currentPlayerId) return;
+
+    // Parse mentions from message text
+    let mentionType: 'all' | 'specific' | undefined;
+    let mentionedPlayerIds: string[] | undefined;
+
+    if (messageText.toLowerCase().includes('@everyone')) {
+      mentionType = 'all';
+      mentionedPlayerIds = players
+        .filter((p) => p.id !== currentPlayerId && p.status === 'active')
+        .map((p) => p.id);
+    } else {
+      // Check for individual @mentions
+      const mentionPattern = /@([A-Za-z]+ [A-Za-z]+|[A-Za-z]+)/g;
+      const matches = messageText.match(mentionPattern);
+      if (matches && matches.length > 0) {
+        const foundIds: string[] = [];
+        matches.forEach((match) => {
+          const name = match.substring(1).toLowerCase(); // Remove @ and lowercase
+          const player = players.find(
+            (p) =>
+              p.id !== currentPlayerId &&
+              (getPlayerName(p).toLowerCase() === name ||
+                p.firstName.toLowerCase() === name)
+          );
+          if (player && !foundIds.includes(player.id)) {
+            foundIds.push(player.id);
+          }
+        });
+        if (foundIds.length > 0) {
+          mentionType = 'specific';
+          mentionedPlayerIds = foundIds;
+        }
+      }
+    }
 
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
       senderId: currentPlayerId,
       message: messageText.trim(),
+      mentionType,
+      mentionedPlayerIds,
       createdAt: new Date().toISOString(),
     };
 
     addChatMessage(newMessage);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setMessageText('');
+    setSelectedMentionIds([]);
+    setIsMentionAll(false);
   };
 
   const handlePickImage = async () => {
@@ -385,6 +555,8 @@ export default function ChatScreen() {
                         senderAvatar={sender?.avatar}
                         index={groupIndex * 10 + msgIndex}
                         onDelete={isOwnMessage ? () => deleteChatMessage(message.id) : undefined}
+                        players={players}
+                        currentPlayerId={currentPlayerId}
                       />
                     );
                   })}
@@ -394,7 +566,20 @@ export default function ChatScreen() {
           </ScrollView>
 
           {/* Input Area */}
-          <View className="px-4 pb-4 pt-2 border-t border-slate-800 bg-slate-900/95">
+          <View className="px-4 pb-4 pt-2 border-t border-slate-800 bg-slate-900/95 relative">
+            {/* Mention Picker */}
+            <MentionPicker
+              visible={showMentionPicker}
+              players={players}
+              currentPlayerId={currentPlayerId}
+              selectedPlayerIds={selectedMentionIds}
+              onSelectPlayer={handleSelectMentionPlayer}
+              onSelectAll={handleSelectMentionAll}
+              onClose={handleCloseMentionPicker}
+              onConfirm={handleConfirmMentions}
+              isAllSelected={isMentionAll}
+            />
+
             <View className="flex-row items-center">
               {/* Image Picker Button */}
               <Pressable
@@ -410,6 +595,22 @@ export default function ChatScreen() {
                 className="w-11 h-11 rounded-full items-center justify-center bg-slate-800 mr-2 active:bg-slate-700"
               >
                 <Text className="text-cyan-400 font-bold text-xs">GIF</Text>
+              </Pressable>
+
+              {/* @ Mention Button */}
+              <Pressable
+                onPress={handleOpenMentionPicker}
+                className={cn(
+                  'w-11 h-11 rounded-full items-center justify-center mr-2 active:bg-slate-700',
+                  showMentionPicker || isMentionAll || selectedMentionIds.length > 0
+                    ? 'bg-cyan-500'
+                    : 'bg-slate-800'
+                )}
+              >
+                <AtSign
+                  size={20}
+                  color={showMentionPicker || isMentionAll || selectedMentionIds.length > 0 ? '#ffffff' : '#67e8f9'}
+                />
               </Pressable>
 
               <View className="flex-1 bg-slate-800 rounded-2xl px-4 mr-2 min-h-[44px] justify-center">

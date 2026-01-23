@@ -465,6 +465,13 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave }:
               onToggle={(v) => handleToggle('chatMessages', v)}
             />
 
+            <PreferenceToggle
+              label="@Mentions"
+              description="Get notified when you're tagged in a message"
+              value={prefs.chatMentions}
+              onToggle={(v) => handleToggle('chatMentions', v)}
+            />
+
             {/* Payments Section */}
             <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-6 mb-2">
               Payments

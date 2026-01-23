@@ -117,6 +117,7 @@ export interface NotificationPreferences {
   gameReminderDayBefore: boolean;
   gameReminderHoursBefore: boolean;
   chatMessages: boolean;
+  chatMentions: boolean; // Get notified when @mentioned in chat
   paymentReminders: boolean;
   pushToken?: string; // For future push notification implementation
 }
@@ -126,6 +127,7 @@ export const defaultNotificationPreferences: NotificationPreferences = {
   gameReminderDayBefore: true,
   gameReminderHoursBefore: true,
   chatMessages: true,
+  chatMentions: true,
   paymentReminders: true,
 };
 
@@ -413,6 +415,8 @@ export interface ChatMessage {
   gifUrl?: string; // For GIFs from GIPHY
   gifWidth?: number; // GIF original width
   gifHeight?: number; // GIF original height
+  mentionedPlayerIds?: string[]; // Player IDs mentioned with @ (empty array = @all)
+  mentionType?: 'all' | 'specific'; // 'all' for @everyone, 'specific' for individual mentions
   createdAt: string;
 }
 
