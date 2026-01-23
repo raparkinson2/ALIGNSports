@@ -623,18 +623,54 @@ export default function AdminScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     const currentRoles = selectedPlayer.roles ?? [];
-    let newRoles: PlayerRole[];
 
     if (currentRoles.includes(role)) {
-      // Remove the role
-      newRoles = currentRoles.filter((r) => r !== role);
+      // Trying to REMOVE a role
+      if (role === 'admin') {
+        // Check if this would leave zero admins
+        const currentAdminCount = players.filter((p) => p.roles?.includes('admin')).length;
+        const playerIsCurrentlyAdmin = selectedPlayer.roles?.includes('admin') ?? false;
+        const wouldLeaveNoAdmins = currentAdminCount <= 1 && playerIsCurrentlyAdmin;
+
+        if (wouldLeaveNoAdmins) {
+          Alert.alert(
+            'Cannot Remove Admin',
+            'This is the only admin on the team. You must make another team member an admin before removing this admin role.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+
+        // Show confirmation for removing admin
+        Alert.alert(
+          'Remove Admin Role?',
+          `Are you sure you want to remove admin privileges from ${getPlayerName(selectedPlayer)}?\n\nThey will no longer be able to:\n• Manage players and roles\n• Edit team settings\n• Create payment periods\n• Access the Admin panel`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Remove Admin',
+              style: 'destructive',
+              onPress: () => {
+                const newRoles = currentRoles.filter((r) => r !== 'admin');
+                updatePlayer(selectedPlayer.id, { roles: newRoles });
+                setSelectedPlayer({ ...selectedPlayer, roles: newRoles });
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      // Remove non-admin role
+      const newRoles = currentRoles.filter((r) => r !== role);
+      updatePlayer(selectedPlayer.id, { roles: newRoles });
+      setSelectedPlayer({ ...selectedPlayer, roles: newRoles });
     } else {
       // Add the role
-      newRoles = [...currentRoles, role];
+      const newRoles = [...currentRoles, role];
+      updatePlayer(selectedPlayer.id, { roles: newRoles });
+      setSelectedPlayer({ ...selectedPlayer, roles: newRoles });
     }
-
-    updatePlayer(selectedPlayer.id, { roles: newRoles });
-    setSelectedPlayer({ ...selectedPlayer, roles: newRoles });
   };
 
   const handleUpdateStatus = (status: PlayerStatus) => {
