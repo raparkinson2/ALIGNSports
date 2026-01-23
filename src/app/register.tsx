@@ -1,14 +1,14 @@
-import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView, Modal } from 'react-native';
+import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { useState } from 'react';
-import { ChevronLeft, Mail, Lock, UserPlus, Check, AlertCircle, ShieldQuestion, ChevronDown, Camera, ImageIcon, SkipForward, Phone } from 'lucide-react-native';
+import { ChevronLeft, Mail, Lock, UserPlus, Check, AlertCircle, Camera, ImageIcon, SkipForward, Phone } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { useTeamStore, SECURITY_QUESTIONS, SecurityQuestion } from '@/lib/store';
+import { useTeamStore } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import { signUpWithEmail } from '@/lib/supabase-auth';
@@ -27,9 +27,6 @@ export default function RegisterScreen() {
   const [identifier, setIdentifier] = useState(''); // Can be email or phone
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [securityQuestion, setSecurityQuestion] = useState<SecurityQuestion | ''>('');
-  const [securityAnswer, setSecurityAnswer] = useState('');
-  const [showQuestionPicker, setShowQuestionPicker] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -142,30 +139,9 @@ export default function RegisterScreen() {
       return;
     }
 
-    // Move to security question step
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setStep(3);
-  };
-
-  const handleFinishRegistration = () => {
-    setError('');
-
-    if (!securityQuestion) {
-      setError('Please select a security question');
-      return;
-    }
-    if (!securityAnswer.trim()) {
-      setError('Please enter your answer');
-      return;
-    }
-    if (securityAnswer.trim().length < 2) {
-      setError('Answer must be at least 2 characters');
-      return;
-    }
-
     // Move to photo step
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setStep(4);
+    setStep(3);
   };
 
   const handlePickImage = async () => {
@@ -230,12 +206,10 @@ export default function RegisterScreen() {
         : registerInvitedPlayer(trimmedIdentifier, password);
 
       if (result.success && result.playerId) {
-        // Save security question, answer, and optional avatar
-        updatePlayer(result.playerId, {
-          securityQuestion: securityQuestion as SecurityQuestion,
-          securityAnswer: securityAnswer.trim().toLowerCase(),
-          ...(avatar && { avatar }),
-        });
+        // Save optional avatar
+        if (avatar) {
+          updatePlayer(result.playerId, { avatar });
+        }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.replace('/(tabs)');
       } else {
@@ -272,10 +246,7 @@ export default function RegisterScreen() {
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                if (step === 4) {
-                  setStep(3);
-                  setError('');
-                } else if (step === 3) {
+                if (step === 3) {
                   setStep(2);
                   setError('');
                 } else if (step === 2) {
@@ -475,76 +446,8 @@ export default function RegisterScreen() {
               </Animated.View>
             )}
 
-            {/* Step 3: Security Question */}
+            {/* Step 3: Profile Photo (Optional) */}
             {step === 3 && foundPlayer && (
-              <Animated.View entering={FadeInDown.delay(150).springify()}>
-                <View className="items-center mb-8 mt-4">
-                  <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
-                    <ShieldQuestion size={32} color="#67e8f9" />
-                  </View>
-                  <Text className="text-white text-2xl font-bold">Security Question</Text>
-                  <Text className="text-slate-400 text-center mt-2">
-                    This will help you recover your account if you forget your password
-                  </Text>
-                </View>
-
-                {/* Security Question Selector */}
-                <View className="mb-4">
-                  <Text className="text-slate-400 text-sm mb-2">Select a Question</Text>
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setShowQuestionPicker(true);
-                    }}
-                    className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4 py-4"
-                  >
-                    <ShieldQuestion size={20} color="#64748b" />
-                    <Text className={`flex-1 px-3 text-base ${securityQuestion ? 'text-white' : 'text-slate-500'}`}>
-                      {securityQuestion || 'Choose a security question'}
-                    </Text>
-                    <ChevronDown size={20} color="#64748b" />
-                  </Pressable>
-                </View>
-
-                {/* Security Answer */}
-                <View className="mb-6">
-                  <Text className="text-slate-400 text-sm mb-2">Your Answer</Text>
-                  <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
-                    <Lock size={20} color="#64748b" />
-                    <TextInput
-                      value={securityAnswer}
-                      onChangeText={setSecurityAnswer}
-                      placeholder="Enter your answer"
-                      placeholderTextColor="#64748b"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      className="flex-1 py-4 px-3 text-white text-base"
-                    />
-                  </View>
-                  <Text className="text-slate-500 text-xs mt-2">
-                    Answers are not case-sensitive
-                  </Text>
-                </View>
-
-                {/* Error Message */}
-                {error ? (
-                  <Animated.View entering={FadeInDown.springify()}>
-                    <Text className="text-red-400 text-center mb-4">{error}</Text>
-                  </Animated.View>
-                ) : null}
-
-                {/* Continue Button */}
-                <Pressable
-                  onPress={handleFinishRegistration}
-                  className="bg-cyan-500 rounded-xl py-4 flex-row items-center justify-center active:bg-cyan-600 mb-8"
-                >
-                  <Text className="text-white font-semibold text-lg">Continue</Text>
-                </Pressable>
-              </Animated.View>
-            )}
-
-            {/* Step 4: Profile Photo (Optional) */}
-            {step === 4 && foundPlayer && (
               <Animated.View entering={FadeInDown.delay(150).springify()}>
                 <View className="items-center mb-8 mt-4">
                   <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
@@ -632,49 +535,6 @@ export default function RegisterScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-
-      {/* Security Question Picker Modal */}
-      <Modal
-        visible={showQuestionPicker}
-        animationType="slide"
-        transparent
-      >
-        <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl max-h-[70%]">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Text className="text-white text-lg font-bold">Select a Question</Text>
-              <Pressable
-                onPress={() => setShowQuestionPicker(false)}
-                className="px-4 py-2"
-              >
-                <Text className="text-cyan-400 font-semibold">Done</Text>
-              </Pressable>
-            </View>
-            <ScrollView className="px-5 py-4">
-              {SECURITY_QUESTIONS.map((question) => (
-                <Pressable
-                  key={question}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setSecurityQuestion(question);
-                    setShowQuestionPicker(false);
-                  }}
-                  className={`py-4 px-4 rounded-xl mb-2 ${
-                    securityQuestion === question
-                      ? 'bg-cyan-500/20 border border-cyan-500/50'
-                      : 'bg-slate-800/50'
-                  }`}
-                >
-                  <Text className={`text-base ${securityQuestion === question ? 'text-cyan-400' : 'text-white'}`}>
-                    {question}
-                  </Text>
-                </Pressable>
-              ))}
-              <View className="h-8" />
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
