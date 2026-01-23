@@ -1875,10 +1875,11 @@ export default function AdminScreen() {
                 </View>
               </View>
 
-              {/* Player Roles */}
+              {/* Roles */}
               <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Player Roles</Text>
+                <Text className="text-slate-400 text-sm mb-2">Roles</Text>
                 <View className="flex-row">
+                  {/* Captain */}
                   <Pressable
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1889,11 +1890,11 @@ export default function AdminScreen() {
                       }
                     }}
                     className={cn(
-                      'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                      'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
                       newPlayerRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
                     )}
                   >
-                    <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center">
+                    <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center mb-1">
                       <Text className={cn(
                         'text-xs font-black',
                         newPlayerRoles.includes('captain') ? 'text-white' : 'text-amber-500'
@@ -1901,13 +1902,14 @@ export default function AdminScreen() {
                     </View>
                     <Text
                       className={cn(
-                        'font-semibold ml-2',
+                        'font-semibold text-sm',
                         newPlayerRoles.includes('captain') ? 'text-white' : 'text-slate-400'
                       )}
                     >
                       Captain
                     </Text>
                   </Pressable>
+                  {/* Admin */}
                   <Pressable
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1918,62 +1920,47 @@ export default function AdminScreen() {
                       }
                     }}
                     className={cn(
-                      'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
+                      'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
                       newPlayerRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
                     )}
                   >
                     <Shield size={16} color={newPlayerRoles.includes('admin') ? 'white' : '#a78bfa'} />
                     <Text
                       className={cn(
-                        'font-semibold ml-2',
+                        'font-semibold text-sm mt-1',
                         newPlayerRoles.includes('admin') ? 'text-white' : 'text-slate-400'
                       )}
                     >
                       Admin
                     </Text>
                   </Pressable>
+                  {/* Coach */}
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setNewPlayerIsCoach(!newPlayerIsCoach);
+                    }}
+                    className={cn(
+                      'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                      newPlayerIsCoach ? 'bg-cyan-500' : 'bg-slate-800'
+                    )}
+                  >
+                    <UserCog size={16} color={newPlayerIsCoach ? 'white' : '#67e8f9'} />
+                    <Text
+                      className={cn(
+                        'font-semibold text-sm mt-1',
+                        newPlayerIsCoach ? 'text-white' : 'text-slate-400'
+                      )}
+                    >
+                      Coach
+                    </Text>
+                  </Pressable>
                 </View>
                 <Text className="text-slate-500 text-xs mt-2">
-                  Tap to toggle roles. Players can have multiple roles.
+                  {newPlayerIsCoach
+                    ? 'Coaches don\'t need jersey numbers or positions'
+                    : 'Tap to toggle roles. Members can have multiple roles.'}
                 </Text>
-              </View>
-
-              {/* Coach Toggle */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Team Role</Text>
-                <Pressable
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setNewPlayerIsCoach(!newPlayerIsCoach);
-                  }}
-                  className={cn(
-                    'py-4 px-4 rounded-xl flex-row items-center justify-between border',
-                    newPlayerIsCoach
-                      ? 'bg-purple-500/20 border-purple-500/50'
-                      : 'bg-slate-800 border-slate-700'
-                  )}
-                >
-                  <View className="flex-row items-center">
-                    <UserCog size={20} color={newPlayerIsCoach ? '#a78bfa' : '#64748b'} />
-                    <View className="ml-3">
-                      <Text className={cn(
-                        'font-semibold',
-                        newPlayerIsCoach ? 'text-purple-400' : 'text-slate-400'
-                      )}>
-                        This is a Coach
-                      </Text>
-                      <Text className="text-slate-500 text-xs">
-                        Coaches don't need jersey numbers or positions
-                      </Text>
-                    </View>
-                  </View>
-                  <View className={cn(
-                    'w-6 h-6 rounded-full items-center justify-center',
-                    newPlayerIsCoach ? 'bg-purple-500' : 'bg-slate-700'
-                  )}>
-                    {newPlayerIsCoach && <Check size={14} color="white" />}
-                  </View>
-                </Pressable>
               </View>
 
               <Text className="text-slate-500 text-xs mb-6"><Text className="text-red-400">*</Text> Required</Text>
