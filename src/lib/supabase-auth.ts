@@ -99,72 +99,91 @@ export async function signOut(): Promise<AuthResult> {
 }
 
 /**
- * Send a password reset email with OTP code
+ * Send a password reset email with OTP code (Custom implementation via Edge Function)
+ * This bypasses Supabase Auth's redirect-based flows
  */
 export async function resetPassword(email: string): Promise<AuthResult> {
   try {
-    // Use OTP flow - sends a 6-digit code to email
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: false, // Don't create new user if email doesn't exist
-      }
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PUBLIC_URL || '';
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-reset-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
     });
 
-    if (error) {
-      if (error.message.includes('User not found') || error.message.includes('Signups not allowed')) {
+    const data = await response.json();
+
+    if (!response.ok) {
+      if (data.error?.includes('not found') || data.error?.includes('No user')) {
         return { success: false, error: 'No account found with this email address.' };
       }
-      return { success: false, error: error.message };
+      return { success: false, error: data.error || 'Failed to send reset code.' };
     }
 
     return { success: true };
   } catch (err) {
-    return { success: false, error: 'An unexpected error occurred' };
+    console.error('resetPassword error:', err);
+    return { success: false, error: 'Failed to send reset code. Please try again.' };
   }
 }
 
 /**
- * Verify OTP code and set new password
+ * Verify OTP code and set new password (Custom implementation via Edge Function)
  */
 export async function verifyOtpAndResetPassword(email: string, otp: string, newPassword: string): Promise<AuthResult> {
   try {
-    // Verify the OTP code
-    const { data, error: verifyError } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: 'email'
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PUBLIC_URL || '';
+
+    // First verify the OTP
+    const verifyResponse = await fetch(`${supabaseUrl}/functions/v1/verify-reset-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, code: otp }),
     });
 
-    if (verifyError) {
-      if (verifyError.message.includes('Token has expired')) {
+    const verifyData = await verifyResponse.json();
+
+    if (!verifyResponse.ok) {
+      if (verifyData.error?.includes('expired')) {
         return { success: false, error: 'Code has expired. Please request a new one.' };
       }
-      if (verifyError.message.includes('Invalid')) {
-        return { success: false, error: 'Invalid code. Please try again.' };
+      if (verifyData.error?.includes('Invalid') || verifyData.error?.includes('incorrect')) {
+        return { success: false, error: 'Invalid code. Please check and try again.' };
       }
-      return { success: false, error: verifyError.message };
+      return { success: false, error: verifyData.error || 'Verification failed.' };
     }
 
-    if (!data.user) {
-      return { success: false, error: 'Verification failed. Please try again.' };
+    // OTP verified - now we need to update the password in Supabase Auth
+    // We'll use the admin token returned from verify-reset-code to update the user
+    if (verifyData.resetToken) {
+      const updateResponse = await fetch(`${supabaseUrl}/functions/v1/update-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          newPassword,
+          resetToken: verifyData.resetToken
+        }),
+      });
+
+      const updateData = await updateResponse.json();
+
+      if (!updateResponse.ok) {
+        return { success: false, error: updateData.error || 'Failed to update password.' };
+      }
     }
-
-    // Now update the password
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: newPassword
-    });
-
-    if (updateError) {
-      return { success: false, error: updateError.message };
-    }
-
-    // Sign out after password reset so user can login fresh
-    await supabase.auth.signOut();
 
     return { success: true };
   } catch (err) {
-    return { success: false, error: 'An unexpected error occurred' };
+    console.error('verifyOtpAndResetPassword error:', err);
+    return { success: false, error: 'An unexpected error occurred. Please try again.' };
   }
 }
 
