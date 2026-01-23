@@ -42,7 +42,7 @@ export default function CreateNewTeamScreen() {
 
   const [step, setStep] = useState(1);
   const [teamNameInput, setTeamNameInput] = useState('');
-  const [sport, setSport] = useState<Sport>('hockey');
+  const [sport, setSport] = useState<Sport | null>(null);
   const [jerseyColors, setJerseyColors] = useState<{ name: string; color: string }[]>([]);
   const [teamLogo, setTeamLogo] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -85,6 +85,10 @@ export default function CreateNewTeamScreen() {
         setError('Please upload a team logo');
         return;
       }
+      if (!sport) {
+        setError('Please select a sport');
+        return;
+      }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setStep(2);
     } else if (step === 2) {
@@ -124,6 +128,11 @@ export default function CreateNewTeamScreen() {
   const handleCreateTeam = async () => {
     if (!currentPlayer) {
       setError('Unable to get current user info');
+      return;
+    }
+
+    if (!sport) {
+      setError('Please select a sport');
       return;
     }
 
