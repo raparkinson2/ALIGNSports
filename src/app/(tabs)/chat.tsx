@@ -338,7 +338,8 @@ export default function ChatScreen() {
   // Filter players for mention suggestions based on query
   const filteredMentionSuggestions = useMemo(() => {
     if (!showMentionPicker) return [];
-    const otherPlayers = players.filter((p) => p.id !== currentPlayerId && p.status === 'active');
+    // Include all other players (active or reserve) for @mentions
+    const otherPlayers = players.filter((p) => p.id !== currentPlayerId);
     if (!mentionQuery) return otherPlayers;
     const query = mentionQuery.toLowerCase();
     return otherPlayers.filter((p) => {
