@@ -9,7 +9,7 @@ export interface AuthResult {
 /**
  * Sign up a new user with email and password
  */
-export async function signUpWithEmail(email: string, password: string): Promise<AuthResult> {
+export async function signUpWithEmail(email: string, password: string): Promise<AuthResult & { emailConfirmationRequired?: boolean }> {
   try {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -24,7 +24,16 @@ export async function signUpWithEmail(email: string, password: string): Promise<
       return { success: false, error: 'Failed to create account' };
     }
 
-    return { success: true, userId: data.user.id };
+    // Check if email confirmation is required
+    // If identities array is empty, email confirmation is pending
+    const emailConfirmationRequired = !data.user.email_confirmed_at &&
+      (!data.user.identities || data.user.identities.length === 0);
+
+    return {
+      success: true,
+      userId: data.user.id,
+      emailConfirmationRequired
+    };
   } catch (err) {
     return { success: false, error: 'An unexpected error occurred' };
   }
@@ -33,7 +42,7 @@ export async function signUpWithEmail(email: string, password: string): Promise<
 /**
  * Sign in an existing user with email and password
  */
-export async function signInWithEmail(email: string, password: string): Promise<AuthResult> {
+export async function signInWithEmail(email: string, password: string): Promise<AuthResult & { emailNotConfirmed?: boolean }> {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -46,13 +55,24 @@ export async function signInWithEmail(email: string, password: string): Promise<
         return { success: false, error: 'Invalid email or password' };
       }
       if (error.message.includes('Email not confirmed')) {
-        return { success: false, error: 'Please check your email to confirm your account' };
+        return { success: false, error: 'Please check your email to confirm your account before signing in.', emailNotConfirmed: true };
       }
       return { success: false, error: error.message };
     }
 
     if (!data.user) {
       return { success: false, error: 'Failed to sign in' };
+    }
+
+    // Double-check email confirmation status
+    if (!data.user.email_confirmed_at) {
+      // Sign out the user since they haven't confirmed their email
+      await supabase.auth.signOut();
+      return {
+        success: false,
+        error: 'Please check your email to confirm your account before signing in.',
+        emailNotConfirmed: true
+      };
     }
 
     return { success: true, userId: data.user.id };
@@ -136,4 +156,24 @@ export async function getSession() {
  */
 export function onAuthStateChange(callback: (event: string, session: any) => void) {
   return supabase.auth.onAuthStateChange(callback);
+}
+
+/**
+ * Resend email confirmation
+ */
+export async function resendConfirmationEmail(email: string): Promise<AuthResult> {
+  try {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: 'An unexpected error occurred' };
+  }
 }

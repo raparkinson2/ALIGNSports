@@ -3,13 +3,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, ShieldQuestion, Phone } from 'lucide-react-native';
+import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, ShieldQuestion, Phone, MailCheck, RefreshCw } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Player, getPlayerName } from '@/lib/store';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
-import { signInWithEmail, resetPassword as supabaseResetPassword } from '@/lib/supabase-auth';
+import { signInWithEmail, resetPassword as supabaseResetPassword, resendConfirmationEmail } from '@/lib/supabase-auth';
 
 interface PlayerLoginCardProps {
   player: Player;
@@ -74,6 +74,9 @@ export default function LoginScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetStep, setResetStep] = useState<'identifier' | 'security' | 'password'>('identifier');
   const [foundPlayer, setFoundPlayer] = useState<Player | null>(null);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [pendingConfirmEmail, setPendingConfirmEmail] = useState('');
+  const [isResending, setIsResending] = useState(false);
 
   const hasTeam = players.length > 0;
 
@@ -217,6 +220,15 @@ export default function LoginScreen() {
       if (!isPhoneNumber(trimmedIdentifier)) {
         const supabaseResult = await signInWithEmail(trimmedIdentifier, password);
 
+        // Check if email confirmation is required
+        if (supabaseResult.emailNotConfirmed) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          setPendingConfirmEmail(trimmedIdentifier);
+          setShowEmailConfirmation(true);
+          setIsLoading(false);
+          return;
+        }
+
         if (supabaseResult.success) {
           // Also update local store for offline capability
           const localResult = loginWithEmail(trimmedIdentifier, password);
@@ -237,6 +249,14 @@ export default function LoginScreen() {
           setIsLoggedIn(true);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           router.replace('/(tabs)');
+          setIsLoading(false);
+          return;
+        }
+
+        // If Supabase login failed with an error, show it
+        if (supabaseResult.error) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setError(supabaseResult.error);
           setIsLoading(false);
           return;
         }
@@ -716,6 +736,73 @@ export default function LoginScreen() {
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Email Confirmation Required Modal */}
+      <Modal
+        visible={showEmailConfirmation}
+        animationType="slide"
+        transparent
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-slate-900 rounded-2xl w-full max-w-sm">
+            {/* Header */}
+            <View className="items-center pt-6 pb-4">
+              <View className="w-16 h-16 rounded-full bg-amber-500/20 items-center justify-center mb-4">
+                <MailCheck size={32} color="#f59e0b" />
+              </View>
+              <Text className="text-white text-xl font-bold text-center mb-2">
+                Confirm Your Email
+              </Text>
+              <Text className="text-slate-400 text-center px-4">
+                We sent a confirmation link to:
+              </Text>
+              <Text className="text-cyan-400 font-semibold text-center mt-1">
+                {pendingConfirmEmail}
+              </Text>
+            </View>
+
+            <View className="px-5 pb-6">
+              <Text className="text-slate-400 text-center text-sm mb-6">
+                Please click the link in your email to verify your account before signing in.
+              </Text>
+
+              {/* Resend Button */}
+              <Pressable
+                onPress={async () => {
+                  setIsResending(true);
+                  const result = await resendConfirmationEmail(pendingConfirmEmail);
+                  setIsResending(false);
+                  if (result.success) {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    Alert.alert('Email Sent', 'A new confirmation email has been sent. Please check your inbox.');
+                  } else {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                    Alert.alert('Error', result.error || 'Failed to resend confirmation email.');
+                  }
+                }}
+                disabled={isResending}
+                className="bg-slate-800 rounded-xl py-4 flex-row items-center justify-center border border-slate-700/50 active:bg-slate-700 disabled:opacity-50 mb-3"
+              >
+                <RefreshCw size={18} color="#67e8f9" />
+                <Text className="text-cyan-400 font-semibold ml-2">
+                  {isResending ? 'Sending...' : 'Resend Confirmation Email'}
+                </Text>
+              </Pressable>
+
+              {/* Try Again Button */}
+              <Pressable
+                onPress={() => {
+                  setShowEmailConfirmation(false);
+                  setPendingConfirmEmail('');
+                }}
+                className="bg-cyan-500 rounded-xl py-4 items-center active:bg-cyan-600"
+              >
+                <Text className="text-white font-semibold">Try Signing In Again</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
       </Modal>
     </View>
   );
