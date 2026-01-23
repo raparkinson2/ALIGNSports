@@ -902,12 +902,25 @@ export default function RosterScreen() {
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        if (playerRoles.includes('admin')) {
-                          // Check if this player is currently an admin in the database
-                          const playerIsCurrentlyAdmin = editingPlayer?.roles?.includes('admin');
 
-                          // Check if removing this admin would leave zero admins
-                          const wouldLeaveNoAdmins = adminCount === 1 && playerIsCurrentlyAdmin;
+                        // If admin is currently selected (highlighted), user wants to REMOVE it
+                        if (playerRoles.includes('admin')) {
+                          // Count admins from the actual players list
+                          const currentAdminCount = players.filter((p) => p.roles?.includes('admin')).length;
+
+                          // Check if this player being edited is currently an admin in the database
+                          const playerIsCurrentlyAdmin = editingPlayer?.roles?.includes('admin') ?? false;
+
+                          // Would removing admin from this player leave zero admins?
+                          const wouldLeaveNoAdmins = currentAdminCount <= 1 && playerIsCurrentlyAdmin;
+
+                          console.log('Admin toggle debug:', {
+                            currentAdminCount,
+                            playerIsCurrentlyAdmin,
+                            wouldLeaveNoAdmins,
+                            editingPlayerId: editingPlayer?.id,
+                            editingPlayerRoles: editingPlayer?.roles,
+                          });
 
                           if (wouldLeaveNoAdmins) {
                             Alert.alert(
@@ -934,6 +947,7 @@ export default function RosterScreen() {
                             ]
                           );
                         } else {
+                          // Adding admin role
                           setPlayerRoles([...playerRoles, 'admin']);
                         }
                       }}
