@@ -513,22 +513,22 @@ export default function CreateTeamScreen() {
                 {/* Role Toggle: Coach or Player */}
                 <View className="mb-4">
                   <Text className="text-slate-400 text-sm mb-2">Your Role</Text>
-                  <View className="flex-row">
+                  <View className="flex-row bg-slate-800/80 rounded-xl overflow-hidden border border-slate-700/50">
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setIsCoach(false);
                       }}
                       className={cn(
-                        'flex-1 py-4 rounded-l-xl border items-center',
+                        'flex-1 py-4 items-center',
                         !isCoach
-                          ? 'bg-cyan-500/20 border-cyan-500/50'
-                          : 'bg-slate-800/80 border-slate-700/50'
+                          ? 'bg-cyan-600'
+                          : 'bg-transparent'
                       )}
                     >
                       <Text className={cn(
                         'font-semibold',
-                        !isCoach ? 'text-cyan-400' : 'text-slate-400'
+                        !isCoach ? 'text-white' : 'text-slate-400'
                       )}>
                         Player
                       </Text>
@@ -539,15 +539,15 @@ export default function CreateTeamScreen() {
                         setIsCoach(true);
                       }}
                       className={cn(
-                        'flex-1 py-4 rounded-r-xl border items-center',
+                        'flex-1 py-4 items-center',
                         isCoach
-                          ? 'bg-purple-500/20 border-purple-500/50'
-                          : 'bg-slate-800/80 border-slate-700/50'
+                          ? 'bg-purple-600'
+                          : 'bg-transparent'
                       )}
                     >
                       <Text className={cn(
                         'font-semibold',
-                        isCoach ? 'text-purple-400' : 'text-slate-400'
+                        isCoach ? 'text-white' : 'text-slate-400'
                       )}>
                         Coach
                       </Text>
