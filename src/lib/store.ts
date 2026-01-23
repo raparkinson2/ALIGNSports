@@ -106,7 +106,7 @@ export const SPORT_NAMES: Record<Sport, string> = {
 };
 
 // Role Types
-export type PlayerRole = 'admin' | 'captain';
+export type PlayerRole = 'admin' | 'captain' | 'coach';
 
 // Player Status
 export type PlayerStatus = 'active' | 'reserve';
@@ -566,7 +566,7 @@ interface TeamStore {
 
   // Authentication
   loginWithEmail: (email: string, password: string) => { success: boolean; error?: string; playerId?: string };
-  registerAdmin: (name: string, email: string, password: string, teamName: string) => { success: boolean; error?: string };
+  registerAdmin: (name: string, email: string, password: string, teamName: string, options?: { phone?: string; jerseyNumber?: string; isCoach?: boolean }) => { success: boolean; error?: string };
   registerInvitedPlayer: (email: string, password: string) => { success: boolean; error?: string; playerId?: string };
   findPlayerByEmail: (email: string) => Player | undefined;
 
@@ -889,7 +889,7 @@ export const useTeamStore = create<TeamStore>()(
         return { success: true, playerId: player.id };
       },
 
-      registerAdmin: (name, email, password, teamName) => {
+      registerAdmin: (name, email, password, teamName, options) => {
         const state = get();
         // Check if email already exists
         const existingPlayer = state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
@@ -902,15 +902,19 @@ export const useTeamStore = create<TeamStore>()(
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
 
+        const isCoach = options?.isCoach ?? false;
+        const roles: PlayerRole[] = isCoach ? ['admin', 'coach'] : ['admin'];
+
         const newPlayer: Player = {
           id: Date.now().toString(),
           firstName,
           lastName,
           email: email.toLowerCase(),
           password,
-          number: '1',
-          position: SPORT_POSITIONS[state.teamSettings.sport][0],
-          roles: ['admin'],
+          phone: options?.phone,
+          number: isCoach ? '' : (options?.jerseyNumber || '1'),
+          position: isCoach ? 'Coach' : SPORT_POSITIONS[state.teamSettings.sport][0],
+          roles,
           status: 'active',
         };
 

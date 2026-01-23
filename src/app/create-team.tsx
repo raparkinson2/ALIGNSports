@@ -3,13 +3,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { useState } from 'react';
-import { ChevronLeft, User, Mail, Lock, Users, Check, ShieldQuestion, ChevronDown, Palette, Plus, X, Camera, ImageIcon } from 'lucide-react-native';
+import { ChevronLeft, User, Mail, Lock, Users, Check, ShieldQuestion, ChevronDown, Palette, Plus, X, Camera, ImageIcon, Phone, Hash, UserCog } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useTeamStore, Sport, SPORT_NAMES, SECURITY_QUESTIONS, SecurityQuestion } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg';
 
 // Preset jersey colors for quick selection
@@ -95,6 +96,9 @@ export default function CreateTeamScreen() {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [jerseyNumber, setJerseyNumber] = useState('');
+  const [isCoach, setIsCoach] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [securityQuestion, setSecurityQuestion] = useState<SecurityQuestion | ''>('');
@@ -301,8 +305,12 @@ export default function CreateTeamScreen() {
       // First set the sport, jersey colors, and team logo
       setTeamSettings({ sport, jerseyColors, teamLogo: teamLogo ?? undefined });
 
-      // Register the admin with email/password
-      const result = registerAdmin(name.trim(), email.trim(), password, teamNameInput.trim());
+      // Register the admin with email/password and additional options
+      const result = registerAdmin(name.trim(), email.trim(), password, teamNameInput.trim(), {
+        phone: phone ? unformatPhone(phone) : undefined,
+        jerseyNumber: !isCoach ? jerseyNumber.trim() : undefined,
+        isCoach,
+      });
 
       if (result.success) {
         // Get the current state to find the newly created player
@@ -471,6 +479,85 @@ export default function CreateTeamScreen() {
                     />
                   </View>
                 </View>
+
+                <View className="mb-4">
+                  <Text className="text-slate-400 text-sm mb-2">Phone Number</Text>
+                  <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
+                    <Phone size={20} color="#64748b" />
+                    <TextInput
+                      value={phone}
+                      onChangeText={(text) => setPhone(formatPhoneInput(text))}
+                      placeholder="(555) 123-4567"
+                      placeholderTextColor="#64748b"
+                      keyboardType="phone-pad"
+                      className="flex-1 py-4 px-3 text-white text-base"
+                    />
+                  </View>
+                </View>
+
+                {/* Role Toggle: Coach or Player */}
+                <View className="mb-4">
+                  <Text className="text-slate-400 text-sm mb-2">Your Role</Text>
+                  <View className="flex-row">
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setIsCoach(false);
+                      }}
+                      className={cn(
+                        'flex-1 py-4 rounded-l-xl border items-center',
+                        !isCoach
+                          ? 'bg-cyan-500/20 border-cyan-500/50'
+                          : 'bg-slate-800/80 border-slate-700/50'
+                      )}
+                    >
+                      <Text className={cn(
+                        'font-semibold',
+                        !isCoach ? 'text-cyan-400' : 'text-slate-400'
+                      )}>
+                        Player
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setIsCoach(true);
+                      }}
+                      className={cn(
+                        'flex-1 py-4 rounded-r-xl border items-center',
+                        isCoach
+                          ? 'bg-purple-500/20 border-purple-500/50'
+                          : 'bg-slate-800/80 border-slate-700/50'
+                      )}
+                    >
+                      <Text className={cn(
+                        'font-semibold',
+                        isCoach ? 'text-purple-400' : 'text-slate-400'
+                      )}>
+                        Coach
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+
+                {/* Jersey Number - Only shown for players */}
+                {!isCoach && (
+                  <View className="mb-4">
+                    <Text className="text-slate-400 text-sm mb-2">Jersey Number</Text>
+                    <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
+                      <Hash size={20} color="#64748b" />
+                      <TextInput
+                        value={jerseyNumber}
+                        onChangeText={setJerseyNumber}
+                        placeholder="e.g., 10"
+                        placeholderTextColor="#64748b"
+                        keyboardType="number-pad"
+                        maxLength={3}
+                        className="flex-1 py-4 px-3 text-white text-base"
+                      />
+                    </View>
+                  </View>
+                )}
               </Animated.View>
             )}
 

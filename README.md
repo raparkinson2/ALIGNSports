@@ -27,11 +27,12 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 
 ### Team Creation
 - **5-Step Setup Flow**:
-  1. Your Info: Name and email
+  1. Your Info: Name, email, phone number, role (Player or Coach), and jersey number (players only)
   2. Password: Create secure password
   3. Security Question: For account recovery
   4. Team Details: Team name and sport selection
   5. Jersey Colors: Select your team's jersey colors from presets
+- **Coach Role**: Select "Coach" if you're not a player - coaches don't need a jersey number
 
 ### Schedule Tab
 - View upcoming games with opponent, date, time, and location
