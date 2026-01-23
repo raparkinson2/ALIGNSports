@@ -175,15 +175,18 @@ function AuthNavigator() {
     const inTeamSelection = segments[0] === 'select-team';
     console.log('AUTH CHECK - isLoggedIn:', isLoggedIn, 'inAuthGroup:', inAuthGroup, 'pendingTeamIds:', pendingTeamIds, 'segments:', segments);
 
-    // If there are pending teams to select from, go to team selection
-    if (pendingTeamIds && pendingTeamIds.length > 0 && !inTeamSelection) {
-      console.log('PENDING TEAM SELECTION - redirecting to select-team');
-      router.replace('/select-team');
+    // If there are pending teams to select from, go to team selection (and stay there)
+    if (pendingTeamIds && pendingTeamIds.length > 0) {
+      if (!inTeamSelection) {
+        console.log('PENDING TEAM SELECTION - redirecting to select-team');
+        router.replace('/select-team');
+      }
+      // Don't redirect away from select-team while pendingTeamIds exists
       return;
     }
 
     // Always redirect to login if not logged in and not in auth flow
-    if (!isLoggedIn && !pendingTeamIds) {
+    if (!isLoggedIn) {
       if (!inAuthGroup) {
         console.log('NOT LOGGED IN - redirecting to login');
         router.replace('/login');

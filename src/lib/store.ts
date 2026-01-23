@@ -1048,14 +1048,20 @@ export const useTeamStore = create<TeamStore>()(
         const state = get();
         const normalizedPhone = phone.replace(/\D/g, '');
 
+        console.log('LOGIN PHONE: Checking teams array, length:', state.teams.length);
+        console.log('LOGIN PHONE: Looking for phone:', normalizedPhone);
+
         // First, check all teams for this user
         const teamsWithUser: { team: Team; player: Player }[] = [];
         state.teams.forEach((team) => {
           const player = team.players.find((p) => p.phone?.replace(/\D/g, '') === normalizedPhone);
+          console.log('LOGIN PHONE: Team', team.teamName, '- found player:', player ? 'yes' : 'no', player?.password ? 'has password' : 'no password');
           if (player && player.password === password) {
             teamsWithUser.push({ team, player });
           }
         });
+
+        console.log('LOGIN PHONE: Teams with matching user+password:', teamsWithUser.length);
 
         // If found in multiple teams, set up pending selection
         if (teamsWithUser.length > 1) {
@@ -1089,6 +1095,7 @@ export const useTeamStore = create<TeamStore>()(
           return { success: true, playerId: player.id };
         }
 
+        console.log('LOGIN PHONE: Using fallback path (checking state.players)');
         // Fallback: check the active/legacy single-team data
         const player = state.players.find((p) => p.phone?.replace(/\D/g, '') === normalizedPhone);
         if (!player) {
@@ -1105,8 +1112,10 @@ export const useTeamStore = create<TeamStore>()(
         const allUserTeams = state.teams.filter((team) =>
           team.players.some((p) => p.phone?.replace(/\D/g, '') === normalizedPhone)
         );
+        console.log('LOGIN PHONE FALLBACK: Teams with this phone (ignoring password):', allUserTeams.length);
 
         if (allUserTeams.length > 1) {
+          console.log('LOGIN PHONE FALLBACK: Multiple teams found, setting pendingTeamIds');
           set({
             userPhone: normalizedPhone,
             pendingTeamIds: allUserTeams.map((t) => t.id),
@@ -1114,6 +1123,7 @@ export const useTeamStore = create<TeamStore>()(
           return { success: true, multipleTeams: true, teamCount: allUserTeams.length };
         }
 
+        console.log('LOGIN PHONE FALLBACK: Single team or no teams in array, logging in directly');
         set({ currentPlayerId: player.id, isLoggedIn: true, userPhone: normalizedPhone });
         return { success: true, playerId: player.id };
       },
