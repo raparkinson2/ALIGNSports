@@ -110,9 +110,10 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - Messages grouped by date
 - Modern chat interface with message bubbles
 - **@Mentions**: Tag teammates to notify them
-  - Tap the @ button to open the mention picker
-  - Select **@everyone** to notify all team members
-  - Select individual players for targeted notifications
+  - Type **@** to open the autocomplete dropdown
+  - Type **@everyone** to notify all team members
+  - Start typing a name after @ to filter the list
+  - Tap a name to insert the mention
   - Mentions appear highlighted in cyan in messages
   - Mention notifications can be toggled in notification settings
 - **GIF Support**: Send GIFs via GIPHY integration

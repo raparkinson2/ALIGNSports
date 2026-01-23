@@ -1,16 +1,15 @@
 import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { MessageSquare, Send, ImageIcon, X, Search, AtSign } from 'lucide-react-native';
-import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { MessageSquare, Send, ImageIcon, X, Search, Users } from 'lucide-react-native';
+import Animated, { FadeInDown, FadeIn, SlideInDown, FadeOut } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import { useTeamStore, ChatMessage, getPlayerName, Player } from '@/lib/store';
+import { useTeamStore, ChatMessage, getPlayerName, getPlayerInitials, Player } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
-import { MentionPicker } from '@/components/MentionPicker';
 
 // GIPHY API key
 const GIPHY_API_KEY = 'mUSMkXeohjZdAa2fSpTRGq7ljx5h00fI';
@@ -260,10 +259,10 @@ export default function ChatScreen() {
   const [isLoadingGifs, setIsLoadingGifs] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Mention picker state
+  // Mention autocomplete state
   const [showMentionPicker, setShowMentionPicker] = useState(false);
-  const [selectedMentionIds, setSelectedMentionIds] = useState<string[]>([]);
-  const [isMentionAll, setIsMentionAll] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionStartIndex, setMentionStartIndex] = useState(-1);
 
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
 
@@ -336,53 +335,76 @@ export default function ChatScreen() {
     return () => clearTimeout(timer);
   }, [gifSearchQuery, isGifModalVisible]);
 
-  // Mention picker handlers
-  const handleOpenMentionPicker = useCallback(() => {
+  // Filter players for mention suggestions based on query
+  const filteredMentionSuggestions = useMemo(() => {
+    if (!showMentionPicker) return [];
+    const otherPlayers = players.filter((p) => p.id !== currentPlayerId && p.status === 'active');
+    if (!mentionQuery) return otherPlayers;
+    const query = mentionQuery.toLowerCase();
+    return otherPlayers.filter((p) => {
+      const fullName = getPlayerName(p).toLowerCase();
+      const firstName = p.firstName.toLowerCase();
+      const lastName = p.lastName.toLowerCase();
+      return fullName.includes(query) || firstName.includes(query) || lastName.includes(query);
+    });
+  }, [showMentionPicker, players, currentPlayerId, mentionQuery]);
+
+  // Handle text input change and detect @ mentions
+  const handleMessageChange = useCallback((text: string) => {
+    setMessageText(text);
+
+    // Find the last @ symbol that might be starting a mention
+    const lastAtIndex = text.lastIndexOf('@');
+
+    if (lastAtIndex !== -1) {
+      // Check if this @ is at the start or preceded by a space (start of a mention)
+      const charBefore = lastAtIndex > 0 ? text[lastAtIndex - 1] : ' ';
+      if (charBefore === ' ' || charBefore === '\n' || lastAtIndex === 0) {
+        // Get the text after @
+        const afterAt = text.substring(lastAtIndex + 1);
+        // Check if there's a space after the query (mention completed)
+        const spaceIndex = afterAt.indexOf(' ');
+        const newlineIndex = afterAt.indexOf('\n');
+        const endIndex = spaceIndex === -1 && newlineIndex === -1
+          ? afterAt.length
+          : Math.min(
+              spaceIndex === -1 ? Infinity : spaceIndex,
+              newlineIndex === -1 ? Infinity : newlineIndex
+            );
+
+        if (endIndex === afterAt.length) {
+          // Still typing the mention
+          setMentionQuery(afterAt);
+          setMentionStartIndex(lastAtIndex);
+          setShowMentionPicker(true);
+          return;
+        }
+      }
+    }
+
+    // No active mention being typed
+    setShowMentionPicker(false);
+    setMentionQuery('');
+    setMentionStartIndex(-1);
+  }, []);
+
+  // Handle selecting a mention from the dropdown
+  const handleSelectMention = useCallback((selection: Player | 'everyone') => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setShowMentionPicker(true);
-  }, []);
 
-  const handleCloseMentionPicker = useCallback(() => {
+    const mentionText = selection === 'everyone'
+      ? '@everyone '
+      : `@${getPlayerName(selection)} `;
+
+    // Replace the @query with the full mention
+    const before = messageText.substring(0, mentionStartIndex);
+    const after = messageText.substring(mentionStartIndex + 1 + mentionQuery.length);
+
+    setMessageText(before + mentionText + after);
     setShowMentionPicker(false);
-    setSelectedMentionIds([]);
-    setIsMentionAll(false);
-  }, []);
-
-  const handleSelectMentionPlayer = useCallback((playerId: string) => {
-    // If selecting all was active, deselect it when picking individual players
-    if (isMentionAll) {
-      setIsMentionAll(false);
-    }
-    setSelectedMentionIds((prev) =>
-      prev.includes(playerId)
-        ? prev.filter((id) => id !== playerId)
-        : [...prev, playerId]
-    );
-  }, [isMentionAll]);
-
-  const handleSelectMentionAll = useCallback(() => {
-    if (isMentionAll) {
-      setIsMentionAll(false);
-    } else {
-      setIsMentionAll(true);
-      setSelectedMentionIds([]); // Clear individual selections when selecting all
-    }
-  }, [isMentionAll]);
-
-  const handleConfirmMentions = useCallback(() => {
-    // Build the mention text to insert
-    let mentionText = '';
-    if (isMentionAll) {
-      mentionText = '@everyone ';
-    } else if (selectedMentionIds.length > 0) {
-      const mentionedPlayers = players.filter((p) => selectedMentionIds.includes(p.id));
-      mentionText = mentionedPlayers.map((p) => `@${getPlayerName(p)}`).join(' ') + ' ';
-    }
-
-    // Add mention text to the message
-    setMessageText((prev) => mentionText + prev);
-    setShowMentionPicker(false);
-  }, [isMentionAll, selectedMentionIds, players]);
+    setMentionQuery('');
+    setMentionStartIndex(-1);
+  }, [messageText, mentionStartIndex, mentionQuery]);
 
   const handleSendMessage = () => {
     if (!messageText.trim() || !currentPlayerId) return;
@@ -433,8 +455,9 @@ export default function ChatScreen() {
     addChatMessage(newMessage);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setMessageText('');
-    setSelectedMentionIds([]);
-    setIsMentionAll(false);
+    setShowMentionPicker(false);
+    setMentionQuery('');
+    setMentionStartIndex(-1);
   };
 
   const handlePickImage = async () => {
@@ -567,18 +590,62 @@ export default function ChatScreen() {
 
           {/* Input Area */}
           <View className="px-4 pb-4 pt-2 border-t border-slate-800 bg-slate-900/95 relative">
-            {/* Mention Picker */}
-            <MentionPicker
-              visible={showMentionPicker}
-              players={players}
-              currentPlayerId={currentPlayerId}
-              selectedPlayerIds={selectedMentionIds}
-              onSelectPlayer={handleSelectMentionPlayer}
-              onSelectAll={handleSelectMentionAll}
-              onClose={handleCloseMentionPicker}
-              onConfirm={handleConfirmMentions}
-              isAllSelected={isMentionAll}
-            />
+            {/* Inline Mention Autocomplete */}
+            {showMentionPicker && filteredMentionSuggestions.length > 0 && (
+              <Animated.View
+                entering={SlideInDown.springify().damping(20)}
+                exiting={FadeOut.duration(150)}
+                className="absolute bottom-full left-4 right-4 mb-2"
+              >
+                <View className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl max-h-52">
+                  <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                    {/* @everyone option */}
+                    {mentionQuery === '' || 'everyone'.includes(mentionQuery.toLowerCase()) ? (
+                      <Pressable
+                        onPress={() => handleSelectMention('everyone')}
+                        className="flex-row items-center px-4 py-3 border-b border-slate-700/50 active:bg-slate-700/50"
+                      >
+                        <View className="w-10 h-10 rounded-full bg-cyan-500 items-center justify-center mr-3">
+                          <Users size={20} color="#ffffff" />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-white font-semibold">@everyone</Text>
+                          <Text className="text-slate-400 text-sm">Notify all team members</Text>
+                        </View>
+                      </Pressable>
+                    ) : null}
+                    {/* Player list */}
+                    {filteredMentionSuggestions.map((player) => (
+                      <Pressable
+                        key={player.id}
+                        onPress={() => handleSelectMention(player)}
+                        className="flex-row items-center px-4 py-3 border-b border-slate-700/50 active:bg-slate-700/50"
+                      >
+                        {player.avatar ? (
+                          <Image
+                            source={{ uri: player.avatar }}
+                            style={{ width: 40, height: 40, borderRadius: 20 }}
+                            contentFit="cover"
+                          />
+                        ) : (
+                          <View className="w-10 h-10 rounded-full bg-slate-600 items-center justify-center">
+                            <Text className="text-white font-semibold text-sm">
+                              {getPlayerInitials(player)}
+                            </Text>
+                          </View>
+                        )}
+                        <View className="flex-1 ml-3">
+                          <Text className="text-white font-medium">{getPlayerName(player)}</Text>
+                          <Text className="text-slate-400 text-sm">
+                            #{player.number} • {player.position}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              </Animated.View>
+            )}
 
             <View className="flex-row items-center">
               {/* Image Picker Button */}
@@ -597,26 +664,10 @@ export default function ChatScreen() {
                 <Text className="text-cyan-400 font-bold text-xs">GIF</Text>
               </Pressable>
 
-              {/* @ Mention Button */}
-              <Pressable
-                onPress={handleOpenMentionPicker}
-                className={cn(
-                  'w-11 h-11 rounded-full items-center justify-center mr-2 active:bg-slate-700',
-                  showMentionPicker || isMentionAll || selectedMentionIds.length > 0
-                    ? 'bg-cyan-500'
-                    : 'bg-slate-800'
-                )}
-              >
-                <AtSign
-                  size={20}
-                  color={showMentionPicker || isMentionAll || selectedMentionIds.length > 0 ? '#ffffff' : '#67e8f9'}
-                />
-              </Pressable>
-
               <View className="flex-1 bg-slate-800 rounded-2xl px-4 mr-2 min-h-[44px] justify-center">
                 <TextInput
                   value={messageText}
-                  onChangeText={setMessageText}
+                  onChangeText={handleMessageChange}
                   placeholder="Type a message..."
                   placeholderTextColor="#64748b"
                   autoCapitalize="sentences"
