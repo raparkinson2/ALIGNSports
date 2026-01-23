@@ -950,17 +950,6 @@ export default function MoreScreen() {
             Team
           </Text>
 
-          {/* Switch Team - only show if user belongs to multiple teams */}
-          {hasMultipleTeams && (
-            <MenuItem
-              icon={<ArrowLeftRight size={20} color="#67e8f9" />}
-              title="Switch Team"
-              subtitle={`You're on ${userTeams.length} teams`}
-              onPress={handleSwitchTeam}
-              index={2}
-            />
-          )}
-
           <MenuItem
             icon={<Users size={20} color="#67e8f9" />}
             title="Team Roster"
@@ -969,8 +958,24 @@ export default function MoreScreen() {
               // Navigate to roster tab
               router.push('/(tabs)/roster');
             }}
-            index={3}
+            index={2}
           />
+
+          {/* Account Section */}
+          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
+            Account
+          </Text>
+
+          {/* Switch Team - only show if user belongs to multiple teams */}
+          {hasMultipleTeams && (
+            <MenuItem
+              icon={<ArrowLeftRight size={20} color="#67e8f9" />}
+              title="Switch Team"
+              subtitle={`You're on ${userTeams.length} teams`}
+              onPress={handleSwitchTeam}
+              index={3}
+            />
+          )}
 
           {/* Create New Team option */}
           <MenuItem
@@ -982,11 +987,6 @@ export default function MoreScreen() {
             }}
             index={4}
           />
-
-          {/* Account Section */}
-          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
-            Account
-          </Text>
 
           <MenuItem
             icon={<Lock size={20} color="#67e8f9" />}
