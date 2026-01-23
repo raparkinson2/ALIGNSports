@@ -13,6 +13,7 @@ import {
   Check,
   Cross,
   UserPlus,
+  UserCog,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -351,6 +352,7 @@ export default function RosterScreen() {
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus>('active');
   const [isInjured, setIsInjured] = useState(false);
   const [isSuspended, setIsSuspended] = useState(false);
+  const [isCoach, setIsCoach] = useState(false);
 
   // Invite modal state
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
@@ -367,6 +369,7 @@ export default function RosterScreen() {
     setPlayerStatus('active');
     setIsInjured(false);
     setIsSuspended(false);
+    setIsCoach(false);
     setEditingPlayer(null);
   };
 
@@ -395,37 +398,48 @@ export default function RosterScreen() {
     setPlayerStatus(player.status || 'active');
     setIsInjured(player.isInjured || false);
     setIsSuspended(player.isSuspended || false);
+    setIsCoach(player.roles?.includes('coach') || player.position === 'Coach' || false);
     setIsModalVisible(true);
   };
 
   const handleSave = () => {
-    if (!firstName.trim() || !lastName.trim() || !number.trim()) return;
+    // Only require jersey number if not a coach
+    if (!firstName.trim() || !lastName.trim() || (!isCoach && !number.trim())) return;
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     // Store raw phone digits
     const rawPhone = unformatPhone(phone);
 
+    // Build roles array - include 'coach' if isCoach is true
+    const roles: PlayerRole[] = [...playerRoles];
+    if (isCoach && !roles.includes('coach')) {
+      roles.push('coach');
+    } else if (!isCoach && roles.includes('coach')) {
+      const idx = roles.indexOf('coach');
+      if (idx > -1) roles.splice(idx, 1);
+    }
+
     if (editingPlayer) {
       const updates: Partial<Player> = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        number: number.trim(),
-        position: selectedPositions[0],
-        positions: selectedPositions,
+        number: isCoach ? '' : number.trim(),
+        position: isCoach ? 'Coach' : selectedPositions[0],
+        positions: isCoach ? ['Coach'] : selectedPositions,
         phone: rawPhone || undefined,
         email: email.trim() || undefined,
       };
 
       // Only admins can change roles and status
       if (isAdmin()) {
-        updates.roles = playerRoles;
+        updates.roles = roles;
         updates.status = playerStatus;
         updates.isInjured = isInjured;
         updates.isSuspended = isSuspended;
       }
 
-      console.log('Saving player updates:', { isInjured, isSuspended, updates });
+      console.log('Saving player updates:', { isInjured, isSuspended, isCoach, updates });
       updatePlayer(editingPlayer.id, updates);
       setIsModalVisible(false);
       resetForm();
@@ -434,12 +448,12 @@ export default function RosterScreen() {
         id: Date.now().toString(),
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        number: number.trim(),
-        position: selectedPositions[0],
-        positions: selectedPositions,
+        number: isCoach ? '' : number.trim(),
+        position: isCoach ? 'Coach' : selectedPositions[0],
+        positions: isCoach ? ['Coach'] : selectedPositions,
         phone: rawPhone || undefined,
         email: email.trim() || undefined,
-        roles: isAdmin() ? playerRoles : [],
+        roles: isAdmin() ? roles : [],
         status: isAdmin() ? playerStatus : 'active',
         isInjured: isAdmin() ? isInjured : false,
         isSuspended: isAdmin() ? isSuspended : false,
@@ -848,8 +862,9 @@ export default function RosterScreen() {
               {/* Role Selector - Admin Only */}
               {isAdmin() && (
                 <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Player Roles</Text>
+                  <Text className="text-slate-400 text-sm mb-2">Roles</Text>
                   <View className="flex-row">
+                    {/* Captain */}
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -860,11 +875,11 @@ export default function RosterScreen() {
                         }
                       }}
                       className={cn(
-                        'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
                         playerRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
                       )}
                     >
-                      <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center">
+                      <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center mb-1">
                         <Text className={cn(
                           'text-xs font-black',
                           playerRoles.includes('captain') ? 'text-white' : 'text-amber-500'
@@ -872,13 +887,14 @@ export default function RosterScreen() {
                       </View>
                       <Text
                         className={cn(
-                          'font-semibold ml-2',
+                          'font-semibold text-sm',
                           playerRoles.includes('captain') ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Captain
                       </Text>
                     </Pressable>
+                    {/* Admin */}
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -889,23 +905,46 @@ export default function RosterScreen() {
                         }
                       }}
                       className={cn(
-                        'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
+                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
                         playerRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
                       )}
                     >
                       <Shield size={16} color={playerRoles.includes('admin') ? 'white' : '#a78bfa'} />
                       <Text
                         className={cn(
-                          'font-semibold ml-2',
+                          'font-semibold text-sm mt-1',
                           playerRoles.includes('admin') ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Admin
                       </Text>
                     </Pressable>
+                    {/* Coach */}
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setIsCoach(!isCoach);
+                      }}
+                      className={cn(
+                        'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                        isCoach ? 'bg-cyan-500' : 'bg-slate-800'
+                      )}
+                    >
+                      <UserCog size={16} color={isCoach ? 'white' : '#67e8f9'} />
+                      <Text
+                        className={cn(
+                          'font-semibold text-sm mt-1',
+                          isCoach ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Coach
+                      </Text>
+                    </Pressable>
                   </View>
                   <Text className="text-slate-500 text-xs mt-2">
-                    Tap to toggle roles. Players can have multiple roles.
+                    {isCoach
+                      ? 'Coaches don\'t need jersey numbers or positions'
+                      : 'Tap to toggle roles. Members can have multiple roles.'}
                   </Text>
                 </View>
               )}
