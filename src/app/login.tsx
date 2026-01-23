@@ -133,7 +133,7 @@ export default function LoginScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert(
           'Check Your Email',
-          'We sent a password reset link to your email. Please check your inbox and follow the instructions.',
+          'We sent a password reset link to your email. Please check your inbox (and spam/junk folder) and follow the instructions.',
           [{ text: 'OK', onPress: () => setShowForgotPassword(false) }]
         );
         return;
@@ -764,7 +764,7 @@ export default function LoginScreen() {
 
             <View className="px-5 pb-6">
               <Text className="text-slate-400 text-center text-sm mb-6">
-                Please click the link in your email to verify your account before signing in.
+                Please click the link in your email to verify your account before signing in. Check your spam/junk folder if you don't see it.
               </Text>
 
               {/* Resend Button */}
@@ -775,7 +775,7 @@ export default function LoginScreen() {
                   setIsResending(false);
                   if (result.success) {
                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    Alert.alert('Email Sent', 'A new confirmation email has been sent. Please check your inbox.');
+                    Alert.alert('Email Sent', 'A new confirmation email has been sent. Please check your inbox and spam/junk folder.');
                   } else {
                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
                     Alert.alert('Error', result.error || 'Failed to resend confirmation email.');
