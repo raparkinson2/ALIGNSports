@@ -682,14 +682,9 @@ export default function CreateTeamScreen() {
                             : 'bg-slate-800/80 border-slate-700/50'
                         )}
                       >
-                        <SportIcon
-                          sport={s}
-                          size={28}
-                          color={sport === s ? '#67e8f9' : '#64748b'}
-                        />
                         <Text
                           className={cn(
-                            'mt-2 font-medium',
+                            'text-lg font-semibold',
                             sport === s ? 'text-cyan-400' : 'text-slate-400'
                           )}
                         >
