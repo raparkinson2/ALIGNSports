@@ -78,80 +78,113 @@ export function AddressSearch({
 
     setIsLoading(true);
     try {
-      // Use Nominatim with location bias for better local results
-      const params = new URLSearchParams({
-        q: query,
-        format: 'json',
-        addressdetails: '1',
-        limit: '10',
-        countrycodes: 'us,ca', // Prioritize US and Canada results
-      });
+      // Calculate distance between two coordinates in miles
+      const getDistanceMiles = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+        const R = 3959; // Earth's radius in miles
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a =
+          Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+          Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+      };
 
-      // Add user location for much better local results
+      // First, try a bounded search near the user (within ~75 miles)
+      let results: Array<{
+        place_id: number;
+        lat: string;
+        lon: string;
+        display_name: string;
+        name?: string;
+        address?: {
+          amenity?: string;
+          building?: string;
+          leisure?: string;
+          sport?: string;
+          house_number?: string;
+          road?: string;
+          city?: string;
+          town?: string;
+          village?: string;
+          state?: string;
+          postcode?: string;
+          country?: string;
+        };
+      }> = [];
+
       if (userLocation) {
-        // Create a larger viewbox (~100 miles radius) centered on user
-        // 1 degree latitude ≈ 69 miles, 1 degree longitude varies but ~55 miles at 40° lat
-        const latOffset = 1.5; // ~100 miles north/south
-        const lonOffset = 2.0; // ~110 miles east/west
-        params.set('viewbox', `${userLocation.longitude - lonOffset},${userLocation.latitude + latOffset},${userLocation.longitude + lonOffset},${userLocation.latitude - latOffset}`);
-        // bounded=1 means prefer results in viewbox but still show others if nothing found
-        params.set('bounded', '0');
-        // Add lat/lon for sorting by distance
-        params.set('lat', userLocation.latitude.toString());
-        params.set('lon', userLocation.longitude.toString());
-      }
+        // First pass: bounded search near user
+        const nearbyParams = new URLSearchParams({
+          q: query,
+          format: 'json',
+          addressdetails: '1',
+          limit: '15',
+          countrycodes: 'us,ca',
+          bounded: '1', // Strict boundary first
+          viewbox: `${userLocation.longitude - 1.5},${userLocation.latitude + 1.0},${userLocation.longitude + 1.5},${userLocation.latitude - 1.0}`,
+        });
 
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?${params.toString()}`,
-        {
-          headers: {
-            'User-Agent': 'TeamScheduleApp/1.0',
-          },
+        const nearbyResponse = await fetch(
+          `https://nominatim.openstreetmap.org/search?${nearbyParams.toString()}`,
+          { headers: { 'User-Agent': 'TeamScheduleApp/1.0' } }
+        );
+
+        if (nearbyResponse.ok) {
+          results = await nearbyResponse.json();
         }
-      );
-
-      if (!response.ok) {
-        throw new Error('Search failed');
       }
 
-      const results = await response.json();
+      // If we didn't get enough nearby results, do a wider search
+      if (results.length < 3) {
+        const widerParams = new URLSearchParams({
+          q: query,
+          format: 'json',
+          addressdetails: '1',
+          limit: '15',
+          countrycodes: 'us,ca',
+        });
+
+        if (userLocation) {
+          // Use viewbox but not bounded - will prefer but not restrict
+          widerParams.set('viewbox', `${userLocation.longitude - 3},${userLocation.latitude + 2},${userLocation.longitude + 3},${userLocation.latitude - 2}`);
+        }
+
+        const widerResponse = await fetch(
+          `https://nominatim.openstreetmap.org/search?${widerParams.toString()}`,
+          { headers: { 'User-Agent': 'TeamScheduleApp/1.0' } }
+        );
+
+        if (widerResponse.ok) {
+          const widerResults = await widerResponse.json();
+          // Merge results, avoiding duplicates
+          const existingIds = new Set(results.map(r => r.place_id));
+          for (const result of widerResults) {
+            if (!existingIds.has(result.place_id)) {
+              results.push(result);
+            }
+          }
+        }
+      }
 
       if (results && results.length > 0) {
-        // Sort results by distance from user if we have their location
-        let sortedResults = results;
+        // Sort by distance from user - closest first
         if (userLocation) {
-          sortedResults = results.sort((a: { lat: string; lon: string }, b: { lat: string; lon: string }) => {
-            const distA = Math.sqrt(
-              Math.pow(parseFloat(a.lat) - userLocation.latitude, 2) +
-              Math.pow(parseFloat(a.lon) - userLocation.longitude, 2)
+          results.sort((a, b) => {
+            const distA = getDistanceMiles(
+              userLocation.latitude, userLocation.longitude,
+              parseFloat(a.lat), parseFloat(a.lon)
             );
-            const distB = Math.sqrt(
-              Math.pow(parseFloat(b.lat) - userLocation.latitude, 2) +
-              Math.pow(parseFloat(b.lon) - userLocation.longitude, 2)
+            const distB = getDistanceMiles(
+              userLocation.latitude, userLocation.longitude,
+              parseFloat(b.lat), parseFloat(b.lon)
             );
             return distA - distB;
           });
         }
 
-        const formattedResults: AddressSuggestion[] = sortedResults.slice(0, 8).map((result: {
-          place_id: number;
-          display_name: string;
-          name?: string;
-          address?: {
-            amenity?: string;
-            building?: string;
-            leisure?: string;
-            sport?: string;
-            house_number?: string;
-            road?: string;
-            city?: string;
-            town?: string;
-            village?: string;
-            state?: string;
-            postcode?: string;
-            country?: string;
-          };
-        }, index: number) => {
+        const formattedResults: AddressSuggestion[] = results.slice(0, 8).map((result, index) => {
           const addr = result.address || {};
           const venueName = result.name || addr.amenity || addr.building || addr.leisure || '';
           const streetParts = [addr.house_number, addr.road].filter(Boolean);
