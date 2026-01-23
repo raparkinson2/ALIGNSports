@@ -362,6 +362,9 @@ export interface SoccerDiamondLineup {
   st2?: string; // Striker 2
 }
 
+// Invite release options
+export type InviteReleaseOption = 'now' | 'scheduled' | 'none';
+
 export interface Game {
   id: string;
   opponent: string;
@@ -382,6 +385,10 @@ export interface Game {
   baseballLineup?: BaseballLineup; // Baseball lineup
   soccerLineup?: SoccerLineup; // Soccer lineup (4-4-2)
   soccerDiamondLineup?: SoccerDiamondLineup; // Soccer diamond midfield lineup (4-1-2-1-2)
+  // Invite release settings
+  inviteReleaseOption?: InviteReleaseOption; // 'now' | 'scheduled' | 'none'
+  inviteReleaseDate?: string; // ISO string - when to release invites (only if scheduled)
+  invitesSent?: boolean; // Whether invites have been sent
 }
 
 // In-app notification types

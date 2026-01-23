@@ -18,6 +18,9 @@ import {
   Edit3,
   CalendarPlus,
   ListOrdered,
+  Bell,
+  BellOff,
+  Send,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInRight, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -25,7 +28,7 @@ import { Trash2 } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { useTeamStore, Game, TeamRecord, Sport, getPlayerName } from '@/lib/store';
+import { useTeamStore, Game, TeamRecord, Sport, getPlayerName, InviteReleaseOption } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
@@ -38,7 +41,7 @@ import { BaseballLineupViewer } from '@/components/BaseballLineupViewer';
 import { hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
 import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
 import { hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
-import { sendGameInviteNotification } from '@/lib/notifications';
+import { sendGameInviteNotification, scheduleGameInviteNotification } from '@/lib/notifications';
 
 const getDateLabel = (dateString: string): string => {
   const date = parseISO(dateString);
@@ -417,6 +420,11 @@ export default function ScheduleScreen() {
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [showPlayerSelection, setShowPlayerSelection] = useState(false);
 
+  // Invite release options
+  const [inviteReleaseOption, setInviteReleaseOption] = useState<InviteReleaseOption>('now');
+  const [inviteReleaseDate, setInviteReleaseDate] = useState(new Date());
+  const [showInviteReleaseDatePicker, setShowInviteReleaseDatePicker] = useState(false);
+
   // Record editing state
   const [recordWins, setRecordWins] = useState(teamSettings.record?.wins?.toString() ?? '0');
   const [recordLosses, setRecordLosses] = useState(teamSettings.record?.losses?.toString() ?? '0');
@@ -460,6 +468,9 @@ export default function ScheduleScreen() {
     setSelectedBeerDutyPlayer(null);
     setSelectedPlayerIds([]);
     setShowPlayerSelection(false);
+    setInviteReleaseOption('now');
+    setInviteReleaseDate(new Date());
+    setShowInviteReleaseDatePicker(false);
   };
 
   const handleCreateGame = () => {
@@ -488,13 +499,26 @@ export default function ScheduleScreen() {
       photos: [],
       showBeerDuty: showBeerDuty,
       beerDutyPlayerId: selectedBeerDutyPlayer || undefined,
+      // Invite release settings
+      inviteReleaseOption: inviteReleaseOption,
+      inviteReleaseDate: inviteReleaseOption === 'scheduled' ? inviteReleaseDate.toISOString() : undefined,
+      invitesSent: inviteReleaseOption === 'now', // Only mark as sent if sending now
     };
 
     addGame(newGame);
 
-    // Send push notification for game invite
+    // Handle notifications based on invite release option
     const formattedDate = format(gameDate, 'EEE, MMM d');
-    sendGameInviteNotification(newGame.id, opponent.trim(), formattedDate, gameTime.trim() || '7:00 PM');
+    const timeStr = gameTime.trim() || '7:00 PM';
+
+    if (inviteReleaseOption === 'now') {
+      // Send notifications immediately
+      sendGameInviteNotification(newGame.id, opponent.trim(), formattedDate, timeStr);
+    } else if (inviteReleaseOption === 'scheduled') {
+      // Schedule notifications for later
+      scheduleGameInviteNotification(newGame.id, opponent.trim(), formattedDate, timeStr, inviteReleaseDate);
+    }
+    // If 'none', no notifications are sent - user can send manually from game details
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsModalVisible(false);
@@ -951,6 +975,129 @@ export default function ScheduleScreen() {
                     )}
                   </View>
                 )}
+              </View>
+
+              {/* Invite Release Options */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">When to Send Invites</Text>
+                <View className="bg-slate-800/50 rounded-xl p-3">
+                  {/* Release Now Option */}
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setInviteReleaseOption('now');
+                      setShowInviteReleaseDatePicker(false);
+                    }}
+                    className={cn(
+                      'flex-row items-center p-3 rounded-xl mb-2 border',
+                      inviteReleaseOption === 'now'
+                        ? 'bg-green-500/20 border-green-500/50'
+                        : 'bg-slate-700/50 border-slate-600'
+                    )}
+                  >
+                    <Send size={18} color={inviteReleaseOption === 'now' ? '#22c55e' : '#64748b'} />
+                    <View className="ml-3 flex-1">
+                      <Text className={cn(
+                        'font-medium',
+                        inviteReleaseOption === 'now' ? 'text-green-400' : 'text-slate-400'
+                      )}>
+                        Release invites now
+                      </Text>
+                      <Text className="text-slate-500 text-xs mt-0.5">
+                        Players will be notified immediately
+                      </Text>
+                    </View>
+                    {inviteReleaseOption === 'now' && <Check size={18} color="#22c55e" />}
+                  </Pressable>
+
+                  {/* Schedule Release Option */}
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setInviteReleaseOption('scheduled');
+                      setShowInviteReleaseDatePicker(true);
+                    }}
+                    className={cn(
+                      'flex-row items-center p-3 rounded-xl mb-2 border',
+                      inviteReleaseOption === 'scheduled'
+                        ? 'bg-cyan-500/20 border-cyan-500/50'
+                        : 'bg-slate-700/50 border-slate-600'
+                    )}
+                  >
+                    <Bell size={18} color={inviteReleaseOption === 'scheduled' ? '#22d3ee' : '#64748b'} />
+                    <View className="ml-3 flex-1">
+                      <Text className={cn(
+                        'font-medium',
+                        inviteReleaseOption === 'scheduled' ? 'text-cyan-400' : 'text-slate-400'
+                      )}>
+                        Schedule release
+                      </Text>
+                      <Text className="text-slate-500 text-xs mt-0.5">
+                        Choose when to notify players
+                      </Text>
+                    </View>
+                    {inviteReleaseOption === 'scheduled' && <Check size={18} color="#22d3ee" />}
+                  </Pressable>
+
+                  {/* Schedule Date/Time Picker */}
+                  {inviteReleaseOption === 'scheduled' && (
+                    <View className="mt-2">
+                      <Pressable
+                        onPress={() => setShowInviteReleaseDatePicker(!showInviteReleaseDatePicker)}
+                        className="bg-slate-700/80 rounded-xl px-4 py-3"
+                      >
+                        <Text className="text-cyan-400 text-base">
+                          {format(inviteReleaseDate, 'EEE, MMM d, yyyy h:mm a')}
+                        </Text>
+                      </Pressable>
+                      {showInviteReleaseDatePicker && (
+                        <View className="bg-slate-700/80 rounded-xl mt-2 overflow-hidden items-center">
+                          <DateTimePicker
+                            value={inviteReleaseDate}
+                            mode="datetime"
+                            display="spinner"
+                            onChange={(event, date) => {
+                              if (date) setInviteReleaseDate(date);
+                              if (Platform.OS === 'android') setShowInviteReleaseDatePicker(false);
+                            }}
+                            minimumDate={new Date()}
+                            themeVariant="dark"
+                            accentColor="#22d3ee"
+                          />
+                        </View>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Don't Send Option */}
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setInviteReleaseOption('none');
+                      setShowInviteReleaseDatePicker(false);
+                    }}
+                    className={cn(
+                      'flex-row items-center p-3 rounded-xl border',
+                      inviteReleaseOption === 'none'
+                        ? 'bg-slate-600/50 border-slate-500'
+                        : 'bg-slate-700/50 border-slate-600'
+                    )}
+                  >
+                    <BellOff size={18} color={inviteReleaseOption === 'none' ? '#94a3b8' : '#64748b'} />
+                    <View className="ml-3 flex-1">
+                      <Text className={cn(
+                        'font-medium',
+                        inviteReleaseOption === 'none' ? 'text-slate-300' : 'text-slate-400'
+                      )}>
+                        Don't send invites
+                      </Text>
+                      <Text className="text-slate-500 text-xs mt-0.5">
+                        Send manually from game details later
+                      </Text>
+                    </View>
+                    {inviteReleaseOption === 'none' && <Check size={18} color="#94a3b8" />}
+                  </Pressable>
+                </View>
               </View>
 
               {/* Refreshment Duty */}

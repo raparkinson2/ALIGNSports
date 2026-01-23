@@ -175,6 +175,45 @@ export async function sendGameInviteNotification(
 }
 
 /**
+ * Schedule a game invite notification for a future date
+ */
+export async function scheduleGameInviteNotification(
+  gameId: string,
+  opponent: string,
+  gameDate: string,
+  gameTime: string,
+  releaseDate: Date
+): Promise<string | null> {
+  // Don't schedule if the date is in the past
+  if (releaseDate <= new Date()) {
+    console.log('Release date is in the past, sending notification immediately');
+    await sendGameInviteNotification(gameId, opponent, gameDate, gameTime);
+    return null;
+  }
+
+  try {
+    const identifier = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'New Game Added!',
+        body: `You've been invited to play vs ${opponent} on ${gameDate} at ${gameTime}. Make sure to check in or out in the app.`,
+        data: { gameId, type: 'game_invite' },
+        sound: true,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: releaseDate,
+      },
+    });
+
+    console.log('Scheduled game invite notification:', identifier);
+    return identifier;
+  } catch (error) {
+    console.log('Error scheduling game invite notification:', error);
+    return null;
+  }
+}
+
+/**
  * Cancel all scheduled notifications
  */
 export async function cancelAllScheduledNotifications(): Promise<void> {

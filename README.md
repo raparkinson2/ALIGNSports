@@ -76,6 +76,10 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
   - Quick buttons to select all Active, all Reserve, or All players
   - Individual player toggle for custom selection
   - Defaults to all Active players if none selected
+- **Invite Release Options** (NEW):
+  - **Release invites now**: Players are notified immediately when game is created
+  - **Schedule release**: Choose a specific date and time to send invites
+  - **Don't send invites**: Create the game without notifications; send manually from game details later
 
 ### Roster Tab
 - View all team players organized by position groups
