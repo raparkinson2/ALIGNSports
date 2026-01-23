@@ -1,0 +1,563 @@
+import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter, Stack } from 'expo-router';
+import { useState } from 'react';
+import { ChevronLeft, Users, Check, Palette, X, ImageIcon, Edit3 } from 'lucide-react-native';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
+import { useTeamStore, Sport, SPORT_NAMES, Player, PlayerRole, SPORT_POSITIONS, getPlayerName } from '@/lib/store';
+import { cn } from '@/lib/cn';
+
+// Preset jersey colors for quick selection
+const PRESET_COLORS = [
+  { name: 'White', color: '#ffffff' },
+  { name: 'Black', color: '#1a1a1a' },
+  { name: 'Red', color: '#dc2626' },
+  { name: 'Blue', color: '#2563eb' },
+  { name: 'Navy', color: '#1e3a5f' },
+  { name: 'Green', color: '#16a34a' },
+  { name: 'Yellow', color: '#eab308' },
+  { name: 'Orange', color: '#ea580c' },
+  { name: 'Purple', color: '#7c3aed' },
+  { name: 'Teal', color: '#0d9488' },
+  { name: 'Maroon', color: '#7f1d1d' },
+  { name: 'Gold', color: '#ca8a04' },
+];
+
+export default function CreateNewTeamScreen() {
+  const router = useRouter();
+  const createNewTeam = useTeamStore((s) => s.createNewTeam);
+  const switchTeam = useTeamStore((s) => s.switchTeam);
+  const setIsLoggedIn = useTeamStore((s) => s.setIsLoggedIn);
+  const userEmail = useTeamStore((s) => s.userEmail);
+  const userPhone = useTeamStore((s) => s.userPhone);
+  const players = useTeamStore((s) => s.players);
+  const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
+
+  // Get current user info
+  const currentPlayer = players.find((p) => p.id === currentPlayerId);
+
+  const [step, setStep] = useState(1);
+  const [teamNameInput, setTeamNameInput] = useState('');
+  const [sport, setSport] = useState<Sport>('hockey');
+  const [jerseyColors, setJerseyColors] = useState<{ name: string; color: string }[]>([]);
+  const [teamLogo, setTeamLogo] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
+  const [editingColorName, setEditingColorName] = useState('');
+  const [isCoach, setIsCoach] = useState(currentPlayer?.roles?.includes('coach') ?? false);
+  const [jerseyNumber, setJerseyNumber] = useState(currentPlayer?.number || '');
+
+  // Team logo picker functions
+  const handlePickTeamLogo = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      setError('Please allow access to your photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setTeamLogo(result.assets[0].uri);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const handleNext = () => {
+    setError('');
+
+    if (step === 1) {
+      if (!teamNameInput.trim()) {
+        setError('Please enter a team name');
+        return;
+      }
+      if (!teamLogo) {
+        setError('Please upload a team logo');
+        return;
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setStep(2);
+    } else if (step === 2) {
+      if (jerseyColors.length < 1) {
+        setError('Please add at least one jersey color');
+        return;
+      }
+      handleCreateTeam();
+    }
+  };
+
+  const handleAddJerseyColor = (preset: { name: string; color: string }) => {
+    // Check if already added
+    if (jerseyColors.some(c => c.name === preset.name)) {
+      // Remove it
+      setJerseyColors(jerseyColors.filter(c => c.name !== preset.name));
+    } else {
+      // Add it
+      setJerseyColors([...jerseyColors, preset]);
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleRemoveJerseyColor = (index: number) => {
+    setJerseyColors(jerseyColors.filter((_, i) => i !== index));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Reset editing state if we're removing the one being edited
+    if (editingColorIndex === index) {
+      setEditingColorIndex(null);
+      setEditingColorName('');
+    } else if (editingColorIndex !== null && editingColorIndex > index) {
+      // Adjust editing index if removing an item before it
+      setEditingColorIndex(editingColorIndex - 1);
+    }
+  };
+
+  const handleCreateTeam = async () => {
+    if (!currentPlayer) {
+      setError('Unable to get current user info');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const roles: PlayerRole[] = isCoach ? ['admin', 'coach'] : ['admin'];
+
+      // Create the admin player object for the new team (copy from current user)
+      const adminPlayer: Player = {
+        id: Date.now().toString(),
+        firstName: currentPlayer.firstName,
+        lastName: currentPlayer.lastName,
+        email: currentPlayer.email || userEmail || undefined,
+        password: currentPlayer.password,
+        phone: currentPlayer.phone || userPhone || undefined,
+        number: isCoach ? '' : (jerseyNumber.trim() || '1'),
+        position: isCoach ? 'Coach' : SPORT_POSITIONS[sport][0],
+        roles,
+        status: 'active',
+        avatar: currentPlayer.avatar,
+      };
+
+      // Create the new team with the admin player
+      createNewTeam(teamNameInput.trim(), sport, adminPlayer);
+
+      // Update team settings with jersey colors and logo
+      const currentState = useTeamStore.getState();
+      useTeamStore.setState({
+        teamSettings: {
+          ...currentState.teamSettings,
+          jerseyColors,
+          teamLogo: teamLogo ?? undefined,
+        },
+      });
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // Navigate to main app - the new team is now active
+      router.replace('/(tabs)');
+    } catch (err) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError('Something went wrong. Please try again.');
+    }
+
+    setIsLoading(false);
+  };
+
+  return (
+    <View className="flex-1 bg-slate-900">
+      <Stack.Screen options={{ headerShown: false }} />
+
+      <LinearGradient
+        colors={['#0c4a6e', '#0f172a', '#0f172a']}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+      />
+
+      <SafeAreaView className="flex-1">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1"
+        >
+          {/* Header */}
+          <Animated.View
+            entering={FadeInUp.delay(50).springify()}
+            className="flex-row items-center px-5 pt-2 pb-4"
+          >
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (step > 1) {
+                  setStep(step - 1);
+                  setError('');
+                } else {
+                  router.back();
+                }
+              }}
+              className="flex-row items-center"
+            >
+              <ChevronLeft size={24} color="#67e8f9" />
+              <Text className="text-cyan-400 text-base ml-1">Back</Text>
+            </Pressable>
+          </Animated.View>
+
+          {/* Progress Indicator */}
+          <Animated.View
+            entering={FadeInDown.delay(100).springify()}
+            className="px-6 mb-6"
+          >
+            <View className="flex-row items-center justify-center">
+              {[1, 2].map((s) => (
+                <View key={s} className="flex-row items-center">
+                  <View
+                    className={cn(
+                      'w-7 h-7 rounded-full items-center justify-center',
+                      step >= s ? 'bg-cyan-500' : 'bg-slate-700'
+                    )}
+                  >
+                    {step > s ? (
+                      <Check size={14} color="white" />
+                    ) : (
+                      <Text className={cn('font-bold text-sm', step >= s ? 'text-white' : 'text-slate-400')}>
+                        {s}
+                      </Text>
+                    )}
+                  </View>
+                  {s < 2 && (
+                    <View
+                      className={cn(
+                        'w-12 h-1 mx-2',
+                        step > s ? 'bg-cyan-500' : 'bg-slate-700'
+                      )}
+                    />
+                  )}
+                </View>
+              ))}
+            </View>
+          </Animated.View>
+
+          <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+            {/* Step 1: Team Info */}
+            {step === 1 && (
+              <Animated.View entering={FadeInDown.delay(150).springify()}>
+                <View className="items-center mb-8">
+                  <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
+                    <Users size={32} color="#67e8f9" />
+                  </View>
+                  <Text className="text-white text-2xl font-bold">New Team</Text>
+                  <Text className="text-slate-400 text-center mt-2">
+                    Set up your new team
+                  </Text>
+                </View>
+
+                {/* Current User Info */}
+                {currentPlayer && (
+                  <View className="bg-slate-800/60 rounded-xl p-4 mb-6 border border-slate-700/50">
+                    <Text className="text-slate-400 text-xs uppercase tracking-wider mb-2">Creating as</Text>
+                    <Text className="text-white font-semibold">{getPlayerName(currentPlayer)}</Text>
+                    <Text className="text-cyan-400 text-sm">{currentPlayer.email || currentPlayer.phone}</Text>
+                  </View>
+                )}
+
+                <View className="mb-6">
+                  <Text className="text-slate-400 text-sm mb-2">Team Name <Text className="text-red-400">*</Text></Text>
+                  <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
+                    <Users size={20} color="#64748b" />
+                    <TextInput
+                      value={teamNameInput}
+                      onChangeText={setTeamNameInput}
+                      placeholder="Enter team name"
+                      placeholderTextColor="#64748b"
+                      autoCapitalize="words"
+                      className="flex-1 py-4 px-3 text-white text-base"
+                    />
+                  </View>
+                </View>
+
+                {/* Team Logo */}
+                <View className="mb-6">
+                  <Text className="text-slate-400 text-sm mb-2">Team Logo <Text className="text-red-400">*</Text></Text>
+                  <Pressable
+                    onPress={handlePickTeamLogo}
+                    className="items-center"
+                  >
+                    {teamLogo ? (
+                      <View className="relative">
+                        <Image
+                          source={{ uri: teamLogo }}
+                          style={{ width: 100, height: 100, borderRadius: 16 }}
+                          contentFit="cover"
+                        />
+                        <Pressable
+                          onPress={() => setTeamLogo(null)}
+                          className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-500 items-center justify-center"
+                        >
+                          <X size={14} color="white" />
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <View className="w-24 h-24 rounded-2xl bg-slate-800/80 border-2 border-dashed border-slate-600 items-center justify-center">
+                        <ImageIcon size={32} color="#64748b" />
+                        <Text className="text-slate-500 text-xs mt-2">Add Logo</Text>
+                      </View>
+                    )}
+                  </Pressable>
+                  {!teamLogo && (
+                    <Text className="text-cyan-400 text-xs text-center mt-2">Tap to upload your team logo</Text>
+                  )}
+                </View>
+
+                <View className="mb-4">
+                  <Text className="text-slate-400 text-sm mb-3">Sport</Text>
+                  <View className="flex-row flex-wrap justify-between">
+                    {(Object.keys(SPORT_NAMES) as Sport[]).map((s) => (
+                      <Pressable
+                        key={s}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setSport(s);
+                        }}
+                        className={cn(
+                          'w-[48%] items-center py-4 rounded-xl mb-3 border',
+                          sport === s
+                            ? 'bg-cyan-500/20 border-cyan-500/50'
+                            : 'bg-slate-800/80 border-slate-700/50'
+                        )}
+                      >
+                        <Text
+                          className={cn(
+                            'text-lg font-semibold',
+                            sport === s ? 'text-cyan-400' : 'text-slate-400'
+                          )}
+                        >
+                          {SPORT_NAMES[s]}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+
+                {/* Role Toggle: Coach or Player */}
+                <View className="mb-4">
+                  <Text className="text-slate-400 text-sm mb-2">Your Role on this team</Text>
+                  <View className="flex-row bg-slate-800/80 rounded-xl overflow-hidden border border-slate-700/50">
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setIsCoach(false);
+                      }}
+                      className={cn(
+                        'flex-1 py-4 items-center',
+                        !isCoach
+                          ? 'bg-cyan-600'
+                          : 'bg-transparent'
+                      )}
+                    >
+                      <Text className={cn(
+                        'font-semibold',
+                        !isCoach ? 'text-white' : 'text-slate-400'
+                      )}>
+                        Player
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setIsCoach(true);
+                      }}
+                      className={cn(
+                        'flex-1 py-4 items-center',
+                        isCoach
+                          ? 'bg-purple-600'
+                          : 'bg-transparent'
+                      )}
+                    >
+                      <Text className={cn(
+                        'font-semibold',
+                        isCoach ? 'text-white' : 'text-slate-400'
+                      )}>
+                        Coach
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+
+                {/* Jersey Number - Only shown for players */}
+                {!isCoach && (
+                  <View className="mb-4">
+                    <Text className="text-slate-400 text-sm mb-2">Jersey Number</Text>
+                    <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
+                      <Text className="text-slate-500 text-lg mr-2">#</Text>
+                      <TextInput
+                        value={jerseyNumber}
+                        onChangeText={setJerseyNumber}
+                        placeholder="e.g., 10"
+                        placeholderTextColor="#64748b"
+                        keyboardType="number-pad"
+                        maxLength={3}
+                        className="flex-1 py-4 px-1 text-white text-base"
+                      />
+                    </View>
+                  </View>
+                )}
+              </Animated.View>
+            )}
+
+            {/* Step 2: Jersey Colors */}
+            {step === 2 && (
+              <Animated.View entering={FadeInDown.delay(150).springify()}>
+                <View className="items-center mb-6">
+                  <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
+                    <Palette size={32} color="#67e8f9" />
+                  </View>
+                  <Text className="text-white text-2xl font-bold">Jersey Colors</Text>
+                  <Text className="text-slate-400 text-center mt-2">
+                    Select your team's jersey colors
+                  </Text>
+                </View>
+
+                {/* Selected Colors */}
+                {jerseyColors.length > 0 && (
+                  <View className="mb-4">
+                    <Text className="text-slate-400 text-sm mb-2">Selected Colors (tap name to edit)</Text>
+                    {jerseyColors.map((color, index) => (
+                      <View
+                        key={`${color.color}-${index}`}
+                        className="flex-row items-center bg-slate-800/80 rounded-xl px-4 py-3 mb-2 border border-slate-700/50"
+                      >
+                        <View
+                          className="w-8 h-8 rounded-full mr-3"
+                          style={{
+                            backgroundColor: color.color,
+                            borderWidth: color.color === '#ffffff' ? 2 : 0,
+                            borderColor: '#64748b',
+                          }}
+                        />
+                        {editingColorIndex === index ? (
+                          <TextInput
+                            value={editingColorName}
+                            onChangeText={setEditingColorName}
+                            onBlur={() => {
+                              if (editingColorName.trim()) {
+                                const updated = [...jerseyColors];
+                                updated[index] = { ...updated[index], name: editingColorName.trim() };
+                                setJerseyColors(updated);
+                              }
+                              setEditingColorIndex(null);
+                              setEditingColorName('');
+                            }}
+                            onSubmitEditing={() => {
+                              if (editingColorName.trim()) {
+                                const updated = [...jerseyColors];
+                                updated[index] = { ...updated[index], name: editingColorName.trim() };
+                                setJerseyColors(updated);
+                              }
+                              setEditingColorIndex(null);
+                              setEditingColorName('');
+                            }}
+                            autoFocus
+                            selectTextOnFocus
+                            className="flex-1 text-white text-base bg-slate-700 rounded-lg px-3 py-2"
+                            placeholderTextColor="#64748b"
+                            placeholder="Enter name"
+                          />
+                        ) : (
+                          <Pressable
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              setEditingColorIndex(index);
+                              setEditingColorName(color.name);
+                            }}
+                            className="flex-1 flex-row items-center"
+                          >
+                            <Text className="text-white text-base flex-1">{color.name}</Text>
+                            <Edit3 size={16} color="#67e8f9" />
+                          </Pressable>
+                        )}
+                        <Pressable
+                          onPress={() => handleRemoveJerseyColor(index)}
+                          className="ml-3 p-2"
+                        >
+                          <X size={18} color="#ef4444" />
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Available Colors */}
+                <View className="mb-4">
+                  <Text className="text-slate-400 text-sm mb-3">Tap to add colors</Text>
+                  <View className="flex-row flex-wrap justify-between">
+                    {PRESET_COLORS.map((preset) => {
+                      const isSelected = jerseyColors.some(c => c.name === preset.name);
+                      return (
+                        <Pressable
+                          key={preset.name}
+                          onPress={() => handleAddJerseyColor(preset)}
+                          className={cn(
+                            'w-[31%] items-center py-3 rounded-xl mb-3 border',
+                            isSelected
+                              ? 'bg-cyan-500/20 border-cyan-500/50'
+                              : 'bg-slate-800/80 border-slate-700/50'
+                          )}
+                        >
+                          <View
+                            className="w-10 h-10 rounded-full mb-2"
+                            style={{
+                              backgroundColor: preset.color,
+                              borderWidth: preset.color === '#ffffff' ? 2 : 0,
+                              borderColor: '#64748b',
+                            }}
+                          />
+                          <Text
+                            className={cn(
+                              'text-xs font-medium',
+                              isSelected ? 'text-cyan-400' : 'text-slate-400'
+                            )}
+                          >
+                            {preset.name}
+                          </Text>
+                          {isSelected && (
+                            <View className="absolute top-1 right-1">
+                              <Check size={14} color="#67e8f9" />
+                            </View>
+                          )}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              </Animated.View>
+            )}
+
+            {/* Error Message */}
+            {error ? (
+              <Animated.View entering={FadeInDown.springify()}>
+                <Text className="text-red-400 text-center mb-4">{error}</Text>
+              </Animated.View>
+            ) : null}
+
+            {/* Continue Button */}
+            <Pressable
+              onPress={handleNext}
+              disabled={isLoading}
+              className="bg-cyan-500 rounded-xl py-4 flex-row items-center justify-center active:bg-cyan-600 disabled:opacity-50 mb-8"
+            >
+              <Text className="text-white font-semibold text-lg">
+                {isLoading ? 'Creating Team...' : step === 2 ? 'Create Team' : 'Continue'}
+              </Text>
+            </Pressable>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
+  );
+}

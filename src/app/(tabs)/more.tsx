@@ -24,6 +24,7 @@ import {
   Trash2,
   Check,
   ArrowLeftRight,
+  Plus,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -971,6 +972,17 @@ export default function MoreScreen() {
             index={3}
           />
 
+          {/* Create New Team option */}
+          <MenuItem
+            icon={<Plus size={20} color="#67e8f9" />}
+            title="Create New Team"
+            subtitle="Start a new team"
+            onPress={() => {
+              router.push('/create-new-team');
+            }}
+            index={4}
+          />
+
           {/* Account Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
             Account
@@ -981,7 +993,7 @@ export default function MoreScreen() {
             title="Change Password"
             subtitle="Update your account password"
             onPress={() => setPasswordModalVisible(true)}
-            index={4}
+            index={5}
           />
 
           <MenuItem
@@ -989,7 +1001,7 @@ export default function MoreScreen() {
             title="Feature Request"
             subtitle="Suggest a new feature"
             onPress={() => router.push('/feature-request')}
-            index={5}
+            index={6}
           />
 
           <MenuItem
@@ -997,14 +1009,14 @@ export default function MoreScreen() {
             title="Report Bug"
             subtitle="Let us know about issues"
             onPress={() => router.push('/report-bug')}
-            index={6}
+            index={7}
           />
 
           <MenuItem
             icon={<LogOut size={20} color="#f87171" />}
             title="Log Out"
             onPress={handleLogout}
-            index={7}
+            index={8}
             variant="danger"
           />
         </ScrollView>

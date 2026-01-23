@@ -25,6 +25,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Multi-Team Support**: If you belong to multiple teams, you'll see a team selection screen after login
   - Choose which team to view
   - Switch teams anytime via More > Switch Team
+  - **Create New Team**: Add a new team without logging out via More > Create New Team
 - Personalized experience based on your role
 - Admin users see additional Admin tab
 
