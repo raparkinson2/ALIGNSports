@@ -1309,23 +1309,26 @@ export default function PaymentsScreen() {
                       <View className="mb-4">
                         <Text className="text-slate-400 text-sm mb-2">Date</Text>
                         <Pressable
-                          onPress={() => setShowDatePicker(true)}
+                          onPress={() => setShowDatePicker(!showDatePicker)}
                           className="flex-row items-center bg-slate-700 rounded-xl px-4 py-3"
                         >
                           <Calendar size={20} color="#64748b" />
                           <Text className="text-white ml-3">{format(newPaymentDate, 'MMM d, yyyy')}</Text>
                         </Pressable>
                         {showDatePicker && (
-                          <DateTimePicker
-                            value={newPaymentDate}
-                            mode="date"
-                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                            onChange={(event, date) => {
-                              setShowDatePicker(Platform.OS === 'ios');
-                              if (date) setNewPaymentDate(date);
-                            }}
-                            themeVariant="dark"
-                          />
+                          <View className="bg-slate-800 rounded-xl mt-2 overflow-hidden items-center">
+                            <DateTimePicker
+                              value={newPaymentDate}
+                              mode="date"
+                              display="inline"
+                              onChange={(event, date) => {
+                                if (date) setNewPaymentDate(date);
+                                if (Platform.OS === 'android') setShowDatePicker(false);
+                              }}
+                              themeVariant="dark"
+                              accentColor="#22c55e"
+                            />
+                          </View>
                         )}
                       </View>
 

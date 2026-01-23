@@ -1101,7 +1101,7 @@ export default function ScheduleScreen() {
                           <DateTimePicker
                             value={inviteReleaseDate}
                             mode="datetime"
-                            display="spinner"
+                            display="inline"
                             onChange={(event, date) => {
                               if (date) setInviteReleaseDate(date);
                               if (Platform.OS === 'android') setShowInviteReleaseDatePicker(false);

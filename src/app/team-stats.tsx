@@ -999,7 +999,7 @@ export default function TeamStatsScreen() {
                 <View className="mb-6">
                   <Text className="text-slate-400 text-sm mb-2">Game Date</Text>
                   <Pressable
-                    onPress={() => setShowDatePicker(true)}
+                    onPress={() => setShowDatePicker(!showDatePicker)}
                     className="bg-slate-800 rounded-xl px-4 py-3 border border-slate-700 flex-row items-center justify-between"
                   >
                     <View className="flex-row items-center">
@@ -1011,16 +1011,19 @@ export default function TeamStatsScreen() {
                     <ChevronRight size={18} color="#64748b" />
                   </Pressable>
                   {showDatePicker && (
-                    <DateTimePicker
-                      value={gameDate}
-                      mode="date"
-                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                      onChange={(event, date) => {
-                        setShowDatePicker(Platform.OS === 'ios');
-                        if (date) setGameDate(date);
-                      }}
-                      themeVariant="dark"
-                    />
+                    <View className="bg-slate-800 rounded-xl mt-2 overflow-hidden items-center">
+                      <DateTimePicker
+                        value={gameDate}
+                        mode="date"
+                        display="inline"
+                        onChange={(event, date) => {
+                          if (date) setGameDate(date);
+                          if (Platform.OS === 'android') setShowDatePicker(false);
+                        }}
+                        themeVariant="dark"
+                        accentColor="#67e8f9"
+                      />
+                    </View>
                   )}
                 </View>
 

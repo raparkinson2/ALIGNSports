@@ -1644,7 +1644,7 @@ export default function GameDetailScreen() {
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Date</Text>
                 <Pressable
-                  onPress={() => setShowEditDatePicker(true)}
+                  onPress={() => setShowEditDatePicker(!showEditDatePicker)}
                   className="bg-slate-800 rounded-xl px-4 py-3"
                 >
                   <Text className="text-white text-lg">
@@ -1652,16 +1652,19 @@ export default function GameDetailScreen() {
                   </Text>
                 </Pressable>
                 {showEditDatePicker && (
-                  <DateTimePicker
-                    value={editDate}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(event, date) => {
-                      setShowEditDatePicker(Platform.OS === 'ios');
-                      if (date) setEditDate(date);
-                    }}
-                    themeVariant="dark"
-                  />
+                  <View className="bg-slate-800 rounded-xl mt-2 overflow-hidden items-center">
+                    <DateTimePicker
+                      value={editDate}
+                      mode="date"
+                      display="inline"
+                      onChange={(event, date) => {
+                        if (date) setEditDate(date);
+                        if (Platform.OS === 'android') setShowEditDatePicker(false);
+                      }}
+                      themeVariant="dark"
+                      accentColor="#67e8f9"
+                    />
+                  </View>
                 )}
               </View>
 
@@ -1669,7 +1672,7 @@ export default function GameDetailScreen() {
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Time</Text>
                 <Pressable
-                  onPress={() => setShowEditTimePicker(true)}
+                  onPress={() => setShowEditTimePicker(!showEditTimePicker)}
                   className="bg-slate-800 rounded-xl px-4 py-3"
                 >
                   <Text className="text-white text-lg">
@@ -1677,16 +1680,19 @@ export default function GameDetailScreen() {
                   </Text>
                 </Pressable>
                 {showEditTimePicker && (
-                  <DateTimePicker
-                    value={editTime}
-                    mode="time"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(event, time) => {
-                      setShowEditTimePicker(Platform.OS === 'ios');
-                      if (time) setEditTime(time);
-                    }}
-                    themeVariant="dark"
-                  />
+                  <View className="bg-slate-800 rounded-xl mt-2 overflow-hidden items-center">
+                    <DateTimePicker
+                      value={editTime}
+                      mode="time"
+                      display="spinner"
+                      onChange={(event, time) => {
+                        if (time) setEditTime(time);
+                        if (Platform.OS === 'android') setShowEditTimePicker(false);
+                      }}
+                      themeVariant="dark"
+                      accentColor="#67e8f9"
+                    />
+                  </View>
                 )}
               </View>
 
