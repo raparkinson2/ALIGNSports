@@ -78,18 +78,27 @@ export function AddressSearch({
 
     setIsLoading(true);
     try {
-      // Use Nominatim with broader search - removed country restriction for better results
+      // Use Nominatim with location bias for better local results
       const params = new URLSearchParams({
         q: query,
         format: 'json',
         addressdetails: '1',
-        limit: '8',
+        limit: '10',
+        countrycodes: 'us,ca', // Prioritize US and Canada results
       });
 
-      // Add user location for better local results if available
+      // Add user location for much better local results
       if (userLocation) {
-        params.append('viewbox', `${userLocation.longitude - 0.5},${userLocation.latitude + 0.5},${userLocation.longitude + 0.5},${userLocation.latitude - 0.5}`);
-        params.append('bounded', '0');
+        // Create a larger viewbox (~100 miles radius) centered on user
+        // 1 degree latitude ≈ 69 miles, 1 degree longitude varies but ~55 miles at 40° lat
+        const latOffset = 1.5; // ~100 miles north/south
+        const lonOffset = 2.0; // ~110 miles east/west
+        params.set('viewbox', `${userLocation.longitude - lonOffset},${userLocation.latitude + latOffset},${userLocation.longitude + lonOffset},${userLocation.latitude - latOffset}`);
+        // bounded=1 means prefer results in viewbox but still show others if nothing found
+        params.set('bounded', '0');
+        // Add lat/lon for sorting by distance
+        params.set('lat', userLocation.latitude.toString());
+        params.set('lon', userLocation.longitude.toString());
       }
 
       const response = await fetch(
@@ -108,7 +117,23 @@ export function AddressSearch({
       const results = await response.json();
 
       if (results && results.length > 0) {
-        const formattedResults: AddressSuggestion[] = results.map((result: {
+        // Sort results by distance from user if we have their location
+        let sortedResults = results;
+        if (userLocation) {
+          sortedResults = results.sort((a: { lat: string; lon: string }, b: { lat: string; lon: string }) => {
+            const distA = Math.sqrt(
+              Math.pow(parseFloat(a.lat) - userLocation.latitude, 2) +
+              Math.pow(parseFloat(a.lon) - userLocation.longitude, 2)
+            );
+            const distB = Math.sqrt(
+              Math.pow(parseFloat(b.lat) - userLocation.latitude, 2) +
+              Math.pow(parseFloat(b.lon) - userLocation.longitude, 2)
+            );
+            return distA - distB;
+          });
+        }
+
+        const formattedResults: AddressSuggestion[] = sortedResults.slice(0, 8).map((result: {
           place_id: number;
           display_name: string;
           name?: string;
