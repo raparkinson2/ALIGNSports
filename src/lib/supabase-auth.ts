@@ -102,7 +102,7 @@ export async function signOut(): Promise<AuthResult> {
  * Send a password reset OTP via SMS (Custom implementation via Edge Function with Twilio)
  * This bypasses Supabase Auth's redirect-based flows
  */
-export async function sendPasswordResetSMS(phone: string): Promise<AuthResult> {
+export async function sendPasswordResetSMS(phone: string, email?: string): Promise<AuthResult> {
   try {
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PUBLIC_URL || '';
 
@@ -111,7 +111,7 @@ export async function sendPasswordResetSMS(phone: string): Promise<AuthResult> {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ phone }),
+      body: JSON.stringify({ phone, email }),
     });
 
     const data = await response.json();

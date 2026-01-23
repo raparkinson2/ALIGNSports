@@ -136,12 +136,15 @@ export default function LoginScreen() {
     if (isPhoneNumber(trimmedInput)) {
       setIsLoading(true);
       const phone = unformatPhone(trimmedInput);
-      const result = await sendPasswordResetSMS(phone);
+      // Try to find the user's email from local store to send with request
+      const player = findPlayerByPhone(phone);
+      const result = await sendPasswordResetSMS(phone, player?.email);
       setIsLoading(false);
 
       if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setResetEmail(phone); // Store phone number (reusing resetEmail state)
+        setFoundPlayer(player || null);
         setResetStep('otp');
         return;
       } else {
@@ -826,7 +829,7 @@ export default function LoginScreen() {
                     <Pressable
                       onPress={async () => {
                         setIsLoading(true);
-                        const result = await sendPasswordResetSMS(resetEmail);
+                        const result = await sendPasswordResetSMS(resetEmail, foundPlayer?.email);
                         setIsLoading(false);
                         if (result.success) {
                           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
