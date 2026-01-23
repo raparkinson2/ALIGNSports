@@ -370,6 +370,13 @@ export default function AdminScreen() {
   // Team name form
   const [editTeamName, setEditTeamName] = useState(teamName);
 
+  // Email Team modal state
+  const [isEmailModalVisible, setIsEmailModalVisible] = useState(false);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+
   if (!isAdmin()) {
     return (
       <View className="flex-1 bg-slate-900 items-center justify-center px-8">
@@ -1044,29 +1051,21 @@ export default function AdminScreen() {
 
             {/* Email Team Button */}
             <Pressable
-              onPress={async () => {
+              onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                // Get all player emails
-                const emails = players
-                  .filter(p => p.email && p.email.trim())
-                  .map(p => p.email?.trim())
-                  .filter(Boolean)
-                  .join(',');
+                // Get players with emails
+                const playersWithEmail = players.filter(p => p.email && p.email.trim());
 
-                if (!emails) {
+                if (playersWithEmail.length === 0) {
                   Alert.alert('No Emails', 'No players have email addresses. Add emails to your roster to use this feature.');
                   return;
                 }
 
-                const subject = encodeURIComponent(`${teamName} - Team Update`);
-                const mailtoUrl = `mailto:${emails}?subject=${subject}`;
-
-                const canOpen = await Linking.canOpenURL(mailtoUrl);
-                if (canOpen) {
-                  await Linking.openURL(mailtoUrl);
-                } else {
-                  Alert.alert('Unable to Open Email', 'Please make sure you have an email app installed.');
-                }
+                // Pre-select all players with emails
+                setSelectedRecipients(playersWithEmail.map(p => p.id));
+                setEmailSubject('');
+                setEmailBody('');
+                setIsEmailModalVisible(true);
               }}
               className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
             >
@@ -2503,6 +2502,181 @@ export default function AdminScreen() {
               </Pressable>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      {/* Email Team Modal */}
+      <Modal
+        visible={isEmailModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsEmailModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            {/* Header */}
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsEmailModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-bold">Email Team</Text>
+              <Pressable
+                onPress={async () => {
+                  if (!emailSubject.trim()) {
+                    Alert.alert('Subject Required', 'Please enter a subject for your email.');
+                    return;
+                  }
+                  if (!emailBody.trim()) {
+                    Alert.alert('Message Required', 'Please enter a message for your email.');
+                    return;
+                  }
+                  if (selectedRecipients.length === 0) {
+                    Alert.alert('No Recipients', 'Please select at least one recipient.');
+                    return;
+                  }
+
+                  setIsSendingEmail(true);
+
+                  try {
+                    // Get selected player emails
+                    const recipientEmails = players
+                      .filter(p => selectedRecipients.includes(p.id) && p.email)
+                      .map(p => p.email as string);
+
+                    // Call Supabase Edge Function to send email
+                    const response = await fetch(
+                      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/send-team-email`,
+                      {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+                        },
+                        body: JSON.stringify({
+                          to: recipientEmails,
+                          subject: emailSubject.trim(),
+                          body: emailBody.trim(),
+                          teamName: teamName,
+                        }),
+                      }
+                    );
+
+                    if (response.ok) {
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      Alert.alert('Email Sent', `Your email has been sent to ${recipientEmails.length} team member${recipientEmails.length === 1 ? '' : 's'}.`);
+                      setIsEmailModalVisible(false);
+                      setEmailSubject('');
+                      setEmailBody('');
+                      setSelectedRecipients([]);
+                    } else {
+                      const errorData = await response.json().catch(() => ({}));
+                      throw new Error(errorData.error || 'Failed to send email');
+                    }
+                  } catch (err) {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                    Alert.alert('Error', 'Failed to send email. Please try again later.');
+                    console.error('Email send error:', err);
+                  }
+
+                  setIsSendingEmail(false);
+                }}
+                disabled={isSendingEmail || !emailSubject.trim() || !emailBody.trim() || selectedRecipients.length === 0}
+                className="px-4 py-2"
+              >
+                <Text className={`font-semibold ${isSendingEmail || !emailSubject.trim() || !emailBody.trim() || selectedRecipients.length === 0 ? 'text-slate-600' : 'text-cyan-400'}`}>
+                  {isSendingEmail ? 'Sending...' : 'Send'}
+                </Text>
+              </Pressable>
+            </View>
+
+            <ScrollView className="flex-1 px-5 py-4" keyboardShouldPersistTaps="handled">
+              {/* Subject */}
+              <View className="mb-4">
+                <Text className="text-slate-400 text-sm mb-2">Subject</Text>
+                <TextInput
+                  value={emailSubject}
+                  onChangeText={setEmailSubject}
+                  placeholder="Enter email subject"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800/80 rounded-xl px-4 py-3 text-white text-base border border-slate-700/50"
+                />
+              </View>
+
+              {/* Body */}
+              <View className="mb-4">
+                <Text className="text-slate-400 text-sm mb-2">Message</Text>
+                <TextInput
+                  value={emailBody}
+                  onChangeText={setEmailBody}
+                  placeholder="Type your message here..."
+                  placeholderTextColor="#64748b"
+                  multiline
+                  numberOfLines={6}
+                  textAlignVertical="top"
+                  className="bg-slate-800/80 rounded-xl px-4 py-3 text-white text-base border border-slate-700/50 min-h-[150px]"
+                />
+              </View>
+
+              {/* Recipients */}
+              <View className="mb-4">
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-slate-400 text-sm">Recipients</Text>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      const playersWithEmail = players.filter(p => p.email && p.email.trim()).map(p => p.id);
+                      if (selectedRecipients.length === playersWithEmail.length) {
+                        setSelectedRecipients([]);
+                      } else {
+                        setSelectedRecipients(playersWithEmail);
+                      }
+                    }}
+                  >
+                    <Text className="text-cyan-400 text-sm font-medium">
+                      {selectedRecipients.length === players.filter(p => p.email && p.email.trim()).length ? 'Deselect All' : 'Select All'}
+                    </Text>
+                  </Pressable>
+                </View>
+
+                <View className="bg-slate-800/80 rounded-xl border border-slate-700/50 overflow-hidden">
+                  {players.filter(p => p.email && p.email.trim()).map((player, index, arr) => (
+                    <Pressable
+                      key={player.id}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        if (selectedRecipients.includes(player.id)) {
+                          setSelectedRecipients(selectedRecipients.filter(id => id !== player.id));
+                        } else {
+                          setSelectedRecipients([...selectedRecipients, player.id]);
+                        }
+                      }}
+                      className={`flex-row items-center px-4 py-3 ${index < arr.length - 1 ? 'border-b border-slate-700/50' : ''}`}
+                    >
+                      <View className={`w-5 h-5 rounded-md mr-3 items-center justify-center ${selectedRecipients.includes(player.id) ? 'bg-cyan-500' : 'bg-slate-700 border border-slate-600'}`}>
+                        {selectedRecipients.includes(player.id) && <Check size={14} color="white" />}
+                      </View>
+                      <PlayerAvatar player={player} size={36} />
+                      <View className="ml-3 flex-1">
+                        <Text className="text-white font-medium">{getPlayerName(player)}</Text>
+                        <Text className="text-slate-400 text-xs">{player.email}</Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Text className="text-slate-500 text-xs mt-2">
+                  {selectedRecipients.length} of {players.filter(p => p.email && p.email.trim()).length} recipients selected
+                </Text>
+              </View>
+
+              {/* Info notice */}
+              <View className="bg-blue-500/10 rounded-xl p-4 border border-blue-500/20 mb-6">
+                <Text className="text-blue-400 text-sm">
+                  Emails will be sent from noreply@alignsports.com
+                </Text>
+              </View>
+            </ScrollView>
+          </SafeAreaView>
         </View>
       </Modal>
     </View>

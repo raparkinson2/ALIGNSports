@@ -167,7 +167,10 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Payment Methods**: Configure Venmo/PayPal/Zelle/Cash App for the team
 - **Refreshment Duty Toggle**: Enable/disable per game
 - **Create Lines/Lineups Toggle**: Enable/disable the ability to set game lines (hockey) or lineups (other sports)
-- **Email Team**: Send an email to all players at once - opens your email app with all player emails pre-filled
+- **Email Team**: Send an email to all or selected players directly from the app
+  - Compose subject and message in-app
+  - Select specific recipients or email entire team
+  - Emails sent from noreply@alignsports.com (requires Supabase Edge Function setup)
 - **Manage Team**:
   - **Add new players** with name, jersey number, position(s), phone, and email
   - **Position Selection**: Tap to select multiple positions for a player
