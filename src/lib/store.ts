@@ -573,7 +573,9 @@ interface TeamStore {
   loginWithEmail: (email: string, password: string) => { success: boolean; error?: string; playerId?: string };
   registerAdmin: (name: string, email: string, password: string, teamName: string, options?: { phone?: string; jerseyNumber?: string; isCoach?: boolean }) => { success: boolean; error?: string };
   registerInvitedPlayer: (email: string, password: string) => { success: boolean; error?: string; playerId?: string };
+  registerInvitedPlayerByPhone: (phone: string, password: string) => { success: boolean; error?: string; playerId?: string };
   findPlayerByEmail: (email: string) => Player | undefined;
+  findPlayerByPhone: (phone: string) => Player | undefined;
 
   // Helper to check if current user has admin/captain privileges
   canManageTeam: () => boolean;
@@ -1016,9 +1018,41 @@ export const useTeamStore = create<TeamStore>()(
         return { success: true, playerId: player.id };
       },
 
+      registerInvitedPlayerByPhone: (phone, password) => {
+        const state = get();
+        // Normalize phone to just digits for comparison
+        const normalizedPhone = phone.replace(/\D/g, '');
+        const player = state.players.find((p) => p.phone?.replace(/\D/g, '') === normalizedPhone);
+        if (!player) {
+          return { success: false, error: 'No invitation found for this phone number. Ask your team admin to add you.' };
+        }
+        if (player.password) {
+          return { success: false, error: 'Account already exists. Please log in instead.' };
+        }
+
+        // Update player with password
+        const updatedPlayers = state.players.map((p) =>
+          p.id === player.id ? { ...p, password } : p
+        );
+
+        set({
+          players: updatedPlayers,
+          currentPlayerId: player.id,
+          isLoggedIn: true,
+        });
+
+        return { success: true, playerId: player.id };
+      },
+
       findPlayerByEmail: (email) => {
         const state = get();
         return state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+      },
+
+      findPlayerByPhone: (phone) => {
+        const state = get();
+        const normalizedPhone = phone.replace(/\D/g, '');
+        return state.players.find((p) => p.phone?.replace(/\D/g, '') === normalizedPhone);
       },
 
       canManageTeam: () => {
