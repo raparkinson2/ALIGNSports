@@ -2544,13 +2544,15 @@ export default function AdminScreen() {
                       .map(p => p.email as string);
 
                     // Call Supabase Edge Function to send email
+                    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PUBLIC_URL;
+                    const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLIC_ANON;
                     const response = await fetch(
-                      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/send-team-email`,
+                      `${supabaseUrl}/functions/v1/send-team-email`,
                       {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+                          'Authorization': `Bearer ${supabaseAnonKey}`,
                         },
                         body: JSON.stringify({
                           to: recipientEmails,
