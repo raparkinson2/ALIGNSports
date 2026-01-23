@@ -474,8 +474,20 @@ export default function RosterScreen() {
     }
   };
 
-  const getInviteMessage = () => {
-    return `Hey ${newlyCreatedPlayer ? getPlayerName(newlyCreatedPlayer) : ''}!\n\nYou've been added to ${teamName}! Download the app and log in using your info to view the schedule, check in for games, and stay connected with the team.\n\nYour jersey number is #${newlyCreatedPlayer?.number}\n\nSee you at the next game!`;
+  // Placeholder for App Store URL - will be updated once app is published
+  const APP_STORE_URL = 'https://apps.apple.com/app/your-app-id';
+
+  const getInviteMessage = (method: 'sms' | 'email') => {
+    const playerName = newlyCreatedPlayer ? getPlayerName(newlyCreatedPlayer) : '';
+    const contactInfo = method === 'sms'
+      ? newlyCreatedPlayer?.phone
+        ? `\n\nLog in with your phone number: ${formatPhoneNumber(newlyCreatedPlayer.phone)}`
+        : ''
+      : newlyCreatedPlayer?.email
+        ? `\n\nLog in with your email: ${newlyCreatedPlayer.email}`
+        : '';
+
+    return `Hey ${playerName}!\n\nYou've been added to ${teamName}! Download the app and log in using your info to view the schedule, check in for games, and stay connected with the team.\n\nDownload here: ${APP_STORE_URL}${contactInfo}\n\nYour jersey number is #${newlyCreatedPlayer?.number}\n\nSee you at the next game!`;
   };
 
   const handleSendTextInvite = () => {
@@ -484,7 +496,7 @@ export default function RosterScreen() {
       return;
     }
 
-    const message = encodeURIComponent(getInviteMessage());
+    const message = encodeURIComponent(getInviteMessage('sms'));
     const phoneNumber = newlyCreatedPlayer.phone;
 
     const smsUrl = Platform.select({
@@ -508,7 +520,7 @@ export default function RosterScreen() {
     }
 
     const subject = encodeURIComponent(`Welcome to ${teamName}!`);
-    const body = encodeURIComponent(getInviteMessage());
+    const body = encodeURIComponent(getInviteMessage('email'));
     const mailtoUrl = `mailto:${newlyCreatedPlayer.email}?subject=${subject}&body=${body}`;
 
     Linking.openURL(mailtoUrl).catch(() => {
