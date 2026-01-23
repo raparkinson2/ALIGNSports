@@ -2672,7 +2672,7 @@ export default function AdminScreen() {
               {/* Info notice */}
               <View className="bg-blue-500/10 rounded-xl p-4 border border-blue-500/20 mb-6">
                 <Text className="text-blue-400 text-sm">
-                  Emails will be sent from noreply@alignsports.com
+                  Emails will be sent from noreply@alignapps.com
                 </Text>
               </View>
             </ScrollView>
