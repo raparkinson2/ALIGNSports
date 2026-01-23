@@ -9,7 +9,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Player, getPlayerName } from '@/lib/store';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
-import { signInWithEmail, resetPassword as supabaseResetPassword, resendConfirmationEmail, verifyOtpAndResetPassword } from '@/lib/supabase-auth';
+import { signInWithEmail, sendPasswordResetSMS, resendConfirmationEmail, verifySMSOtpAndResetPassword } from '@/lib/supabase-auth';
 
 interface PlayerLoginCardProps {
   player: Player;
@@ -128,19 +128,20 @@ export default function LoginScreen() {
     const trimmedInput = resetIdentifier.trim();
 
     if (!trimmedInput) {
-      Alert.alert('Email Required', 'Please enter your email address.');
+      Alert.alert('Phone Number Required', 'Please enter your phone number.');
       return;
     }
 
-    // For email, send OTP code
-    if (!isPhoneNumber(trimmedInput) && trimmedInput.includes('@')) {
+    // For phone numbers, send OTP via SMS
+    if (isPhoneNumber(trimmedInput)) {
       setIsLoading(true);
-      const result = await supabaseResetPassword(trimmedInput);
+      const phone = unformatPhone(trimmedInput);
+      const result = await sendPasswordResetSMS(phone);
       setIsLoading(false);
 
       if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setResetEmail(trimmedInput);
+        setResetEmail(phone); // Store phone number (reusing resetEmail state)
         setResetStep('otp');
         return;
       } else {
@@ -150,18 +151,31 @@ export default function LoginScreen() {
       }
     }
 
-    // Fallback to local security question flow for phone users
+    // For email users, try to find their phone number in local store
     let player: Player | undefined;
+    player = findPlayerByEmail(trimmedInput);
 
-    if (isPhoneNumber(trimmedInput)) {
-      player = findPlayerByPhone(unformatPhone(trimmedInput));
-    } else {
-      player = findPlayerByEmail(trimmedInput);
-    }
+    if (player && player.phone) {
+      // Found player with phone - send SMS to their phone
+      setIsLoading(true);
+      const result = await sendPasswordResetSMS(player.phone);
+      setIsLoading(false);
 
-    if (player) {
+      if (result.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setResetEmail(player.phone);
+        setFoundPlayer(player);
+        setResetStep('otp');
+        Alert.alert('Code Sent', `We sent a code to your phone ending in ${player.phone.slice(-4)}`);
+        return;
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert('Error', result.error || 'Failed to send reset code. Please try again.');
+        return;
+      }
+    } else if (player) {
+      // Player found but no phone - use security question if available
       setFoundPlayer(player);
-      // If player has a security question, go to security step; otherwise skip to password
       if (player.securityQuestion && player.securityAnswer) {
         setResetStep('security');
       } else {
@@ -170,13 +184,13 @@ export default function LoginScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Account Not Found', 'No account found with this email or phone number. Please check and try again.');
+      Alert.alert('Account Not Found', 'No account found with this phone number or email. Please check and try again.');
     }
   };
 
   const handleVerifyOtp = async () => {
     if (!otpCode.trim() || otpCode.trim().length < 6) {
-      Alert.alert('Code Required', 'Please enter the 6-digit code from your email.');
+      Alert.alert('Code Required', 'Please enter the 6-digit code from your text message.');
       return;
     }
 
@@ -196,12 +210,12 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true);
-    const result = await verifyOtpAndResetPassword(resetEmail, otpCode.trim(), newPassword);
+    const result = await verifySMSOtpAndResetPassword(resetEmail, otpCode.trim(), newPassword);
     setIsLoading(false);
 
     if (result.success) {
       // Also update local store password
-      const player = findPlayerByEmail(resetEmail);
+      const player = foundPlayer || findPlayerByPhone(resetEmail);
       if (player) {
         updatePlayer(player.id, { password: newPassword });
       }
@@ -212,7 +226,7 @@ export default function LoginScreen() {
         'Your password has been reset successfully. You can now sign in with your new password.',
         [{ text: 'OK', onPress: () => {
           setShowForgotPassword(false);
-          setIdentifier(resetEmail);
+          setIdentifier(foundPlayer?.email || '');
           setPassword('');
         }}]
       );
@@ -643,38 +657,30 @@ export default function LoginScreen() {
                   <>
                     {/* Identifier Step */}
                     <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center self-center mb-4">
-                      <Mail size={32} color="#67e8f9" />
+                      <Phone size={32} color="#67e8f9" />
                     </View>
                     <Text className="text-white text-center text-lg font-semibold mb-2">
-                      Find Your Account
+                      Reset Your Password
                     </Text>
                     <Text className="text-slate-400 text-center mb-6">
-                      Enter the email or phone number associated with your account
+                      Enter your phone number and we'll text you a code
                     </Text>
 
                     <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4 mb-4">
-                      {isPhoneNumber(resetIdentifier) ? (
-                        <Phone size={20} color="#64748b" />
-                      ) : (
-                        <Mail size={20} color="#64748b" />
-                      )}
+                      <Phone size={20} color="#64748b" />
                       <TextInput
                         value={resetIdentifier}
                         onChangeText={(text) => {
-                          if (text.includes('@')) {
-                            setResetIdentifier(text);
+                          const digitsOnly = text.replace(/\D/g, '');
+                          if (digitsOnly.length > 0) {
+                            setResetIdentifier(formatPhoneInput(text));
                           } else {
-                            const digitsOnly = text.replace(/\D/g, '');
-                            if (digitsOnly.length > 0 && digitsOnly.length === text.replace(/[\s\-\(\)]/g, '').length) {
-                              setResetIdentifier(formatPhoneInput(text));
-                            } else {
-                              setResetIdentifier(text);
-                            }
+                            setResetIdentifier(text);
                           }
                         }}
-                        placeholder="Email or phone number"
+                        placeholder="Phone number"
                         placeholderTextColor="#64748b"
-                        keyboardType="email-address"
+                        keyboardType="phone-pad"
                         autoCapitalize="none"
                         autoCorrect={false}
                         className="flex-1 py-4 px-3 text-white text-base"
@@ -683,10 +689,12 @@ export default function LoginScreen() {
 
                     <Pressable
                       onPress={handleFindAccount}
-                      disabled={!resetIdentifier.trim()}
+                      disabled={!resetIdentifier.trim() || isLoading}
                       className="bg-cyan-500 rounded-xl py-4 items-center active:bg-cyan-600 disabled:opacity-50"
                     >
-                      <Text className="text-white font-semibold text-base">Find Account</Text>
+                      <Text className="text-white font-semibold text-base">
+                        {isLoading ? 'Sending Code...' : 'Send Code'}
+                      </Text>
                     </Pressable>
                   </>
                 ) : resetStep === 'security' ? (
@@ -743,16 +751,16 @@ export default function LoginScreen() {
                   <>
                     {/* OTP Verification Step */}
                     <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center self-center mb-4">
-                      <KeySquare size={32} color="#67e8f9" />
+                      <Phone size={32} color="#67e8f9" />
                     </View>
                     <Text className="text-white text-center text-lg font-semibold mb-2">
                       Enter Reset Code
                     </Text>
                     <Text className="text-slate-400 text-center mb-2">
-                      We sent a 6-digit code to:
+                      We sent a 6-digit code via text to:
                     </Text>
                     <Text className="text-cyan-400 text-center font-semibold mb-6">
-                      {resetEmail}
+                      {resetEmail.length > 6 ? `(***) ***-${resetEmail.slice(-4)}` : resetEmail}
                     </Text>
 
                     <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4 mb-4">
@@ -769,7 +777,7 @@ export default function LoginScreen() {
                     </View>
 
                     <Text className="text-slate-400 text-sm mb-4">
-                      Check your inbox and spam/junk folder
+                      Check your text messages
                     </Text>
 
                     <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4 mb-4">
@@ -816,11 +824,11 @@ export default function LoginScreen() {
                     <Pressable
                       onPress={async () => {
                         setIsLoading(true);
-                        const result = await supabaseResetPassword(resetEmail);
+                        const result = await sendPasswordResetSMS(resetEmail);
                         setIsLoading(false);
                         if (result.success) {
                           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                          Alert.alert('Code Sent', 'A new code has been sent to your email.');
+                          Alert.alert('Code Sent', 'A new code has been sent to your phone.');
                         }
                       }}
                       disabled={isLoading}

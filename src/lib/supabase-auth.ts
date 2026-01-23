@@ -99,41 +99,41 @@ export async function signOut(): Promise<AuthResult> {
 }
 
 /**
- * Send a password reset email with OTP code (Custom implementation via Edge Function)
+ * Send a password reset OTP via SMS (Custom implementation via Edge Function with Twilio)
  * This bypasses Supabase Auth's redirect-based flows
  */
-export async function resetPassword(email: string): Promise<AuthResult> {
+export async function sendPasswordResetSMS(phone: string): Promise<AuthResult> {
   try {
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PUBLIC_URL || '';
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/send-reset-code`, {
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-reset-sms`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ phone }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
       if (data.error?.includes('not found') || data.error?.includes('No user')) {
-        return { success: false, error: 'No account found with this email address.' };
+        return { success: false, error: 'No account found with this phone number.' };
       }
       return { success: false, error: data.error || 'Failed to send reset code.' };
     }
 
     return { success: true };
   } catch (err) {
-    console.error('resetPassword error:', err);
+    console.error('sendPasswordResetSMS error:', err);
     return { success: false, error: 'Failed to send reset code. Please try again.' };
   }
 }
 
 /**
- * Verify OTP code and set new password (Custom implementation via Edge Function)
+ * Verify SMS OTP code and set new password (Custom implementation via Edge Function)
  */
-export async function verifyOtpAndResetPassword(email: string, otp: string, newPassword: string): Promise<AuthResult> {
+export async function verifySMSOtpAndResetPassword(phone: string, otp: string, newPassword: string): Promise<AuthResult> {
   try {
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PUBLIC_URL || '';
 
@@ -143,7 +143,7 @@ export async function verifyOtpAndResetPassword(email: string, otp: string, newP
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, code: otp }),
+      body: JSON.stringify({ phone, code: otp }),
     });
 
     const verifyData = await verifyResponse.json();
@@ -158,8 +158,7 @@ export async function verifyOtpAndResetPassword(email: string, otp: string, newP
       return { success: false, error: verifyData.error || 'Verification failed.' };
     }
 
-    // OTP verified - now we need to update the password in Supabase Auth
-    // We'll use the admin token returned from verify-reset-code to update the user
+    // OTP verified - now update the password
     if (verifyData.resetToken) {
       const updateResponse = await fetch(`${supabaseUrl}/functions/v1/update-password`, {
         method: 'POST',
@@ -167,7 +166,7 @@ export async function verifyOtpAndResetPassword(email: string, otp: string, newP
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email,
+          phone,
           newPassword,
           resetToken: verifyData.resetToken
         }),
@@ -182,7 +181,7 @@ export async function verifyOtpAndResetPassword(email: string, otp: string, newP
 
     return { success: true };
   } catch (err) {
-    console.error('verifyOtpAndResetPassword error:', err);
+    console.error('verifySMSOtpAndResetPassword error:', err);
     return { success: false, error: 'An unexpected error occurred. Please try again.' };
   }
 }
