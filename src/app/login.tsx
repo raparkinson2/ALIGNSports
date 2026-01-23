@@ -3,13 +3,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, ShieldQuestion, Phone, MailCheck, RefreshCw } from 'lucide-react-native';
+import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, ShieldQuestion, Phone, MailCheck, RefreshCw, KeySquare } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Player, getPlayerName } from '@/lib/store';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
-import { signInWithEmail, resetPassword as supabaseResetPassword, resendConfirmationEmail } from '@/lib/supabase-auth';
+import { signInWithEmail, resetPassword as supabaseResetPassword, resendConfirmationEmail, verifyOtpAndResetPassword } from '@/lib/supabase-auth';
 
 interface PlayerLoginCardProps {
   player: Player;
@@ -72,8 +72,10 @@ export default function LoginScreen() {
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [resetStep, setResetStep] = useState<'identifier' | 'security' | 'password'>('identifier');
+  const [resetStep, setResetStep] = useState<'identifier' | 'otp' | 'security' | 'password'>('identifier');
   const [foundPlayer, setFoundPlayer] = useState<Player | null>(null);
+  const [otpCode, setOtpCode] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [pendingConfirmEmail, setPendingConfirmEmail] = useState('');
   const [isResending, setIsResending] = useState(false);
@@ -116,6 +118,8 @@ export default function LoginScreen() {
     setSecurityAnswer('');
     setNewPassword('');
     setConfirmPassword('');
+    setOtpCode('');
+    setResetEmail('');
     setResetStep('identifier');
     setFoundPlayer(null);
   };
@@ -123,7 +127,12 @@ export default function LoginScreen() {
   const handleFindAccount = async () => {
     const trimmedInput = resetIdentifier.trim();
 
-    // For email, send Supabase password reset
+    if (!trimmedInput) {
+      Alert.alert('Email Required', 'Please enter your email address.');
+      return;
+    }
+
+    // For email, send OTP code
     if (!isPhoneNumber(trimmedInput) && trimmedInput.includes('@')) {
       setIsLoading(true);
       const result = await supabaseResetPassword(trimmedInput);
@@ -131,16 +140,17 @@ export default function LoginScreen() {
 
       if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert(
-          'Check Your Email',
-          'We sent a password reset link to your email. Please check your inbox (and spam/junk folder) and follow the instructions.',
-          [{ text: 'OK', onPress: () => setShowForgotPassword(false) }]
-        );
+        setResetEmail(trimmedInput);
+        setResetStep('otp');
+        return;
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert('Error', result.error || 'Failed to send reset code. Please try again.');
         return;
       }
     }
 
-    // Fallback to local security question flow
+    // Fallback to local security question flow for phone users
     let player: Player | undefined;
 
     if (isPhoneNumber(trimmedInput)) {
@@ -161,6 +171,54 @@ export default function LoginScreen() {
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Account Not Found', 'No account found with this email or phone number. Please check and try again.');
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpCode.trim() || otpCode.trim().length < 6) {
+      Alert.alert('Code Required', 'Please enter the 6-digit code from your email.');
+      return;
+    }
+
+    if (!newPassword.trim()) {
+      Alert.alert('Password Required', 'Please enter your new password.');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      Alert.alert('Invalid Password', 'Password must be at least 8 characters long.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Passwords Do Not Match', 'Please make sure your passwords match.');
+      return;
+    }
+
+    setIsLoading(true);
+    const result = await verifyOtpAndResetPassword(resetEmail, otpCode.trim(), newPassword);
+    setIsLoading(false);
+
+    if (result.success) {
+      // Also update local store password
+      const player = findPlayerByEmail(resetEmail);
+      if (player) {
+        updatePlayer(player.id, { password: newPassword });
+      }
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        'Password Reset',
+        'Your password has been reset successfully. You can now sign in with your new password.',
+        [{ text: 'OK', onPress: () => {
+          setShowForgotPassword(false);
+          setIdentifier(resetEmail);
+          setPassword('');
+        }}]
+      );
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', result.error || 'Failed to reset password. Please try again.');
     }
   };
 
@@ -679,6 +737,108 @@ export default function LoginScreen() {
                       className="py-3"
                     >
                       <Text className="text-slate-400 text-center">Try a different email or phone</Text>
+                    </Pressable>
+                  </>
+                ) : resetStep === 'otp' ? (
+                  <>
+                    {/* OTP Verification Step */}
+                    <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center self-center mb-4">
+                      <KeySquare size={32} color="#67e8f9" />
+                    </View>
+                    <Text className="text-white text-center text-lg font-semibold mb-2">
+                      Enter Reset Code
+                    </Text>
+                    <Text className="text-slate-400 text-center mb-2">
+                      We sent a 6-digit code to:
+                    </Text>
+                    <Text className="text-cyan-400 text-center font-semibold mb-6">
+                      {resetEmail}
+                    </Text>
+
+                    <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4 mb-4">
+                      <KeySquare size={20} color="#64748b" />
+                      <TextInput
+                        value={otpCode}
+                        onChangeText={setOtpCode}
+                        placeholder="6-digit code"
+                        placeholderTextColor="#64748b"
+                        keyboardType="number-pad"
+                        maxLength={6}
+                        className="flex-1 py-4 px-3 text-white text-base text-center tracking-widest"
+                      />
+                    </View>
+
+                    <Text className="text-slate-400 text-sm mb-4">
+                      Check your inbox and spam/junk folder
+                    </Text>
+
+                    <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4 mb-4">
+                      <Lock size={20} color="#64748b" />
+                      <TextInput
+                        value={newPassword}
+                        onChangeText={setNewPassword}
+                        placeholder="New password"
+                        placeholderTextColor="#64748b"
+                        secureTextEntry
+                        className="flex-1 py-4 px-3 text-white text-base"
+                      />
+                    </View>
+
+                    <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4 mb-4">
+                      <Lock size={20} color="#64748b" />
+                      <TextInput
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        placeholder="Confirm password"
+                        placeholderTextColor="#64748b"
+                        secureTextEntry
+                        className="flex-1 py-4 px-3 text-white text-base"
+                      />
+                    </View>
+
+                    {newPassword.length > 0 && newPassword.length < 8 && (
+                      <Text className="text-amber-400 text-sm mb-4">Password must be at least 8 characters</Text>
+                    )}
+                    {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+                      <Text className="text-red-400 text-sm mb-4">Passwords do not match</Text>
+                    )}
+
+                    <Pressable
+                      onPress={handleVerifyOtp}
+                      disabled={isLoading || otpCode.length < 6 || newPassword.length < 8 || newPassword !== confirmPassword}
+                      className="bg-cyan-500 rounded-xl py-4 items-center active:bg-cyan-600 disabled:opacity-50 mb-3"
+                    >
+                      <Text className="text-white font-semibold text-base">
+                        {isLoading ? 'Resetting...' : 'Reset Password'}
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={async () => {
+                        setIsLoading(true);
+                        const result = await supabaseResetPassword(resetEmail);
+                        setIsLoading(false);
+                        if (result.success) {
+                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                          Alert.alert('Code Sent', 'A new code has been sent to your email.');
+                        }
+                      }}
+                      disabled={isLoading}
+                      className="py-3"
+                    >
+                      <Text className="text-cyan-400 text-center">Resend Code</Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() => {
+                        setResetStep('identifier');
+                        setOtpCode('');
+                        setNewPassword('');
+                        setConfirmPassword('');
+                      }}
+                      className="py-2"
+                    >
+                      <Text className="text-slate-400 text-center">Try a different email</Text>
                     </Pressable>
                   </>
                 ) : (

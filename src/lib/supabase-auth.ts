@@ -99,16 +99,68 @@ export async function signOut(): Promise<AuthResult> {
 }
 
 /**
- * Send a password reset email
+ * Send a password reset email with OTP code
  */
 export async function resetPassword(email: string): Promise<AuthResult> {
   try {
-    // Use Supabase's default redirect (configured in dashboard)
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    // Use OTP flow - sends a 6-digit code to email
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: false, // Don't create new user if email doesn't exist
+      }
+    });
 
     if (error) {
+      if (error.message.includes('User not found') || error.message.includes('Signups not allowed')) {
+        return { success: false, error: 'No account found with this email address.' };
+      }
       return { success: false, error: error.message };
     }
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Verify OTP code and set new password
+ */
+export async function verifyOtpAndResetPassword(email: string, otp: string, newPassword: string): Promise<AuthResult> {
+  try {
+    // Verify the OTP code
+    const { data, error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token: otp,
+      type: 'email'
+    });
+
+    if (verifyError) {
+      if (verifyError.message.includes('Token has expired')) {
+        return { success: false, error: 'Code has expired. Please request a new one.' };
+      }
+      if (verifyError.message.includes('Invalid')) {
+        return { success: false, error: 'Invalid code. Please try again.' };
+      }
+      return { success: false, error: verifyError.message };
+    }
+
+    if (!data.user) {
+      return { success: false, error: 'Verification failed. Please try again.' };
+    }
+
+    // Now update the password
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (updateError) {
+      return { success: false, error: updateError.message };
+    }
+
+    // Sign out after password reset so user can login fresh
+    await supabase.auth.signOut();
 
     return { success: true };
   } catch (err) {
