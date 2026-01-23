@@ -341,6 +341,7 @@ export default function AdminScreen() {
   const [newPlayerStatus, setNewPlayerStatus] = useState<PlayerStatus>('active');
   const [newPlayerIsInjured, setNewPlayerIsInjured] = useState(false);
   const [newPlayerIsSuspended, setNewPlayerIsSuspended] = useState(false);
+  const [newPlayerIsCoach, setNewPlayerIsCoach] = useState(false);
 
   // Invite modal state
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
@@ -441,6 +442,7 @@ export default function AdminScreen() {
     setNewPlayerStatus('active');
     setNewPlayerIsInjured(false);
     setNewPlayerIsSuspended(false);
+    setNewPlayerIsCoach(false);
   };
 
   const handleCreatePlayer = () => {
@@ -454,7 +456,8 @@ export default function AdminScreen() {
       Alert.alert('Missing Info', 'Please enter a last name.');
       return;
     }
-    if (!newPlayerNumber.trim()) {
+    // Only require jersey number if not a coach
+    if (!newPlayerIsCoach && !newPlayerNumber.trim()) {
       Alert.alert('Missing Info', 'Please enter a jersey number.');
       return;
     }
@@ -467,17 +470,23 @@ export default function AdminScreen() {
       return;
     }
 
+    // Build roles array - include 'coach' if isCoach is true
+    const roles: PlayerRole[] = [...newPlayerRoles];
+    if (newPlayerIsCoach && !roles.includes('coach')) {
+      roles.push('coach');
+    }
+
     const newPlayer: Player = {
       id: Date.now().toString(),
       firstName: newPlayerFirstName.trim(),
       lastName: newPlayerLastName.trim(),
-      number: newPlayerNumber.trim(),
-      position: newPlayerPositions[0],
-      positions: newPlayerPositions,
+      number: newPlayerIsCoach ? '' : newPlayerNumber.trim(),
+      position: newPlayerIsCoach ? 'Coach' : newPlayerPositions[0],
+      positions: newPlayerIsCoach ? ['Coach'] : newPlayerPositions,
       phone: rawPhone,
       email: newPlayerEmail.trim(),
       avatar: undefined,
-      roles: newPlayerRoles,
+      roles: roles,
       status: newPlayerStatus,
       isInjured: newPlayerIsInjured,
       isSuspended: newPlayerIsSuspended,
@@ -897,7 +906,7 @@ export default function AdminScreen() {
               </View>
             </Pressable>
 
-            {/* Manage Players Menu Item */}
+            {/* Manage Team Menu Item */}
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -911,8 +920,8 @@ export default function AdminScreen() {
                     <Users size={20} color="#67e8f9" />
                   </View>
                   <View className="ml-3">
-                    <Text className="text-white font-semibold">Manage Players</Text>
-                    <Text className="text-slate-400 text-sm">{players.length} players on roster</Text>
+                    <Text className="text-white font-semibold">Manage Team</Text>
+                    <Text className="text-slate-400 text-sm">{players.length} members on roster</Text>
                   </View>
                 </View>
                 <ChevronRight size={20} color="#64748b" />
@@ -1676,19 +1685,21 @@ export default function AdminScreen() {
                 />
               </View>
 
-              {/* Number Input */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Jersey #<Text className="text-red-400">*</Text></Text>
-                <TextInput
-                  value={newPlayerNumber}
-                  onChangeText={setNewPlayerNumber}
-                  placeholder="00"
-                  placeholderTextColor="#64748b"
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                />
-              </View>
+              {/* Number Input - Hidden for coaches */}
+              {!newPlayerIsCoach && (
+                <View className="mb-5">
+                  <Text className="text-slate-400 text-sm mb-2">Jersey #<Text className="text-red-400">*</Text></Text>
+                  <TextInput
+                    value={newPlayerNumber}
+                    onChangeText={setNewPlayerNumber}
+                    placeholder="00"
+                    placeholderTextColor="#64748b"
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  />
+                </View>
+              )}
 
               {/* Phone */}
               <View className="mb-5">
@@ -1723,44 +1734,46 @@ export default function AdminScreen() {
                 />
               </View>
 
-              {/* Position */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-1">Positions</Text>
-                <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
-                <View className="flex-row flex-wrap">
-                  {positions.map((pos) => {
-                    const isSelected = newPlayerPositions.includes(pos);
-                    return (
-                      <Pressable
-                        key={pos}
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          if (isSelected) {
-                            if (newPlayerPositions.length > 1) {
-                              setNewPlayerPositions(newPlayerPositions.filter(p => p !== pos));
+              {/* Position - Hidden for coaches */}
+              {!newPlayerIsCoach && (
+                <View className="mb-5">
+                  <Text className="text-slate-400 text-sm mb-1">Positions</Text>
+                  <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
+                  <View className="flex-row flex-wrap">
+                    {positions.map((pos) => {
+                      const isSelected = newPlayerPositions.includes(pos);
+                      return (
+                        <Pressable
+                          key={pos}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            if (isSelected) {
+                              if (newPlayerPositions.length > 1) {
+                                setNewPlayerPositions(newPlayerPositions.filter(p => p !== pos));
+                              }
+                            } else {
+                              setNewPlayerPositions([...newPlayerPositions, pos]);
                             }
-                          } else {
-                            setNewPlayerPositions([...newPlayerPositions, pos]);
-                          }
-                        }}
-                        className={cn(
-                          'py-3 px-4 rounded-xl mr-2 mb-2 items-center',
-                          isSelected ? 'bg-cyan-500' : 'bg-slate-800'
-                        )}
-                      >
-                        <Text
+                          }}
                           className={cn(
-                            'font-semibold',
-                            isSelected ? 'text-white' : 'text-slate-400'
+                            'py-3 px-4 rounded-xl mr-2 mb-2 items-center',
+                            isSelected ? 'bg-cyan-500' : 'bg-slate-800'
                           )}
                         >
-                          {pos}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+                          <Text
+                            className={cn(
+                              'font-semibold',
+                              isSelected ? 'text-white' : 'text-slate-400'
+                            )}
+                          >
+                            {pos}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
                 </View>
-              </View>
+              )}
 
               {/* Player Status */}
               <View className="mb-5">
@@ -1925,6 +1938,44 @@ export default function AdminScreen() {
                 </Text>
               </View>
 
+              {/* Coach Toggle */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Team Role</Text>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setNewPlayerIsCoach(!newPlayerIsCoach);
+                  }}
+                  className={cn(
+                    'py-4 px-4 rounded-xl flex-row items-center justify-between border',
+                    newPlayerIsCoach
+                      ? 'bg-purple-500/20 border-purple-500/50'
+                      : 'bg-slate-800 border-slate-700'
+                  )}
+                >
+                  <View className="flex-row items-center">
+                    <UserCog size={20} color={newPlayerIsCoach ? '#a78bfa' : '#64748b'} />
+                    <View className="ml-3">
+                      <Text className={cn(
+                        'font-semibold',
+                        newPlayerIsCoach ? 'text-purple-400' : 'text-slate-400'
+                      )}>
+                        This is a Coach
+                      </Text>
+                      <Text className="text-slate-500 text-xs">
+                        Coaches don't need jersey numbers or positions
+                      </Text>
+                    </View>
+                  </View>
+                  <View className={cn(
+                    'w-6 h-6 rounded-full items-center justify-center',
+                    newPlayerIsCoach ? 'bg-purple-500' : 'bg-slate-700'
+                  )}>
+                    {newPlayerIsCoach && <Check size={14} color="white" />}
+                  </View>
+                </Pressable>
+              </View>
+
               <Text className="text-slate-500 text-xs mb-6"><Text className="text-red-400">*</Text> Required</Text>
             </ScrollView>
           </SafeAreaView>
@@ -2077,7 +2128,7 @@ export default function AdminScreen() {
         </View>
       </Modal>
 
-      {/* Manage Players Modal */}
+      {/* Manage Team Modal */}
       <Modal
         visible={isManagePlayersModalVisible}
         animationType="slide"
@@ -2090,7 +2141,7 @@ export default function AdminScreen() {
               <Pressable onPress={() => setIsManagePlayersModalVisible(false)}>
                 <X size={24} color="#64748b" />
               </Pressable>
-              <Text className="text-white text-lg font-semibold">Manage Players</Text>
+              <Text className="text-white text-lg font-semibold">Manage Team</Text>
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
