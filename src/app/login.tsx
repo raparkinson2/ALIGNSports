@@ -210,7 +210,9 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true);
-    const result = await verifySMSOtpAndResetPassword(resetEmail, otpCode.trim(), newPassword);
+    // Pass email if we have it from foundPlayer
+    const playerEmail = foundPlayer?.email || findPlayerByPhone(resetEmail)?.email;
+    const result = await verifySMSOtpAndResetPassword(resetEmail, otpCode.trim(), newPassword, playerEmail);
     setIsLoading(false);
 
     if (result.success) {

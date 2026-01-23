@@ -133,7 +133,7 @@ export async function sendPasswordResetSMS(phone: string): Promise<AuthResult> {
 /**
  * Verify SMS OTP code and set new password (Custom implementation via Edge Function)
  */
-export async function verifySMSOtpAndResetPassword(phone: string, otp: string, newPassword: string): Promise<AuthResult> {
+export async function verifySMSOtpAndResetPassword(phone: string, otp: string, newPassword: string, email?: string): Promise<AuthResult> {
   try {
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PUBLIC_URL || '';
 
@@ -167,6 +167,7 @@ export async function verifySMSOtpAndResetPassword(phone: string, otp: string, n
         },
         body: JSON.stringify({
           phone,
+          email,
           newPassword,
           resetToken: verifyData.resetToken
         }),
