@@ -246,6 +246,8 @@ export default function GameDetailScreen() {
   const uninvitedActive = uninvitedPlayers.filter((p) => p.status === 'active');
   const uninvitedReserve = uninvitedPlayers.filter((p) => p.status === 'reserve');
   const activePlayers = players.filter((p) => p.status === 'active');
+  const reservePlayers = players.filter((p) => p.status === 'reserve');
+  const allRosterPlayers = [...activePlayers, ...reservePlayers]; // For refreshment duty selection
   const beerDutyPlayer = game.beerDutyPlayerId ? players.find((p) => p.id === game.beerDutyPlayerId) : null;
 
   // Get jersey color info - handle both color name and hex code
@@ -1647,7 +1649,7 @@ export default function GameDetailScreen() {
                 )}
               </Pressable>
 
-              {activePlayers.map((player) => (
+              {allRosterPlayers.map((player) => (
                 <Pressable
                   key={player.id}
                   onPress={() => handleSelectBeerDutyPlayer(player.id)}
@@ -1659,7 +1661,12 @@ export default function GameDetailScreen() {
                   )}
                 >
                   <PlayerAvatar player={player} size={44} />
-                  <Text className="text-white font-semibold ml-3 flex-1">{getPlayerName(player)}</Text>
+                  <View className="flex-1 ml-3">
+                    <Text className="text-white font-semibold">{getPlayerName(player)}</Text>
+                    {player.status === 'reserve' && (
+                      <Text className="text-slate-400 text-xs">Reserve</Text>
+                    )}
+                  </View>
                   {game.beerDutyPlayerId === player.id && (
                     <CheckCircle2 size={24} color="#f59e0b" />
                   )}
