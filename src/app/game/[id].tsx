@@ -308,19 +308,23 @@ export default function GameDetailScreen() {
       return;
     }
 
-    // Send push notification (local - only displays on this device)
-    try {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title,
-          body: message,
-          data: { gameId: game.id, type: type === 'invite' ? 'game_invite' : 'game_reminder' },
-          sound: true,
-        },
-        trigger: null, // Send immediately
-      });
-    } catch (error) {
-      console.log('Could not send push notification:', error);
+    // Only send push notification if current user is one of the target players
+    // Local push notifications only work on the current device
+    const isCurrentUserTargeted = currentPlayerId && targetPlayers.some((p) => p.id === currentPlayerId);
+    if (isCurrentUserTargeted) {
+      try {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title,
+            body: message,
+            data: { gameId: game.id, type: type === 'invite' ? 'game_invite' : 'game_reminder' },
+            sound: true,
+          },
+          trigger: null, // Send immediately
+        });
+      } catch (error) {
+        console.log('Could not send push notification:', error);
+      }
     }
 
     // Add to in-app notifications for target players only
@@ -360,19 +364,22 @@ export default function GameDetailScreen() {
       const title = 'Game Invite';
       const message = `You're invited to play vs ${game.opponent} on ${dateStr} at ${game.time}. Wear your ${jerseyColorName} jersey!`;
 
-      // Send push notification
-      try {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title,
-            body: message,
-            data: { gameId: game.id, type: 'game_invite' },
-            sound: true,
-          },
-          trigger: null,
-        });
-      } catch (error) {
-        console.log('Could not send push notification:', error);
+      // Only send push notification if inviting the current user (self-invite)
+      // Local push notifications only work on the current device
+      if (playerId === currentPlayerId) {
+        try {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title,
+              body: message,
+              data: { gameId: game.id, type: 'game_invite' },
+              sound: true,
+            },
+            trigger: null,
+          });
+        } catch (error) {
+          console.log('Could not send push notification:', error);
+        }
       }
 
       // Add to in-app notifications
@@ -407,19 +414,22 @@ export default function GameDetailScreen() {
     const title = 'Game Invite';
     const message = `You're invited to play vs ${game.opponent} on ${dateStr} at ${game.time}. Wear your ${jerseyColorName} jersey!`;
 
-    // Send push notification
-    try {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title,
-          body: message,
-          data: { gameId: game.id, type: 'game_invite' },
-          sound: true,
-        },
-        trigger: null,
-      });
-    } catch (error) {
-      console.log('Could not send push notification:', error);
+    // Only send push notification if current user is being invited
+    // Local push notifications only work on the current device
+    if (currentPlayerId && newInvites.includes(currentPlayerId)) {
+      try {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title,
+            body: message,
+            data: { gameId: game.id, type: 'game_invite' },
+            sound: true,
+          },
+          trigger: null,
+        });
+      } catch (error) {
+        console.log('Could not send push notification:', error);
+      }
     }
 
     // Add to in-app notifications
