@@ -12,10 +12,161 @@ import {
   BarChart3,
   Clock,
   User,
+  Bell,
+  BellOff,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import * as Notifications from 'expo-notifications';
 import { useTeamStore, Poll, PollOption, getPlayerName, Player } from '@/lib/store';
+
+interface PollQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  allowMultiple: boolean;
+}
+
+function QuestionEditor({
+  question,
+  index,
+  onChange,
+  onRemove,
+  canRemove,
+}: {
+  question: PollQuestion;
+  index: number;
+  onChange: (q: PollQuestion) => void;
+  onRemove: () => void;
+  canRemove: boolean;
+}) {
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  const handleAddOption = () => {
+    if (question.options.length < 6) {
+      onChange({ ...question, options: [...question.options, ''] });
+    }
+  };
+
+  const handleRemoveOption = (optIndex: number) => {
+    if (question.options.length > 2) {
+      onChange({
+        ...question,
+        options: question.options.filter((_, i) => i !== optIndex),
+      });
+    }
+  };
+
+  const handleOptionChange = (optIndex: number, value: string) => {
+    const newOptions = [...question.options];
+    newOptions[optIndex] = value;
+    onChange({ ...question, options: newOptions });
+  };
+
+  return (
+    <View className="mb-4 bg-slate-800/40 rounded-2xl border border-slate-700/50 overflow-hidden">
+      <Pressable
+        onPress={() => setIsExpanded(!isExpanded)}
+        className="flex-row items-center justify-between px-4 py-3 bg-slate-800/60"
+      >
+        <View className="flex-row items-center flex-1">
+          <View className="w-7 h-7 rounded-full bg-emerald-500/20 items-center justify-center mr-3">
+            <Text className="text-emerald-400 font-bold text-sm">{index + 1}</Text>
+          </View>
+          <Text className="text-white font-medium flex-1" numberOfLines={1}>
+            {question.question || `Question ${index + 1}`}
+          </Text>
+        </View>
+        <View className="flex-row items-center">
+          {canRemove && (
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                onRemove();
+              }}
+              className="w-8 h-8 rounded-full bg-red-500/20 items-center justify-center mr-2"
+            >
+              <Trash2 size={16} color="#f87171" />
+            </Pressable>
+          )}
+          {isExpanded ? (
+            <ChevronUp size={20} color="#94a3b8" />
+          ) : (
+            <ChevronDown size={20} color="#94a3b8" />
+          )}
+        </View>
+      </Pressable>
+
+      {isExpanded && (
+        <View className="px-4 py-3">
+          <View className="mb-3">
+            <Text className="text-slate-400 text-xs mb-1.5 uppercase tracking-wide">Question</Text>
+            <TextInput
+              value={question.question}
+              onChangeText={(text) => onChange({ ...question, question: text })}
+              placeholder="What do you want to ask?"
+              placeholderTextColor="#64748b"
+              className="bg-slate-900/60 rounded-xl px-4 py-3 text-white text-base border border-slate-700/50"
+              multiline
+            />
+          </View>
+
+          <View className="mb-3">
+            <Text className="text-slate-400 text-xs mb-1.5 uppercase tracking-wide">Options</Text>
+            {question.options.map((option, optIndex) => (
+              <View key={optIndex} className="flex-row items-center mb-2">
+                <TextInput
+                  value={option}
+                  onChangeText={(value) => handleOptionChange(optIndex, value)}
+                  placeholder={`Option ${optIndex + 1}`}
+                  placeholderTextColor="#64748b"
+                  className="flex-1 bg-slate-900/60 rounded-xl px-4 py-3 text-white text-base border border-slate-700/50"
+                />
+                {question.options.length > 2 && (
+                  <Pressable
+                    onPress={() => handleRemoveOption(optIndex)}
+                    className="ml-2 w-9 h-9 rounded-full bg-red-500/20 items-center justify-center"
+                  >
+                    <Trash2 size={16} color="#f87171" />
+                  </Pressable>
+                )}
+              </View>
+            ))}
+            {question.options.length < 6 && (
+              <Pressable
+                onPress={handleAddOption}
+                className="flex-row items-center py-2.5 px-4 bg-slate-900/40 rounded-xl border border-dashed border-slate-600"
+              >
+                <Plus size={16} color="#10b981" />
+                <Text className="text-emerald-400 ml-2 text-sm">Add Option</Text>
+              </Pressable>
+            )}
+          </View>
+
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onChange({ ...question, allowMultiple: !question.allowMultiple });
+            }}
+            className="flex-row items-center justify-between py-3 px-4 bg-slate-900/40 rounded-xl"
+          >
+            <Text className="text-slate-300 text-sm">Allow multiple selections</Text>
+            <View
+              className={`w-5 h-5 rounded-md items-center justify-center ${
+                question.allowMultiple ? 'bg-emerald-500' : 'bg-slate-600'
+              }`}
+            >
+              {question.allowMultiple && <Check size={14} color="white" />}
+            </View>
+          </Pressable>
+        </View>
+      )}
+    </View>
+  );
+}
 
 function CreatePollModal({
   visible,
@@ -24,54 +175,58 @@ function CreatePollModal({
 }: {
   visible: boolean;
   onClose: () => void;
-  onSave: (question: string, options: string[], allowMultiple: boolean) => void;
+  onSave: (questions: { question: string; options: string[]; allowMultiple: boolean }[], sendNotification: boolean) => void;
 }) {
-  const [question, setQuestion] = useState('');
-  const [options, setOptions] = useState<string[]>(['', '']);
-  const [allowMultiple, setAllowMultiple] = useState(false);
+  const [questions, setQuestions] = useState<PollQuestion[]>([
+    { id: '1', question: '', options: ['', ''], allowMultiple: false },
+  ]);
+  const [sendNotification, setSendNotification] = useState(true);
 
-  const handleAddOption = () => {
-    if (options.length < 6) {
-      setOptions([...options, '']);
+  const handleAddQuestion = () => {
+    if (questions.length < 5) {
+      setQuestions([
+        ...questions,
+        { id: Date.now().toString(), question: '', options: ['', ''], allowMultiple: false },
+      ]);
     }
   };
 
-  const handleRemoveOption = (index: number) => {
-    if (options.length > 2) {
-      setOptions(options.filter((_, i) => i !== index));
+  const handleRemoveQuestion = (index: number) => {
+    if (questions.length > 1) {
+      setQuestions(questions.filter((_, i) => i !== index));
     }
   };
 
-  const handleOptionChange = (index: number, value: string) => {
-    const newOptions = [...options];
-    newOptions[index] = value;
-    setOptions(newOptions);
+  const handleQuestionChange = (index: number, q: PollQuestion) => {
+    const newQuestions = [...questions];
+    newQuestions[index] = q;
+    setQuestions(newQuestions);
   };
 
   const handleSave = () => {
-    const trimmedQuestion = question.trim();
-    const validOptions = options.filter((o) => o.trim().length > 0);
+    const validQuestions = questions
+      .filter((q) => q.question.trim().length > 0)
+      .map((q) => ({
+        question: q.question.trim(),
+        options: q.options.filter((o) => o.trim().length > 0),
+        allowMultiple: q.allowMultiple,
+      }))
+      .filter((q) => q.options.length >= 2);
 
-    if (!trimmedQuestion) {
+    if (validQuestions.length === 0) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
-    if (validOptions.length < 2) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
 
-    onSave(trimmedQuestion, validOptions, allowMultiple);
-    setQuestion('');
-    setOptions(['', '']);
-    setAllowMultiple(false);
+    onSave(validQuestions, sendNotification);
+    setQuestions([{ id: '1', question: '', options: ['', ''], allowMultiple: false }]);
+    setSendNotification(true);
     onClose();
   };
 
   const handleClose = () => {
-    setQuestion('');
-    setOptions(['', '']);
-    setAllowMultiple(false);
+    setQuestions([{ id: '1', question: '', options: ['', ''], allowMultiple: false }]);
+    setSendNotification(true);
     onClose();
   };
 
@@ -89,71 +244,66 @@ function CreatePollModal({
               </Pressable>
               <Text className="text-white text-lg font-bold">Create Poll</Text>
               <Pressable onPress={handleSave}>
-                <Text className="text-cyan-400 font-semibold">Create</Text>
+                <Text className="text-emerald-400 font-semibold">Create</Text>
               </Pressable>
             </View>
 
             <ScrollView className="px-5 py-4" showsVerticalScrollIndicator={false}>
-              <View className="mb-4">
-                <Text className="text-slate-400 text-sm mb-2">Question</Text>
-                <TextInput
-                  value={question}
-                  onChangeText={setQuestion}
-                  placeholder="What do you want to ask?"
-                  placeholderTextColor="#64748b"
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-base"
-                  multiline
+              {questions.map((q, index) => (
+                <QuestionEditor
+                  key={q.id}
+                  question={q}
+                  index={index}
+                  onChange={(updated) => handleQuestionChange(index, updated)}
+                  onRemove={() => handleRemoveQuestion(index)}
+                  canRemove={questions.length > 1}
                 />
-              </View>
+              ))}
 
-              <View className="mb-4">
-                <Text className="text-slate-400 text-sm mb-2">Options</Text>
-                {options.map((option, index) => (
-                  <View key={index} className="flex-row items-center mb-2">
-                    <TextInput
-                      value={option}
-                      onChangeText={(value) => handleOptionChange(index, value)}
-                      placeholder={`Option ${index + 1}`}
-                      placeholderTextColor="#64748b"
-                      className="flex-1 bg-slate-800 rounded-xl px-4 py-3 text-white text-base"
-                    />
-                    {options.length > 2 && (
-                      <Pressable
-                        onPress={() => handleRemoveOption(index)}
-                        className="ml-2 w-10 h-10 rounded-full bg-red-500/20 items-center justify-center"
-                      >
-                        <Trash2 size={18} color="#f87171" />
-                      </Pressable>
-                    )}
-                  </View>
-                ))}
-                {options.length < 6 && (
-                  <Pressable
-                    onPress={handleAddOption}
-                    className="flex-row items-center py-3 px-4 bg-slate-800/50 rounded-xl border border-dashed border-slate-700"
-                  >
-                    <Plus size={18} color="#67e8f9" />
-                    <Text className="text-cyan-400 ml-2">Add Option</Text>
-                  </Pressable>
-                )}
-              </View>
-
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setAllowMultiple(!allowMultiple);
-                }}
-                className="flex-row items-center justify-between py-4 px-4 bg-slate-800/50 rounded-xl mb-6"
-              >
-                <Text className="text-white">Allow multiple selections</Text>
-                <View
-                  className={`w-6 h-6 rounded-md items-center justify-center ${
-                    allowMultiple ? 'bg-cyan-500' : 'bg-slate-700'
-                  }`}
+              {questions.length < 5 && (
+                <Pressable
+                  onPress={handleAddQuestion}
+                  className="flex-row items-center justify-center py-3.5 px-4 bg-emerald-500/10 rounded-xl border border-emerald-500/30 mb-4"
                 >
-                  {allowMultiple && <Check size={16} color="white" />}
-                </View>
-              </Pressable>
+                  <Plus size={18} color="#10b981" />
+                  <Text className="text-emerald-400 ml-2 font-medium">Add Another Question</Text>
+                </Pressable>
+              )}
+
+              <View className="bg-slate-800/40 rounded-2xl border border-slate-700/50 p-4 mb-6">
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSendNotification(!sendNotification);
+                  }}
+                  className="flex-row items-center justify-between"
+                >
+                  <View className="flex-row items-center flex-1">
+                    {sendNotification ? (
+                      <View className="w-10 h-10 rounded-full bg-emerald-500/20 items-center justify-center mr-3">
+                        <Bell size={20} color="#10b981" />
+                      </View>
+                    ) : (
+                      <View className="w-10 h-10 rounded-full bg-slate-700/50 items-center justify-center mr-3">
+                        <BellOff size={20} color="#64748b" />
+                      </View>
+                    )}
+                    <View className="flex-1">
+                      <Text className="text-white font-medium">Notify Team</Text>
+                      <Text className="text-slate-400 text-xs mt-0.5">
+                        Send push notification to all team members
+                      </Text>
+                    </View>
+                  </View>
+                  <View
+                    className={`w-6 h-6 rounded-md items-center justify-center ${
+                      sendNotification ? 'bg-emerald-500' : 'bg-slate-600'
+                    }`}
+                  >
+                    {sendNotification && <Check size={16} color="white" />}
+                  </View>
+                </Pressable>
+              </View>
 
               <View className="h-8" />
             </ScrollView>
@@ -183,8 +333,6 @@ function PollCard({
   const creatorPlayer = players.find((p) => p.id === poll.createdBy);
   const creatorName = creatorPlayer ? getPlayerName(creatorPlayer) : 'Unknown';
 
-  const hasVoted = poll.options.some((opt) => opt.votes.includes(currentPlayerId || ''));
-
   const getVoterNames = (votes: string[]) => {
     return votes
       .map((v) => {
@@ -196,7 +344,7 @@ function PollCard({
 
   return (
     <Animated.View entering={FadeInDown.springify()} className="mb-4">
-      <View className="bg-slate-800/60 rounded-2xl p-4 border border-slate-700/50">
+      <View className="bg-slate-800/70 rounded-2xl p-4 border border-slate-700/50">
         <View className="flex-row items-start justify-between mb-3">
           <View className="flex-1 mr-2">
             <Text className="text-white text-lg font-semibold">{poll.question}</Text>
@@ -225,6 +373,7 @@ function PollCard({
             const voteCount = option.votes.length;
             const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
             const isSelected = option.votes.includes(currentPlayerId || '');
+            const hasVotes = voteCount > 0;
 
             return (
               <Pressable
@@ -236,34 +385,36 @@ function PollCard({
                 className="relative overflow-hidden rounded-xl mb-2"
               >
                 <View
-                  className={`absolute inset-0 ${isSelected ? 'bg-cyan-500/30' : 'bg-slate-700/50'}`}
+                  className={`absolute inset-0 ${isSelected ? 'bg-emerald-500/25' : 'bg-slate-700/40'}`}
                 />
                 <View
-                  className={`absolute inset-y-0 left-0 ${isSelected ? 'bg-cyan-500/40' : 'bg-slate-600/40'}`}
+                  className={`absolute inset-y-0 left-0 ${isSelected ? 'bg-emerald-500/50' : 'bg-slate-500/30'}`}
                   style={{ width: `${percentage}%` }}
                 />
                 <View className="relative flex-row items-center justify-between px-4 py-3">
                   <View className="flex-row items-center flex-1">
                     <View
                       className={`w-5 h-5 rounded-full border-2 items-center justify-center mr-3 ${
-                        isSelected ? 'border-cyan-400 bg-cyan-500' : 'border-slate-500'
+                        isSelected ? 'border-emerald-400 bg-emerald-500' : 'border-slate-500'
                       }`}
                     >
                       {isSelected && <Check size={12} color="white" />}
                     </View>
-                    <Text className={`flex-1 ${isSelected ? 'text-white font-medium' : 'text-slate-300'}`}>
+                    <Text className={`flex-1 ${isSelected ? 'text-white font-medium' : 'text-slate-200'}`}>
                       {option.text}
                     </Text>
                   </View>
-                  <Text className="text-slate-400 text-sm ml-2">
+                  <Text className={`text-sm ml-2 font-medium ${isSelected ? 'text-emerald-300' : 'text-slate-400'}`}>
                     {voteCount} ({percentage.toFixed(0)}%)
                   </Text>
                 </View>
-                {voteCount > 0 && (
-                  <View className="px-4 pb-2">
-                    <Text className="text-slate-500 text-xs" numberOfLines={1}>
-                      {getVoterNames(option.votes)}
-                    </Text>
+                {hasVotes && (
+                  <View className="px-4 pb-2.5 pt-0.5">
+                    <View className="bg-slate-900/50 rounded-lg px-2.5 py-1.5">
+                      <Text className="text-amber-300/90 text-xs font-medium" numberOfLines={2}>
+                        {getVoterNames(option.votes)}
+                      </Text>
+                    </View>
                   </View>
                 )}
               </Pressable>
@@ -297,21 +448,50 @@ export default function PollsScreen() {
 
   const canManage = canManageTeam();
 
-  const handleCreatePoll = (question: string, options: string[], allowMultiple: boolean) => {
-    const newPoll: Poll = {
-      id: `poll-${Date.now()}`,
-      question,
-      options: options.map((text, index) => ({
-        id: `option-${Date.now()}-${index}`,
-        text,
-        votes: [],
-      })),
-      createdBy: currentPlayerId || '',
-      createdAt: new Date().toISOString(),
-      isActive: true,
-      allowMultipleVotes: allowMultiple,
-    };
-    addPoll(newPoll);
+  const sendPollNotification = async (questionCount: number) => {
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'New Poll!',
+          body: questionCount > 1
+            ? `A new poll with ${questionCount} questions has been created. Cast your vote!`
+            : 'A new poll has been created. Cast your vote!',
+          data: { type: 'poll' },
+          sound: true,
+        },
+        trigger: null,
+      });
+    } catch (error) {
+      console.log('Error sending poll notification:', error);
+    }
+  };
+
+  const handleCreatePoll = async (
+    questions: { question: string; options: string[]; allowMultiple: boolean }[],
+    sendNotification: boolean
+  ) => {
+    const timestamp = Date.now();
+    questions.forEach((q, qIndex) => {
+      const newPoll: Poll = {
+        id: `poll-${timestamp}-${qIndex}`,
+        question: q.question,
+        options: q.options.map((text, index) => ({
+          id: `option-${timestamp}-${qIndex}-${index}`,
+          text,
+          votes: [],
+        })),
+        createdBy: currentPlayerId || '',
+        createdAt: new Date(timestamp + qIndex).toISOString(),
+        isActive: true,
+        allowMultipleVotes: q.allowMultiple,
+      };
+      addPoll(newPoll);
+    });
+
+    if (sendNotification) {
+      await sendPollNotification(questions.length);
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
@@ -362,7 +542,7 @@ export default function PollsScreen() {
                 onPress={() => router.back()}
                 className="w-10 h-10 rounded-full bg-slate-800/80 items-center justify-center mr-3"
               >
-                <ChevronLeft size={24} color="#67e8f9" />
+                <ChevronLeft size={24} color="#10b981" />
               </Pressable>
               <Text className="text-white text-2xl font-bold">Team Polls</Text>
             </View>
@@ -371,7 +551,7 @@ export default function PollsScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 setCreateModalVisible(true);
               }}
-              className="w-10 h-10 rounded-full bg-cyan-500 items-center justify-center"
+              className="w-10 h-10 rounded-full bg-emerald-500 items-center justify-center"
             >
               <Plus size={24} color="white" />
             </Pressable>
