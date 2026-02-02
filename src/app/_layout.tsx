@@ -250,6 +250,13 @@ function AuthNavigator() {
         }}
       />
       <Stack.Screen
+        name="event/[id]"
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen
         name="polls"
         options={{
           headerShown: false,
