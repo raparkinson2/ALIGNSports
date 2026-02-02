@@ -496,6 +496,8 @@ export interface Poll {
   expiresAt?: string; // optional expiration date
   isActive: boolean;
   allowMultipleVotes: boolean;
+  groupId?: string; // groups multiple questions into one poll
+  groupName?: string; // the poll name (displayed in list)
 }
 
 // Team Link types

@@ -1,8 +1,9 @@
-import { View, Text, ScrollView, Pressable, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { useState } from 'react';
+import { format, parseISO } from 'date-fns';
 import {
   ChevronLeft,
   Plus,
@@ -10,23 +11,33 @@ import {
   Check,
   Trash2,
   BarChart3,
-  Clock,
   User,
   Bell,
   BellOff,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
+  Calendar,
+  MessageSquare,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
-import { useTeamStore, Poll, PollOption, getPlayerName, Player } from '@/lib/store';
+import { useTeamStore, Poll, getPlayerName, Player } from '@/lib/store';
 
 interface PollQuestion {
   id: string;
   question: string;
   options: string[];
   allowMultiple: boolean;
+}
+
+interface PollGroup {
+  groupId: string;
+  groupName: string;
+  polls: Poll[];
+  createdBy: string;
+  createdAt: string;
 }
 
 function QuestionEditor({
@@ -175,8 +186,9 @@ function CreatePollModal({
 }: {
   visible: boolean;
   onClose: () => void;
-  onSave: (questions: { question: string; options: string[]; allowMultiple: boolean }[], sendNotification: boolean) => void;
+  onSave: (pollName: string, questions: { question: string; options: string[]; allowMultiple: boolean }[], sendNotification: boolean) => void;
 }) {
+  const [pollName, setPollName] = useState('');
   const [questions, setQuestions] = useState<PollQuestion[]>([
     { id: '1', question: '', options: ['', ''], allowMultiple: false },
   ]);
@@ -204,6 +216,12 @@ function CreatePollModal({
   };
 
   const handleSave = () => {
+    if (!pollName.trim()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Missing Poll Name', 'Please enter a name for your poll.');
+      return;
+    }
+
     const validQuestions = questions
       .filter((q) => q.question.trim().length > 0)
       .map((q) => ({
@@ -215,16 +233,19 @@ function CreatePollModal({
 
     if (validQuestions.length === 0) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Missing Questions', 'Please add at least one question with two options.');
       return;
     }
 
-    onSave(validQuestions, sendNotification);
+    onSave(pollName.trim(), validQuestions, sendNotification);
+    setPollName('');
     setQuestions([{ id: '1', question: '', options: ['', ''], allowMultiple: false }]);
     setSendNotification(true);
     onClose();
   };
 
   const handleClose = () => {
+    setPollName('');
     setQuestions([{ id: '1', question: '', options: ['', ''], allowMultiple: false }]);
     setSendNotification(true);
     onClose();
@@ -249,6 +270,20 @@ function CreatePollModal({
             </View>
 
             <ScrollView className="px-5 py-4" showsVerticalScrollIndicator={false}>
+              {/* Poll Name */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-xs mb-1.5 uppercase tracking-wide">Poll Name *</Text>
+                <TextInput
+                  value={pollName}
+                  onChangeText={setPollName}
+                  placeholder="e.g., Team Preferences, Jersey Vote"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800/60 rounded-xl px-4 py-3 text-white text-base border border-slate-700/50"
+                />
+              </View>
+
+              {/* Questions */}
+              <Text className="text-slate-400 text-xs mb-2 uppercase tracking-wide">Questions</Text>
               {questions.map((q, index) => (
                 <QuestionEditor
                   key={q.id}
@@ -314,22 +349,33 @@ function CreatePollModal({
   );
 }
 
-function PollQuestion({
-  poll,
+function PollDetailModal({
+  visible,
+  onClose,
+  pollGroup,
+  players,
   currentPlayerId,
   onVote,
-  players,
-  questionNumber,
-  totalQuestions,
+  onDelete,
+  canDelete,
 }: {
-  poll: Poll;
+  visible: boolean;
+  onClose: () => void;
+  pollGroup: PollGroup | null;
+  players: Player[];
   currentPlayerId: string | null;
   onVote: (pollId: string, optionId: string) => void;
-  players: Player[];
-  questionNumber: number;
-  totalQuestions: number;
+  onDelete: () => void;
+  canDelete: boolean;
 }) {
-  const totalVotes = poll.options.reduce((sum, opt) => sum + opt.votes.length, 0);
+  if (!pollGroup) return null;
+
+  const creatorPlayer = players.find((p) => p.id === pollGroup.createdBy);
+  const creatorName = creatorPlayer ? getPlayerName(creatorPlayer) : 'Unknown';
+  const totalVotes = pollGroup.polls.reduce(
+    (sum, poll) => sum + poll.options.reduce((s, opt) => s + opt.votes.length, 0),
+    0
+  );
 
   const getVoterNames = (votes: string[]) => {
     return votes
@@ -340,154 +386,201 @@ function PollQuestion({
       .join(', ');
   };
 
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Poll',
+      `Are you sure you want to delete "${pollGroup.groupName}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            onDelete();
+            onClose();
+          },
+        },
+      ]
+    );
+  };
+
   return (
-    <View className="mb-4 last:mb-0">
-      {totalQuestions > 1 && (
-        <Text className="text-emerald-400 text-xs font-semibold mb-2 uppercase tracking-wide">
-          Question {questionNumber} of {totalQuestions}
-        </Text>
-      )}
-      <Text className="text-white text-base font-semibold mb-3">{poll.question}</Text>
-
-      <View>
-        {poll.options.map((option) => {
-          const voteCount = option.votes.length;
-          const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
-          const isSelected = option.votes.includes(currentPlayerId || '');
-          const hasVotes = voteCount > 0;
-
-          return (
-            <Pressable
-              key={option.id}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onVote(poll.id, option.id);
-              }}
-              className="relative overflow-hidden rounded-xl mb-2"
-            >
-              <View
-                className={`absolute inset-0 ${isSelected ? 'bg-emerald-500/25' : 'bg-slate-700/40'}`}
-              />
-              <View
-                className={`absolute inset-y-0 left-0 ${isSelected ? 'bg-emerald-500/50' : 'bg-slate-500/30'}`}
-                style={{ width: `${percentage}%` }}
-              />
-              <View className="relative flex-row items-center justify-between px-4 py-3">
-                <View className="flex-row items-center flex-1">
-                  <View
-                    className={`w-5 h-5 rounded-full border-2 items-center justify-center mr-3 ${
-                      isSelected ? 'border-emerald-400 bg-emerald-500' : 'border-slate-500'
-                    }`}
-                  >
-                    {isSelected && <Check size={12} color="white" />}
-                  </View>
-                  <Text className={`flex-1 ${isSelected ? 'text-white font-medium' : 'text-slate-200'}`}>
-                    {option.text}
-                  </Text>
-                </View>
-                <Text className={`text-sm ml-2 font-medium ${isSelected ? 'text-emerald-300' : 'text-slate-400'}`}>
-                  {voteCount} ({percentage.toFixed(0)}%)
-                </Text>
-              </View>
-              {hasVotes && (
-                <View className="px-4 pb-2.5 pt-0.5">
-                  <View className="bg-slate-900/50 rounded-lg px-2.5 py-1.5">
-                    <Text className="text-amber-300/90 text-xs font-medium" numberOfLines={2}>
-                      {getVoterNames(option.votes)}
-                    </Text>
-                  </View>
-                </View>
-              )}
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+      <View className="flex-1 bg-slate-900">
+        <LinearGradient
+          colors={['#0f172a', '#1e293b', '#0f172a']}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
+        <SafeAreaView className="flex-1" edges={['top']}>
+          {/* Header */}
+          <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+            <Pressable onPress={onClose} className="w-10 h-10 rounded-full bg-slate-800/80 items-center justify-center">
+              <ChevronLeft size={24} color="#10b981" />
             </Pressable>
-          );
-        })}
-      </View>
+            <Text className="text-white text-lg font-bold flex-1 text-center" numberOfLines={1}>
+              {pollGroup.groupName}
+            </Text>
+            {canDelete ? (
+              <Pressable onPress={handleDelete} className="w-10 h-10 rounded-full bg-red-500/20 items-center justify-center">
+                <Trash2 size={20} color="#f87171" />
+              </Pressable>
+            ) : (
+              <View className="w-10" />
+            )}
+          </View>
 
-      {poll.allowMultipleVotes && (
-        <View className="flex-row items-center mt-1">
-          <BarChart3 size={12} color="#94a3b8" />
-          <Text className="text-slate-500 text-xs ml-1">Multiple selections allowed</Text>
-        </View>
-      )}
-    </View>
+          {/* Poll Info */}
+          <View className="px-5 py-4 border-b border-slate-800/50">
+            <View className="flex-row items-center">
+              <User size={14} color="#94a3b8" />
+              <Text className="text-slate-400 text-sm ml-1.5">{creatorName}</Text>
+              <Text className="text-slate-600 mx-2">·</Text>
+              <Text className="text-slate-400 text-sm">{totalVotes} vote{totalVotes !== 1 ? 's' : ''}</Text>
+              <Text className="text-slate-600 mx-2">·</Text>
+              <Text className="text-slate-400 text-sm">{format(parseISO(pollGroup.createdAt), 'MMM d, yyyy')}</Text>
+            </View>
+          </View>
+
+          <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+            {pollGroup.polls.map((poll, index) => {
+              const pollTotalVotes = poll.options.reduce((sum, opt) => sum + opt.votes.length, 0);
+
+              return (
+                <View key={poll.id} className="mb-6">
+                  {pollGroup.polls.length > 1 && (
+                    <Text className="text-emerald-400 text-xs font-semibold mb-2 uppercase tracking-wide">
+                      Question {index + 1} of {pollGroup.polls.length}
+                    </Text>
+                  )}
+                  <Text className="text-white text-lg font-semibold mb-4">{poll.question}</Text>
+
+                  {poll.options.map((option) => {
+                    const voteCount = option.votes.length;
+                    const percentage = pollTotalVotes > 0 ? (voteCount / pollTotalVotes) * 100 : 0;
+                    const isSelected = option.votes.includes(currentPlayerId || '');
+                    const hasVotes = voteCount > 0;
+
+                    return (
+                      <Pressable
+                        key={option.id}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          onVote(poll.id, option.id);
+                        }}
+                        className="relative overflow-hidden rounded-xl mb-2"
+                      >
+                        <View
+                          className={`absolute inset-0 ${isSelected ? 'bg-emerald-500/25' : 'bg-slate-700/40'}`}
+                        />
+                        <View
+                          className={`absolute inset-y-0 left-0 ${isSelected ? 'bg-emerald-500/50' : 'bg-slate-500/30'}`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                        <View className="relative flex-row items-center justify-between px-4 py-3">
+                          <View className="flex-row items-center flex-1">
+                            <View
+                              className={`w-5 h-5 rounded-full border-2 items-center justify-center mr-3 ${
+                                isSelected ? 'border-emerald-400 bg-emerald-500' : 'border-slate-500'
+                              }`}
+                            >
+                              {isSelected && <Check size={12} color="white" />}
+                            </View>
+                            <Text className={`flex-1 ${isSelected ? 'text-white font-medium' : 'text-slate-200'}`}>
+                              {option.text}
+                            </Text>
+                          </View>
+                          <Text className={`text-sm ml-2 font-medium ${isSelected ? 'text-emerald-300' : 'text-slate-400'}`}>
+                            {voteCount} ({percentage.toFixed(0)}%)
+                          </Text>
+                        </View>
+                        {hasVotes && (
+                          <View className="px-4 pb-2.5 pt-0.5">
+                            <View className="bg-slate-900/50 rounded-lg px-2.5 py-1.5">
+                              <Text className="text-amber-300/90 text-xs font-medium" numberOfLines={2}>
+                                {getVoterNames(option.votes)}
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+                      </Pressable>
+                    );
+                  })}
+
+                  {poll.allowMultipleVotes && (
+                    <View className="flex-row items-center mt-2">
+                      <BarChart3 size={12} color="#94a3b8" />
+                      <Text className="text-slate-500 text-xs ml-1">Multiple selections allowed</Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </ScrollView>
+        </SafeAreaView>
+      </View>
+    </Modal>
   );
 }
 
-function PollGroupCard({
-  polls,
-  currentPlayerId,
-  onVote,
-  onDeleteGroup,
+function PollListItem({
+  pollGroup,
   players,
-  canDelete,
+  onPress,
 }: {
-  polls: Poll[];
-  currentPlayerId: string | null;
-  onVote: (pollId: string, optionId: string) => void;
-  onDeleteGroup: (pollIds: string[]) => void;
+  pollGroup: PollGroup;
   players: Player[];
-  canDelete: boolean;
+  onPress: () => void;
 }) {
-  const firstPoll = polls[0];
-  const creatorPlayer = players.find((p) => p.id === firstPoll.createdBy);
+  const creatorPlayer = players.find((p) => p.id === pollGroup.createdBy);
   const creatorName = creatorPlayer ? getPlayerName(creatorPlayer) : 'Unknown';
-  const totalVotes = polls.reduce(
+  const totalVotes = pollGroup.polls.reduce(
     (sum, poll) => sum + poll.options.reduce((s, opt) => s + opt.votes.length, 0),
     0
   );
+  const questionCount = pollGroup.polls.length;
 
   return (
-    <Animated.View entering={FadeInDown.springify()} className="mb-4">
-      <View className="bg-slate-800/70 rounded-2xl border border-slate-700/50 overflow-hidden">
-        {/* Header */}
-        <View className="flex-row items-center justify-between px-4 py-3 bg-slate-800/80 border-b border-slate-700/30">
-          <View className="flex-row items-center flex-1">
-            <User size={14} color="#94a3b8" />
-            <Text className="text-slate-400 text-sm ml-1.5">{creatorName}</Text>
-            <Text className="text-slate-600 mx-2">·</Text>
-            <Text className="text-slate-400 text-sm">{totalVotes} vote{totalVotes !== 1 ? 's' : ''}</Text>
-            {polls.length > 1 && (
-              <>
-                <Text className="text-slate-600 mx-2">·</Text>
-                <Text className="text-emerald-400 text-sm">{polls.length} questions</Text>
-              </>
-            )}
-          </View>
-          {canDelete && (
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                onDeleteGroup(polls.map((p) => p.id));
-              }}
-              className="w-8 h-8 rounded-full bg-red-500/20 items-center justify-center"
-            >
-              <Trash2 size={16} color="#f87171" />
-            </Pressable>
-          )}
-        </View>
+    <Pressable
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress();
+      }}
+      className="bg-slate-800/70 rounded-2xl p-4 mb-3 border border-slate-700/50 flex-row items-center"
+    >
+      <View className="w-12 h-12 rounded-xl bg-emerald-500/20 items-center justify-center mr-4">
+        <BarChart3 size={24} color="#10b981" />
+      </View>
 
-        {/* Questions */}
-        <View className="p-4">
-          {polls.map((poll, index) => (
-            <PollQuestion
-              key={poll.id}
-              poll={poll}
-              currentPlayerId={currentPlayerId}
-              onVote={onVote}
-              players={players}
-              questionNumber={index + 1}
-              totalQuestions={polls.length}
-            />
-          ))}
+      <View className="flex-1">
+        <Text className="text-white text-base font-semibold mb-1" numberOfLines={1}>
+          {pollGroup.groupName}
+        </Text>
+        <View className="flex-row items-center flex-wrap">
+          <View className="flex-row items-center mr-3">
+            <User size={12} color="#94a3b8" />
+            <Text className="text-slate-400 text-xs ml-1">{creatorName}</Text>
+          </View>
+          <View className="flex-row items-center mr-3">
+            <MessageSquare size={12} color="#94a3b8" />
+            <Text className="text-slate-400 text-xs ml-1">{questionCount} question{questionCount !== 1 ? 's' : ''}</Text>
+          </View>
+          <Text className="text-emerald-400 text-xs">{totalVotes} vote{totalVotes !== 1 ? 's' : ''}</Text>
+        </View>
+        <View className="flex-row items-center mt-1">
+          <Calendar size={12} color="#64748b" />
+          <Text className="text-slate-500 text-xs ml-1">{format(parseISO(pollGroup.createdAt), 'MMM d, yyyy')}</Text>
         </View>
       </View>
-    </Animated.View>
+
+      <ChevronRight size={20} color="#64748b" />
+    </Pressable>
   );
 }
 
 export default function PollsScreen() {
   const router = useRouter();
   const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [selectedPollGroup, setSelectedPollGroup] = useState<PollGroup | null>(null);
 
   const polls = useTeamStore((s) => s.polls);
   const players = useTeamStore((s) => s.players);
@@ -497,17 +590,16 @@ export default function PollsScreen() {
   const votePoll = useTeamStore((s) => s.votePoll);
   const unvotePoll = useTeamStore((s) => s.unvotePoll);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
+  const isAdmin = useTeamStore((s) => s.isAdmin);
 
   const canManage = canManageTeam();
 
-  const sendPollNotification = async (questionCount: number) => {
+  const sendPollNotification = async (pollName: string) => {
     try {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: 'New Poll!',
-          body: questionCount > 1
-            ? `A new poll with ${questionCount} questions has been created. Cast your vote!`
-            : 'A new poll has been created. Cast your vote!',
+          body: `"${pollName}" - Cast your vote now!`,
           data: { type: 'poll' },
           sound: true,
         },
@@ -519,10 +611,13 @@ export default function PollsScreen() {
   };
 
   const handleCreatePoll = async (
+    pollName: string,
     questions: { question: string; options: string[]; allowMultiple: boolean }[],
     sendNotification: boolean
   ) => {
     const timestamp = Date.now();
+    const groupId = `group-${timestamp}`;
+
     questions.forEach((q, qIndex) => {
       const newPoll: Poll = {
         id: `poll-${timestamp}-${qIndex}`,
@@ -533,15 +628,17 @@ export default function PollsScreen() {
           votes: [],
         })),
         createdBy: currentPlayerId || '',
-        createdAt: new Date(timestamp + qIndex).toISOString(),
+        createdAt: new Date(timestamp).toISOString(),
         isActive: true,
         allowMultipleVotes: q.allowMultiple,
+        groupId,
+        groupName: pollName,
       };
       addPoll(newPoll);
     });
 
     if (sendNotification) {
-      await sendPollNotification(questions.length);
+      await sendPollNotification(pollName);
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -564,41 +661,54 @@ export default function PollsScreen() {
     }
   };
 
-  const handleDeletePoll = (pollId: string) => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    removePoll(pollId);
-  };
-
   const handleDeletePollGroup = (pollIds: string[]) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     pollIds.forEach((id) => removePoll(id));
   };
 
-  // Group polls by their creation timestamp (polls created together share the same base timestamp)
+  // Group polls by groupId or fallback to timestamp-based grouping
   const groupedPolls = polls.reduce((groups, poll) => {
-    // Extract the base timestamp from poll ID (poll-{timestamp}-{index})
-    const match = poll.id.match(/^poll-(\d+)-/);
-    const groupKey = match ? match[1] : poll.id;
+    let groupKey: string;
+    let groupName: string;
+
+    if (poll.groupId) {
+      groupKey = poll.groupId;
+      groupName = poll.groupName || poll.question;
+    } else {
+      // Fallback for legacy polls without groupId
+      const match = poll.id.match(/^poll-(\d+)-/);
+      groupKey = match ? `legacy-${match[1]}` : poll.id;
+      groupName = poll.question;
+    }
 
     if (!groups[groupKey]) {
-      groups[groupKey] = [];
+      groups[groupKey] = {
+        groupId: groupKey,
+        groupName,
+        polls: [],
+        createdBy: poll.createdBy,
+        createdAt: poll.createdAt,
+      };
     }
-    groups[groupKey].push(poll);
+    groups[groupKey].polls.push(poll);
     return groups;
-  }, {} as Record<string, Poll[]>);
+  }, {} as Record<string, PollGroup>);
 
-  // Sort each group by the index in their ID and sort groups by newest first
-  const sortedGroups = Object.entries(groupedPolls)
-    .map(([key, groupPolls]) => ({
-      key,
-      polls: groupPolls.sort((a, b) => {
+  // Sort each group's polls by index and sort groups by newest first
+  const sortedGroups = Object.values(groupedPolls)
+    .map((group) => ({
+      ...group,
+      polls: group.polls.sort((a, b) => {
         const aIndex = parseInt(a.id.split('-').pop() || '0', 10);
         const bIndex = parseInt(b.id.split('-').pop() || '0', 10);
         return aIndex - bIndex;
       }),
-      timestamp: parseInt(key, 10) || new Date(groupPolls[0].createdAt).getTime(),
     }))
-    .sort((a, b) => b.timestamp - a.timestamp);
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const canDeleteSelectedPoll = selectedPollGroup
+    ? isAdmin() || selectedPollGroup.createdBy === currentPlayerId
+    : false;
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -652,22 +762,15 @@ export default function PollsScreen() {
               </Text>
             </View>
           ) : (
-            sortedGroups.map((group) => {
-              const creatorId = group.polls[0]?.createdBy;
-              const canDelete = canManage || creatorId === currentPlayerId;
-
-              return (
-                <PollGroupCard
-                  key={group.key}
-                  polls={group.polls}
-                  currentPlayerId={currentPlayerId}
-                  onVote={handleVote}
-                  onDeleteGroup={handleDeletePollGroup}
+            sortedGroups.map((group, index) => (
+              <Animated.View key={group.groupId} entering={FadeInDown.delay(index * 50).springify()}>
+                <PollListItem
+                  pollGroup={group}
                   players={players}
-                  canDelete={canDelete}
+                  onPress={() => setSelectedPollGroup(group)}
                 />
-              );
-            })
+              </Animated.View>
+            ))
           )}
         </ScrollView>
       </SafeAreaView>
@@ -676,6 +779,21 @@ export default function PollsScreen() {
         visible={createModalVisible}
         onClose={() => setCreateModalVisible(false)}
         onSave={handleCreatePoll}
+      />
+
+      <PollDetailModal
+        visible={selectedPollGroup !== null}
+        onClose={() => setSelectedPollGroup(null)}
+        pollGroup={selectedPollGroup}
+        players={players}
+        currentPlayerId={currentPlayerId}
+        onVote={handleVote}
+        onDelete={() => {
+          if (selectedPollGroup) {
+            handleDeletePollGroup(selectedPollGroup.polls.map((p) => p.id));
+          }
+        }}
+        canDelete={canDeleteSelectedPoll}
       />
     </View>
   );
