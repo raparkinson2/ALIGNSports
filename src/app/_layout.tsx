@@ -10,6 +10,7 @@ import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTeamStore, useStoreHydrated } from '@/lib/store';
 import { registerForPushNotificationsAsync } from '@/lib/notifications';
+import { clearInvalidSession, getSafeSession } from '@/lib/supabase';
 
 export const unstable_settings = {
   initialRouteName: 'login',
@@ -68,6 +69,21 @@ function AuthNavigator() {
   // This prevents stale login state from persisting across builds
   useEffect(() => {
     if (!isHydrated) return;
+
+    // Check for invalid Supabase sessions on startup
+    const checkSupabaseSession = async () => {
+      try {
+        await getSafeSession();
+      } catch (e: any) {
+        // If there's a refresh token error, clear the invalid session
+        if (e?.message?.includes('Refresh Token') ||
+            e?.message?.includes('refresh_token')) {
+          console.warn('Invalid Supabase session detected on startup, clearing...');
+          await clearInvalidSession();
+        }
+      }
+    };
+    checkSupabaseSession();
 
     // Additional safety: if somehow isLoggedIn is true but no players exist, force logout
     if (isLoggedIn && players.length === 0) {

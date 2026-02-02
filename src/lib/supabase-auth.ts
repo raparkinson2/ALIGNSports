@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, clearInvalidSession, getSafeSession } from './supabase';
 
 export interface AuthResult {
   success: boolean;
@@ -44,12 +44,21 @@ export async function signUpWithEmail(email: string, password: string): Promise<
  */
 export async function signInWithEmail(email: string, password: string): Promise<AuthResult & { emailNotConfirmed?: boolean }> {
   try {
+    // Clear any invalid sessions before attempting login
+    await clearInvalidSession().catch(() => {});
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
+      // Handle refresh token errors by clearing session and retrying
+      if (error.message?.includes('Refresh Token') ||
+          error.message?.includes('refresh_token')) {
+        await clearInvalidSession();
+        return { success: false, error: 'Session expired. Please try again.' };
+      }
       // Provide user-friendly error messages
       if (error.message.includes('Invalid login credentials')) {
         return { success: false, error: 'Invalid email or password' };
@@ -76,24 +85,42 @@ export async function signInWithEmail(email: string, password: string): Promise<
     }
 
     return { success: true, userId: data.user.id };
-  } catch (err) {
+  } catch (err: any) {
+    // Handle refresh token errors in catch block
+    if (err?.message?.includes('Refresh Token') ||
+        err?.message?.includes('refresh_token')) {
+      await clearInvalidSession();
+      return { success: false, error: 'Session expired. Please try again.' };
+    }
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
 
 /**
- * Sign out the current user
+ * Sign out the current user (handles refresh token errors gracefully)
  */
 export async function signOut(): Promise<AuthResult> {
   try {
     const { error } = await supabase.auth.signOut();
 
     if (error) {
+      // If there's a refresh token error during sign out, clear the session anyway
+      if (error.message?.includes('Refresh Token') ||
+          error.message?.includes('refresh_token')) {
+        await clearInvalidSession();
+        return { success: true }; // Consider it a success since session is cleared
+      }
       return { success: false, error: error.message };
     }
 
     return { success: true };
-  } catch (err) {
+  } catch (err: any) {
+    // Handle refresh token errors
+    if (err?.message?.includes('Refresh Token') ||
+        err?.message?.includes('refresh_token')) {
+      await clearInvalidSession();
+      return { success: true }; // Consider it a success
+    }
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -188,28 +215,45 @@ export async function verifySMSOtpAndResetPassword(phone: string, otp: string, n
 }
 
 /**
- * Get the current authenticated user
+ * Get the current authenticated user (handles refresh token errors gracefully)
  */
 export async function getCurrentUser() {
   try {
     const { data: { user }, error } = await supabase.auth.getUser();
 
-    if (error || !user) {
+    if (error) {
+      // Handle refresh token errors
+      if (error.message?.includes('Refresh Token') ||
+          error.message?.includes('refresh_token') ||
+          error.message?.includes('Invalid Refresh Token')) {
+        console.warn('Invalid refresh token in getCurrentUser, clearing session');
+        await clearInvalidSession();
+        return null;
+      }
+      return null;
+    }
+
+    if (!user) {
       return null;
     }
 
     return user;
-  } catch {
+  } catch (e: any) {
+    // Handle unexpected refresh token errors
+    if (e?.message?.includes('Refresh Token') ||
+        e?.message?.includes('refresh_token')) {
+      await clearInvalidSession();
+    }
     return null;
   }
 }
 
 /**
- * Get the current session
+ * Get the current session (handles refresh token errors gracefully)
  */
 export async function getSession() {
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const { session, error } = await getSafeSession();
 
     if (error || !session) {
       return null;
