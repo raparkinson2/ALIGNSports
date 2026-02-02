@@ -961,6 +961,16 @@ export default function MoreScreen() {
             index={2}
           />
 
+          <MenuItem
+            icon={<BarChart3 size={20} color="#67e8f9" />}
+            title="Team Polls"
+            subtitle="Create and vote on polls"
+            onPress={() => {
+              router.push('/polls');
+            }}
+            index={3}
+          />
+
           {/* Account Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
             Account

@@ -479,6 +479,24 @@ export interface Photo {
   uploadedAt: string;
 }
 
+// Poll types
+export interface PollOption {
+  id: string;
+  text: string;
+  votes: string[]; // player ids who voted for this option
+}
+
+export interface Poll {
+  id: string;
+  question: string;
+  options: PollOption[];
+  createdBy: string; // player id
+  createdAt: string;
+  expiresAt?: string; // optional expiration date
+  isActive: boolean;
+  allowMultipleVotes: boolean;
+}
+
 // Team Record based on sport
 export interface TeamRecord {
   wins: number;
@@ -515,6 +533,7 @@ export interface Team {
   chatMessages: ChatMessage[];
   chatLastReadAt: Record<string, string>;
   paymentPeriods: PaymentPeriod[];
+  polls: Poll[];
 }
 
 interface TeamStore {
@@ -577,6 +596,14 @@ interface TeamStore {
   updatePlayerPayment: (periodId: string, playerId: string, status: 'unpaid' | 'paid' | 'partial', amount?: number, notes?: string) => void;
   addPaymentEntry: (periodId: string, playerId: string, entry: PaymentEntry) => void;
   removePaymentEntry: (periodId: string, playerId: string, entryId: string) => void;
+
+  // Polls
+  polls: Poll[];
+  addPoll: (poll: Poll) => void;
+  updatePoll: (id: string, updates: Partial<Poll>) => void;
+  removePoll: (id: string) => void;
+  votePoll: (pollId: string, optionId: string, playerId: string) => void;
+  unvotePoll: (pollId: string, optionId: string, playerId: string) => void;
 
   currentPlayerId: string | null;
   setCurrentPlayerId: (id: string | null) => void;
@@ -963,6 +990,59 @@ export const useTeamStore = create<TeamStore>()(
         }),
       })),
 
+      // Polls
+      polls: [],
+      addPoll: (poll) => set((state) => ({
+        polls: [...state.polls, poll],
+      })),
+      updatePoll: (id, updates) => set((state) => ({
+        polls: state.polls.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+      })),
+      removePoll: (id) => set((state) => ({
+        polls: state.polls.filter((p) => p.id !== id),
+      })),
+      votePoll: (pollId, optionId, playerId) => set((state) => ({
+        polls: state.polls.map((poll) => {
+          if (poll.id !== pollId) return poll;
+          return {
+            ...poll,
+            options: poll.options.map((option) => {
+              if (option.id !== optionId) {
+                // If not allowing multiple votes, remove player from other options
+                if (!poll.allowMultipleVotes) {
+                  return {
+                    ...option,
+                    votes: option.votes.filter((v) => v !== playerId),
+                  };
+                }
+                return option;
+              }
+              // Add vote if not already voted
+              if (option.votes.includes(playerId)) return option;
+              return {
+                ...option,
+                votes: [...option.votes, playerId],
+              };
+            }),
+          };
+        }),
+      })),
+      unvotePoll: (pollId, optionId, playerId) => set((state) => ({
+        polls: state.polls.map((poll) => {
+          if (poll.id !== pollId) return poll;
+          return {
+            ...poll,
+            options: poll.options.map((option) => {
+              if (option.id !== optionId) return option;
+              return {
+                ...option,
+                votes: option.votes.filter((v) => v !== playerId),
+              };
+            }),
+          };
+        }),
+      })),
+
       currentPlayerId: null, // No default player
       setCurrentPlayerId: (id) => set({ currentPlayerId: id }),
 
@@ -1313,6 +1393,7 @@ export const useTeamStore = create<TeamStore>()(
           chatMessages: [], // Delete ALL chat messages
           chatLastReadAt: {}, // Reset all read tracking
           paymentPeriods: [], // Delete ALL payment records
+          polls: [], // Delete ALL polls
           // Sign EVERYONE out
           currentPlayerId: null,
           isLoggedIn: false,
@@ -1360,6 +1441,7 @@ export const useTeamStore = create<TeamStore>()(
           chatMessages: team.chatMessages,
           chatLastReadAt: team.chatLastReadAt,
           paymentPeriods: team.paymentPeriods,
+          polls: team.polls || [],
           currentPlayerId: userInTeam?.id || null,
           pendingTeamIds: null,
         });
@@ -1413,6 +1495,7 @@ export const useTeamStore = create<TeamStore>()(
           chatMessages: [],
           chatLastReadAt: {},
           paymentPeriods: [],
+          polls: [],
         };
 
         set((state) => ({
@@ -1461,6 +1544,7 @@ export const useTeamStore = create<TeamStore>()(
                   chatMessages: state.chatMessages,
                   chatLastReadAt: state.chatLastReadAt,
                   paymentPeriods: state.paymentPeriods,
+                  polls: state.polls,
                 }
               : team
           );
@@ -1477,6 +1561,7 @@ export const useTeamStore = create<TeamStore>()(
           chatMessages: state.chatMessages,
           chatLastReadAt: state.chatLastReadAt,
           paymentPeriods: state.paymentPeriods,
+          polls: state.polls,
           currentPlayerId: state.currentPlayerId,
           isLoggedIn: state.isLoggedIn,
           // Multi-team data (with synced teams)
