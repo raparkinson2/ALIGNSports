@@ -728,7 +728,7 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines 
                         className={cn(
                           'h-1.5 rounded-full',
                           isSelected ? 'bg-cyan-400' : 'bg-emerald-500',
-                          dayGames.length === 1 ? 'w-2' : 'w-3'
+                          dayGames.length === 1 ? 'w-4' : dayGames.length === 2 ? 'w-6' : 'w-8'
                         )}
                       />
                     )}
@@ -737,7 +737,7 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines 
                         className={cn(
                           'h-1.5 rounded-full',
                           isSelected ? 'bg-cyan-400' : 'bg-red-500',
-                          dayEvents.length === 1 ? 'w-2' : 'w-3'
+                          dayEvents.length === 1 ? 'w-4' : dayEvents.length === 2 ? 'w-6' : 'w-8'
                         )}
                       />
                     )}
