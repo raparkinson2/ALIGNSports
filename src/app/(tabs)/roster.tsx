@@ -2,6 +2,7 @@ import { View, Text, ScrollView, Pressable, TextInput, Modal, Platform, Alert } 
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   Users,
   X,
@@ -160,9 +161,11 @@ interface PlayerCardProps {
   index: number;
   onPress: () => void;
   showStats?: boolean;
+  isCurrentUser?: boolean;
+  canEditOwnStats?: boolean;
 }
 
-function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProps) {
+function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = false, canEditOwnStats = false }: PlayerCardProps) {
   const sport = useTeamStore((s) => s.teamSettings.sport);
   const playerPositions = getPlayerPositions(player);
   const primaryPosition = getPrimaryPosition(player);
@@ -234,6 +237,11 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
           <View className="flex-1 ml-4">
             <View className="flex-row items-center">
               <Text className="text-white text-lg font-semibold">{getPlayerName(player)}</Text>
+              {isCurrentUser && (
+                <View className="ml-2 bg-cyan-500/20 rounded-full px-2 py-0.5">
+                  <Text className="text-cyan-400 text-xs font-medium">You</Text>
+                </View>
+              )}
               {player.roles?.includes('captain') && (
                 <View className="ml-2 bg-amber-500/20 rounded-full w-6 h-6 items-center justify-center">
                   <Text className="text-amber-500 text-sm font-black">C</Text>
@@ -256,6 +264,10 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
                 <Text className="text-red-500 font-bold ml-2 text-sm">SUS</Text>
               )}
             </View>
+            {/* Show hint for self-stats editing */}
+            {isCurrentUser && canEditOwnStats && showStats && (
+              <Text className="text-cyan-400/70 text-xs mt-1">Tap to edit your stats</Text>
+            )}
           </View>
 
           {/* Status Badge */}
@@ -329,6 +341,7 @@ function PlayerCard({ player, index, onPress, showStats = true }: PlayerCardProp
 }
 
 export default function RosterScreen() {
+  const router = useRouter();
   const players = useTeamStore((s) => s.players);
   const addPlayer = useTeamStore((s) => s.addPlayer);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
@@ -338,6 +351,7 @@ export default function RosterScreen() {
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const showTeamStats = teamSettings.showTeamStats !== false;
+  const allowPlayerSelfStats = teamSettings.allowPlayerSelfStats === true;
 
   // Count how many admins exist
   const adminCount = players.filter((p) => p.roles?.includes('admin')).length;
@@ -406,6 +420,28 @@ export default function RosterScreen() {
     setIsSuspended(player.isSuspended || false);
     setIsCoach(player.roles?.includes('coach') || player.position === 'Coach' || false);
     setIsModalVisible(true);
+  };
+
+  // Handle player card press - either edit player or go to stats
+  const handlePlayerPress = (player: Player) => {
+    const isOwnProfile = player.id === currentPlayerId;
+    const canEdit = canManageTeam();
+
+    // If admin/captain, open edit modal
+    if (canEdit) {
+      openEditModal(player);
+      return;
+    }
+
+    // If it's their own profile and self-stats is enabled, go to team stats
+    if (isOwnProfile && allowPlayerSelfStats && showTeamStats) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      router.push('/team-stats');
+      return;
+    }
+
+    // Otherwise, no action (or could show a read-only profile in the future)
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handleSave = () => {
@@ -627,8 +663,10 @@ export default function RosterScreen() {
                     key={player.id}
                     player={player}
                     index={index}
-                    onPress={() => openEditModal(player)}
+                    onPress={() => handlePlayerPress(player)}
                     showStats={showTeamStats}
+                    isCurrentUser={player.id === currentPlayerId}
+                    canEditOwnStats={allowPlayerSelfStats && !canManageTeam()}
                   />
                 ))}
               </View>
