@@ -30,6 +30,7 @@ interface PollQuestion {
   question: string;
   options: string[];
   allowMultiple: boolean;
+  isRequired: boolean;
 }
 
 interface PollGroup {
@@ -162,7 +163,7 @@ function QuestionEditor({
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onChange({ ...question, allowMultiple: !question.allowMultiple });
             }}
-            className="flex-row items-center justify-between py-3 px-4 bg-slate-900/40 rounded-xl"
+            className="flex-row items-center justify-between py-3 px-4 bg-slate-900/40 rounded-xl mb-2"
           >
             <Text className="text-slate-300 text-sm">Allow multiple selections</Text>
             <View
@@ -171,6 +172,23 @@ function QuestionEditor({
               }`}
             >
               {question.allowMultiple && <Check size={14} color="white" />}
+            </View>
+          </Pressable>
+
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onChange({ ...question, isRequired: !question.isRequired });
+            }}
+            className="flex-row items-center justify-between py-3 px-4 bg-slate-900/40 rounded-xl"
+          >
+            <Text className="text-slate-300 text-sm">Require answer</Text>
+            <View
+              className={`w-5 h-5 rounded-md items-center justify-center ${
+                question.isRequired ? 'bg-amber-500' : 'bg-slate-600'
+              }`}
+            >
+              {question.isRequired && <Check size={14} color="white" />}
             </View>
           </Pressable>
         </View>
@@ -186,11 +204,11 @@ function CreatePollModal({
 }: {
   visible: boolean;
   onClose: () => void;
-  onSave: (pollName: string, questions: { question: string; options: string[]; allowMultiple: boolean }[], sendNotification: boolean) => void;
+  onSave: (pollName: string, questions: { question: string; options: string[]; allowMultiple: boolean; isRequired: boolean }[], sendNotification: boolean) => void;
 }) {
   const [pollName, setPollName] = useState('');
   const [questions, setQuestions] = useState<PollQuestion[]>([
-    { id: '1', question: '', options: ['', ''], allowMultiple: false },
+    { id: '1', question: '', options: ['', ''], allowMultiple: false, isRequired: false },
   ]);
   const [sendNotification, setSendNotification] = useState(true);
 
@@ -198,7 +216,7 @@ function CreatePollModal({
     if (questions.length < 5) {
       setQuestions([
         ...questions,
-        { id: Date.now().toString(), question: '', options: ['', ''], allowMultiple: false },
+        { id: Date.now().toString(), question: '', options: ['', ''], allowMultiple: false, isRequired: false },
       ]);
     }
   };
@@ -228,6 +246,7 @@ function CreatePollModal({
         question: q.question.trim(),
         options: q.options.filter((o) => o.trim().length > 0),
         allowMultiple: q.allowMultiple,
+        isRequired: q.isRequired,
       }))
       .filter((q) => q.options.length >= 2);
 
@@ -239,14 +258,14 @@ function CreatePollModal({
 
     onSave(pollName.trim(), validQuestions, sendNotification);
     setPollName('');
-    setQuestions([{ id: '1', question: '', options: ['', ''], allowMultiple: false }]);
+    setQuestions([{ id: '1', question: '', options: ['', ''], allowMultiple: false, isRequired: false }]);
     setSendNotification(true);
     onClose();
   };
 
   const handleClose = () => {
     setPollName('');
-    setQuestions([{ id: '1', question: '', options: ['', ''], allowMultiple: false }]);
+    setQuestions([{ id: '1', question: '', options: ['', ''], allowMultiple: false, isRequired: false }]);
     setSendNotification(true);
     onClose();
   };
@@ -372,10 +391,15 @@ function PollDetailModal({
 
   const creatorPlayer = players.find((p) => p.id === pollGroup.createdBy);
   const creatorName = creatorPlayer ? getPlayerName(creatorPlayer) : 'Unknown';
-  const totalVotes = pollGroup.polls.reduce(
-    (sum, poll) => sum + poll.options.reduce((s, opt) => s + opt.votes.length, 0),
-    0
-  );
+
+  // Count unique voters across all questions in this poll
+  const uniqueVoters = new Set<string>();
+  pollGroup.polls.forEach((poll) => {
+    poll.options.forEach((opt) => {
+      opt.votes.forEach((voterId) => uniqueVoters.add(voterId));
+    });
+  });
+  const voterCount = uniqueVoters.size;
 
   const getVoterNames = (votes: string[]) => {
     return votes
@@ -435,7 +459,7 @@ function PollDetailModal({
               <User size={14} color="#94a3b8" />
               <Text className="text-slate-400 text-sm ml-1.5">{creatorName}</Text>
               <Text className="text-slate-600 mx-2">·</Text>
-              <Text className="text-slate-400 text-sm">{totalVotes} vote{totalVotes !== 1 ? 's' : ''}</Text>
+              <Text className="text-slate-400 text-sm">{voterCount} voter{voterCount !== 1 ? 's' : ''}</Text>
               <Text className="text-slate-600 mx-2">·</Text>
               <Text className="text-slate-400 text-sm">{format(parseISO(pollGroup.createdAt), 'MMM d, yyyy')}</Text>
             </View>
@@ -533,10 +557,15 @@ function PollListItem({
 }) {
   const creatorPlayer = players.find((p) => p.id === pollGroup.createdBy);
   const creatorName = creatorPlayer ? getPlayerName(creatorPlayer) : 'Unknown';
-  const totalVotes = pollGroup.polls.reduce(
-    (sum, poll) => sum + poll.options.reduce((s, opt) => s + opt.votes.length, 0),
-    0
-  );
+
+  // Count unique voters across all questions in this poll
+  const uniqueVoters = new Set<string>();
+  pollGroup.polls.forEach((poll) => {
+    poll.options.forEach((opt) => {
+      opt.votes.forEach((voterId) => uniqueVoters.add(voterId));
+    });
+  });
+  const voterCount = uniqueVoters.size;
   const questionCount = pollGroup.polls.length;
 
   return (
@@ -564,7 +593,7 @@ function PollListItem({
             <MessageSquare size={12} color="#94a3b8" />
             <Text className="text-slate-400 text-xs ml-1">{questionCount} question{questionCount !== 1 ? 's' : ''}</Text>
           </View>
-          <Text className="text-emerald-400 text-xs">{totalVotes} vote{totalVotes !== 1 ? 's' : ''}</Text>
+          <Text className="text-emerald-400 text-xs">{voterCount} voter{voterCount !== 1 ? 's' : ''}</Text>
         </View>
         <View className="flex-row items-center mt-1">
           <Calendar size={12} color="#64748b" />
@@ -580,7 +609,7 @@ function PollListItem({
 export default function PollsScreen() {
   const router = useRouter();
   const [createModalVisible, setCreateModalVisible] = useState(false);
-  const [selectedPollGroup, setSelectedPollGroup] = useState<PollGroup | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
   const polls = useTeamStore((s) => s.polls);
   const players = useTeamStore((s) => s.players);
@@ -612,7 +641,7 @@ export default function PollsScreen() {
 
   const handleCreatePoll = async (
     pollName: string,
-    questions: { question: string; options: string[]; allowMultiple: boolean }[],
+    questions: { question: string; options: string[]; allowMultiple: boolean; isRequired: boolean }[],
     sendNotification: boolean
   ) => {
     const timestamp = Date.now();
@@ -633,6 +662,7 @@ export default function PollsScreen() {
         allowMultipleVotes: q.allowMultiple,
         groupId,
         groupName: pollName,
+        isRequired: q.isRequired,
       };
       addPoll(newPoll);
     });
@@ -706,6 +736,11 @@ export default function PollsScreen() {
     }))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+  // Look up the selected group from live data
+  const selectedPollGroup = selectedGroupId
+    ? sortedGroups.find((g) => g.groupId === selectedGroupId) || null
+    : null;
+
   const canDeleteSelectedPoll = selectedPollGroup
     ? isAdmin() || selectedPollGroup.createdBy === currentPlayerId
     : false;
@@ -767,7 +802,7 @@ export default function PollsScreen() {
                 <PollListItem
                   pollGroup={group}
                   players={players}
-                  onPress={() => setSelectedPollGroup(group)}
+                  onPress={() => setSelectedGroupId(group.groupId)}
                 />
               </Animated.View>
             ))
@@ -783,7 +818,7 @@ export default function PollsScreen() {
 
       <PollDetailModal
         visible={selectedPollGroup !== null}
-        onClose={() => setSelectedPollGroup(null)}
+        onClose={() => setSelectedGroupId(null)}
         pollGroup={selectedPollGroup}
         players={players}
         currentPlayerId={currentPlayerId}

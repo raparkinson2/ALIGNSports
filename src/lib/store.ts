@@ -498,6 +498,7 @@ export interface Poll {
   allowMultipleVotes: boolean;
   groupId?: string; // groups multiple questions into one poll
   groupName?: string; // the poll name (displayed in list)
+  isRequired?: boolean; // whether answering this question is required
 }
 
 // Team Link types
