@@ -33,6 +33,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
+import * as Clipboard from 'expo-clipboard';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Path, Circle as SvgCircle, Line, Rect, Ellipse } from 'react-native-svg';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
@@ -1136,19 +1137,37 @@ export default function AdminScreen() {
                   return;
                 }
 
-                // Get all phone numbers - iOS uses comma-separated in the path, Android uses comma in query
-                const phoneNumbers = playersWithPhone.map(p => p.phone).join(',');
+                // Get all phone numbers
+                const phoneNumbers = playersWithPhone.map(p => p.phone!);
+                const phoneList = phoneNumbers.join(', ');
 
-                // Create SMS URL with all recipients
-                const smsUrl = Platform.select({
-                  ios: `sms:${phoneNumbers}`,
-                  android: `smsto:${phoneNumbers}`,
-                  default: `sms:${phoneNumbers}`,
-                });
-
-                Linking.openURL(smsUrl).catch(() => {
-                  Alert.alert('Error', 'Could not open messaging app');
-                });
+                // Show options
+                Alert.alert(
+                  'Text Team',
+                  `Send a group text to ${playersWithPhone.length} team member${playersWithPhone.length !== 1 ? 's' : ''}?\n\n${phoneList}`,
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Copy Numbers',
+                      onPress: async () => {
+                        await Clipboard.setStringAsync(phoneNumbers.join(', '));
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        Alert.alert('Copied!', 'Phone numbers copied to clipboard. Paste them in your Messages app to create a group text.');
+                      },
+                    },
+                    {
+                      text: 'Open Messages',
+                      onPress: () => {
+                        // Open Messages app - user will need to paste the numbers
+                        Clipboard.setStringAsync(phoneNumbers.join(', ')).then(() => {
+                          Linking.openURL('sms:').catch(() => {
+                            Alert.alert('Error', 'Could not open messaging app');
+                          });
+                        });
+                      },
+                    },
+                  ]
+                );
               }}
               className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
             >

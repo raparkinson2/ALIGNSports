@@ -34,6 +34,7 @@ import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import * as ImagePicker from 'expo-image-picker';
 import * as Notifications from 'expo-notifications';
+import * as Clipboard from 'expo-clipboard';
 import { useState, useEffect } from 'react';
 import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences, getPlayerName, getPlayerInitials, TeamLink } from '@/lib/store';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
@@ -1032,21 +1033,37 @@ export default function MoreScreen() {
       return;
     }
 
-    // Get all phone numbers - iOS uses comma-separated in the path, Android uses comma in query
-    const phoneNumbers = playersWithPhone.map(p => p.phone).join(',');
+    // Get all phone numbers
+    const phoneNumbers = playersWithPhone.map(p => p.phone!);
+    const phoneList = phoneNumbers.join(', ');
 
-    // Create SMS URL with all recipients
-    // iOS format: sms://open?addresses=num1,num2 OR sms:num1,num2&body=
-    // Android format: sms:num1,num2
-    const smsUrl = Platform.select({
-      ios: `sms:${phoneNumbers}`,
-      android: `smsto:${phoneNumbers}`,
-      default: `sms:${phoneNumbers}`,
-    });
-
-    Linking.openURL(smsUrl).catch(() => {
-      Alert.alert('Error', 'Could not open messaging app');
-    });
+    // Show options
+    Alert.alert(
+      'Text Team',
+      `Send a group text to ${playersWithPhone.length} team member${playersWithPhone.length !== 1 ? 's' : ''}?\n\n${phoneList}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Copy Numbers',
+          onPress: async () => {
+            await Clipboard.setStringAsync(phoneNumbers.join(', '));
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Alert.alert('Copied!', 'Phone numbers copied to clipboard. Paste them in your Messages app to create a group text.');
+          },
+        },
+        {
+          text: 'Open Messages',
+          onPress: () => {
+            // Open Messages app - user will need to paste the numbers
+            Clipboard.setStringAsync(phoneNumbers.join(', ')).then(() => {
+              Linking.openURL('sms:').catch(() => {
+                Alert.alert('Error', 'Could not open messaging app');
+              });
+            });
+          },
+        },
+      ]
+    );
   };
 
   const handleSendGeneralInvite = () => {
