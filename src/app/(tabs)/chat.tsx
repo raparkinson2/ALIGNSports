@@ -357,18 +357,25 @@ export default function ChatScreen() {
     // Check if there's an @ at the end that we're actively typing
     const lastAtIndex = text.lastIndexOf('@');
 
+    console.log('Message change:', { text, lastAtIndex });
+
     if (lastAtIndex !== -1) {
       // Check if this @ is at the start or preceded by a space/newline
       const charBefore = lastAtIndex > 0 ? text[lastAtIndex - 1] : ' ';
       const isValidStart = charBefore === ' ' || charBefore === '\n' || lastAtIndex === 0;
 
+      console.log('@ found:', { charBefore, isValidStart });
+
       if (isValidStart) {
         // Get the text after this @
         const afterAt = text.substring(lastAtIndex + 1);
 
+        console.log('After @:', { afterAt, hasSpace: afterAt.includes(' ') });
+
         // Check if the cursor is still in the mention (no space after)
         // If afterAt has no space, we're still typing the mention
         if (!afterAt.includes(' ') && !afterAt.includes('\n')) {
+          console.log('Setting showMentionPicker to true');
           setMentionQuery(afterAt);
           setMentionStartIndex(lastAtIndex);
           setShowMentionPicker(true);
