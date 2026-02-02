@@ -31,7 +31,7 @@ import { Trash2 } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { useTeamStore, Game, TeamRecord, Sport, getPlayerName, InviteReleaseOption } from '@/lib/store';
+import { useTeamStore, Game, TeamRecord, Sport, getPlayerName, InviteReleaseOption, UpcomingGamesViewMode } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
@@ -397,8 +397,6 @@ function SwipeableGameCard({
   );
 }
 
-type ViewMode = 'list' | 'calendar';
-
 interface CalendarViewProps {
   games: Game[];
   onSelectGame: (game: Game) => void;
@@ -600,6 +598,9 @@ export default function ScheduleScreen() {
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const releaseScheduledGameInvites = useTeamStore((s) => s.releaseScheduledGameInvites);
 
+  // Get persisted view mode from team settings, default to 'list'
+  const persistedViewMode = teamSettings.upcomingGamesViewMode ?? 'list';
+
   // Check for scheduled invites that need to be released on mount
   useEffect(() => {
     const releasedGames = releaseScheduledGameInvites();
@@ -611,7 +612,12 @@ export default function ScheduleScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isRecordModalVisible, setIsRecordModalVisible] = useState(false);
   const [lineupViewerGame, setLineupViewerGame] = useState<Game | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<UpcomingGamesViewMode>(persistedViewMode);
+
+  // Sync local viewMode state when persisted value changes (e.g., on hydration)
+  useEffect(() => {
+    setViewMode(persistedViewMode);
+  }, [persistedViewMode]);
   const [opponent, setOpponent] = useState('');
   const [location, setLocation] = useState('');
   const [gameDate, setGameDate] = useState(new Date());
@@ -868,6 +874,7 @@ export default function ScheduleScreen() {
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setViewMode('list');
+                  setTeamSettings({ upcomingGamesViewMode: 'list' });
                 }}
                 className={cn(
                   'flex-row items-center px-3 py-1.5 rounded-lg',
@@ -880,6 +887,7 @@ export default function ScheduleScreen() {
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setViewMode('calendar');
+                  setTeamSettings({ upcomingGamesViewMode: 'calendar' });
                 }}
                 className={cn(
                   'flex-row items-center px-3 py-1.5 rounded-lg',

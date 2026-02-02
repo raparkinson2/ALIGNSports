@@ -47,6 +47,10 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - Quick view of check-in status
 - Admins/Captains can add new games via the + button
 - Tap any game to view full details
+- **View Toggle**: Switch between List and Calendar views
+  - List view shows games in a scrollable list
+  - Calendar view shows a monthly calendar with game days highlighted
+  - **Persistent Preference**: Your last selected view is remembered and restored on app reopen
 
 ### Game Details
 - Full game information including time, location, and jersey color

@@ -514,6 +514,9 @@ export interface TeamRecord {
   otLosses?: number; // Hockey only (Overtime losses)
 }
 
+// View mode type for upcoming games
+export type UpcomingGamesViewMode = 'list' | 'calendar';
+
 export interface TeamSettings {
   sport: Sport;
   jerseyColors: { name: string; color: string }[];
@@ -527,6 +530,7 @@ export interface TeamSettings {
   showRefreshmentDuty?: boolean; // Toggle to show/hide refreshment duty feature
   refreshmentDutyIs21Plus?: boolean; // If true, use beer icon; if false, use juice box icon
   showLineups?: boolean; // Toggle to show/hide lines/lineups feature
+  upcomingGamesViewMode?: UpcomingGamesViewMode; // Persisted view mode preference for upcoming games (list or calendar)
 }
 
 // Multi-team support: A complete team with all its data
