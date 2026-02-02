@@ -21,6 +21,7 @@ export default function ReportBugScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [stepsToReproduce, setStepsToReproduce] = useState('');
+  const [contactEmail, setContactEmail] = useState(currentPlayer?.email || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -48,7 +49,7 @@ export default function ReportBugScreen() {
         `Steps to Reproduce:\n${stepsToReproduce.trim() || 'Not provided'}\n\n` +
         `---\n` +
         `Reported by: ${currentPlayer ? getPlayerName(currentPlayer) : 'Unknown'}\n` +
-        `Email: ${currentPlayer?.email || 'Not provided'}\n` +
+        `Contact Email: ${contactEmail.trim() || 'Not provided'}\n` +
         `Team: ${teamName}\n` +
         `Platform: ${Platform.OS}\n` +
         `Date: ${new Date().toLocaleDateString()}`;
@@ -94,6 +95,7 @@ export default function ReportBugScreen() {
     setTitle('');
     setDescription('');
     setStepsToReproduce('');
+    setContactEmail(currentPlayer?.email || '');
     setIsSubmitted(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
@@ -261,7 +263,7 @@ export default function ReportBugScreen() {
             {/* Steps to Reproduce Input */}
             <Animated.View
               entering={FadeInDown.delay(250).springify()}
-              className="mb-6"
+              className="mb-4"
             >
               <Text className="text-slate-400 text-sm font-medium mb-2">Steps to reproduce (optional)</Text>
               <TextInput
@@ -280,8 +282,27 @@ export default function ReportBugScreen() {
               <Text className="text-slate-500 text-xs mt-1 text-right">{stepsToReproduce.length}/500</Text>
             </Animated.View>
 
+            {/* Contact Email Input */}
+            <Animated.View
+              entering={FadeInDown.delay(300).springify()}
+              className="mb-6"
+            >
+              <Text className="text-slate-400 text-sm font-medium mb-2">Your email (optional)</Text>
+              <TextInput
+                value={contactEmail}
+                onChangeText={setContactEmail}
+                placeholder="email@example.com"
+                placeholderTextColor="#64748b"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+                className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
+              />
+              <Text className="text-slate-500 text-xs mt-1">So we can follow up if we need more info</Text>
+            </Animated.View>
+
             {/* Submit Button */}
-            <Animated.View entering={FadeInDown.delay(300).springify()}>
+            <Animated.View entering={FadeInDown.delay(350).springify()}>
               <Pressable
                 onPress={handleSubmit}
                 disabled={isSubmitting}
@@ -298,7 +319,7 @@ export default function ReportBugScreen() {
 
             {/* Note */}
             <Animated.View
-              entering={FadeInDown.delay(350).springify()}
+              entering={FadeInDown.delay(400).springify()}
               className="mt-6"
             >
               <Text className="text-slate-500 text-sm text-center">
