@@ -1,8 +1,8 @@
 import { View, Text, ScrollView, Pressable, Modal, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, Stack } from 'expo-router';
-import { useState } from 'react';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
+import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import {
   ChevronLeft,
@@ -608,6 +608,7 @@ function PollListItem({
 
 export default function PollsScreen() {
   const router = useRouter();
+  const { openPoll } = useLocalSearchParams<{ openPoll?: string }>();
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
@@ -623,13 +624,20 @@ export default function PollsScreen() {
 
   const canManage = canManageTeam();
 
-  const sendPollNotification = async (pollName: string) => {
+  // Auto-open poll from notification deep link
+  useEffect(() => {
+    if (openPoll && !selectedGroupId) {
+      setSelectedGroupId(openPoll);
+    }
+  }, [openPoll]);
+
+  const sendPollNotification = async (pollName: string, pollGroupId: string) => {
     try {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: 'New Poll!',
           body: `"${pollName}" - Cast your vote now!`,
-          data: { type: 'poll' },
+          data: { type: 'poll', pollGroupId },
           sound: true,
         },
         trigger: null,
@@ -668,7 +676,7 @@ export default function PollsScreen() {
     });
 
     if (sendNotification) {
-      await sendPollNotification(pollName);
+      await sendPollNotification(pollName, groupId);
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

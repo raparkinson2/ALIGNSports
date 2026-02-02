@@ -162,15 +162,19 @@ function AuthNavigator() {
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
       console.log('Notification tapped:', response);
       const data = response.notification.request.content.data;
-      // Navigate to game if it's a game notification
-      if (data?.gameId) {
-        // Small delay to ensure navigation is ready
-        setTimeout(() => {
-          if (isReady) {
+      // Small delay to ensure navigation is ready
+      setTimeout(() => {
+        if (isReady) {
+          // Navigate to game if it's a game notification
+          if (data?.gameId) {
             router.push(`/game/${data.gameId}`);
           }
-        }, 100);
-      }
+          // Navigate to polls if it's a poll notification
+          else if (data?.type === 'poll' && data?.pollGroupId) {
+            router.push(`/polls?openPoll=${data.pollGroupId}`);
+          }
+        }
+      }, 100);
     });
 
     return () => {
