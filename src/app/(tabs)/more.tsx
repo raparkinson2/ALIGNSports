@@ -1016,6 +1016,29 @@ export default function MoreScreen() {
     setIsEmailModalVisible(true);
   };
 
+  const handleTextTeam = () => {
+    const playersWithPhone = players.filter(p => p.phone && p.phone.trim());
+
+    if (playersWithPhone.length === 0) {
+      Alert.alert('No Phone Numbers', 'No team members have phone numbers set.');
+      return;
+    }
+
+    // Get all phone numbers
+    const phoneNumbers = playersWithPhone.map(p => p.phone).join(',');
+
+    // Create SMS URL with all recipients
+    const smsUrl = Platform.select({
+      ios: `sms:${phoneNumbers}`,
+      android: `sms:${phoneNumbers}`,
+      default: `sms:${phoneNumbers}`,
+    });
+
+    Linking.openURL(smsUrl).catch(() => {
+      Alert.alert('Error', 'Could not open messaging app');
+    });
+  };
+
   const handleSendGeneralInvite = () => {
     // Find the next upcoming game
     const sortedGames = [...games].sort(
@@ -1186,11 +1209,19 @@ export default function MoreScreen() {
           />
 
           <MenuItem
+            icon={<MessageSquare size={20} color="#67e8f9" />}
+            title="Text Team"
+            subtitle="Send a group text to all players"
+            onPress={handleTextTeam}
+            index={1}
+          />
+
+          <MenuItem
             icon={<Send size={20} color="#67e8f9" />}
             title="Send Game Invite"
             subtitle="Invite someone to your next game"
             onPress={handleSendGeneralInvite}
-            index={1}
+            index={2}
           />
 
 
