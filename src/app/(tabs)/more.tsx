@@ -1032,22 +1032,20 @@ export default function MoreScreen() {
       return;
     }
 
-    // Get all phone numbers (use semicolon for iOS compatibility with multiple recipients)
-    const phoneNumbers = playersWithPhone.map(p => p.phone).join(';');
+    // Get all phone numbers - iOS uses comma-separated in the path, Android uses comma in query
+    const phoneNumbers = playersWithPhone.map(p => p.phone).join(',');
 
     // Create SMS URL with all recipients
+    // iOS format: sms://open?addresses=num1,num2 OR sms:num1,num2&body=
+    // Android format: sms:num1,num2
     const smsUrl = Platform.select({
-      ios: `sms:/open?addresses=${phoneNumbers}`,
-      android: `sms:${phoneNumbers.replace(/;/g, ',')}`,
+      ios: `sms:${phoneNumbers}`,
+      android: `smsto:${phoneNumbers}`,
       default: `sms:${phoneNumbers}`,
     });
 
     Linking.openURL(smsUrl).catch(() => {
-      // Fallback to simpler format
-      const fallbackUrl = `sms:${playersWithPhone.map(p => p.phone).join(',')}`;
-      Linking.openURL(fallbackUrl).catch(() => {
-        Alert.alert('Error', 'Could not open messaging app');
-      });
+      Alert.alert('Error', 'Could not open messaging app');
     });
   };
 

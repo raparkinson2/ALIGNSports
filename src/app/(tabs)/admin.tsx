@@ -1136,22 +1136,18 @@ export default function AdminScreen() {
                   return;
                 }
 
-                // Get all phone numbers (use semicolon for iOS compatibility with multiple recipients)
-                const phoneNumbers = playersWithPhone.map(p => p.phone).join(';');
+                // Get all phone numbers - iOS uses comma-separated in the path, Android uses comma in query
+                const phoneNumbers = playersWithPhone.map(p => p.phone).join(',');
 
                 // Create SMS URL with all recipients
                 const smsUrl = Platform.select({
-                  ios: `sms:/open?addresses=${phoneNumbers}`,
-                  android: `sms:${phoneNumbers.replace(/;/g, ',')}`,
+                  ios: `sms:${phoneNumbers}`,
+                  android: `smsto:${phoneNumbers}`,
                   default: `sms:${phoneNumbers}`,
                 });
 
                 Linking.openURL(smsUrl).catch(() => {
-                  // Fallback to simpler format
-                  const fallbackUrl = `sms:${playersWithPhone.map(p => p.phone).join(',')}`;
-                  Linking.openURL(fallbackUrl).catch(() => {
-                    Alert.alert('Error', 'Could not open messaging app');
-                  });
+                  Alert.alert('Error', 'Could not open messaging app');
                 });
               }}
               className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
