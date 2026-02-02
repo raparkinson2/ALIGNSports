@@ -1040,7 +1040,7 @@ export default function MoreScreen() {
     // Show confirmation with phone numbers and instructions
     Alert.alert(
       'Text Team',
-      `Send a group text to ${playersWithPhone.length} team member${playersWithPhone.length !== 1 ? 's' : ''}?\n\n${phoneList}\n\nTap "Copy & Open Messages" then paste into the "To:" field.`,
+      `Tap "Copy & Open Messages" then paste into the "To:" field.\n\n${playersWithPhone.length} team member${playersWithPhone.length !== 1 ? 's' : ''}:\n${phoneList}`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
