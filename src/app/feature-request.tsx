@@ -20,6 +20,8 @@ export default function FeatureRequestScreen() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [reasonForRequest, setReasonForRequest] = useState('');
+  const [contactEmail, setContactEmail] = useState(currentPlayer?.email || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -44,9 +46,10 @@ export default function FeatureRequestScreen() {
         `================\n\n` +
         `Title: ${title.trim()}\n\n` +
         `Description:\n${description.trim()}\n\n` +
+        `Reason for Request:\n${reasonForRequest.trim() || 'Not provided'}\n\n` +
         `---\n` +
         `Submitted by: ${currentPlayer ? getPlayerName(currentPlayer) : 'Unknown'}\n` +
-        `Email: ${currentPlayer?.email || 'Not provided'}\n` +
+        `Contact Email: ${contactEmail.trim() || 'Not provided'}\n` +
         `Team: ${teamName}\n` +
         `Date: ${new Date().toLocaleDateString()}`;
 
@@ -90,6 +93,8 @@ export default function FeatureRequestScreen() {
   const handleNewRequest = () => {
     setTitle('');
     setDescription('');
+    setReasonForRequest('');
+    setContactEmail(currentPlayer?.email || '');
     setIsSubmitted(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
@@ -235,7 +240,7 @@ export default function FeatureRequestScreen() {
             {/* Description Input */}
             <Animated.View
               entering={FadeInDown.delay(200).springify()}
-              className="mb-6"
+              className="mb-4"
             >
               <Text className="text-slate-400 text-sm font-medium mb-2">Description</Text>
               <TextInput
@@ -254,8 +259,49 @@ export default function FeatureRequestScreen() {
               <Text className="text-slate-500 text-xs mt-1 text-right">{description.length}/1000</Text>
             </Animated.View>
 
+            {/* Reason for Request Input */}
+            <Animated.View
+              entering={FadeInDown.delay(250).springify()}
+              className="mb-4"
+            >
+              <Text className="text-slate-400 text-sm font-medium mb-2">Reason for request (optional)</Text>
+              <TextInput
+                value={reasonForRequest}
+                onChangeText={setReasonForRequest}
+                placeholder="How will this feature help users and improve the app?"
+                placeholderTextColor="#64748b"
+                autoCapitalize="sentences"
+                className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                style={{ minHeight: 100 }}
+                maxLength={500}
+              />
+              <Text className="text-slate-500 text-xs mt-1 text-right">{reasonForRequest.length}/500</Text>
+            </Animated.View>
+
+            {/* Contact Email Input */}
+            <Animated.View
+              entering={FadeInDown.delay(300).springify()}
+              className="mb-6"
+            >
+              <Text className="text-slate-400 text-sm font-medium mb-2">Your email (optional)</Text>
+              <TextInput
+                value={contactEmail}
+                onChangeText={setContactEmail}
+                placeholder="email@example.com"
+                placeholderTextColor="#64748b"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+                className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
+              />
+              <Text className="text-slate-500 text-xs mt-1">So we can follow up on your request</Text>
+            </Animated.View>
+
             {/* Submit Button */}
-            <Animated.View entering={FadeInDown.delay(250).springify()}>
+            <Animated.View entering={FadeInDown.delay(350).springify()}>
               <Pressable
                 onPress={handleSubmit}
                 disabled={isSubmitting}
@@ -272,7 +318,7 @@ export default function FeatureRequestScreen() {
 
             {/* Note */}
             <Animated.View
-              entering={FadeInDown.delay(300).springify()}
+              entering={FadeInDown.delay(400).springify()}
               className="mt-6"
             >
               <Text className="text-slate-500 text-sm text-center">
