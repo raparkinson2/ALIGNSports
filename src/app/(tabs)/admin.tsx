@@ -328,7 +328,7 @@ export default function AdminScreen() {
   const [editPlayerNumber, setEditPlayerNumber] = useState('');
   const [editPlayerPhone, setEditPlayerPhone] = useState('');
   const [editPlayerEmail, setEditPlayerEmail] = useState('');
-  const [editPlayerPositions, setEditPlayerPositions] = useState<string[]>([positions[0]]);
+  const [editPlayerPositions, setEditPlayerPositions] = useState<string[]>([]);
   const [editPlayerIsCoach, setEditPlayerIsCoach] = useState(false);
 
   // New player form
@@ -398,9 +398,9 @@ export default function AdminScreen() {
     setEditPlayerNumber(player.number);
     setEditPlayerPhone(formatPhoneNumber(player.phone));
     setEditPlayerEmail(player.email || '');
-    // Set positions from player data
+    // Set positions from player data (keep empty if none - user must select)
     const playerPositions = player.positions || [player.position];
-    setEditPlayerPositions(playerPositions.length > 0 ? playerPositions : [positions[0]]);
+    setEditPlayerPositions(playerPositions.filter(p => p && p !== 'Coach'));
     // Set coach status
     setEditPlayerIsCoach(player.roles?.includes('coach') || player.position === 'Coach' || false);
     // Close manage players modal first, then open player edit modal
@@ -486,20 +486,19 @@ export default function AdminScreen() {
     } else {
       // Remove coach role
       newRoles = currentRoles.filter((r) => r !== 'coach');
-      // Reset to first position
-      const defaultPos = positions[0];
+      // Reset to empty positions - user must select
       updatePlayer(selectedPlayer.id, {
         roles: newRoles,
-        position: defaultPos,
-        positions: [defaultPos]
+        position: '',
+        positions: []
       });
       setSelectedPlayer({
         ...selectedPlayer,
         roles: newRoles,
-        position: defaultPos,
-        positions: [defaultPos]
+        position: '',
+        positions: []
       });
-      setEditPlayerPositions([defaultPos]);
+      setEditPlayerPositions([]);
     }
   };
 
