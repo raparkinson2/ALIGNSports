@@ -9,7 +9,7 @@ import * as Linking from 'expo-linking';
 import { useState } from 'react';
 import { useTeamStore, getPlayerName } from '@/lib/store';
 
-const FEEDBACK_EMAIL = 'sell.hold.given@myclkd.id';
+const FEEDBACK_EMAIL = 'rob@alignapps.com';
 
 export default function FeatureRequestScreen() {
   const router = useRouter();
