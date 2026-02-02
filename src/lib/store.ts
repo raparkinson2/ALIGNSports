@@ -469,6 +469,7 @@ export interface Event {
   notes?: string;
   invitedPlayers: string[];
   confirmedPlayers: string[];
+  declinedPlayers?: string[];
 }
 
 export interface Photo {
