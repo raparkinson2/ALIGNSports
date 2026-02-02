@@ -19,6 +19,7 @@ import {
   Check,
   Trash2,
   Send,
+  UserPlus,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -113,6 +114,7 @@ export default function EventDetailScreen() {
   const event = events.find((e) => e.id === id);
 
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [editDate, setEditDate] = useState(new Date());
@@ -137,6 +139,11 @@ export default function EventDetailScreen() {
 
   // Get invited players
   const invitedPlayers = players.filter((p) => event.invitedPlayers?.includes(p.id));
+
+  // Get uninvited players for the invite modal
+  const uninvitedPlayers = players.filter((p) => !event.invitedPlayers?.includes(p.id));
+  const uninvitedActive = uninvitedPlayers.filter((p) => p.status === 'active');
+  const uninvitedReserve = uninvitedPlayers.filter((p) => p.status === 'reserve');
 
   // Get confirmed and declined players
   const confirmedPlayers = event.confirmedPlayers || [];
@@ -231,6 +238,64 @@ export default function EventDetailScreen() {
         },
       ]
     );
+  };
+
+  const handleInvitePlayer = (playerId: string) => {
+    const currentInvited = event.invitedPlayers ?? [];
+    if (currentInvited.includes(playerId)) return;
+
+    updateEvent(event.id, {
+      invitedPlayers: [...currentInvited, playerId],
+    });
+
+    // Create in-app notification
+    const formattedDateShort = format(eventDate, 'EEE, MMM d');
+    const notification: AppNotification = {
+      id: `event-invite-${event.id}-${playerId}-${Date.now()}`,
+      type: 'game_invite',
+      title: 'Event Invite',
+      message: `You're invited to "${event.title}" on ${formattedDateShort} at ${event.time}`,
+      gameId: event.id,
+      fromPlayerId: currentPlayerId ?? undefined,
+      toPlayerId: playerId,
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+    addNotification(notification);
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleInviteMultiplePlayers = (playerIds: string[]) => {
+    const currentInvited = event.invitedPlayers ?? [];
+    const newInvites = playerIds.filter((id) => !currentInvited.includes(id));
+    if (newInvites.length === 0) return;
+
+    updateEvent(event.id, {
+      invitedPlayers: [...currentInvited, ...newInvites],
+    });
+
+    const formattedDateShort = format(eventDate, 'EEE, MMM d');
+
+    // Create in-app notifications for each player
+    newInvites.forEach((playerId) => {
+      const notification: AppNotification = {
+        id: `event-invite-${event.id}-${playerId}-${Date.now()}`,
+        type: 'game_invite',
+        title: 'Event Invite',
+        message: `You're invited to "${event.title}" on ${formattedDateShort} at ${event.time}`,
+        gameId: event.id,
+        fromPlayerId: currentPlayerId ?? undefined,
+        toPlayerId: playerId,
+        read: false,
+        createdAt: new Date().toISOString(),
+      };
+      addNotification(notification);
+    });
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert('Invites Sent', `${newInvites.length} player${newInvites.length !== 1 ? 's' : ''} invited!`);
+    setIsInviteModalVisible(false);
   };
 
   const sendInviteReminder = () => {
@@ -378,15 +443,26 @@ export default function EventDetailScreen() {
             <Animated.View entering={FadeInDown.delay(400).springify()} className="mt-6">
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-white text-lg font-semibold">RSVPs</Text>
-                {canManageTeam() && (
-                  <Pressable
-                    onPress={sendInviteReminder}
-                    className="flex-row items-center bg-green-500/20 rounded-full px-3 py-1.5"
-                  >
-                    <Send size={14} color="#22c55e" />
-                    <Text className="text-green-400 text-sm font-medium ml-1.5">Send Reminder</Text>
-                  </Pressable>
-                )}
+                <View className="flex-row items-center">
+                  {canManageTeam() && uninvitedPlayers.length > 0 && (
+                    <Pressable
+                      onPress={() => setIsInviteModalVisible(true)}
+                      className="flex-row items-center bg-cyan-500/20 rounded-full px-3 py-1.5 mr-2"
+                    >
+                      <UserPlus size={14} color="#67e8f9" />
+                      <Text className="text-cyan-400 text-sm font-medium ml-1.5">Invite More</Text>
+                    </Pressable>
+                  )}
+                  {canManageTeam() && (
+                    <Pressable
+                      onPress={sendInviteReminder}
+                      className="flex-row items-center bg-green-500/20 rounded-full px-3 py-1.5"
+                    >
+                      <Send size={14} color="#22c55e" />
+                      <Text className="text-green-400 text-sm font-medium ml-1.5">Send Reminder</Text>
+                    </Pressable>
+                  )}
+                </View>
               </View>
 
               {/* RSVP Stats */}
@@ -569,6 +645,113 @@ export default function EventDetailScreen() {
                   style={{ minHeight: 80, textAlignVertical: 'top' }}
                 />
               </View>
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Invite More Players Modal */}
+      <Modal
+        visible={isInviteModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsInviteModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsInviteModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Invite Players</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-6">
+              {uninvitedPlayers.length === 0 ? (
+                <View className="items-center py-8">
+                  <Users size={48} color="#64748b" />
+                  <Text className="text-slate-400 text-center mt-4">
+                    All players have been invited
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {/* Quick Actions */}
+                  <View className="flex-row mb-4">
+                    {uninvitedActive.length > 0 && (
+                      <Pressable
+                        onPress={() => handleInviteMultiplePlayers(uninvitedActive.map((p) => p.id))}
+                        className="flex-1 py-3 rounded-xl mr-2 bg-green-500/20 border border-green-500/50 items-center"
+                      >
+                        <Text className="text-green-400 font-medium">
+                          Invite All Active ({uninvitedActive.length})
+                        </Text>
+                      </Pressable>
+                    )}
+                    {uninvitedReserve.length > 0 && (
+                      <Pressable
+                        onPress={() => handleInviteMultiplePlayers(uninvitedReserve.map((p) => p.id))}
+                        className="flex-1 py-3 rounded-xl bg-amber-500/20 border border-amber-500/50 items-center"
+                      >
+                        <Text className="text-amber-400 font-medium">
+                          Invite All Reserve ({uninvitedReserve.length})
+                        </Text>
+                      </Pressable>
+                    )}
+                  </View>
+
+                  {/* Uninvited Active Players */}
+                  {uninvitedActive.length > 0 && (
+                    <>
+                      <Text className="text-green-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                        Active Players
+                      </Text>
+                      {uninvitedActive.map((player) => (
+                        <Pressable
+                          key={player.id}
+                          onPress={() => handleInvitePlayer(player.id)}
+                          className="flex-row items-center bg-slate-800/60 rounded-xl p-3 mb-2 border border-slate-700/50 active:bg-slate-700/80"
+                        >
+                          <PlayerAvatar player={player} size={44} />
+                          <View className="flex-1 ml-3">
+                            <Text className="text-white font-medium">{getPlayerName(player)}</Text>
+                            <Text className="text-slate-400 text-sm">#{player.number}</Text>
+                          </View>
+                          <View className="bg-cyan-500 rounded-lg px-3 py-1.5">
+                            <Text className="text-white font-medium text-sm">Invite</Text>
+                          </View>
+                        </Pressable>
+                      ))}
+                    </>
+                  )}
+
+                  {/* Uninvited Reserve Players */}
+                  {uninvitedReserve.length > 0 && (
+                    <>
+                      <Text className="text-amber-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-4">
+                        Reserve Players
+                      </Text>
+                      {uninvitedReserve.map((player) => (
+                        <Pressable
+                          key={player.id}
+                          onPress={() => handleInvitePlayer(player.id)}
+                          className="flex-row items-center bg-slate-800/60 rounded-xl p-3 mb-2 border border-slate-700/50 active:bg-slate-700/80"
+                        >
+                          <PlayerAvatar player={player} size={44} />
+                          <View className="flex-1 ml-3">
+                            <Text className="text-white font-medium">{getPlayerName(player)}</Text>
+                            <Text className="text-slate-400 text-sm">#{player.number}</Text>
+                          </View>
+                          <View className="bg-cyan-500 rounded-lg px-3 py-1.5">
+                            <Text className="text-white font-medium text-sm">Invite</Text>
+                          </View>
+                        </Pressable>
+                      ))}
+                    </>
+                  )}
+                </>
+              )}
             </ScrollView>
           </SafeAreaView>
         </View>
