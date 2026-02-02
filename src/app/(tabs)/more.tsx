@@ -1234,14 +1234,6 @@ export default function MoreScreen() {
             index={1}
           />
 
-          <MenuItem
-            icon={<Send size={20} color="#67e8f9" />}
-            title="Send Game Invite"
-            subtitle="Invite someone to your next game"
-            onPress={handleSendGeneralInvite}
-            index={2}
-          />
-
 
           {/* Team Info Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
