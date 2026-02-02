@@ -1037,10 +1037,10 @@ export default function MoreScreen() {
     const phoneNumbers = playersWithPhone.map(p => p.phone!);
     const phoneList = phoneNumbers.join(', ');
 
-    // Show confirmation with phone numbers
+    // Show confirmation with phone numbers and instructions
     Alert.alert(
       'Text Team',
-      `Send a group text to ${playersWithPhone.length} team member${playersWithPhone.length !== 1 ? 's' : ''}?\n\n${phoneList}`,
+      `Send a group text to ${playersWithPhone.length} team member${playersWithPhone.length !== 1 ? 's' : ''}?\n\n${phoneList}\n\nTap "Copy & Open Messages" then paste into the "To:" field.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
