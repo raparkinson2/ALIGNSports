@@ -1117,6 +1117,59 @@ export default function AdminScreen() {
               </View>
             </Pressable>
 
+            {/* Text Team Button */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                // Exclude current user - you're sending TO the team
+                const otherPlayers = players.filter(p => p.id !== currentPlayerId);
+                const playersWithPhone = otherPlayers.filter(p => p.phone && p.phone.trim());
+
+                if (playersWithPhone.length === 0) {
+                  const totalOthers = otherPlayers.length;
+                  Alert.alert(
+                    'No Phone Numbers',
+                    totalOthers === 0
+                      ? 'There are no other team members to text.'
+                      : `None of the ${totalOthers} other team member${totalOthers !== 1 ? 's' : ''} have phone numbers set. Add phone numbers in the Manage Team section.`
+                  );
+                  return;
+                }
+
+                // Get all phone numbers (use semicolon for iOS compatibility with multiple recipients)
+                const phoneNumbers = playersWithPhone.map(p => p.phone).join(';');
+
+                // Create SMS URL with all recipients
+                const smsUrl = Platform.select({
+                  ios: `sms:/open?addresses=${phoneNumbers}`,
+                  android: `sms:${phoneNumbers.replace(/;/g, ',')}`,
+                  default: `sms:${phoneNumbers}`,
+                });
+
+                Linking.openURL(smsUrl).catch(() => {
+                  // Fallback to simpler format
+                  const fallbackUrl = `sms:${playersWithPhone.map(p => p.phone).join(',')}`;
+                  Linking.openURL(fallbackUrl).catch(() => {
+                    Alert.alert('Error', 'Could not open messaging app');
+                  });
+                });
+              }}
+              className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <View className="bg-green-500/20 p-2 rounded-full">
+                    <MessageSquare size={20} color="#22c55e" />
+                  </View>
+                  <View className="ml-3">
+                    <Text className="text-white font-semibold">Text Team</Text>
+                    <Text className="text-slate-400 text-sm">Send a group text to all players</Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color="#64748b" />
+              </View>
+            </Pressable>
+
             {/* Team Chat Toggle */}
             <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
