@@ -2,7 +2,7 @@ import { View, Text, ScrollView, Pressable, TextInput, Modal, Platform, Switch, 
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { format, isToday, isTomorrow, parseISO } from 'date-fns';
+import { format, isToday, isTomorrow, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isSameMonth } from 'date-fns';
 import { useState, useEffect } from 'react';
 import {
   Calendar,
@@ -21,6 +21,9 @@ import {
   Bell,
   BellOff,
   Send,
+  List,
+  CalendarDays,
+  ChevronLeft,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInRight, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -394,6 +397,202 @@ function SwipeableGameCard({
   );
 }
 
+type ViewMode = 'list' | 'calendar';
+
+interface CalendarViewProps {
+  games: Game[];
+  onSelectGame: (game: Game) => void;
+  onViewLines: (game: Game) => void;
+}
+
+function CalendarView({ games, onSelectGame, onViewLines }: CalendarViewProps) {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+  // Get the starting day of the week (0 = Sunday)
+  const startDayOfWeek = getDay(monthStart);
+
+  // Create padding for days before the month starts
+  const paddingDays = Array(startDayOfWeek).fill(null);
+
+  // Get games for a specific date
+  const getGamesForDate = (date: Date) => {
+    return games.filter((game) => {
+      const gameDate = parseISO(game.date);
+      return isSameDay(gameDate, date);
+    });
+  };
+
+  // Get games for selected date
+  const selectedDateGames = selectedDate ? getGamesForDate(selectedDate) : [];
+
+  // Count games in current month
+  const gamesThisMonth = games.filter((game) => {
+    const gameDate = parseISO(game.date);
+    return isSameMonth(gameDate, currentMonth);
+  }).length;
+
+  const goToPreviousMonth = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCurrentMonth(subMonths(currentMonth, 1));
+    setSelectedDate(null);
+  };
+
+  const goToNextMonth = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCurrentMonth(addMonths(currentMonth, 1));
+    setSelectedDate(null);
+  };
+
+  const handleDatePress = (date: Date) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const gamesOnDate = getGamesForDate(date);
+    if (gamesOnDate.length > 0) {
+      if (selectedDate && isSameDay(selectedDate, date)) {
+        // If already selected, deselect
+        setSelectedDate(null);
+      } else {
+        setSelectedDate(date);
+      }
+    }
+  };
+
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  return (
+    <View>
+      {/* Month Navigation */}
+      <View className="flex-row items-center justify-between mb-4 px-2">
+        <Pressable
+          onPress={goToPreviousMonth}
+          className="w-10 h-10 rounded-full bg-slate-800/80 items-center justify-center"
+        >
+          <ChevronLeft size={20} color="#67e8f9" />
+        </Pressable>
+        <View className="items-center">
+          <Text className="text-white text-xl font-bold">
+            {format(currentMonth, 'MMMM yyyy')}
+          </Text>
+          {gamesThisMonth > 0 && (
+            <Text className="text-slate-400 text-sm">
+              {gamesThisMonth} game{gamesThisMonth !== 1 ? 's' : ''}
+            </Text>
+          )}
+        </View>
+        <Pressable
+          onPress={goToNextMonth}
+          className="w-10 h-10 rounded-full bg-slate-800/80 items-center justify-center"
+        >
+          <ChevronRight size={20} color="#67e8f9" />
+        </Pressable>
+      </View>
+
+      {/* Week Days Header */}
+      <View className="flex-row mb-2">
+        {weekDays.map((day) => (
+          <View key={day} className="flex-1 items-center py-2">
+            <Text className="text-slate-500 text-xs font-semibold">{day}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Calendar Grid */}
+      <View className="flex-row flex-wrap">
+        {/* Padding days */}
+        {paddingDays.map((_, index) => (
+          <View key={`padding-${index}`} className="w-[14.28%] aspect-square p-1" />
+        ))}
+
+        {/* Actual days */}
+        {daysInMonth.map((date) => {
+          const dayGames = getGamesForDate(date);
+          const hasGames = dayGames.length > 0;
+          const isSelected = selectedDate && isSameDay(selectedDate, date);
+          const isTodayDate = isToday(date);
+          const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+
+          return (
+            <Pressable
+              key={date.toISOString()}
+              onPress={() => handleDatePress(date)}
+              disabled={!hasGames}
+              className="w-[14.28%] aspect-square p-0.5"
+            >
+              <View
+                className={cn(
+                  'flex-1 rounded-xl items-center justify-center relative',
+                  isSelected && 'bg-cyan-500/30 border border-cyan-500',
+                  !isSelected && isTodayDate && 'border border-cyan-500/50',
+                  !isSelected && !isTodayDate && hasGames && 'bg-slate-800/60',
+                  isPast && !hasGames && 'opacity-40'
+                )}
+              >
+                <Text
+                  className={cn(
+                    'text-base font-medium',
+                    isSelected && 'text-cyan-400',
+                    !isSelected && isTodayDate && 'text-cyan-400',
+                    !isSelected && !isTodayDate && hasGames && 'text-white',
+                    !isSelected && !isTodayDate && !hasGames && 'text-slate-500'
+                  )}
+                >
+                  {format(date, 'd')}
+                </Text>
+                {hasGames && (
+                  <View className="flex-row mt-0.5">
+                    {dayGames.slice(0, 3).map((_, i) => (
+                      <View
+                        key={i}
+                        className={cn(
+                          'w-1.5 h-1.5 rounded-full mx-0.5',
+                          isSelected ? 'bg-cyan-400' : 'bg-emerald-500'
+                        )}
+                      />
+                    ))}
+                  </View>
+                )}
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {/* Selected Date Games */}
+      {selectedDate && selectedDateGames.length > 0 && (
+        <Animated.View entering={FadeInDown.springify()} className="mt-4">
+          <View className="bg-slate-800/50 rounded-2xl p-4">
+            <Text className="text-cyan-400 font-semibold mb-3">
+              {format(selectedDate, 'EEEE, MMMM d')}
+            </Text>
+            {selectedDateGames.map((game, index) => (
+              <GameCard
+                key={game.id}
+                game={game}
+                index={index}
+                onPress={() => onSelectGame(game)}
+                onViewLines={() => onViewLines(game)}
+                skipAnimation
+              />
+            ))}
+          </View>
+        </Animated.View>
+      )}
+
+      {/* No games this month message */}
+      {gamesThisMonth === 0 && (
+        <View className="items-center py-8">
+          <Calendar size={32} color="#475569" />
+          <Text className="text-slate-400 mt-2">No games this month</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function ScheduleScreen() {
   const router = useRouter();
   const teamName = useTeamStore((s) => s.teamName);
@@ -417,6 +616,7 @@ export default function ScheduleScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isRecordModalVisible, setIsRecordModalVisible] = useState(false);
   const [lineupViewerGame, setLineupViewerGame] = useState<Game | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [opponent, setOpponent] = useState('');
   const [location, setLocation] = useState('');
   const [gameDate, setGameDate] = useState(new Date());
@@ -659,56 +859,96 @@ export default function ScheduleScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          <View className="flex-row items-center mb-4">
-            <Calendar size={18} color="#67e8f9" />
-            <Text className="text-cyan-400 text-lg font-semibold ml-2">
-              Upcoming Games
-            </Text>
+          <View className="flex-row items-center justify-between mb-4">
+            <View className="flex-row items-center">
+              <Calendar size={18} color="#67e8f9" />
+              <Text className="text-cyan-400 text-lg font-semibold ml-2">
+                Upcoming Games
+              </Text>
+            </View>
+
+            {/* View Toggle */}
+            <View className="flex-row bg-slate-800/80 rounded-xl p-1">
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setViewMode('list');
+                }}
+                className={cn(
+                  'flex-row items-center px-3 py-1.5 rounded-lg',
+                  viewMode === 'list' && 'bg-cyan-500/30'
+                )}
+              >
+                <List size={16} color={viewMode === 'list' ? '#67e8f9' : '#64748b'} />
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setViewMode('calendar');
+                }}
+                className={cn(
+                  'flex-row items-center px-3 py-1.5 rounded-lg',
+                  viewMode === 'calendar' && 'bg-cyan-500/30'
+                )}
+              >
+                <CalendarDays size={16} color={viewMode === 'calendar' ? '#67e8f9' : '#64748b'} />
+              </Pressable>
+            </View>
           </View>
 
-          {upcomingGames.length === 0 ? (
-            <View className="bg-slate-800/50 rounded-2xl p-8 items-center">
-              <Calendar size={48} color="#475569" />
-              <Text className="text-slate-400 text-center mt-4">
-                No upcoming games scheduled
-              </Text>
-              {canManageTeam() && (
-                <Pressable
-                  onPress={() => setIsModalVisible(true)}
-                  className="mt-4 bg-cyan-500 rounded-xl px-6 py-3"
-                >
-                  <Text className="text-white font-semibold">Add First Game</Text>
-                </Pressable>
-              )}
-            </View>
-          ) : (
-            upcomingGames.map((game, index) => (
-              <SwipeableGameCard
-                key={game.id}
-                game={game}
-                index={index}
-                onPress={() => router.push(`/game/${game.id}`)}
-                onViewLines={() => setLineupViewerGame(game)}
-                canDelete={canManageTeam()}
-                onDelete={() => {
-                  Alert.alert(
-                    'Delete Game',
-                    `Are you sure you want to delete the game vs ${game.opponent}?`,
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Delete',
-                        style: 'destructive',
-                        onPress: () => {
-                          removeGame(game.id);
-                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                        },
-                      },
-                    ]
-                  );
-                }}
+          {viewMode === 'list' ? (
+            <>
+              {upcomingGames.length === 0 ? (
+                <View className="bg-slate-800/50 rounded-2xl p-8 items-center">
+                  <Calendar size={48} color="#475569" />
+                  <Text className="text-slate-400 text-center mt-4">
+                    No upcoming games scheduled
+                  </Text>
+                  {canManageTeam() && (
+                    <Pressable
+                      onPress={() => setIsModalVisible(true)}
+                      className="mt-4 bg-cyan-500 rounded-xl px-6 py-3"
+                    >
+                      <Text className="text-white font-semibold">Add First Game</Text>
+                    </Pressable>
+                  )}
+                </View>
+              ) : (
+                upcomingGames.map((game, index) => (
+                  <SwipeableGameCard
+                    key={game.id}
+                    game={game}
+                    index={index}
+                    onPress={() => router.push(`/game/${game.id}`)}
+                    onViewLines={() => setLineupViewerGame(game)}
+                    canDelete={canManageTeam()}
+                    onDelete={() => {
+                      Alert.alert(
+                        'Delete Game',
+                        `Are you sure you want to delete the game vs ${game.opponent}?`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Delete',
+                            style: 'destructive',
+                            onPress: () => {
+                              removeGame(game.id);
+                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                            },
+                          },
+                        ]
+                      );
+                    }}
               />
             ))
+          )}
+            </>
+          ) : (
+            <CalendarView
+              games={upcomingGames}
+              onSelectGame={(game) => router.push(`/game/${game.id}`)}
+              onViewLines={(game) => setLineupViewerGame(game)}
+            />
           )}
         </ScrollView>
       </SafeAreaView>
