@@ -38,6 +38,9 @@ function formatStatusDuration(duration: StatusDuration | undefined): string {
   if (duration.unit === 'weeks') {
     return `${value} ${value === 1 ? 'week' : 'weeks'}`;
   }
+  if (duration.unit === 'games') {
+    return `${value} ${value === 1 ? 'game' : 'games'}`;
+  }
   return '';
 }
 
@@ -1083,7 +1086,7 @@ export default function RosterScreen() {
                               setSuspensionDuration(prev => ({
                                 ...prev,
                                 value: num,
-                                unit: prev?.unit || 'days'
+                                unit: prev?.unit || 'games'
                               }));
                             }}
                             placeholder="0"
@@ -1097,32 +1100,17 @@ export default function RosterScreen() {
                           <Pressable
                             onPress={() => {
                               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                              setSuspensionDuration(prev => ({ ...prev, value: prev?.value, unit: 'days' }));
+                              setSuspensionDuration(prev => ({ ...prev, value: prev?.value, unit: 'games' }));
                             }}
                             className={cn(
                               'flex-1 py-2.5 px-3 rounded-xl mr-1',
-                              suspensionDuration?.unit === 'days' ? 'bg-red-600' : 'bg-slate-800'
+                              suspensionDuration?.unit === 'games' ? 'bg-red-600' : 'bg-slate-800'
                             )}
                           >
                             <Text className={cn(
                               'text-center text-sm font-medium',
-                              suspensionDuration?.unit === 'days' ? 'text-white' : 'text-slate-400'
-                            )}>Days</Text>
-                          </Pressable>
-                          <Pressable
-                            onPress={() => {
-                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                              setSuspensionDuration(prev => ({ ...prev, value: prev?.value, unit: 'weeks' }));
-                            }}
-                            className={cn(
-                              'flex-1 py-2.5 px-3 rounded-xl mr-1',
-                              suspensionDuration?.unit === 'weeks' ? 'bg-red-600' : 'bg-slate-800'
-                            )}
-                          >
-                            <Text className={cn(
-                              'text-center text-sm font-medium',
-                              suspensionDuration?.unit === 'weeks' ? 'text-white' : 'text-slate-400'
-                            )}>Weeks</Text>
+                              suspensionDuration?.unit === 'games' ? 'text-white' : 'text-slate-400'
+                            )}>Games</Text>
                           </Pressable>
                           <Pressable
                             onPress={() => {
@@ -1135,7 +1123,7 @@ export default function RosterScreen() {
                             )}
                           >
                             <Text className={cn(
-                              'text-center text-xs font-medium',
+                              'text-center text-sm font-medium',
                               suspensionDuration?.unit === 'remainder_of_season' ? 'text-white' : 'text-slate-400'
                             )}>Season</Text>
                           </Pressable>

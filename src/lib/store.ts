@@ -112,7 +112,7 @@ export type PlayerRole = 'admin' | 'captain' | 'coach';
 export type PlayerStatus = 'active' | 'reserve';
 
 // Duration type for injuries/suspensions
-export type DurationUnit = 'days' | 'weeks' | 'remainder_of_season';
+export type DurationUnit = 'days' | 'weeks' | 'games' | 'remainder_of_season';
 
 export interface StatusDuration {
   value?: number; // Not needed for remainder_of_season
