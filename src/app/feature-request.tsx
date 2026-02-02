@@ -5,7 +5,6 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Lightbulb, Send, CheckCircle } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import * as Linking from 'expo-linking';
 import { useState } from 'react';
 import { useTeamStore, getPlayerName } from '@/lib/store';
 
@@ -38,32 +37,51 @@ export default function FeatureRequestScreen() {
     setIsSubmitting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Build the email
-    const subject = encodeURIComponent(`Feature Request: ${title.trim()}`);
-    const body = encodeURIComponent(
-      `Feature Request\n` +
-      `================\n\n` +
-      `Title: ${title.trim()}\n\n` +
-      `Description:\n${description.trim()}\n\n` +
-      `---\n` +
-      `Submitted by: ${currentPlayer ? getPlayerName(currentPlayer) : 'Unknown'}\n` +
-      `Team: ${teamName}\n` +
-      `Date: ${new Date().toLocaleDateString()}`
-    );
-
-    const mailtoUrl = `mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`;
-
     try {
-      const canOpen = await Linking.canOpenURL(mailtoUrl);
-      if (canOpen) {
-        await Linking.openURL(mailtoUrl);
+      // Build the email body
+      const emailBody =
+        `Feature Request\n` +
+        `================\n\n` +
+        `Title: ${title.trim()}\n\n` +
+        `Description:\n${description.trim()}\n\n` +
+        `---\n` +
+        `Submitted by: ${currentPlayer ? getPlayerName(currentPlayer) : 'Unknown'}\n` +
+        `Email: ${currentPlayer?.email || 'Not provided'}\n` +
+        `Team: ${teamName}\n` +
+        `Date: ${new Date().toLocaleDateString()}`;
+
+      // Call Supabase Edge Function to send email
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PUBLIC_URL;
+      const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLIC_ANON;
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/send-team-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+          },
+          body: JSON.stringify({
+            to: [FEEDBACK_EMAIL],
+            subject: `Feature Request: ${title.trim()}`,
+            body: emailBody,
+            teamName: teamName,
+          }),
+        }
+      );
+
+      if (response.ok) {
         setIsSubmitted(true);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
-        Alert.alert('Error', 'Could not open email app. Please make sure you have an email app installed.');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to send feature request');
       }
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', 'Failed to send feature request. Please try again later.');
+      console.error('Feature request send error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -113,10 +131,10 @@ export default function FeatureRequestScreen() {
                 <CheckCircle size={40} color="#22c55e" />
               </View>
               <Text className="text-white text-2xl font-bold text-center mb-3">
-                Email Ready!
+                Request Sent!
               </Text>
               <Text className="text-slate-400 text-center text-base mb-8">
-                Your email app should have opened with your feature request. Just hit send to submit it!
+                Thank you for your suggestion! We'll review your feature request and consider it for future updates.
               </Text>
 
               <Pressable
@@ -247,7 +265,7 @@ export default function FeatureRequestScreen() {
               >
                 <Send size={20} color="white" />
                 <Text className="text-white font-semibold text-base ml-2">
-                  {isSubmitting ? 'Opening Email...' : 'Submit Request'}
+                  {isSubmitting ? 'Sending...' : 'Submit Request'}
                 </Text>
               </Pressable>
             </Animated.View>
@@ -258,7 +276,7 @@ export default function FeatureRequestScreen() {
               className="mt-6"
             >
               <Text className="text-slate-500 text-sm text-center">
-                Your request will be sent via email. Make sure to hit send in your email app to complete the submission.
+                Your feature request will be sent directly to our development team.
               </Text>
             </Animated.View>
           </ScrollView>

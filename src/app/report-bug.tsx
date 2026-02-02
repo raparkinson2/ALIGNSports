@@ -5,7 +5,6 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Bug, Send, CheckCircle } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import * as Linking from 'expo-linking';
 import { useState } from 'react';
 import { useTeamStore, getPlayerName } from '@/lib/store';
 
@@ -39,34 +38,53 @@ export default function ReportBugScreen() {
     setIsSubmitting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Build the email
-    const subject = encodeURIComponent(`Bug Report: ${title.trim()}`);
-    const body = encodeURIComponent(
-      `Bug Report\n` +
-      `================\n\n` +
-      `Title: ${title.trim()}\n\n` +
-      `Description:\n${description.trim()}\n\n` +
-      `Steps to Reproduce:\n${stepsToReproduce.trim() || 'Not provided'}\n\n` +
-      `---\n` +
-      `Reported by: ${currentPlayer ? getPlayerName(currentPlayer) : 'Unknown'}\n` +
-      `Team: ${teamName}\n` +
-      `Platform: ${Platform.OS}\n` +
-      `Date: ${new Date().toLocaleDateString()}`
-    );
-
-    const mailtoUrl = `mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`;
-
     try {
-      const canOpen = await Linking.canOpenURL(mailtoUrl);
-      if (canOpen) {
-        await Linking.openURL(mailtoUrl);
+      // Build the email body
+      const emailBody =
+        `Bug Report\n` +
+        `================\n\n` +
+        `Title: ${title.trim()}\n\n` +
+        `Description:\n${description.trim()}\n\n` +
+        `Steps to Reproduce:\n${stepsToReproduce.trim() || 'Not provided'}\n\n` +
+        `---\n` +
+        `Reported by: ${currentPlayer ? getPlayerName(currentPlayer) : 'Unknown'}\n` +
+        `Email: ${currentPlayer?.email || 'Not provided'}\n` +
+        `Team: ${teamName}\n` +
+        `Platform: ${Platform.OS}\n` +
+        `Date: ${new Date().toLocaleDateString()}`;
+
+      // Call Supabase Edge Function to send email
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PUBLIC_URL;
+      const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLIC_ANON;
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/send-team-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+          },
+          body: JSON.stringify({
+            to: [FEEDBACK_EMAIL],
+            subject: `Bug Report: ${title.trim()}`,
+            body: emailBody,
+            teamName: teamName,
+          }),
+        }
+      );
+
+      if (response.ok) {
         setIsSubmitted(true);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
-        Alert.alert('Error', 'Could not open email app. Please make sure you have an email app installed.');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to send bug report');
       }
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', 'Failed to send bug report. Please try again later.');
+      console.error('Bug report send error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -117,10 +135,10 @@ export default function ReportBugScreen() {
                 <CheckCircle size={40} color="#22c55e" />
               </View>
               <Text className="text-white text-2xl font-bold text-center mb-3">
-                Email Ready!
+                Report Sent!
               </Text>
               <Text className="text-slate-400 text-center text-base mb-8">
-                Your email app should have opened with your bug report. Just hit send to submit it!
+                Thank you for your feedback! We'll review your bug report and work on fixing it.
               </Text>
 
               <Pressable
@@ -273,7 +291,7 @@ export default function ReportBugScreen() {
               >
                 <Send size={20} color="white" />
                 <Text className="text-white font-semibold text-base ml-2">
-                  {isSubmitting ? 'Opening Email...' : 'Submit Bug Report'}
+                  {isSubmitting ? 'Sending...' : 'Submit Bug Report'}
                 </Text>
               </Pressable>
             </Animated.View>
@@ -284,7 +302,7 @@ export default function ReportBugScreen() {
               className="mt-6"
             >
               <Text className="text-slate-500 text-sm text-center">
-                Your report will be sent via email. Make sure to hit send in your email app to complete the submission.
+                Your bug report will be sent directly to our development team.
               </Text>
             </Animated.View>
           </ScrollView>
