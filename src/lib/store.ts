@@ -111,6 +111,14 @@ export type PlayerRole = 'admin' | 'captain' | 'coach';
 // Player Status
 export type PlayerStatus = 'active' | 'reserve';
 
+// Duration type for injuries/suspensions
+export type DurationUnit = 'days' | 'weeks' | 'remainder_of_season';
+
+export interface StatusDuration {
+  value?: number; // Not needed for remainder_of_season
+  unit: DurationUnit;
+}
+
 // Notification Preferences
 export interface NotificationPreferences {
   gameInvites: boolean;
@@ -243,6 +251,8 @@ export interface Player {
   status: PlayerStatus; // active or reserve (this is separate from roles)
   isInjured?: boolean; // Player is injured
   isSuspended?: boolean; // Player is suspended
+  injuryDuration?: StatusDuration; // Duration of injury
+  suspensionDuration?: StatusDuration; // Duration of suspension
   notificationPreferences?: NotificationPreferences;
   stats?: PlayerStats; // Regular player stats (batter for baseball, skater for hockey/soccer)
   pitcherStats?: BaseballPitcherStats; // Separate stats for pitching (baseball only)

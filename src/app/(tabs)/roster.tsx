@@ -20,10 +20,26 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
-import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, PlayerStats, getPlayerPositions, getPrimaryPosition, getPlayerName } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, PlayerStats, getPlayerPositions, getPrimaryPosition, getPlayerName, StatusDuration, DurationUnit } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+
+// Format status duration for display
+function formatStatusDuration(duration: StatusDuration | undefined): string {
+  if (!duration) return '';
+  if (duration.unit === 'remainder_of_season') {
+    return 'Rest of season';
+  }
+  const value = duration.value || 0;
+  if (duration.unit === 'days') {
+    return `${value} ${value === 1 ? 'day' : 'days'}`;
+  }
+  if (duration.unit === 'weeks') {
+    return `${value} ${value === 1 ? 'week' : 'weeks'}`;
+  }
+  return '';
+}
 
 // Check if player is a goalie
 function isGoalie(position: string): boolean {
@@ -255,13 +271,27 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
             </View>
             <View className="flex-row items-center">
               <Text className="text-slate-400 text-sm">{positionDisplay}</Text>
-              {/* Injured indicator */}
+              {/* Injured indicator with duration */}
               {player.isInjured && (
-                <Text className="text-red-500 font-black ml-2 text-base">+</Text>
+                <View className="flex-row items-center ml-2">
+                  <Text className="text-red-500 font-black text-base">+</Text>
+                  {player.injuryDuration && (
+                    <Text className="text-red-400 text-xs ml-1">
+                      ({formatStatusDuration(player.injuryDuration)})
+                    </Text>
+                  )}
+                </View>
               )}
-              {/* Suspended indicator */}
+              {/* Suspended indicator with duration */}
               {player.isSuspended && (
-                <Text className="text-red-500 font-bold ml-2 text-sm">SUS</Text>
+                <View className="flex-row items-center ml-2">
+                  <Text className="text-red-500 font-bold text-sm">SUS</Text>
+                  {player.suspensionDuration && (
+                    <Text className="text-red-400 text-xs ml-1">
+                      ({formatStatusDuration(player.suspensionDuration)})
+                    </Text>
+                  )}
+                </View>
               )}
             </View>
             {/* Show hint for self-stats editing */}
@@ -370,6 +400,8 @@ export default function RosterScreen() {
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus>('active');
   const [isInjured, setIsInjured] = useState(false);
   const [isSuspended, setIsSuspended] = useState(false);
+  const [injuryDuration, setInjuryDuration] = useState<StatusDuration | undefined>(undefined);
+  const [suspensionDuration, setSuspensionDuration] = useState<StatusDuration | undefined>(undefined);
   const [isCoach, setIsCoach] = useState(false);
 
   // Invite modal state
@@ -387,6 +419,8 @@ export default function RosterScreen() {
     setPlayerStatus('active');
     setIsInjured(false);
     setIsSuspended(false);
+    setInjuryDuration(undefined);
+    setSuspensionDuration(undefined);
     setIsCoach(false);
     setEditingPlayer(null);
   };
@@ -418,6 +452,8 @@ export default function RosterScreen() {
     setPlayerStatus(player.status || 'active');
     setIsInjured(player.isInjured || false);
     setIsSuspended(player.isSuspended || false);
+    setInjuryDuration(player.injuryDuration);
+    setSuspensionDuration(player.suspensionDuration);
     setIsCoach(player.roles?.includes('coach') || player.position === 'Coach' || false);
     setIsModalVisible(true);
   };
@@ -485,6 +521,8 @@ export default function RosterScreen() {
         updates.status = playerStatus;
         updates.isInjured = isInjured;
         updates.isSuspended = isSuspended;
+        updates.injuryDuration = isInjured ? injuryDuration : undefined;
+        updates.suspensionDuration = isSuspended ? suspensionDuration : undefined;
       }
 
       console.log('Saving player updates:', { isInjured, isSuspended, isCoach, updates });
@@ -903,6 +941,9 @@ export default function RosterScreen() {
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setIsInjured(!isInjured);
+                        if (isInjured) {
+                          setInjuryDuration(undefined);
+                        }
                       }}
                       className={cn(
                         'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
@@ -926,6 +967,9 @@ export default function RosterScreen() {
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setIsSuspended(!isSuspended);
+                        if (isSuspended) {
+                          setSuspensionDuration(undefined);
+                        }
                       }}
                       className={cn(
                         'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
@@ -951,6 +995,154 @@ export default function RosterScreen() {
                       </Text>
                     </Pressable>
                   </View>
+
+                  {/* Injury Duration - shown when injured is selected */}
+                  {isInjured && (
+                    <View className="mt-3 bg-red-500/10 rounded-xl p-3 border border-red-500/20">
+                      <Text className="text-red-400 text-sm font-medium mb-2">Injury Duration</Text>
+                      <View className="flex-row items-center">
+                        {injuryDuration?.unit !== 'remainder_of_season' && (
+                          <TextInput
+                            value={injuryDuration?.value?.toString() || ''}
+                            onChangeText={(text) => {
+                              const num = parseInt(text) || undefined;
+                              setInjuryDuration(prev => ({
+                                ...prev,
+                                value: num,
+                                unit: prev?.unit || 'days'
+                              }));
+                            }}
+                            placeholder="0"
+                            placeholderTextColor="#64748b"
+                            keyboardType="number-pad"
+                            maxLength={3}
+                            className="bg-slate-800 rounded-xl px-4 py-2.5 text-white text-base w-16 mr-2"
+                          />
+                        )}
+                        <View className="flex-row flex-1">
+                          <Pressable
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              setInjuryDuration(prev => ({ ...prev, value: prev?.value, unit: 'days' }));
+                            }}
+                            className={cn(
+                              'flex-1 py-2.5 px-3 rounded-xl mr-1',
+                              injuryDuration?.unit === 'days' ? 'bg-red-500' : 'bg-slate-800'
+                            )}
+                          >
+                            <Text className={cn(
+                              'text-center text-sm font-medium',
+                              injuryDuration?.unit === 'days' ? 'text-white' : 'text-slate-400'
+                            )}>Days</Text>
+                          </Pressable>
+                          <Pressable
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              setInjuryDuration(prev => ({ ...prev, value: prev?.value, unit: 'weeks' }));
+                            }}
+                            className={cn(
+                              'flex-1 py-2.5 px-3 rounded-xl mr-1',
+                              injuryDuration?.unit === 'weeks' ? 'bg-red-500' : 'bg-slate-800'
+                            )}
+                          >
+                            <Text className={cn(
+                              'text-center text-sm font-medium',
+                              injuryDuration?.unit === 'weeks' ? 'text-white' : 'text-slate-400'
+                            )}>Weeks</Text>
+                          </Pressable>
+                          <Pressable
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              setInjuryDuration({ unit: 'remainder_of_season', value: undefined });
+                            }}
+                            className={cn(
+                              'flex-1 py-2.5 px-2 rounded-xl',
+                              injuryDuration?.unit === 'remainder_of_season' ? 'bg-red-500' : 'bg-slate-800'
+                            )}
+                          >
+                            <Text className={cn(
+                              'text-center text-xs font-medium',
+                              injuryDuration?.unit === 'remainder_of_season' ? 'text-white' : 'text-slate-400'
+                            )}>Season</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Suspension Duration - shown when suspended is selected */}
+                  {isSuspended && (
+                    <View className="mt-3 bg-red-600/10 rounded-xl p-3 border border-red-600/20">
+                      <Text className="text-red-400 text-sm font-medium mb-2">Suspension Duration</Text>
+                      <View className="flex-row items-center">
+                        {suspensionDuration?.unit !== 'remainder_of_season' && (
+                          <TextInput
+                            value={suspensionDuration?.value?.toString() || ''}
+                            onChangeText={(text) => {
+                              const num = parseInt(text) || undefined;
+                              setSuspensionDuration(prev => ({
+                                ...prev,
+                                value: num,
+                                unit: prev?.unit || 'days'
+                              }));
+                            }}
+                            placeholder="0"
+                            placeholderTextColor="#64748b"
+                            keyboardType="number-pad"
+                            maxLength={3}
+                            className="bg-slate-800 rounded-xl px-4 py-2.5 text-white text-base w-16 mr-2"
+                          />
+                        )}
+                        <View className="flex-row flex-1">
+                          <Pressable
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              setSuspensionDuration(prev => ({ ...prev, value: prev?.value, unit: 'days' }));
+                            }}
+                            className={cn(
+                              'flex-1 py-2.5 px-3 rounded-xl mr-1',
+                              suspensionDuration?.unit === 'days' ? 'bg-red-600' : 'bg-slate-800'
+                            )}
+                          >
+                            <Text className={cn(
+                              'text-center text-sm font-medium',
+                              suspensionDuration?.unit === 'days' ? 'text-white' : 'text-slate-400'
+                            )}>Days</Text>
+                          </Pressable>
+                          <Pressable
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              setSuspensionDuration(prev => ({ ...prev, value: prev?.value, unit: 'weeks' }));
+                            }}
+                            className={cn(
+                              'flex-1 py-2.5 px-3 rounded-xl mr-1',
+                              suspensionDuration?.unit === 'weeks' ? 'bg-red-600' : 'bg-slate-800'
+                            )}
+                          >
+                            <Text className={cn(
+                              'text-center text-sm font-medium',
+                              suspensionDuration?.unit === 'weeks' ? 'text-white' : 'text-slate-400'
+                            )}>Weeks</Text>
+                          </Pressable>
+                          <Pressable
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              setSuspensionDuration({ unit: 'remainder_of_season', value: undefined });
+                            }}
+                            className={cn(
+                              'flex-1 py-2.5 px-2 rounded-xl',
+                              suspensionDuration?.unit === 'remainder_of_season' ? 'bg-red-600' : 'bg-slate-800'
+                            )}
+                          >
+                            <Text className={cn(
+                              'text-center text-xs font-medium',
+                              suspensionDuration?.unit === 'remainder_of_season' ? 'text-white' : 'text-slate-400'
+                            )}>Season</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    </View>
+                  )}
                 </View>
               )}
 
