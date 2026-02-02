@@ -524,36 +524,31 @@ function CalendarView({ games, onSelectGame, onViewLines }: CalendarViewProps) {
             >
               <View
                 className={cn(
-                  'flex-1 rounded-xl items-center justify-center relative',
-                  isSelected && 'bg-cyan-500/30 border border-cyan-500',
-                  !isSelected && isTodayDate && 'border border-cyan-500/50',
-                  !isSelected && !isTodayDate && hasGames && 'bg-slate-800/60',
+                  'flex-1 rounded-xl items-center justify-center',
+                  isSelected && 'bg-cyan-500/40 border-2 border-cyan-400',
+                  !isSelected && hasGames && 'bg-emerald-500/30 border border-emerald-500/50',
+                  !isSelected && !hasGames && isTodayDate && 'border border-cyan-500/50',
                   isPast && !hasGames && 'opacity-40'
                 )}
               >
                 <Text
                   className={cn(
-                    'text-base font-medium',
-                    isSelected && 'text-cyan-400',
-                    !isSelected && isTodayDate && 'text-cyan-400',
-                    !isSelected && !isTodayDate && hasGames && 'text-white',
-                    !isSelected && !isTodayDate && !hasGames && 'text-slate-500'
+                    'text-base font-semibold',
+                    isSelected && 'text-cyan-300',
+                    !isSelected && hasGames && 'text-emerald-300',
+                    !isSelected && !hasGames && isTodayDate && 'text-cyan-400',
+                    !isSelected && !hasGames && !isTodayDate && 'text-slate-500'
                   )}
                 >
                   {format(date, 'd')}
                 </Text>
-                {hasGames && (
-                  <View className="flex-row mt-0.5">
-                    {dayGames.slice(0, 3).map((_, i) => (
-                      <View
-                        key={i}
-                        className={cn(
-                          'w-1.5 h-1.5 rounded-full mx-0.5',
-                          isSelected ? 'bg-cyan-400' : 'bg-emerald-500'
-                        )}
-                      />
-                    ))}
-                  </View>
+                {hasGames && dayGames.length > 1 && (
+                  <Text className={cn(
+                    'text-[10px] font-medium',
+                    isSelected ? 'text-cyan-400' : 'text-emerald-400'
+                  )}>
+                    {dayGames.length} games
+                  </Text>
                 )}
               </View>
             </Pressable>
