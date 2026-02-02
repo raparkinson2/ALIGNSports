@@ -31,7 +31,7 @@ import { Trash2 } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { useTeamStore, Game, TeamRecord, Sport, getPlayerName, InviteReleaseOption, UpcomingGamesViewMode } from '@/lib/store';
+import { useTeamStore, Game, Event, TeamRecord, Sport, getPlayerName, InviteReleaseOption, UpcomingGamesViewMode } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
@@ -593,6 +593,7 @@ export default function ScheduleScreen() {
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const addGame = useTeamStore((s) => s.addGame);
+  const addEvent = useTeamStore((s) => s.addEvent);
   const removeGame = useTeamStore((s) => s.removeGame);
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
@@ -618,6 +619,11 @@ export default function ScheduleScreen() {
   useEffect(() => {
     setViewMode(persistedViewMode);
   }, [persistedViewMode]);
+
+  // Toggle between Game and Event creation
+  const [recordType, setRecordType] = useState<'game' | 'event'>('game');
+  const [eventName, setEventName] = useState('');
+
   const [opponent, setOpponent] = useState('');
   const [location, setLocation] = useState('');
   const [gameDate, setGameDate] = useState(new Date());
@@ -669,6 +675,8 @@ export default function ScheduleScreen() {
   });
 
   const resetForm = () => {
+    setRecordType('game');
+    setEventName('');
     setOpponent('');
     setLocation('');
     setGameDate(new Date());
@@ -737,6 +745,42 @@ export default function ScheduleScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsModalVisible(false);
     resetForm();
+  };
+
+  const handleCreateEvent = () => {
+    if (!eventName.trim() || !location.trim()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    // Combine time value and period
+    const fullEventTime = `${gameTimeValue.trim() || '7:00'} ${gameTimePeriod}`;
+
+    const newEvent: Event = {
+      id: Date.now().toString(),
+      title: eventName.trim(),
+      type: 'other',
+      date: gameDate.toISOString(),
+      time: fullEventTime,
+      location: location.trim(),
+      address: '',
+      notes: notes.trim() || undefined,
+      invitedPlayers: activePlayers.map((p) => p.id),
+      confirmedPlayers: [],
+    };
+
+    addEvent(newEvent);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsModalVisible(false);
+    resetForm();
+  };
+
+  const handleCreate = () => {
+    if (recordType === 'game') {
+      handleCreateGame();
+    } else {
+      handleCreateEvent();
+    }
   };
 
   // Player selection helpers
@@ -956,7 +1000,7 @@ export default function ScheduleScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      {/* Create Game Modal */}
+      {/* Create Game/Event Modal */}
       <Modal
         visible={isModalVisible}
         animationType="slide"
@@ -969,25 +1013,84 @@ export default function ScheduleScreen() {
               <Pressable onPress={() => setIsModalVisible(false)}>
                 <X size={24} color="#64748b" />
               </Pressable>
-              <Text className="text-white text-lg font-semibold">New Game</Text>
-              <Pressable onPress={handleCreateGame}>
+              <Text className="text-white text-lg font-semibold">
+                {recordType === 'game' ? 'New Game' : 'New Event'}
+              </Text>
+              <Pressable onPress={handleCreate}>
                 <Text className="text-cyan-400 font-semibold">Create</Text>
               </Pressable>
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6">
-              {/* Opponent */}
+              {/* Game/Event Toggle */}
               <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Opponent <Text className="text-red-400">*</Text></Text>
-                <TextInput
-                  value={opponent}
-                  onChangeText={setOpponent}
-                  placeholder="e.g., Ice Wolves"
-                  placeholderTextColor="#64748b"
-                  autoCapitalize="words"
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                />
+                <View className="flex-row bg-slate-800 rounded-xl p-1">
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setRecordType('game');
+                    }}
+                    className={cn(
+                      'flex-1 py-3 rounded-lg items-center',
+                      recordType === 'game' && 'bg-cyan-500/30'
+                    )}
+                  >
+                    <Text className={cn(
+                      'font-semibold',
+                      recordType === 'game' ? 'text-cyan-400' : 'text-slate-400'
+                    )}>
+                      Game
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setRecordType('event');
+                    }}
+                    className={cn(
+                      'flex-1 py-3 rounded-lg items-center',
+                      recordType === 'event' && 'bg-cyan-500/30'
+                    )}
+                  >
+                    <Text className={cn(
+                      'font-semibold',
+                      recordType === 'event' ? 'text-cyan-400' : 'text-slate-400'
+                    )}>
+                      Event
+                    </Text>
+                  </Pressable>
+                </View>
               </View>
+
+              {/* Opponent (Game only) */}
+              {recordType === 'game' && (
+                <View className="mb-5">
+                  <Text className="text-slate-400 text-sm mb-2">Opponent <Text className="text-red-400">*</Text></Text>
+                  <TextInput
+                    value={opponent}
+                    onChangeText={setOpponent}
+                    placeholder="e.g., Ice Wolves"
+                    placeholderTextColor="#64748b"
+                    autoCapitalize="words"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  />
+                </View>
+              )}
+
+              {/* Event Name (Event only) */}
+              {recordType === 'event' && (
+                <View className="mb-5">
+                  <Text className="text-slate-400 text-sm mb-2">Event Name <Text className="text-red-400">*</Text></Text>
+                  <TextInput
+                    value={eventName}
+                    onChangeText={setEventName}
+                    placeholder="e.g., Team Practice, Team Dinner"
+                    placeholderTextColor="#64748b"
+                    autoCapitalize="words"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  />
+                </View>
+              )}
 
               {/* Date */}
               <View className="mb-5">
@@ -1083,46 +1186,49 @@ export default function ScheduleScreen() {
                 />
               </View>
 
-              {/* Jersey Color */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Jersey Color</Text>
-                <View className="flex-row flex-wrap">
-                  {teamSettings.jerseyColors.map((color) => (
-                    <Pressable
-                      key={color.name}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setSelectedJersey(color.name);
-                      }}
-                      className={cn(
-                        'flex-row items-center px-4 py-3 rounded-xl mr-2 mb-2 border',
-                        selectedJersey === color.name
-                          ? 'bg-cyan-500/20 border-cyan-500/50'
-                          : 'bg-slate-800 border-slate-700'
-                      )}
-                    >
-                      <View
-                        className="w-5 h-5 rounded-full mr-2 border border-white/30"
-                        style={{ backgroundColor: color.color }}
-                      />
-                      <Text
+              {/* Jersey Color (Game only) */}
+              {recordType === 'game' && (
+                <View className="mb-5">
+                  <Text className="text-slate-400 text-sm mb-2">Jersey Color</Text>
+                  <View className="flex-row flex-wrap">
+                    {teamSettings.jerseyColors.map((color) => (
+                      <Pressable
+                        key={color.name}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setSelectedJersey(color.name);
+                        }}
                         className={cn(
-                          'font-medium',
-                          selectedJersey === color.name ? 'text-cyan-400' : 'text-slate-400'
+                          'flex-row items-center px-4 py-3 rounded-xl mr-2 mb-2 border',
+                          selectedJersey === color.name
+                            ? 'bg-cyan-500/20 border-cyan-500/50'
+                            : 'bg-slate-800 border-slate-700'
                         )}
                       >
-                        {color.name}
-                      </Text>
-                      {selectedJersey === color.name && (
-                        <Check size={16} color="#67e8f9" className="ml-2" />
-                      )}
-                    </Pressable>
-                  ))}
+                        <View
+                          className="w-5 h-5 rounded-full mr-2 border border-white/30"
+                          style={{ backgroundColor: color.color }}
+                        />
+                        <Text
+                          className={cn(
+                            'font-medium',
+                            selectedJersey === color.name ? 'text-cyan-400' : 'text-slate-400'
+                          )}
+                        >
+                          {color.name}
+                        </Text>
+                        {selectedJersey === color.name && (
+                          <Check size={16} color="#67e8f9" className="ml-2" />
+                        )}
+                      </Pressable>
+                    ))}
+                  </View>
                 </View>
-              </View>
+              )}
 
-              {/* Player Invitations */}
-              <View className="mb-5">
+              {/* Player Invitations (Game only) */}
+              {recordType === 'game' && (
+                <View className="mb-5">
                 <Pressable
                   onPress={() => {
                     if (!showPlayerSelection && selectedPlayerIds.length === 0) {
@@ -1274,8 +1380,10 @@ export default function ScheduleScreen() {
                   </View>
                 )}
               </View>
+              )}
 
-              {/* Invite Release Options */}
+              {/* Invite Release Options (Game only) */}
+              {recordType === 'game' && (
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">When to Send Invites</Text>
                 <View className="bg-slate-800/50 rounded-xl p-3">
@@ -1397,8 +1505,10 @@ export default function ScheduleScreen() {
                   </Pressable>
                 </View>
               </View>
+              )}
 
-              {/* Refreshment Duty */}
+              {/* Refreshment Duty (Game only) */}
+              {recordType === 'game' && (
               <View className="mb-5">
                 <View className="flex-row items-center justify-between bg-slate-800 rounded-xl p-4">
                   <View className="flex-row items-center">
@@ -1461,6 +1571,7 @@ export default function ScheduleScreen() {
                   </View>
                 )}
               </View>
+              )}
 
               {/* Notes */}
               <View className="mb-5">
