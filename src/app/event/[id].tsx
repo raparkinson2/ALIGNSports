@@ -50,7 +50,7 @@ function PlayerRow({ player, status, onToggle, index, canToggle, isSelf }: Playe
   };
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
+    <View>
       <Pressable
         onPress={handlePress}
         disabled={!canToggle}
@@ -92,7 +92,7 @@ function PlayerRow({ player, status, onToggle, index, canToggle, isSelf }: Playe
           <Circle size={24} color={canToggle ? '#475569' : '#334155'} />
         )}
       </Pressable>
-    </Animated.View>
+    </View>
   );
 }
 
