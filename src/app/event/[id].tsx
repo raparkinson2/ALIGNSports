@@ -381,10 +381,10 @@ export default function EventDetailScreen() {
                 {canManageTeam() && (
                   <Pressable
                     onPress={sendInviteReminder}
-                    className="flex-row items-center bg-red-500/20 rounded-full px-3 py-1.5"
+                    className="flex-row items-center bg-green-500/20 rounded-full px-3 py-1.5"
                   >
-                    <Send size={14} color="#f87171" />
-                    <Text className="text-red-400 text-sm font-medium ml-1.5">Send Reminder</Text>
+                    <Send size={14} color="#22c55e" />
+                    <Text className="text-green-400 text-sm font-medium ml-1.5">Send Reminder</Text>
                   </Pressable>
                 )}
               </View>
