@@ -1141,28 +1141,19 @@ export default function AdminScreen() {
                 const phoneNumbers = playersWithPhone.map(p => p.phone!);
                 const phoneList = phoneNumbers.join(', ');
 
-                // Show options
+                // Show confirmation with phone numbers
                 Alert.alert(
                   'Text Team',
                   `Send a group text to ${playersWithPhone.length} team member${playersWithPhone.length !== 1 ? 's' : ''}?\n\n${phoneList}`,
                   [
                     { text: 'Cancel', style: 'cancel' },
                     {
-                      text: 'Copy Numbers',
+                      text: 'Copy & Open Messages',
                       onPress: async () => {
                         await Clipboard.setStringAsync(phoneNumbers.join(', '));
                         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                        Alert.alert('Copied!', 'Phone numbers copied to clipboard. Paste them in your Messages app to create a group text.');
-                      },
-                    },
-                    {
-                      text: 'Open Messages',
-                      onPress: () => {
-                        // Open Messages app - user will need to paste the numbers
-                        Clipboard.setStringAsync(phoneNumbers.join(', ')).then(() => {
-                          Linking.openURL('sms:').catch(() => {
-                            Alert.alert('Error', 'Could not open messaging app');
-                          });
+                        Linking.openURL('sms:').catch(() => {
+                          Alert.alert('Copied!', 'Phone numbers copied to clipboard. Paste them in your Messages app to create a group text.');
                         });
                       },
                     },
