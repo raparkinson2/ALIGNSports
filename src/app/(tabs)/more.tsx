@@ -1017,25 +1017,37 @@ export default function MoreScreen() {
   };
 
   const handleTextTeam = () => {
-    const playersWithPhone = players.filter(p => p.phone && p.phone.trim());
+    // Exclude current user - you're sending TO the team
+    const otherPlayers = players.filter(p => p.id !== currentPlayerId);
+    const playersWithPhone = otherPlayers.filter(p => p.phone && p.phone.trim());
 
     if (playersWithPhone.length === 0) {
-      Alert.alert('No Phone Numbers', 'No team members have phone numbers set.');
+      const totalOthers = otherPlayers.length;
+      Alert.alert(
+        'No Phone Numbers',
+        totalOthers === 0
+          ? 'There are no other team members to text.'
+          : `None of the ${totalOthers} other team member${totalOthers !== 1 ? 's' : ''} have phone numbers set. Add phone numbers in the Roster tab.`
+      );
       return;
     }
 
-    // Get all phone numbers
-    const phoneNumbers = playersWithPhone.map(p => p.phone).join(',');
+    // Get all phone numbers (use semicolon for iOS compatibility with multiple recipients)
+    const phoneNumbers = playersWithPhone.map(p => p.phone).join(';');
 
     // Create SMS URL with all recipients
     const smsUrl = Platform.select({
-      ios: `sms:${phoneNumbers}`,
-      android: `sms:${phoneNumbers}`,
+      ios: `sms:/open?addresses=${phoneNumbers}`,
+      android: `sms:${phoneNumbers.replace(/;/g, ',')}`,
       default: `sms:${phoneNumbers}`,
     });
 
     Linking.openURL(smsUrl).catch(() => {
-      Alert.alert('Error', 'Could not open messaging app');
+      // Fallback to simpler format
+      const fallbackUrl = `sms:${playersWithPhone.map(p => p.phone).join(',')}`;
+      Linking.openURL(fallbackUrl).catch(() => {
+        Alert.alert('Error', 'Could not open messaging app');
+      });
     });
   };
 
