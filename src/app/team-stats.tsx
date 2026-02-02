@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Modal, TextInput, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, TextInput, KeyboardAvoidingView, Platform, Keyboard, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
@@ -512,6 +512,15 @@ export default function TeamStatsScreen() {
   // Save stats as a game log entry
   const saveStats = () => {
     if (!selectedPlayer) return;
+
+    // Check if date is in the future
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+    if (gameDate > today) {
+      Alert.alert('Invalid Date', 'Cannot add stats for future dates.');
+      return;
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Keyboard.dismiss(); // Dismiss keyboard on save
 
@@ -584,6 +593,9 @@ export default function TeamStatsScreen() {
     });
     setEditStats(emptyStats);
     setGameDate(new Date());
+
+    // Show success message
+    Alert.alert('Stats Saved', 'Game stats have been saved successfully.');
   };
 
   // Delete a game log entry and recalculate cumulative stats
