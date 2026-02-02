@@ -497,6 +497,15 @@ export interface Poll {
   allowMultipleVotes: boolean;
 }
 
+// Team Link types
+export interface TeamLink {
+  id: string;
+  title: string;
+  url: string;
+  createdBy: string;
+  createdAt: string;
+}
+
 // Team Record based on sport
 export interface TeamRecord {
   wins: number;
@@ -534,6 +543,7 @@ export interface Team {
   chatLastReadAt: Record<string, string>;
   paymentPeriods: PaymentPeriod[];
   polls: Poll[];
+  teamLinks: TeamLink[];
 }
 
 interface TeamStore {
@@ -604,6 +614,12 @@ interface TeamStore {
   removePoll: (id: string) => void;
   votePoll: (pollId: string, optionId: string, playerId: string) => void;
   unvotePoll: (pollId: string, optionId: string, playerId: string) => void;
+
+  // Team Links
+  teamLinks: TeamLink[];
+  addTeamLink: (link: TeamLink) => void;
+  updateTeamLink: (id: string, updates: Partial<TeamLink>) => void;
+  removeTeamLink: (id: string) => void;
 
   currentPlayerId: string | null;
   setCurrentPlayerId: (id: string | null) => void;
@@ -1043,6 +1059,18 @@ export const useTeamStore = create<TeamStore>()(
         }),
       })),
 
+      // Team Links
+      teamLinks: [],
+      addTeamLink: (link) => set((state) => ({
+        teamLinks: [...state.teamLinks, link],
+      })),
+      updateTeamLink: (id, updates) => set((state) => ({
+        teamLinks: state.teamLinks.map((l) => (l.id === id ? { ...l, ...updates } : l)),
+      })),
+      removeTeamLink: (id) => set((state) => ({
+        teamLinks: state.teamLinks.filter((l) => l.id !== id),
+      })),
+
       currentPlayerId: null, // No default player
       setCurrentPlayerId: (id) => set({ currentPlayerId: id }),
 
@@ -1442,6 +1470,7 @@ export const useTeamStore = create<TeamStore>()(
           chatLastReadAt: team.chatLastReadAt,
           paymentPeriods: team.paymentPeriods,
           polls: team.polls || [],
+          teamLinks: team.teamLinks || [],
           currentPlayerId: userInTeam?.id || null,
           pendingTeamIds: null,
         });
@@ -1496,6 +1525,7 @@ export const useTeamStore = create<TeamStore>()(
           chatLastReadAt: {},
           paymentPeriods: [],
           polls: [],
+          teamLinks: [],
         };
 
         set((state) => ({
@@ -1545,6 +1575,7 @@ export const useTeamStore = create<TeamStore>()(
                   chatLastReadAt: state.chatLastReadAt,
                   paymentPeriods: state.paymentPeriods,
                   polls: state.polls,
+                  teamLinks: state.teamLinks,
                 }
               : team
           );
@@ -1562,6 +1593,7 @@ export const useTeamStore = create<TeamStore>()(
           chatLastReadAt: state.chatLastReadAt,
           paymentPeriods: state.paymentPeriods,
           polls: state.polls,
+          teamLinks: state.teamLinks,
           currentPlayerId: state.currentPlayerId,
           isLoggedIn: state.isLoggedIn,
           // Multi-team data (with synced teams)
