@@ -340,14 +340,17 @@ export default function ChatScreen() {
     if (!showMentionPicker) return [];
     // Include all other players (active or reserve) for @mentions
     const otherPlayers = players.filter((p) => p.id !== currentPlayerId);
+    console.log('Mention suggestions - otherPlayers:', otherPlayers.length, 'mentionQuery:', mentionQuery);
     if (!mentionQuery) return otherPlayers;
     const query = mentionQuery.toLowerCase();
-    return otherPlayers.filter((p) => {
+    const filtered = otherPlayers.filter((p) => {
       const fullName = getPlayerName(p).toLowerCase();
       const firstName = p.firstName.toLowerCase();
       const lastName = p.lastName.toLowerCase();
       return fullName.includes(query) || firstName.includes(query) || lastName.includes(query);
     });
+    console.log('Filtered suggestions:', filtered.length);
+    return filtered;
   }, [showMentionPicker, players, currentPlayerId, mentionQuery]);
 
   // Handle text input change and detect @ mentions
@@ -591,13 +594,12 @@ export default function ChatScreen() {
           </ScrollView>
 
           {/* Input Area */}
-          <View className="px-4 pb-4 pt-2 border-t border-slate-800 bg-slate-900/95 relative">
+          <View className="px-4 pb-4 pt-2 border-t border-slate-800 bg-slate-900/95" style={{ zIndex: 10 }}>
             {/* Inline Mention Autocomplete */}
-            {showMentionPicker && (filteredMentionSuggestions.length > 0 || mentionQuery === '' || 'everyone'.includes(mentionQuery.toLowerCase())) && (
-              <Animated.View
-                entering={SlideInDown.springify().damping(20)}
-                exiting={FadeOut.duration(150)}
+            {showMentionPicker && (
+              <View
                 className="absolute bottom-full left-4 right-4 mb-2"
+                style={{ zIndex: 1000 }}
               >
                 <View className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl max-h-52">
                   <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -646,7 +648,7 @@ export default function ChatScreen() {
                     ))}
                   </ScrollView>
                 </View>
-              </Animated.View>
+              </View>
             )}
 
             <View className="flex-row items-center">
