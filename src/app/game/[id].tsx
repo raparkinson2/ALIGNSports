@@ -256,6 +256,22 @@ export default function GameDetailScreen() {
   const jerseyColorName = jerseyColorInfo?.name || hexToColorName(game.jerseyColor);
   const jerseyColorHex = jerseyColorInfo?.color || game.jerseyColor;
 
+  // Create gradient colors based on jersey color
+  const getGradientColors = (hexColor: string): [string, string, string] => {
+    // Darken the color for the gradient
+    const darkenColor = (hex: string, amount: number): string => {
+      const num = parseInt(hex.replace('#', ''), 16);
+      const r = Math.max(0, (num >> 16) - amount);
+      const g = Math.max(0, ((num >> 8) & 0x00ff) - amount);
+      const b = Math.max(0, (num & 0x0000ff) - amount);
+      return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+    };
+
+    return [hexColor, darkenColor(hexColor, 40), '#0f172a'];
+  };
+
+  const gradientColors = getGradientColors(jerseyColorHex);
+
   const handleToggleCheckIn = (playerId: string) => {
     const isIn = game.checkedInPlayers?.includes(playerId);
     const isOut = game.checkedOutPlayers?.includes(playerId);
@@ -568,8 +584,9 @@ export default function GameDetailScreen() {
   return (
     <View className="flex-1 bg-slate-900">
       <LinearGradient
-        colors={['#0f172a', '#1e293b', '#0f172a']}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        colors={gradientColors}
+        locations={[0, 0.3, 0.6]}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 300 }}
       />
 
       <SafeAreaView className="flex-1" edges={['top']}>
@@ -580,18 +597,17 @@ export default function GameDetailScreen() {
         >
           <Pressable
             onPress={() => router.back()}
-            className="flex-row items-center"
+            className="w-10 h-10 rounded-full bg-black/30 items-center justify-center"
           >
-            <ChevronLeft size={24} color="#67e8f9" />
-            <Text className="text-cyan-400 ml-1">Schedule</Text>
+            <ChevronLeft size={24} color="white" />
           </Pressable>
 
           {canManageTeam() && (
             <Pressable
               onPress={() => setIsSettingsModalVisible(true)}
-              className="p-2"
+              className="w-10 h-10 rounded-full bg-black/30 items-center justify-center"
             >
-              <Settings size={22} color="#64748b" />
+              <Settings size={22} color="white" />
             </Pressable>
           )}
         </Animated.View>
@@ -607,7 +623,6 @@ export default function GameDetailScreen() {
             className="mx-4 mb-4"
           >
             <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
-              <View style={{ backgroundColor: jerseyColorHex, height: 6 }} />
               <View className="p-5">
                 <Text className="text-white text-2xl font-bold mb-1">
                   vs {game.opponent}
