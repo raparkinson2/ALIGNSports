@@ -525,6 +525,7 @@ export interface TeamSettings {
   teamLogo?: string;
   record?: TeamRecord;
   showTeamStats?: boolean; // Toggle to show/hide team stats feature
+  allowPlayerSelfStats?: boolean; // Allow players to manage their own game stats
   showPayments?: boolean; // Toggle to show/hide payments tab
   showTeamChat?: boolean; // Toggle to show/hide team chat tab
   showPhotos?: boolean; // Toggle to show/hide photos tab

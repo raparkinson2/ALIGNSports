@@ -178,6 +178,9 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Payment Methods**: Configure Venmo/PayPal/Zelle/Cash App for the team
 - **Refreshment Duty Toggle**: Enable/disable per game
 - **Create Lines/Lineups Toggle**: Enable/disable the ability to set game lines (hockey) or lineups (other sports)
+- **Team Stats Settings**:
+  - **Use Team Stats**: Enable/disable the team stats feature
+  - **Allow Player to Manage Own Stats**: When enabled, players can add and update their own game stats (not just admins)
 - **Email Team**: Send an email to all or selected players directly from the app
   - Compose subject and message in-app
   - Select specific recipients or email entire team

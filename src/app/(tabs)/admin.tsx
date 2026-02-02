@@ -1217,6 +1217,34 @@ export default function AdminScreen() {
               </View>
             </View>
 
+            {/* Allow Player Self Stats Toggle - only show when team stats is enabled */}
+            {teamSettings.showTeamStats !== false && (
+              <View className="bg-slate-800/60 rounded-xl p-4 mb-3 border border-slate-700/30 ml-4">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View className="bg-emerald-500/10 p-2 rounded-full">
+                      <Edit3 size={18} color="#059669" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="text-slate-200 font-medium">Allow Player to Manage Own Stats</Text>
+                      <Text className="text-slate-500 text-sm">
+                        Players can update their game stats
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={teamSettings.allowPlayerSelfStats === true}
+                    onValueChange={(value) => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setTeamSettings({ allowPlayerSelfStats: value });
+                    }}
+                    trackColor={{ false: '#334155', true: '#059669' }}
+                    thumbColor="#ffffff"
+                  />
+                </View>
+              </View>
+            )}
+
             {/* Team Stats Link - only show when enabled */}
             {teamSettings.showTeamStats !== false && (
               <Pressable
