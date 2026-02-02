@@ -525,8 +525,7 @@ function CalendarView({ games, onSelectGame, onViewLines }: CalendarViewProps) {
               <View
                 className={cn(
                   'flex-1 rounded-xl items-center justify-center',
-                  isSelected && 'bg-cyan-500/40 border-2 border-cyan-400',
-                  !isSelected && hasGames && 'bg-emerald-500/30 border border-emerald-500/50',
+                  isSelected && 'bg-cyan-500/30 border-2 border-cyan-400',
                   !isSelected && !hasGames && isTodayDate && 'border border-cyan-500/50',
                   isPast && !hasGames && 'opacity-40'
                 )}
@@ -535,20 +534,21 @@ function CalendarView({ games, onSelectGame, onViewLines }: CalendarViewProps) {
                   className={cn(
                     'text-base font-semibold',
                     isSelected && 'text-cyan-300',
-                    !isSelected && hasGames && 'text-emerald-300',
+                    !isSelected && hasGames && 'text-white',
                     !isSelected && !hasGames && isTodayDate && 'text-cyan-400',
                     !isSelected && !hasGames && !isTodayDate && 'text-slate-500'
                   )}
                 >
                   {format(date, 'd')}
                 </Text>
-                {hasGames && dayGames.length > 1 && (
-                  <Text className={cn(
-                    'text-[10px] font-medium',
-                    isSelected ? 'text-cyan-400' : 'text-emerald-400'
-                  )}>
-                    {dayGames.length} games
-                  </Text>
+                {hasGames && (
+                  <View
+                    className={cn(
+                      'h-1.5 rounded-full mt-1',
+                      isSelected ? 'bg-cyan-400' : 'bg-emerald-500',
+                      dayGames.length === 1 ? 'w-4' : dayGames.length === 2 ? 'w-6' : 'w-8'
+                    )}
+                  />
                 )}
               </View>
             </Pressable>
