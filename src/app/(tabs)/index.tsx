@@ -756,6 +756,11 @@ export default function ScheduleScreen() {
     // Combine time value and period
     const fullEventTime = `${gameTimeValue.trim() || '7:00'} ${gameTimePeriod}`;
 
+    // Use selected players or default to active players if none selected
+    const invitedPlayerIds = selectedPlayerIds.length > 0
+      ? selectedPlayerIds
+      : activePlayers.map((p) => p.id);
+
     const newEvent: Event = {
       id: Date.now().toString(),
       title: eventName.trim(),
@@ -765,7 +770,7 @@ export default function ScheduleScreen() {
       location: location.trim(),
       address: '',
       notes: notes.trim() || undefined,
-      invitedPlayers: activePlayers.map((p) => p.id),
+      invitedPlayers: invitedPlayerIds,
       confirmedPlayers: [],
     };
 
@@ -1226,9 +1231,8 @@ export default function ScheduleScreen() {
                 </View>
               )}
 
-              {/* Player Invitations (Game only) */}
-              {recordType === 'game' && (
-                <View className="mb-5">
+              {/* Player Invitations */}
+              <View className="mb-5">
                 <Pressable
                   onPress={() => {
                     if (!showPlayerSelection && selectedPlayerIds.length === 0) {
@@ -1380,7 +1384,6 @@ export default function ScheduleScreen() {
                   </View>
                 )}
               </View>
-              )}
 
               {/* Invite Release Options (Game only) */}
               {recordType === 'game' && (
