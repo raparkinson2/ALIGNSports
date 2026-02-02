@@ -618,19 +618,49 @@ export default function AdminScreen() {
     setNewlyCreatedPlayer(null);
   };
 
-  const handleSendEmailInvite = () => {
+  const handleSendEmailInvite = async () => {
     if (!newlyCreatedPlayer?.email) {
       Alert.alert('No Email', 'This player does not have an email address.');
       return;
     }
 
-    const subject = encodeURIComponent(`Welcome to ${teamName}!`);
-    const body = encodeURIComponent(getInviteMessage('email'));
-    const mailtoUrl = `mailto:${newlyCreatedPlayer.email}?subject=${subject}&body=${body}`;
+    const subject = `Welcome to ${teamName}!`;
+    const body = getInviteMessage('email');
 
-    Linking.openURL(mailtoUrl).catch(() => {
-      Alert.alert('Error', 'Could not open email app');
-    });
+    try {
+      // Call Supabase Edge Function to send email
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PUBLIC_URL;
+      const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLIC_ANON;
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/send-team-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+          },
+          body: JSON.stringify({
+            to: [newlyCreatedPlayer.email],
+            subject: subject,
+            body: body,
+            teamName: teamName,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert('Email Sent', `Invite email sent to ${getPlayerName(newlyCreatedPlayer)}!`);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to send email');
+      }
+    } catch (error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', 'Failed to send email. Please try again later.');
+      console.error('Email invite send error:', error);
+    }
 
     setIsInviteModalVisible(false);
     setNewlyCreatedPlayer(null);
