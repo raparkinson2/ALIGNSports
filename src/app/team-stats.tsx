@@ -428,8 +428,22 @@ export default function TeamStatsScreen() {
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
   const addGameLog = useTeamStore((s) => s.addGameLog);
   const removeGameLog = useTeamStore((s) => s.removeGameLog);
+  const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
 
   const sport = teamSettings.sport || 'hockey';
+
+  // Get current player and check if they're an admin
+  const currentPlayer = players.find((p) => p.id === currentPlayerId);
+  const isAdmin = currentPlayer?.roles?.includes('admin') ?? false;
+
+  // Check if user can edit a specific player's stats
+  const canEditPlayer = (playerId: string): boolean => {
+    // Admins can edit anyone's stats
+    if (isAdmin) return true;
+    // If allowPlayerSelfStats is enabled, players can edit their own stats
+    if (teamSettings.allowPlayerSelfStats && playerId === currentPlayerId) return true;
+    return false;
+  };
 
   // Edit modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -463,6 +477,11 @@ export default function TeamStatsScreen() {
 
   // Open edit modal for a player with specific mode (pitcher/batter, goalie/skater)
   const openEditModal = (player: Player, mode: EditMode) => {
+    // Check if user has permission to edit this player's stats
+    if (!canEditPlayer(player.id)) {
+      return; // Silently return if user doesn't have permission
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedPlayer(player);
     setEditMode(mode);
@@ -822,11 +841,13 @@ export default function TeamStatsScreen() {
               const showBorder = index !== arr.length - 1 ||
                 (sport === 'hockey' || sport === 'soccer') ||
                 (sport === 'baseball' && sortedPlayers.some(p => playerIsPitcher(p)));
+              const canEdit = canEditPlayer(player.id);
               return (
                 <Pressable
                   key={player.id}
                   onPress={() => openEditModal(player, sport === 'baseball' ? 'batter' : 'skater')}
-                  className={`flex-row items-center px-3 py-3 active:bg-slate-700/50 ${
+                  disabled={!canEdit}
+                  className={`flex-row items-center px-3 py-3 ${canEdit ? 'active:bg-slate-700/50' : ''} ${
                     showBorder ? 'border-b border-slate-700/50' : ''
                   }`}
                 >
@@ -843,7 +864,7 @@ export default function TeamStatsScreen() {
                     ))}
                   </View>
                   <View className="w-4 items-center">
-                    <ChevronRight size={14} color="#64748b" />
+                    {canEdit && <ChevronRight size={14} color="#64748b" />}
                   </View>
                 </Pressable>
               );
@@ -868,11 +889,13 @@ export default function TeamStatsScreen() {
                 {/* Pitcher Rows */}
                 {sortedPlayers.filter(p => playerIsPitcher(p)).map((player, index, arr) => {
                   const statValues = getStatValues(sport, player.pitcherStats, 'P');
+                  const canEdit = canEditPlayer(player.id);
                   return (
                     <Pressable
                       key={`pitcher-${player.id}`}
                       onPress={() => openEditModal(player, 'pitcher')}
-                      className={`flex-row items-center px-2 py-3 active:bg-slate-700/50 ${
+                      disabled={!canEdit}
+                      className={`flex-row items-center px-2 py-3 ${canEdit ? 'active:bg-slate-700/50' : ''} ${
                         index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
                       }`}
                     >
@@ -888,7 +911,7 @@ export default function TeamStatsScreen() {
                         ))}
                       </View>
                       <View className="w-3 items-center">
-                        <ChevronRight size={12} color="#64748b" />
+                        {canEdit && <ChevronRight size={12} color="#64748b" />}
                       </View>
                     </Pressable>
                   );
@@ -915,11 +938,13 @@ export default function TeamStatsScreen() {
                 {/* Goalie Rows */}
                 {sortedPlayers.filter(p => playerIsGoalie(p)).map((player, index, arr) => {
                   const statValues = getStatValues(sport, player.goalieStats, sport === 'hockey' ? 'G' : 'GK');
+                  const canEdit = canEditPlayer(player.id);
                   return (
                     <Pressable
                       key={`goalie-${player.id}`}
                       onPress={() => openEditModal(player, 'goalie')}
-                      className={`flex-row items-center px-3 py-3 active:bg-slate-700/50 ${
+                      disabled={!canEdit}
+                      className={`flex-row items-center px-3 py-3 ${canEdit ? 'active:bg-slate-700/50' : ''} ${
                         index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
                       }`}
                     >
@@ -935,7 +960,7 @@ export default function TeamStatsScreen() {
                         ))}
                       </View>
                       <View className="w-4 items-center">
-                        <ChevronRight size={14} color="#64748b" />
+                        {canEdit && <ChevronRight size={14} color="#64748b" />}
                       </View>
                     </Pressable>
                   );
