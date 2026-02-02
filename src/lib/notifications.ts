@@ -254,3 +254,102 @@ export async function setBadgeCount(count: number): Promise<void> {
 export async function clearBadgeCount(): Promise<void> {
   await Notifications.setBadgeCountAsync(0);
 }
+
+/**
+ * Send an event invite notification immediately
+ */
+export async function sendEventInviteNotification(
+  eventId: string,
+  eventTitle: string,
+  eventDate: string,
+  eventTime: string
+): Promise<void> {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'New Event Added!',
+        body: `You've been invited to "${eventTitle}" on ${eventDate} at ${eventTime}. Tap to RSVP.`,
+        data: { eventId, type: 'event_invite' },
+        sound: true,
+      },
+      trigger: null, // Sends immediately
+    });
+  } catch (error) {
+    console.log('Error sending event invite notification:', error);
+  }
+}
+
+/**
+ * Schedule an event reminder notification
+ */
+export async function scheduleEventReminder(
+  eventId: string,
+  title: string,
+  body: string,
+  triggerDate: Date
+): Promise<string | null> {
+  // Don't schedule if the date is in the past
+  if (triggerDate <= new Date()) {
+    console.log('Cannot schedule notification in the past');
+    return null;
+  }
+
+  try {
+    const identifier = await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        data: { eventId, type: 'event_reminder' },
+        sound: true,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: triggerDate,
+      },
+    });
+
+    console.log('Scheduled event reminder notification:', identifier);
+    return identifier;
+  } catch (error) {
+    console.log('Error scheduling event reminder notification:', error);
+    return null;
+  }
+}
+
+/**
+ * Schedule a reminder 1 hour before an event
+ */
+export async function scheduleEventReminderHourBefore(
+  eventId: string,
+  eventTitle: string,
+  eventDate: Date,
+  eventTime: string
+): Promise<string | null> {
+  const reminderDate = new Date(eventDate.getTime() - 60 * 60 * 1000); // 1 hour before
+
+  return scheduleEventReminder(
+    eventId,
+    'Event in 1 Hour!',
+    `Get ready! "${eventTitle}" starts at ${eventTime}.`,
+    reminderDate
+  );
+}
+
+/**
+ * Schedule a reminder 1 day before an event
+ */
+export async function scheduleEventReminderDayBefore(
+  eventId: string,
+  eventTitle: string,
+  eventDate: Date,
+  eventTime: string
+): Promise<string | null> {
+  const reminderDate = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000); // 1 day before
+
+  return scheduleEventReminder(
+    eventId,
+    'Event Tomorrow',
+    `Reminder: "${eventTitle}" is tomorrow at ${eventTime}.`,
+    reminderDate
+  );
+}

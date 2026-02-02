@@ -31,7 +31,7 @@ import { Trash2 } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { useTeamStore, Game, Event, TeamRecord, Sport, getPlayerName, InviteReleaseOption, UpcomingGamesViewMode } from '@/lib/store';
+import { useTeamStore, Game, Event, TeamRecord, Sport, getPlayerName, InviteReleaseOption, UpcomingGamesViewMode, AppNotification } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
@@ -44,7 +44,7 @@ import { BaseballLineupViewer } from '@/components/BaseballLineupViewer';
 import { hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
 import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
 import { hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
-import { sendGameInviteNotification, scheduleGameInviteNotification } from '@/lib/notifications';
+import { sendGameInviteNotification, scheduleGameInviteNotification, sendEventInviteNotification, scheduleEventReminderDayBefore, scheduleEventReminderHourBefore } from '@/lib/notifications';
 
 const getDateLabel = (dateString: string): string => {
   const date = parseISO(dateString);
@@ -397,13 +397,172 @@ function SwipeableGameCard({
   );
 }
 
+// Event Card Component
+interface EventCardProps {
+  event: Event;
+  index: number;
+  onPress: () => void;
+  skipAnimation?: boolean;
+}
+
+function EventCard({ event, index, onPress, skipAnimation = false }: EventCardProps) {
+  const confirmedCount = event.confirmedPlayers?.length ?? 0;
+  const invitedCount = event.invitedPlayers?.length ?? 0;
+
+  const cardContent = (
+    <Pressable
+      onPress={onPress}
+      className={cn('active:scale-[0.98]', !skipAnimation && 'mb-4')}
+      style={{ transform: [{ scale: 1 }] }}
+    >
+      <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
+        {/* Red Color Bar for Events */}
+        <View style={{ backgroundColor: '#ef4444', height: 6 }} />
+
+        <View className="p-4">
+          {/* Date Badge & Event Title */}
+          <View className="flex-row items-center justify-between mb-3">
+            <View className="flex-row items-center flex-1">
+              <View className="bg-red-500/20 px-3 py-1 rounded-full mr-3">
+                <Text className="text-red-400 text-xs font-semibold">
+                  {getDateLabel(event.date)}
+                </Text>
+              </View>
+              <Text className="text-white text-xl font-bold flex-1" numberOfLines={1}>
+                {event.title}
+              </Text>
+            </View>
+            <ChevronRight size={20} color="#64748b" />
+          </View>
+
+          {/* Info Grid */}
+          <View className="flex-row mb-3">
+            <View className="flex-1 flex-row items-center">
+              <Clock size={14} color="#f87171" />
+              <Text className="text-slate-300 text-sm ml-2">{event.time}</Text>
+            </View>
+            <View className="flex-1 flex-row items-center">
+              <Calendar size={14} color="#f87171" />
+              <Text className="text-slate-300 text-sm ml-2">Event</Text>
+            </View>
+          </View>
+
+          {/* Location */}
+          <View className="flex-row items-center mb-3">
+            <MapPin size={14} color="#f87171" />
+            <Text className="text-slate-400 text-sm ml-2">{event.location}</Text>
+          </View>
+
+          {/* Footer */}
+          <View className="flex-row items-center pt-3 border-t border-slate-700/50">
+            <View className="flex-row items-center">
+              <Users size={14} color="#22c55e" />
+              <Text className="text-green-400 text-sm ml-2 font-medium">
+                {confirmedCount}/{invitedCount} confirmed
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </Pressable>
+  );
+
+  if (skipAnimation) {
+    return cardContent;
+  }
+
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 100).springify()}>
+      {cardContent}
+    </Animated.View>
+  );
+}
+
+interface SwipeableEventCardProps extends EventCardProps {
+  onDelete: () => void;
+  canDelete: boolean;
+}
+
+function SwipeableEventCard({
+  onDelete,
+  canDelete,
+  event,
+  index,
+  onPress,
+}: SwipeableEventCardProps) {
+  const translateX = useSharedValue(0);
+  const DELETE_THRESHOLD = -80;
+
+  const handleDelete = () => {
+    translateX.value = withSpring(0);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onDelete();
+  };
+
+  const panGesture = Gesture.Pan()
+    .enabled(canDelete)
+    .activeOffsetX([-10, 10])
+    .onUpdate((evt) => {
+      if (evt.translationX < 0) {
+        translateX.value = Math.max(evt.translationX, -100);
+      } else {
+        translateX.value = withSpring(0);
+      }
+    })
+    .onEnd((evt) => {
+      if (evt.translationX < DELETE_THRESHOLD) {
+        translateX.value = withSpring(-80);
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const deleteButtonStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, Math.abs(translateX.value) / 40),
+  }));
+
+  if (!canDelete) {
+    return <EventCard event={event} index={index} onPress={onPress} />;
+  }
+
+  return (
+    <View className="relative mb-4 overflow-hidden rounded-2xl">
+      {/* Delete button behind */}
+      <Animated.View
+        style={[deleteButtonStyle, { position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center', borderTopRightRadius: 16, borderBottomRightRadius: 16 }]}
+      >
+        <Pressable
+          onPress={handleDelete}
+          className="flex-1 w-full items-center justify-center"
+        >
+          <Trash2 size={24} color="white" />
+          <Text className="text-white text-xs font-medium mt-1">Delete</Text>
+        </Pressable>
+      </Animated.View>
+
+      {/* Swipeable row */}
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={animatedStyle}>
+          <EventCard event={event} index={index} onPress={onPress} skipAnimation />
+        </Animated.View>
+      </GestureDetector>
+    </View>
+  );
+}
+
 interface CalendarViewProps {
   games: Game[];
+  events: Event[];
   onSelectGame: (game: Game) => void;
+  onSelectEvent: (event: Event) => void;
   onViewLines: (game: Game) => void;
 }
 
-function CalendarView({ games, onSelectGame, onViewLines }: CalendarViewProps) {
+function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -425,14 +584,30 @@ function CalendarView({ games, onSelectGame, onViewLines }: CalendarViewProps) {
     });
   };
 
-  // Get games for selected date
-  const selectedDateGames = selectedDate ? getGamesForDate(selectedDate) : [];
+  // Get events for a specific date
+  const getEventsForDate = (date: Date) => {
+    return events.filter((event) => {
+      const eventDate = parseISO(event.date);
+      return isSameDay(eventDate, date);
+    });
+  };
 
-  // Count games in current month
+  // Get games and events for selected date
+  const selectedDateGames = selectedDate ? getGamesForDate(selectedDate) : [];
+  const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : [];
+
+  // Count items in current month
   const gamesThisMonth = games.filter((game) => {
     const gameDate = parseISO(game.date);
     return isSameMonth(gameDate, currentMonth);
   }).length;
+
+  const eventsThisMonth = events.filter((event) => {
+    const eventDate = parseISO(event.date);
+    return isSameMonth(eventDate, currentMonth);
+  }).length;
+
+  const totalThisMonth = gamesThisMonth + eventsThisMonth;
 
   const goToPreviousMonth = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -449,7 +624,8 @@ function CalendarView({ games, onSelectGame, onViewLines }: CalendarViewProps) {
   const handleDatePress = (date: Date) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const gamesOnDate = getGamesForDate(date);
-    if (gamesOnDate.length > 0) {
+    const eventsOnDate = getEventsForDate(date);
+    if (gamesOnDate.length > 0 || eventsOnDate.length > 0) {
       if (selectedDate && isSameDay(selectedDate, date)) {
         // If already selected, deselect
         setSelectedDate(null);
@@ -475,9 +651,11 @@ function CalendarView({ games, onSelectGame, onViewLines }: CalendarViewProps) {
           <Text className="text-white text-xl font-bold">
             {format(currentMonth, 'MMMM yyyy')}
           </Text>
-          {gamesThisMonth > 0 && (
+          {totalThisMonth > 0 && (
             <Text className="text-slate-400 text-sm">
-              {gamesThisMonth} game{gamesThisMonth !== 1 ? 's' : ''}
+              {gamesThisMonth > 0 && `${gamesThisMonth} game${gamesThisMonth !== 1 ? 's' : ''}`}
+              {gamesThisMonth > 0 && eventsThisMonth > 0 && ', '}
+              {eventsThisMonth > 0 && `${eventsThisMonth} event${eventsThisMonth !== 1 ? 's' : ''}`}
             </Text>
           )}
         </View>
@@ -508,7 +686,10 @@ function CalendarView({ games, onSelectGame, onViewLines }: CalendarViewProps) {
         {/* Actual days */}
         {daysInMonth.map((date) => {
           const dayGames = getGamesForDate(date);
+          const dayEvents = getEventsForDate(date);
           const hasGames = dayGames.length > 0;
+          const hasEvents = dayEvents.length > 0;
+          const hasItems = hasGames || hasEvents;
           const isSelected = selectedDate && isSameDay(selectedDate, date);
           const isTodayDate = isToday(date);
           const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
@@ -517,36 +698,50 @@ function CalendarView({ games, onSelectGame, onViewLines }: CalendarViewProps) {
             <Pressable
               key={date.toISOString()}
               onPress={() => handleDatePress(date)}
-              disabled={!hasGames}
+              disabled={!hasItems}
               className="w-[14.28%] aspect-square p-0.5"
             >
               <View
                 className={cn(
                   'flex-1 rounded-xl items-center justify-center',
                   isSelected && 'bg-cyan-500/30 border-2 border-cyan-400',
-                  !isSelected && !hasGames && isTodayDate && 'border border-cyan-500/50',
-                  isPast && !hasGames && 'opacity-40'
+                  !isSelected && !hasItems && isTodayDate && 'border border-cyan-500/50',
+                  isPast && !hasItems && 'opacity-40'
                 )}
               >
                 <Text
                   className={cn(
                     'text-base font-semibold',
                     isSelected && 'text-cyan-300',
-                    !isSelected && hasGames && 'text-white',
-                    !isSelected && !hasGames && isTodayDate && 'text-cyan-400',
-                    !isSelected && !hasGames && !isTodayDate && 'text-slate-500'
+                    !isSelected && hasItems && 'text-white',
+                    !isSelected && !hasItems && isTodayDate && 'text-cyan-400',
+                    !isSelected && !hasItems && !isTodayDate && 'text-slate-500'
                   )}
                 >
                   {format(date, 'd')}
                 </Text>
-                {hasGames && (
-                  <View
-                    className={cn(
-                      'h-1.5 rounded-full mt-1',
-                      isSelected ? 'bg-cyan-400' : 'bg-emerald-500',
-                      dayGames.length === 1 ? 'w-4' : dayGames.length === 2 ? 'w-6' : 'w-8'
+                {/* Indicator bars - green for games, red for events */}
+                {hasItems && (
+                  <View className="flex-row mt-1 gap-0.5">
+                    {hasGames && (
+                      <View
+                        className={cn(
+                          'h-1.5 rounded-full',
+                          isSelected ? 'bg-cyan-400' : 'bg-emerald-500',
+                          dayGames.length === 1 ? 'w-2' : 'w-3'
+                        )}
+                      />
                     )}
-                  />
+                    {hasEvents && (
+                      <View
+                        className={cn(
+                          'h-1.5 rounded-full',
+                          isSelected ? 'bg-cyan-400' : 'bg-red-500',
+                          dayEvents.length === 1 ? 'w-2' : 'w-3'
+                        )}
+                      />
+                    )}
+                  </View>
                 )}
               </View>
             </Pressable>
@@ -554,13 +749,14 @@ function CalendarView({ games, onSelectGame, onViewLines }: CalendarViewProps) {
         })}
       </View>
 
-      {/* Selected Date Games */}
-      {selectedDate && selectedDateGames.length > 0 && (
+      {/* Selected Date Items */}
+      {selectedDate && (selectedDateGames.length > 0 || selectedDateEvents.length > 0) && (
         <Animated.View entering={FadeInDown.springify()} className="mt-4">
           <View className="bg-slate-800/50 rounded-2xl p-4">
             <Text className="text-cyan-400 font-semibold mb-3">
               {format(selectedDate, 'EEEE, MMMM d')}
             </Text>
+            {/* Games */}
             {selectedDateGames.map((game, index) => (
               <GameCard
                 key={game.id}
@@ -571,15 +767,25 @@ function CalendarView({ games, onSelectGame, onViewLines }: CalendarViewProps) {
                 skipAnimation
               />
             ))}
+            {/* Events */}
+            {selectedDateEvents.map((event, index) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                index={index}
+                onPress={() => onSelectEvent(event)}
+                skipAnimation
+              />
+            ))}
           </View>
         </Animated.View>
       )}
 
-      {/* No games this month message */}
-      {gamesThisMonth === 0 && (
+      {/* No items this month message */}
+      {totalThisMonth === 0 && (
         <View className="items-center py-8">
           <Calendar size={32} color="#475569" />
-          <Text className="text-slate-400 mt-2">No games this month</Text>
+          <Text className="text-slate-400 mt-2">Nothing scheduled this month</Text>
         </View>
       )}
     </View>
@@ -590,11 +796,14 @@ export default function ScheduleScreen() {
   const router = useRouter();
   const teamName = useTeamStore((s) => s.teamName);
   const games = useTeamStore((s) => s.games);
+  const events = useTeamStore((s) => s.events);
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const addGame = useTeamStore((s) => s.addGame);
   const addEvent = useTeamStore((s) => s.addEvent);
   const removeGame = useTeamStore((s) => s.removeGame);
+  const removeEvent = useTeamStore((s) => s.removeEvent);
+  const addNotification = useTeamStore((s) => s.addNotification);
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const releaseScheduledGameInvites = useTeamStore((s) => s.releaseScheduledGameInvites);
@@ -672,6 +881,17 @@ export default function ScheduleScreen() {
     const gameDate = new Date(g.date);
     gameDate.setHours(0, 0, 0, 0);
     return gameDate >= today;
+  });
+
+  // Sort and filter upcoming events
+  const sortedEvents = [...events].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  const upcomingEvents = sortedEvents.filter((e) => {
+    const eventDate = new Date(e.date);
+    eventDate.setHours(0, 0, 0, 0);
+    return eventDate >= today;
   });
 
   const resetForm = () => {
@@ -775,6 +995,32 @@ export default function ScheduleScreen() {
     };
 
     addEvent(newEvent);
+
+    // Send notifications to invited players
+    const formattedDate = format(gameDate, 'EEE, MMM d');
+
+    // Send immediate notification
+    sendEventInviteNotification(newEvent.id, eventName.trim(), formattedDate, fullEventTime);
+
+    // Create in-app notifications for each invited player
+    invitedPlayerIds.forEach((playerId) => {
+      const notification: AppNotification = {
+        id: `event-invite-${newEvent.id}-${playerId}-${Date.now()}`,
+        type: 'game_invite', // Reuse game_invite type for now
+        title: 'New Event Added!',
+        message: `You've been invited to "${eventName.trim()}" on ${formattedDate} at ${fullEventTime}`,
+        gameId: newEvent.id, // Store event ID here
+        toPlayerId: playerId,
+        read: false,
+        createdAt: new Date().toISOString(),
+      };
+      addNotification(notification);
+    });
+
+    // Schedule reminders
+    scheduleEventReminderDayBefore(newEvent.id, eventName.trim(), gameDate, fullEventTime);
+    scheduleEventReminderHourBefore(newEvent.id, eventName.trim(), gameDate, fullEventTime);
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsModalVisible(false);
     resetForm();
@@ -913,7 +1159,7 @@ export default function ScheduleScreen() {
             <View className="flex-row items-center">
               <Calendar size={18} color="#67e8f9" />
               <Text className="text-cyan-400 text-lg font-semibold ml-2">
-                Upcoming Games
+                Upcoming
               </Text>
             </View>
 
@@ -950,55 +1196,87 @@ export default function ScheduleScreen() {
 
           {viewMode === 'list' ? (
             <>
-              {upcomingGames.length === 0 ? (
+              {upcomingGames.length === 0 && upcomingEvents.length === 0 ? (
                 <View className="bg-slate-800/50 rounded-2xl p-8 items-center">
                   <Calendar size={48} color="#475569" />
                   <Text className="text-slate-400 text-center mt-4">
-                    No upcoming games scheduled
+                    Nothing scheduled
                   </Text>
                   {canManageTeam() && (
                     <Pressable
                       onPress={() => setIsModalVisible(true)}
                       className="mt-4 bg-cyan-500 rounded-xl px-6 py-3"
                     >
-                      <Text className="text-white font-semibold">Add First Game</Text>
+                      <Text className="text-white font-semibold">Add Game or Event</Text>
                     </Pressable>
                   )}
                 </View>
               ) : (
-                upcomingGames.map((game, index) => (
-                  <SwipeableGameCard
-                    key={game.id}
-                    game={game}
-                    index={index}
-                    onPress={() => router.push(`/game/${game.id}`)}
-                    onViewLines={() => setLineupViewerGame(game)}
-                    canDelete={canManageTeam()}
-                    onDelete={() => {
-                      Alert.alert(
-                        'Delete Game',
-                        `Are you sure you want to delete the game vs ${game.opponent}?`,
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          {
-                            text: 'Delete',
-                            style: 'destructive',
-                            onPress: () => {
-                              removeGame(game.id);
-                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                <>
+                  {/* Games */}
+                  {upcomingGames.map((game, index) => (
+                    <SwipeableGameCard
+                      key={game.id}
+                      game={game}
+                      index={index}
+                      onPress={() => router.push(`/game/${game.id}`)}
+                      onViewLines={() => setLineupViewerGame(game)}
+                      canDelete={canManageTeam()}
+                      onDelete={() => {
+                        Alert.alert(
+                          'Delete Game',
+                          `Are you sure you want to delete the game vs ${game.opponent}?`,
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Delete',
+                              style: 'destructive',
+                              onPress: () => {
+                                removeGame(game.id);
+                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                              },
                             },
-                          },
-                        ]
-                      );
-                    }}
-              />
-            ))
-          )}
+                          ]
+                        );
+                      }}
+                    />
+                  ))}
+                  {/* Events */}
+                  {upcomingEvents.map((event, index) => (
+                    <SwipeableEventCard
+                      key={event.id}
+                      event={event}
+                      index={index}
+                      onPress={() => router.push(`/event/${event.id}`)}
+                      canDelete={canManageTeam()}
+                      onDelete={() => {
+                        Alert.alert(
+                          'Delete Event',
+                          `Are you sure you want to delete "${event.title}"?`,
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Delete',
+                              style: 'destructive',
+                              onPress: () => {
+                                removeEvent(event.id);
+                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                              },
+                            },
+                          ]
+                        );
+                      }}
+                    />
+                  ))}
+                </>
+              )}
             </>
           ) : (
             <CalendarView
               games={upcomingGames}
+              events={upcomingEvents}
               onSelectGame={(game) => router.push(`/game/${game.id}`)}
+              onSelectEvent={(event) => router.push(`/event/${event.id}`)}
               onViewLines={(game) => setLineupViewerGame(game)}
             />
           )}
