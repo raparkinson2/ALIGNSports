@@ -336,7 +336,7 @@ export default function AdminScreen() {
   const [newPlayerFirstName, setNewPlayerFirstName] = useState('');
   const [newPlayerLastName, setNewPlayerLastName] = useState('');
   const [newPlayerNumber, setNewPlayerNumber] = useState('');
-  const [newPlayerPositions, setNewPlayerPositions] = useState<string[]>([positions[0]]);
+  const [newPlayerPositions, setNewPlayerPositions] = useState<string[]>([]);
   const [newPlayerPhone, setNewPlayerPhone] = useState('');
   const [newPlayerEmail, setNewPlayerEmail] = useState('');
   const [newPlayerRoles, setNewPlayerRoles] = useState<PlayerRole[]>([]);
@@ -508,7 +508,7 @@ export default function AdminScreen() {
     setNewPlayerFirstName('');
     setNewPlayerLastName('');
     setNewPlayerNumber('');
-    setNewPlayerPositions([positions[0]]);
+    setNewPlayerPositions([]);
     setNewPlayerPhone('');
     setNewPlayerEmail('');
     setNewPlayerRoles([]);
@@ -540,6 +540,11 @@ export default function AdminScreen() {
     }
     if (!newPlayerEmail.trim()) {
       Alert.alert('Missing Info', 'Please enter an email address.');
+      return;
+    }
+    // Require at least one position if not a coach
+    if (!newPlayerIsCoach && newPlayerPositions.length === 0) {
+      Alert.alert('Missing Info', 'Please select at least one position.');
       return;
     }
 
@@ -1494,7 +1499,7 @@ export default function AdminScreen() {
                 {/* Position Selector - Hidden for coaches */}
                 {!editPlayerIsCoach && (
                   <View className="mb-5">
-                    <Text className="text-slate-400 text-sm mb-1">Positions</Text>
+                    <Text className="text-slate-400 text-sm mb-1">Positions<Text className="text-red-400">*</Text></Text>
                     <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
                     <View className="flex-row flex-wrap">
                       {positions.map((pos) => {
@@ -1504,10 +1509,10 @@ export default function AdminScreen() {
                             key={pos}
                             onPress={() => {
                               if (isSelected) {
-                                // Don't allow deselecting if it's the only position
-                                if (editPlayerPositions.length > 1) {
-                                  const newPositions = editPlayerPositions.filter(p => p !== pos);
-                                  setEditPlayerPositions(newPositions);
+                                // Allow deselecting but only save if at least one position remains
+                                const newPositions = editPlayerPositions.filter(p => p !== pos);
+                                setEditPlayerPositions(newPositions);
+                                if (newPositions.length > 0) {
                                   handleSavePlayerPositions(newPositions);
                                 }
                               } else {
@@ -1533,6 +1538,9 @@ export default function AdminScreen() {
                         );
                       })}
                     </View>
+                    {editPlayerPositions.length === 0 && (
+                      <Text className="text-red-400 text-xs mt-1">Please select at least one position</Text>
+                    )}
                   </View>
                 )}
 
@@ -2005,7 +2013,7 @@ export default function AdminScreen() {
               {/* Position - Hidden for coaches */}
               {!newPlayerIsCoach && (
                 <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-1">Positions</Text>
+                  <Text className="text-slate-400 text-sm mb-1">Positions<Text className="text-red-400">*</Text></Text>
                   <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
                   <View className="flex-row flex-wrap">
                     {positions.map((pos) => {
@@ -2016,9 +2024,8 @@ export default function AdminScreen() {
                           onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             if (isSelected) {
-                              if (newPlayerPositions.length > 1) {
-                                setNewPlayerPositions(newPlayerPositions.filter(p => p !== pos));
-                              }
+                              // Allow deselecting even the last position
+                              setNewPlayerPositions(newPlayerPositions.filter(p => p !== pos));
                             } else {
                               setNewPlayerPositions([...newPlayerPositions, pos]);
                             }
