@@ -349,7 +349,7 @@ export default function RosterScreen() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [number, setNumber] = useState('');
-  const [selectedPositions, setSelectedPositions] = useState<string[]>([positions[0]]);
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [playerRoles, setPlayerRoles] = useState<PlayerRole[]>([]);
@@ -366,7 +366,7 @@ export default function RosterScreen() {
     setFirstName('');
     setLastName('');
     setNumber('');
-    setSelectedPositions([positions[0]]);
+    setSelectedPositions([]);
     setPhone('');
     setEmail('');
     setPlayerRoles([]);
@@ -395,7 +395,9 @@ export default function RosterScreen() {
     setFirstName(player.firstName);
     setLastName(player.lastName);
     setNumber(player.number);
-    setSelectedPositions(getPlayerPositions(player));
+    // Filter out 'Coach' from positions - keep empty if coach
+    const playerPositions = getPlayerPositions(player).filter(p => p && p !== 'Coach');
+    setSelectedPositions(playerPositions);
     setPhone(formatPhoneNumber(player.phone));
     setEmail(player.email || '');
     setPlayerRoles(player.roles || []);
@@ -409,6 +411,12 @@ export default function RosterScreen() {
   const handleSave = () => {
     // Only require jersey number if not a coach
     if (!firstName.trim() || !lastName.trim() || (!isCoach && !number.trim())) return;
+
+    // Require at least one position if not a coach
+    if (!isCoach && selectedPositions.length === 0) {
+      Alert.alert('Missing Info', 'Please select at least one position.');
+      return;
+    }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -733,45 +741,48 @@ export default function RosterScreen() {
                 </View>
               )}
 
-              {/* Position Selector - Multiple Selection */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-1">Positions</Text>
-                <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
-                <View className="flex-row flex-wrap">
-                  {positions.map((pos) => {
-                    const isSelected = selectedPositions.includes(pos);
-                    return (
-                      <Pressable
-                        key={pos}
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          if (isSelected) {
-                            // Don't allow deselecting if it's the only position
-                            if (selectedPositions.length > 1) {
+              {/* Position Selector - Multiple Selection - Hidden for coaches */}
+              {!isCoach && (
+                <View className="mb-5">
+                  <Text className="text-slate-400 text-sm mb-1">Positions<Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
+                  <View className="flex-row flex-wrap">
+                    {positions.map((pos) => {
+                      const isSelected = selectedPositions.includes(pos);
+                      return (
+                        <Pressable
+                          key={pos}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            if (isSelected) {
+                              // Allow deselecting - validation will catch empty on save
                               setSelectedPositions(selectedPositions.filter(p => p !== pos));
+                            } else {
+                              setSelectedPositions([...selectedPositions, pos]);
                             }
-                          } else {
-                            setSelectedPositions([...selectedPositions, pos]);
-                          }
-                        }}
-                        className={cn(
-                          'py-3 px-4 rounded-xl mr-2 mb-2 items-center',
-                          isSelected ? 'bg-cyan-500' : 'bg-slate-800'
-                        )}
-                      >
-                        <Text
+                          }}
                           className={cn(
-                            'font-semibold',
-                            isSelected ? 'text-white' : 'text-slate-400'
+                            'py-3 px-4 rounded-xl mr-2 mb-2 items-center',
+                            isSelected ? 'bg-cyan-500' : 'bg-slate-800'
                           )}
                         >
-                          {pos}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+                          <Text
+                            className={cn(
+                              'font-semibold',
+                              isSelected ? 'text-white' : 'text-slate-400'
+                            )}
+                          >
+                            {pos}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  {selectedPositions.length === 0 && (
+                    <Text className="text-red-400 text-xs mt-1">Please select at least one position</Text>
+                  )}
                 </View>
-              </View>
+              )}
 
               {/* Status Selector - Admin Only */}
               {isAdmin() && (
