@@ -258,6 +258,7 @@ export interface Player {
   pitcherStats?: BaseballPitcherStats; // Separate stats for pitching (baseball only)
   goalieStats?: HockeyGoalieStats | SoccerGoalieStats; // Separate stats for goalie (hockey/soccer only)
   gameLogs?: GameLogEntry[]; // Individual game stat logs
+  unavailableDates?: string[]; // ISO date strings (YYYY-MM-DD) when player is unavailable
 }
 
 // Helper to get full name from player
@@ -388,6 +389,7 @@ export interface Game {
   notes?: string;
   checkedInPlayers: string[]; // player ids marked as IN
   checkedOutPlayers: string[]; // player ids marked as OUT
+  checkoutNotes?: Record<string, string>; // playerId -> reason for checkout
   invitedPlayers: string[]; // player ids
   photos: string[];
   showBeerDuty: boolean; // Admin toggle for beer/refreshment duty display
@@ -481,6 +483,7 @@ export interface Event {
   invitedPlayers: string[];
   confirmedPlayers: string[];
   declinedPlayers?: string[];
+  declinedNotes?: Record<string, string>; // playerId -> reason for declining
 }
 
 export interface Photo {
@@ -578,13 +581,15 @@ interface TeamStore {
   addPlayer: (player: Player) => void;
   updatePlayer: (id: string, updates: Partial<Player>) => void;
   removePlayer: (id: string) => void;
+  addUnavailableDate: (playerId: string, date: string) => void; // Also marks OUT for matching games/events
+  removeUnavailableDate: (playerId: string, date: string) => void;
 
   games: Game[];
   addGame: (game: Game) => void;
   updateGame: (id: string, updates: Partial<Game>) => void;
   removeGame: (id: string) => void;
   checkInToGame: (gameId: string, playerId: string) => void;
-  checkOutFromGame: (gameId: string, playerId: string) => void;
+  checkOutFromGame: (gameId: string, playerId: string, note?: string) => void;
   clearPlayerResponse: (gameId: string, playerId: string) => void;
   invitePlayersToGame: (gameId: string, playerIds: string[]) => void;
   releaseScheduledGameInvites: () => Game[]; // Returns games that were released
@@ -594,7 +599,7 @@ interface TeamStore {
   updateEvent: (id: string, updates: Partial<Event>) => void;
   removeEvent: (id: string) => void;
   confirmEventAttendance: (eventId: string, playerId: string) => void;
-  declineEventAttendance: (eventId: string, playerId: string) => void;
+  declineEventAttendance: (eventId: string, playerId: string, note?: string) => void;
   invitePlayersToEvent: (eventId: string, playerIds: string[]) => void;
 
   photos: Photo[];
@@ -748,6 +753,63 @@ export const useTeamStore = create<TeamStore>()(
         players: state.players.map((p) => (p.id === id ? { ...p, ...updates } : p)),
       })),
       removePlayer: (id) => set((state) => ({ players: state.players.filter((p) => p.id !== id) })),
+      addUnavailableDate: (playerId, date) => set((state) => {
+        // Add date to player's unavailable dates
+        const updatedPlayers = state.players.map((p) =>
+          p.id === playerId
+            ? {
+                ...p,
+                unavailableDates: (p.unavailableDates || []).includes(date)
+                  ? p.unavailableDates
+                  : [...(p.unavailableDates || []), date],
+              }
+            : p
+        );
+
+        // Mark player OUT for any games on that date
+        const updatedGames = state.games.map((g) => {
+          const gameDate = g.date.split('T')[0]; // Get YYYY-MM-DD
+          if (gameDate === date && g.invitedPlayers.includes(playerId)) {
+            return {
+              ...g,
+              checkedInPlayers: (g.checkedInPlayers || []).filter((id) => id !== playerId),
+              checkedOutPlayers: (g.checkedOutPlayers || []).includes(playerId)
+                ? g.checkedOutPlayers
+                : [...(g.checkedOutPlayers || []), playerId],
+              checkoutNotes: { ...(g.checkoutNotes || {}), [playerId]: 'Unavailable' },
+            };
+          }
+          return g;
+        });
+
+        // Mark player as declined for any events on that date
+        const updatedEvents = state.events.map((e) => {
+          const eventDate = e.date.split('T')[0]; // Get YYYY-MM-DD
+          if (eventDate === date && e.invitedPlayers.includes(playerId)) {
+            return {
+              ...e,
+              confirmedPlayers: e.confirmedPlayers.filter((id) => id !== playerId),
+              declinedPlayers: (e.declinedPlayers || []).includes(playerId)
+                ? e.declinedPlayers
+                : [...(e.declinedPlayers || []), playerId],
+              declinedNotes: { ...(e.declinedNotes || {}), [playerId]: 'Unavailable' },
+            };
+          }
+          return e;
+        });
+
+        return { players: updatedPlayers, games: updatedGames, events: updatedEvents };
+      }),
+      removeUnavailableDate: (playerId, date) => set((state) => ({
+        players: state.players.map((p) =>
+          p.id === playerId
+            ? {
+                ...p,
+                unavailableDates: (p.unavailableDates || []).filter((d) => d !== date),
+              }
+            : p
+        ),
+      })),
 
       games: initialGames,
       addGame: (game) => set((state) => ({ games: [...state.games, game] })),
@@ -769,7 +831,7 @@ export const useTeamStore = create<TeamStore>()(
             : g
         ),
       })),
-      checkOutFromGame: (gameId, playerId) => set((state) => ({
+      checkOutFromGame: (gameId, playerId, note) => set((state) => ({
         games: state.games.map((g) =>
           g.id === gameId
             ? {
@@ -777,7 +839,10 @@ export const useTeamStore = create<TeamStore>()(
                 checkedInPlayers: (g.checkedInPlayers || []).filter((id) => id !== playerId),
                 checkedOutPlayers: (g.checkedOutPlayers || []).includes(playerId)
                   ? g.checkedOutPlayers
-                  : [...(g.checkedOutPlayers || []), playerId]
+                  : [...(g.checkedOutPlayers || []), playerId],
+                checkoutNotes: note
+                  ? { ...(g.checkoutNotes || {}), [playerId]: note }
+                  : g.checkoutNotes
               }
             : g
         ),
@@ -871,10 +936,19 @@ export const useTeamStore = create<TeamStore>()(
             : e
         ),
       })),
-      declineEventAttendance: (eventId, playerId) => set((state) => ({
+      declineEventAttendance: (eventId, playerId, note) => set((state) => ({
         events: state.events.map((e) =>
           e.id === eventId
-            ? { ...e, confirmedPlayers: e.confirmedPlayers.filter((id) => id !== playerId) }
+            ? {
+                ...e,
+                confirmedPlayers: e.confirmedPlayers.filter((id) => id !== playerId),
+                declinedPlayers: (e.declinedPlayers || []).includes(playerId)
+                  ? e.declinedPlayers
+                  : [...(e.declinedPlayers || []), playerId],
+                declinedNotes: note
+                  ? { ...(e.declinedNotes || {}), [playerId]: note }
+                  : e.declinedNotes
+              }
             : e
         ),
       })),

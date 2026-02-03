@@ -225,6 +225,13 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
     - Cumulative stats automatically calculated from all game logs
 - **Feature Request**: Submit suggestions for new app features via email
 - **Report Bug**: Report issues and bugs via email
+- **My Availability**: Set dates when you're unavailable
+  - **List View**: See all upcoming unavailable dates in a scrollable list
+  - **Calendar View**: Visual monthly calendar showing unavailable dates
+  - Add unavailable dates with date picker
+  - Remove dates by tapping them
+  - **Auto Check-Out**: When you add an unavailable date that has a game or event, you are automatically marked as OUT with note "Unavailable"
+  - View conflicts with scheduled games/events before confirming
 - Log out to switch players
 
 ### Photos Tab

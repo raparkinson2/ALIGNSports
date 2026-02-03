@@ -27,6 +27,7 @@ import {
   Plus,
   Link,
   ExternalLink,
+  CalendarOff,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -1267,6 +1268,14 @@ export default function MoreScreen() {
             subtitle={teamLinks.length > 0 ? `${teamLinks.length} link${teamLinks.length !== 1 ? 's' : ''}` : 'Add useful links for your team'}
             onPress={() => setLinksModalVisible(true)}
             index={4}
+          />
+
+          <MenuItem
+            icon={<CalendarOff size={20} color="#67e8f9" />}
+            title="My Availability"
+            subtitle="Set dates you're unavailable"
+            onPress={() => router.push('/my-availability')}
+            index={5}
           />
 
           {/* Account Section */}
