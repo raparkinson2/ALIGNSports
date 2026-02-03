@@ -334,7 +334,7 @@ export default function EventDetailScreen() {
   return (
     <View className="flex-1 bg-slate-900">
       <LinearGradient
-        colors={['#ef4444', '#dc2626', '#0f172a']}
+        colors={['#3b82f6', '#2563eb', '#0f172a']}
         locations={[0, 0.3, 0.6]}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 300 }}
       />
@@ -380,12 +380,12 @@ export default function EventDetailScreen() {
           <View className="px-5">
             <Animated.View entering={FadeInDown.delay(100).springify()}>
               <View className="flex-row items-center mb-2">
-                <View className="bg-red-500/30 px-3 py-1 rounded-full">
-                  <Text className="text-red-300 text-xs font-semibold">EVENT</Text>
+                <View className="bg-blue-500/30 px-3 py-1 rounded-full">
+                  <Text className="text-blue-300 text-xs font-semibold">EVENT</Text>
                 </View>
               </View>
               <Text className="text-white text-3xl font-bold mb-2">{event.title}</Text>
-              <Text className="text-red-200/80 text-base">{teamName}</Text>
+              <Text className="text-blue-200/80 text-base">{teamName}</Text>
             </Animated.View>
 
             {/* Quick Stats */}
@@ -393,14 +393,14 @@ export default function EventDetailScreen() {
               <View className="flex-row">
                 <View className="flex-1 bg-slate-800/80 rounded-2xl p-4 mr-2">
                   <View className="flex-row items-center mb-1">
-                    <Calendar size={16} color="#f87171" />
+                    <Calendar size={16} color="#60a5fa" />
                     <Text className="text-slate-400 text-xs ml-2">Date</Text>
                   </View>
                   <Text className="text-white font-semibold">{formattedDate}</Text>
                 </View>
                 <View className="flex-1 bg-slate-800/80 rounded-2xl p-4 ml-2">
                   <View className="flex-row items-center mb-1">
-                    <Clock size={16} color="#f87171" />
+                    <Clock size={16} color="#60a5fa" />
                     <Text className="text-slate-400 text-xs ml-2">Time</Text>
                   </View>
                   <Text className="text-white font-semibold">{event.time}</Text>
@@ -415,16 +415,16 @@ export default function EventDetailScreen() {
                 className="bg-slate-800/80 rounded-2xl p-4 flex-row items-center justify-between"
               >
                 <View className="flex-row items-center flex-1">
-                  <View className="w-10 h-10 rounded-full bg-red-500/20 items-center justify-center">
-                    <MapPin size={20} color="#f87171" />
+                  <View className="w-10 h-10 rounded-full bg-blue-500/20 items-center justify-center">
+                    <MapPin size={20} color="#60a5fa" />
                   </View>
                   <View className="ml-3 flex-1">
                     <Text className="text-slate-400 text-xs">Location</Text>
                     <Text className="text-white font-semibold">{event.location}</Text>
                   </View>
                 </View>
-                <View className="bg-red-500/20 rounded-full p-2">
-                  <Navigation size={18} color="#f87171" />
+                <View className="bg-blue-500/20 rounded-full p-2">
+                  <Navigation size={18} color="#60a5fa" />
                 </View>
               </Pressable>
             </Animated.View>
