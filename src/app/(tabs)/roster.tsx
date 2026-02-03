@@ -1226,6 +1226,66 @@ export default function RosterScreen() {
                       ? 'Coaches don\'t need jersey numbers or positions'
                       : 'Tap to toggle roles. Members can have multiple roles.'}
                   </Text>
+
+                  {/* Admin Roles: Captain & Admin */}
+                  <Text className="text-slate-400 text-sm mb-2 mt-4">Admin Roles</Text>
+                  <View className="flex-row">
+                    {/* Captain */}
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        if (playerRoles.includes('captain')) {
+                          setPlayerRoles(playerRoles.filter((r) => r !== 'captain'));
+                        } else {
+                          setPlayerRoles([...playerRoles, 'captain']);
+                        }
+                      }}
+                      className={cn(
+                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
+                        playerRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
+                      )}
+                    >
+                      <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center mb-1">
+                        <Text className={cn(
+                          'text-xs font-black',
+                          playerRoles.includes('captain') ? 'text-white' : 'text-amber-500'
+                        )}>C</Text>
+                      </View>
+                      <Text
+                        className={cn(
+                          'font-semibold text-sm',
+                          playerRoles.includes('captain') ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Captain
+                      </Text>
+                    </Pressable>
+                    {/* Admin */}
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        if (playerRoles.includes('admin')) {
+                          setPlayerRoles(playerRoles.filter((r) => r !== 'admin'));
+                        } else {
+                          setPlayerRoles([...playerRoles, 'admin']);
+                        }
+                      }}
+                      className={cn(
+                        'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                        playerRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
+                      )}
+                    >
+                      <Shield size={16} color={playerRoles.includes('admin') ? 'white' : '#a78bfa'} />
+                      <Text
+                        className={cn(
+                          'font-semibold text-sm mt-1',
+                          playerRoles.includes('admin') ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Admin
+                      </Text>
+                    </Pressable>
+                  </View>
                 </View>
               )}
 
