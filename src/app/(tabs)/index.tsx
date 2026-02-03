@@ -289,15 +289,16 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false }: 
           <View className="flex-row items-center pt-3 border-t border-slate-700/50">
             <View className="flex-row items-center">
               <Users size={14} color="#94a3b8" />
-              <Text className="text-green-400 text-sm ml-2 font-medium">
+              <Text className="text-slate-400 text-sm ml-2">In:</Text>
+              <Text className="text-green-400 text-sm font-medium ml-1">
                 {checkedInCount}
               </Text>
-              <Text className="text-slate-500 text-sm mx-1">/</Text>
-              <Text className="text-red-400 text-sm font-medium">
+              <Text className="text-slate-400 text-sm ml-2">Out:</Text>
+              <Text className="text-red-400 text-sm font-medium ml-1">
                 {checkedOutCount}
               </Text>
-              <Text className="text-slate-500 text-sm mx-1">/</Text>
-              <Text className="text-slate-400 text-sm font-medium">
+              <Text className="text-slate-400 text-sm ml-2">Pending:</Text>
+              <Text className="text-slate-500 text-sm font-medium ml-1">
                 {pendingCount}
               </Text>
             </View>
