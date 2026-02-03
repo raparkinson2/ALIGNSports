@@ -106,7 +106,7 @@ export const SPORT_NAMES: Record<Sport, string> = {
 };
 
 // Role Types
-export type PlayerRole = 'admin' | 'captain' | 'coach';
+export type PlayerRole = 'admin' | 'captain' | 'coach' | 'parent';
 
 // Player Status
 export type PlayerStatus = 'active' | 'reserve';

@@ -15,6 +15,9 @@ import {
   Cross,
   UserPlus,
   UserCog,
+  User,
+  UserMinus,
+  Heart,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -893,52 +896,10 @@ export default function RosterScreen() {
                 </View>
               )}
 
-              {/* Status Selector - Admin Only */}
+              {/* Status Selector - Admin Only (Injured/Suspended) */}
               {isAdmin() && (
                 <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Player Status</Text>
-                  <View className="flex-row mb-2">
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setPlayerStatus('active');
-                      }}
-                      className={cn(
-                        'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
-                        playerStatus === 'active' ? 'bg-green-500' : 'bg-slate-800'
-                      )}
-                    >
-                      {playerStatus === 'active' && <Check size={16} color="white" className="mr-2" />}
-                      <Text
-                        className={cn(
-                          'font-semibold ml-1',
-                          playerStatus === 'active' ? 'text-white' : 'text-slate-400'
-                        )}
-                      >
-                        Active
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setPlayerStatus('reserve');
-                      }}
-                      className={cn(
-                        'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
-                        playerStatus === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
-                      )}
-                    >
-                      {playerStatus === 'reserve' && <Check size={16} color="white" className="mr-2" />}
-                      <Text
-                        className={cn(
-                          'font-semibold ml-1',
-                          playerStatus === 'reserve' ? 'text-white' : 'text-slate-400'
-                        )}
-                      >
-                        Reserve
-                      </Text>
-                    </Pressable>
-                  </View>
+                  <Text className="text-slate-400 text-sm mb-2">Status</Text>
                   <View className="flex-row">
                     <Pressable
                       onPress={() => {
@@ -1138,105 +1099,53 @@ export default function RosterScreen() {
               {isAdmin() && (
                 <View className="mb-5">
                   <Text className="text-slate-400 text-sm mb-2">Roles</Text>
-                  <View className="flex-row">
-                    {/* Captain */}
+                  {/* Row 1: Player & Reserve */}
+                  <View className="flex-row mb-2">
+                    {/* Player (Active) */}
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        if (playerRoles.includes('captain')) {
-                          setPlayerRoles(playerRoles.filter((r) => r !== 'captain'));
-                        } else {
-                          setPlayerRoles([...playerRoles, 'captain']);
-                        }
+                        setPlayerStatus('active');
                       }}
                       className={cn(
                         'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                        playerRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
+                        playerStatus === 'active' ? 'bg-green-500' : 'bg-slate-800'
                       )}
                     >
-                      <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center mb-1">
-                        <Text className={cn(
-                          'text-xs font-black',
-                          playerRoles.includes('captain') ? 'text-white' : 'text-amber-500'
-                        )}>C</Text>
-                      </View>
-                      <Text
-                        className={cn(
-                          'font-semibold text-sm',
-                          playerRoles.includes('captain') ? 'text-white' : 'text-slate-400'
-                        )}
-                      >
-                        Captain
-                      </Text>
-                    </Pressable>
-                    {/* Admin */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-                        // If admin is currently selected (highlighted), user wants to REMOVE it
-                        if (playerRoles.includes('admin')) {
-                          // Count admins from the actual players list
-                          const currentAdminCount = players.filter((p) => p.roles?.includes('admin')).length;
-
-                          // Check if this player being edited is currently an admin in the database
-                          const playerIsCurrentlyAdmin = editingPlayer?.roles?.includes('admin') ?? false;
-
-                          // Would removing admin from this player leave zero admins?
-                          const wouldLeaveNoAdmins = currentAdminCount <= 1 && playerIsCurrentlyAdmin;
-
-                          console.log('Admin toggle debug:', {
-                            currentAdminCount,
-                            playerIsCurrentlyAdmin,
-                            wouldLeaveNoAdmins,
-                            editingPlayerId: editingPlayer?.id,
-                            editingPlayerRoles: editingPlayer?.roles,
-                          });
-
-                          if (wouldLeaveNoAdmins) {
-                            Alert.alert(
-                              'Cannot Remove Admin',
-                              'This is the only admin on the team. You must make another team member an admin before removing this admin role.',
-                              [{ text: 'OK' }]
-                            );
-                            return;
-                          }
-
-                          // Show confirmation for removing admin
-                          Alert.alert(
-                            'Remove Admin Role?',
-                            `Are you sure you want to remove admin privileges from ${editingPlayer ? getPlayerName(editingPlayer) : 'this player'}?\n\nThey will no longer be able to:\n• Manage players and roles\n• Edit team settings\n• Create payment periods\n• Access the Admin panel`,
-                            [
-                              { text: 'Cancel', style: 'cancel' },
-                              {
-                                text: 'Remove Admin',
-                                style: 'destructive',
-                                onPress: () => {
-                                  setPlayerRoles(playerRoles.filter((r) => r !== 'admin'));
-                                },
-                              },
-                            ]
-                          );
-                        } else {
-                          // Adding admin role
-                          setPlayerRoles([...playerRoles, 'admin']);
-                        }
-                      }}
-                      className={cn(
-                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                        playerRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
-                      )}
-                    >
-                      <Shield size={16} color={playerRoles.includes('admin') ? 'white' : '#a78bfa'} />
+                      <User size={16} color={playerStatus === 'active' ? 'white' : '#22c55e'} />
                       <Text
                         className={cn(
                           'font-semibold text-sm mt-1',
-                          playerRoles.includes('admin') ? 'text-white' : 'text-slate-400'
+                          playerStatus === 'active' ? 'text-white' : 'text-slate-400'
                         )}
                       >
-                        Admin
+                        Player
                       </Text>
                     </Pressable>
+                    {/* Reserve */}
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setPlayerStatus('reserve');
+                      }}
+                      className={cn(
+                        'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                        playerStatus === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
+                      )}
+                    >
+                      <UserMinus size={16} color={playerStatus === 'reserve' ? 'white' : '#94a3b8'} />
+                      <Text
+                        className={cn(
+                          'font-semibold text-sm mt-1',
+                          playerStatus === 'reserve' ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Reserve
+                      </Text>
+                    </Pressable>
+                  </View>
+                  {/* Row 2: Coach & Parent */}
+                  <View className="flex-row">
                     {/* Coach */}
                     <Pressable
                       onPress={() => {
@@ -1244,7 +1153,7 @@ export default function RosterScreen() {
                         setIsCoach(!isCoach);
                       }}
                       className={cn(
-                        'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
                         isCoach ? 'bg-cyan-500' : 'bg-slate-800'
                       )}
                     >
@@ -1256,6 +1165,31 @@ export default function RosterScreen() {
                         )}
                       >
                         Coach
+                      </Text>
+                    </Pressable>
+                    {/* Parent */}
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        if (playerRoles.includes('parent')) {
+                          setPlayerRoles(playerRoles.filter((r) => r !== 'parent'));
+                        } else {
+                          setPlayerRoles([...playerRoles, 'parent']);
+                        }
+                      }}
+                      className={cn(
+                        'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                        playerRoles.includes('parent') ? 'bg-pink-500' : 'bg-slate-800'
+                      )}
+                    >
+                      <Heart size={16} color={playerRoles.includes('parent') ? 'white' : '#ec4899'} />
+                      <Text
+                        className={cn(
+                          'font-semibold text-sm mt-1',
+                          playerRoles.includes('parent') ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Parent
                       </Text>
                     </Pressable>
                   </View>
