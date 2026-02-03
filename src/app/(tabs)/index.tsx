@@ -418,7 +418,9 @@ interface EventCardProps {
 
 function EventCard({ event, index, onPress, skipAnimation = false }: EventCardProps) {
   const confirmedCount = event.confirmedPlayers?.length ?? 0;
+  const declinedCount = event.declinedPlayers?.length ?? 0;
   const invitedCount = event.invitedPlayers?.length ?? 0;
+  const pendingCount = invitedCount - confirmedCount - declinedCount;
 
   const cardContent = (
     <Pressable
@@ -467,9 +469,18 @@ function EventCard({ event, index, onPress, skipAnimation = false }: EventCardPr
           {/* Footer */}
           <View className="flex-row items-center pt-3 border-t border-slate-700/50">
             <View className="flex-row items-center">
-              <Users size={14} color="#22c55e" />
-              <Text className="text-green-400 text-sm ml-2 font-medium">
-                {confirmedCount}/{invitedCount} confirmed
+              <Users size={14} color="#94a3b8" />
+              <Text className="text-slate-400 text-sm ml-2">In:</Text>
+              <Text className="text-green-400 text-sm font-medium ml-1">
+                {confirmedCount}
+              </Text>
+              <Text className="text-slate-400 text-sm ml-2">Out:</Text>
+              <Text className="text-red-400 text-sm font-medium ml-1">
+                {declinedCount}
+              </Text>
+              <Text className="text-slate-400 text-sm ml-2">Pending:</Text>
+              <Text className="text-slate-500 text-sm font-medium ml-1">
+                {pendingCount}
               </Text>
             </View>
           </View>
