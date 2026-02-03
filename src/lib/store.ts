@@ -907,12 +907,38 @@ export const useTeamStore = create<TeamStore>()(
 
       // Chat - start empty
       chatMessages: [],
-      addChatMessage: (message) => set((state) => ({
-        chatMessages: [...state.chatMessages, message],
-      })),
-      deleteChatMessage: (messageId) => set((state) => ({
-        chatMessages: state.chatMessages.filter((m) => m.id !== messageId),
-      })),
+      addChatMessage: (message) => set((state) => {
+        const newChatMessages = [...state.chatMessages, message];
+        // Also update in teams array if activeTeamId exists
+        let updatedTeams = state.teams;
+        if (state.activeTeamId) {
+          updatedTeams = state.teams.map((team) =>
+            team.id === state.activeTeamId
+              ? { ...team, chatMessages: newChatMessages }
+              : team
+          );
+        }
+        return {
+          chatMessages: newChatMessages,
+          teams: updatedTeams,
+        };
+      }),
+      deleteChatMessage: (messageId) => set((state) => {
+        const newChatMessages = state.chatMessages.filter((m) => m.id !== messageId);
+        // Also update in teams array if activeTeamId exists
+        let updatedTeams = state.teams;
+        if (state.activeTeamId) {
+          updatedTeams = state.teams.map((team) =>
+            team.id === state.activeTeamId
+              ? { ...team, chatMessages: newChatMessages }
+              : team
+          );
+        }
+        return {
+          chatMessages: newChatMessages,
+          teams: updatedTeams,
+        };
+      }),
 
       // Chat read tracking
       chatLastReadAt: {},
