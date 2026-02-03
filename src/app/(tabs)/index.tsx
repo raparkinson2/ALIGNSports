@@ -731,7 +731,7 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines 
                 >
                   {format(date, 'd')}
                 </Text>
-                {/* Indicator bars - green for games, red for events */}
+                {/* Indicator bars - green for games, blue for events */}
                 {hasItems && (
                   <View className="flex-row mt-1 gap-0.5">
                     {hasGames && (
@@ -747,7 +747,7 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines 
                       <View
                         className={cn(
                           'h-1.5 rounded-full',
-                          isSelected ? 'bg-cyan-400' : 'bg-red-500',
+                          isSelected ? 'bg-cyan-400' : 'bg-blue-500',
                           dayEvents.length === 1 ? 'w-4' : dayEvents.length === 2 ? 'w-6' : 'w-8'
                         )}
                       />
