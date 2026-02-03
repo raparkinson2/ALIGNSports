@@ -161,7 +161,8 @@ interface PlayerPaymentRowProps {
 
 function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType, onPress }: PlayerPaymentRowProps) {
   const balance = totalAmount - (paidAmount ?? 0);
-  const isDuesType = periodType === 'dues';
+  // Check if type contains "dues" (case-insensitive) for balance tracking behavior
+  const isDuesType = periodType?.toLowerCase().includes('dues');
 
   // For non-dues types, show amount paid instead of balance
   const getStatusText = () => {
@@ -584,7 +585,7 @@ export default function PaymentsScreen() {
   // New period form
   const [periodTitle, setPeriodTitle] = useState('');
   const [periodAmount, setPeriodAmount] = useState('');
-  const [periodType, setPeriodType] = useState<PaymentPeriodType>('dues');
+  const [periodType, setPeriodType] = useState('');
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
 
   // Edit period amount
@@ -650,7 +651,7 @@ export default function PaymentsScreen() {
       id: Date.now().toString(),
       title: periodTitle.trim(),
       amount: parseFloat(periodAmount),
-      type: periodType,
+      type: periodType.trim() || 'Dues',
       playerPayments: selectedPlayerIds.map((playerId) => ({
         playerId,
         status: 'unpaid' as const,
@@ -663,7 +664,7 @@ export default function PaymentsScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setPeriodTitle('');
     setPeriodAmount('');
-    setPeriodType('dues');
+    setPeriodType('');
     setSelectedPlayerIds([]);
     setIsNewPeriodModalVisible(false);
   };
@@ -1156,44 +1157,18 @@ export default function PaymentsScreen() {
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
-              {/* Payment Type Selector */}
+              {/* Payment Type Input */}
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Payment Type</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
-                  {([
-                    { value: 'dues', label: 'Dues' },
-                    { value: 'reserve_fee', label: 'Reserve' },
-                    { value: 'facility_rental', label: 'Facility' },
-                    { value: 'misc', label: 'Misc.' },
-                  ] as { value: PaymentPeriodType; label: string }[]).map((option) => (
-                    <Pressable
-                      key={option.value}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setPeriodType(option.value);
-                      }}
-                      className={cn(
-                        'px-4 py-2.5 rounded-xl mr-2 border',
-                        periodType === option.value
-                          ? 'bg-cyan-500/20 border-cyan-500/50'
-                          : 'bg-slate-800 border-slate-700'
-                      )}
-                    >
-                      <Text
-                        className={cn(
-                          'font-medium',
-                          periodType === option.value ? 'text-cyan-400' : 'text-slate-400'
-                        )}
-                      >
-                        {option.label}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
+                <TextInput
+                  value={periodType}
+                  onChangeText={setPeriodType}
+                  placeholder="e.g., Dues, Reserve Fee, Facility Rental, Tournament"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                />
                 <Text className="text-slate-500 text-xs mt-2">
-                  {periodType === 'dues'
-                    ? 'Dues track balance remaining until fully paid'
-                    : 'This type shows total collected without a balance'}
+                  Enter what this payment is for
                 </Text>
               </View>
 
@@ -1610,7 +1585,7 @@ export default function PaymentsScreen() {
                           status={pp.status}
                           paidAmount={pp.amount}
                           totalAmount={selectedPeriod.amount}
-                          periodType={selectedPeriod.type ?? 'dues'}
+                          periodType={selectedPeriod.type ?? 'Dues'}
                           onPress={() => {
                             setSelectedPlayerId(pp.playerId);
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

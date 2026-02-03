@@ -456,13 +456,14 @@ export interface PlayerPayment {
   entries: PaymentEntry[]; // Individual payment entries
 }
 
-export type PaymentPeriodType = 'dues' | 'reserve_fee' | 'facility_rental' | 'misc';
+// PaymentPeriodType is now a free-form string to allow custom types
+export type PaymentPeriodType = string;
 
 export interface PaymentPeriod {
   id: string;
   title: string;
   amount: number;
-  type: PaymentPeriodType;
+  type: PaymentPeriodType; // e.g., "Dues", "Reserve Fee", "Facility Rental", or any custom type
   dueDate?: string;
   playerPayments: PlayerPayment[];
   createdAt: string;

@@ -135,6 +135,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **One-Tap Payments**: Players tap a button to open the payment app directly
 - **Payment Tracking** (Admin/Captain):
   - Create payment periods (e.g., "Season Dues - Fall 2025")
+  - **Custom Payment Types**: Type any payment description (Dues, Reserve Fee, Facility Rental, Tournament, etc.)
   - Set total amount per player
   - **Team Total Owed** (Admin-only): Set the total amount owed by the team for each payment period
     - Displays total owed, total collected, and remaining balance
