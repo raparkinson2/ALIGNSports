@@ -551,6 +551,7 @@ export interface TeamSettings {
   showLineups?: boolean; // Toggle to show/hide lines/lineups feature
   upcomingGamesViewMode?: UpcomingGamesViewMode; // Persisted view mode preference for upcoming games (list or calendar)
   teamTotalAmountOwed?: number; // Total amount owed by the team (admin-only view)
+  enabledRoles?: ('player' | 'reserve' | 'coach' | 'parent')[]; // Which roles are available for this team
 }
 
 // Multi-team support: A complete team with all its data

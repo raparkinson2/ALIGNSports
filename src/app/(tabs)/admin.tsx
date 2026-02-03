@@ -27,6 +27,9 @@ import {
   Beer,
   Edit3,
   ListOrdered,
+  User,
+  UserMinus,
+  Heart,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -321,6 +324,7 @@ export default function AdminScreen() {
   const [isPlayerModalVisible, setIsPlayerModalVisible] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const [isJerseyModalVisible, setIsJerseyModalVisible] = useState(false);
+  const [isRolesModalVisible, setIsRolesModalVisible] = useState(false);
   const [isManagePlayersModalVisible, setIsManagePlayersModalVisible] = useState(false);
 
   // Player edit form
@@ -1059,6 +1063,30 @@ export default function AdminScreen() {
                   ))}
                   <ChevronRight size={20} color="#64748b" className="ml-2" />
                 </View>
+              </View>
+            </Pressable>
+
+            {/* Manage Roles Menu Item */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsRolesModalVisible(true);
+              }}
+              className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <View className="bg-purple-500/20 p-2 rounded-full">
+                    <UserCog size={20} color="#a78bfa" />
+                  </View>
+                  <View className="ml-3">
+                    <Text className="text-white font-semibold">Manage Roles</Text>
+                    <Text className="text-slate-400 text-sm">
+                      {(teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent']).length} roles enabled
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color="#64748b" />
               </View>
             </Pressable>
 
@@ -1993,6 +2021,90 @@ export default function AdminScreen() {
         </View>
       </Modal>
 
+      {/* Manage Roles Modal */}
+      <Modal
+        visible={isRolesModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsRolesModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsRolesModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Manage Roles</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-6">
+              <Text className="text-slate-400 text-sm mb-4">
+                Select which roles are available when adding or editing players. Disabled roles will be hidden from selection.
+              </Text>
+
+              {/* Role Options */}
+              {[
+                { id: 'player' as const, label: 'Player', description: 'Active team member', icon: <User size={20} color="#22c55e" />, bgColor: 'bg-green-500', iconBg: 'bg-green-500/20' },
+                { id: 'reserve' as const, label: 'Reserve', description: 'Backup/substitute player', icon: <UserMinus size={20} color="#94a3b8" />, bgColor: 'bg-slate-600', iconBg: 'bg-slate-600/20' },
+                { id: 'coach' as const, label: 'Coach', description: 'Team coach (no jersey number needed)', icon: <UserCog size={20} color="#67e8f9" />, bgColor: 'bg-cyan-500', iconBg: 'bg-cyan-500/20' },
+                { id: 'parent' as const, label: 'Parent', description: 'Parent/guardian of a player', icon: <Heart size={20} color="#ec4899" />, bgColor: 'bg-pink-500', iconBg: 'bg-pink-500/20' },
+              ].map((role) => {
+                const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
+                const isEnabled = enabledRoles.includes(role.id);
+                // Player must always be enabled
+                const isRequired = role.id === 'player';
+
+                return (
+                  <Pressable
+                    key={role.id}
+                    onPress={() => {
+                      if (isRequired) return; // Can't disable Player
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      const currentRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
+                      if (isEnabled) {
+                        setTeamSettings({ enabledRoles: currentRoles.filter(r => r !== role.id) });
+                      } else {
+                        setTeamSettings({ enabledRoles: [...currentRoles, role.id] });
+                      }
+                    }}
+                    className={cn(
+                      'flex-row items-center p-4 rounded-xl mb-3 border',
+                      isEnabled ? `${role.iconBg} border-slate-600` : 'bg-slate-800/50 border-slate-700/50'
+                    )}
+                  >
+                    <View className={cn('p-2 rounded-full', role.iconBg)}>
+                      {role.icon}
+                    </View>
+                    <View className="flex-1 ml-3">
+                      <Text className={cn('font-semibold', isEnabled ? 'text-white' : 'text-slate-500')}>
+                        {role.label}
+                        {isRequired && <Text className="text-slate-500 font-normal"> (Required)</Text>}
+                      </Text>
+                      <Text className={cn('text-sm', isEnabled ? 'text-slate-400' : 'text-slate-600')}>
+                        {role.description}
+                      </Text>
+                    </View>
+                    <View className={cn(
+                      'w-6 h-6 rounded-full border-2 items-center justify-center',
+                      isEnabled ? `${role.bgColor} border-transparent` : 'border-slate-600'
+                    )}>
+                      {isEnabled && <Check size={14} color="white" />}
+                    </View>
+                  </Pressable>
+                );
+              })}
+
+              <View className="bg-slate-800/50 rounded-xl p-4 mt-4">
+                <Text className="text-slate-400 text-sm">
+                  <Text className="text-purple-400 font-semibold">Tip:</Text> Disable roles your team doesn't use to simplify player management. The "Player" role is always required.
+                </Text>
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
       {/* New Player Modal */}
       <Modal
         visible={isNewPlayerModalVisible}
@@ -2138,51 +2250,137 @@ export default function AdminScreen() {
                 </View>
               )}
 
-              {/* Player Status */}
+              {/* Roles - 2x2 Grid */}
               <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Player Status</Text>
-                <View className="flex-row mb-2">
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setNewPlayerStatus('active');
-                    }}
-                    className={cn(
-                      'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
-                      newPlayerStatus === 'active' ? 'bg-green-500' : 'bg-slate-800'
-                    )}
-                  >
-                    {newPlayerStatus === 'active' && <Check size={16} color="white" />}
-                    <Text
-                      className={cn(
-                        'font-semibold ml-1',
-                        newPlayerStatus === 'active' ? 'text-white' : 'text-slate-400'
+                <Text className="text-slate-400 text-sm mb-2">Roles</Text>
+                {(() => {
+                  const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
+                  const showPlayer = enabledRoles.includes('player');
+                  const showReserve = enabledRoles.includes('reserve');
+                  const showCoach = enabledRoles.includes('coach');
+                  const showParent = enabledRoles.includes('parent');
+                  const row1Count = (showPlayer ? 1 : 0) + (showReserve ? 1 : 0);
+                  const row2Count = (showCoach ? 1 : 0) + (showParent ? 1 : 0);
+
+                  return (
+                    <>
+                      {/* Row 1: Player & Reserve */}
+                      {row1Count > 0 && (
+                        <View className="flex-row mb-2">
+                          {showPlayer && (
+                            <Pressable
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                setNewPlayerStatus('active');
+                              }}
+                              className={cn(
+                                'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                                showReserve && 'mr-2',
+                                newPlayerStatus === 'active' ? 'bg-green-500' : 'bg-slate-800'
+                              )}
+                            >
+                              <User size={16} color={newPlayerStatus === 'active' ? 'white' : '#22c55e'} />
+                              <Text
+                                className={cn(
+                                  'font-semibold text-sm mt-1',
+                                  newPlayerStatus === 'active' ? 'text-white' : 'text-slate-400'
+                                )}
+                              >
+                                Player
+                              </Text>
+                            </Pressable>
+                          )}
+                          {showReserve && (
+                            <Pressable
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                setNewPlayerStatus('reserve');
+                              }}
+                              className={cn(
+                                'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                                newPlayerStatus === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
+                              )}
+                            >
+                              <UserMinus size={16} color={newPlayerStatus === 'reserve' ? 'white' : '#94a3b8'} />
+                              <Text
+                                className={cn(
+                                  'font-semibold text-sm mt-1',
+                                  newPlayerStatus === 'reserve' ? 'text-white' : 'text-slate-400'
+                                )}
+                              >
+                                Reserve
+                              </Text>
+                            </Pressable>
+                          )}
+                        </View>
                       )}
-                    >
-                      Active
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setNewPlayerStatus('reserve');
-                    }}
-                    className={cn(
-                      'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
-                      newPlayerStatus === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
-                    )}
-                  >
-                    {newPlayerStatus === 'reserve' && <Check size={16} color="white" />}
-                    <Text
-                      className={cn(
-                        'font-semibold ml-1',
-                        newPlayerStatus === 'reserve' ? 'text-white' : 'text-slate-400'
+                      {/* Row 2: Coach & Parent */}
+                      {row2Count > 0 && (
+                        <View className="flex-row">
+                          {showCoach && (
+                            <Pressable
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                setNewPlayerIsCoach(!newPlayerIsCoach);
+                              }}
+                              className={cn(
+                                'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                                showParent && 'mr-2',
+                                newPlayerIsCoach ? 'bg-cyan-500' : 'bg-slate-800'
+                              )}
+                            >
+                              <UserCog size={16} color={newPlayerIsCoach ? 'white' : '#67e8f9'} />
+                              <Text
+                                className={cn(
+                                  'font-semibold text-sm mt-1',
+                                  newPlayerIsCoach ? 'text-white' : 'text-slate-400'
+                                )}
+                              >
+                                Coach
+                              </Text>
+                            </Pressable>
+                          )}
+                          {showParent && (
+                            <Pressable
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                if (newPlayerRoles.includes('parent')) {
+                                  setNewPlayerRoles(newPlayerRoles.filter((r) => r !== 'parent'));
+                                } else {
+                                  setNewPlayerRoles([...newPlayerRoles, 'parent']);
+                                }
+                              }}
+                              className={cn(
+                                'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                                newPlayerRoles.includes('parent') ? 'bg-pink-500' : 'bg-slate-800'
+                              )}
+                            >
+                              <Heart size={16} color={newPlayerRoles.includes('parent') ? 'white' : '#ec4899'} />
+                              <Text
+                                className={cn(
+                                  'font-semibold text-sm mt-1',
+                                  newPlayerRoles.includes('parent') ? 'text-white' : 'text-slate-400'
+                                )}
+                              >
+                                Parent
+                              </Text>
+                            </Pressable>
+                          )}
+                        </View>
                       )}
-                    >
-                      Reserve
-                    </Text>
-                  </Pressable>
-                </View>
+                    </>
+                  );
+                })()}
+                <Text className="text-slate-500 text-xs mt-2">
+                  {newPlayerIsCoach
+                    ? 'Coaches don\'t need jersey numbers or positions'
+                    : 'Tap to toggle roles. Members can have multiple roles.'}
+                </Text>
+              </View>
+
+              {/* Status Modifiers */}
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Status</Text>
                 <View className="flex-row">
                   <Pressable
                     onPress={() => {
@@ -2238,9 +2436,9 @@ export default function AdminScreen() {
                 </View>
               </View>
 
-              {/* Roles */}
+              {/* Admin Roles */}
               <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Roles</Text>
+                <Text className="text-slate-400 text-sm mb-2">Admin Roles</Text>
                 <View className="flex-row">
                   {/* Captain */}
                   <Pressable
@@ -2283,7 +2481,7 @@ export default function AdminScreen() {
                       }
                     }}
                     className={cn(
-                      'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
+                      'flex-1 py-3 px-2 rounded-xl items-center justify-center',
                       newPlayerRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
                     )}
                   >
@@ -2297,33 +2495,7 @@ export default function AdminScreen() {
                       Admin
                     </Text>
                   </Pressable>
-                  {/* Coach */}
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setNewPlayerIsCoach(!newPlayerIsCoach);
-                    }}
-                    className={cn(
-                      'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                      newPlayerIsCoach ? 'bg-cyan-500' : 'bg-slate-800'
-                    )}
-                  >
-                    <UserCog size={16} color={newPlayerIsCoach ? 'white' : '#67e8f9'} />
-                    <Text
-                      className={cn(
-                        'font-semibold text-sm mt-1',
-                        newPlayerIsCoach ? 'text-white' : 'text-slate-400'
-                      )}
-                    >
-                      Coach
-                    </Text>
-                  </Pressable>
                 </View>
-                <Text className="text-slate-500 text-xs mt-2">
-                  {newPlayerIsCoach
-                    ? 'Coaches don\'t need jersey numbers or positions'
-                    : 'Tap to toggle roles. Members can have multiple roles.'}
-                </Text>
               </View>
 
               <Text className="text-slate-500 text-xs mb-6"><Text className="text-red-400">*</Text> Required</Text>
