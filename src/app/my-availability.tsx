@@ -14,6 +14,7 @@ import {
   List,
   CalendarDays,
   AlertCircle,
+  Check,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -39,7 +40,8 @@ export default function MyAvailabilityScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date | null>(null);
+  const [calendarSelectedDates, setCalendarSelectedDates] = useState<string[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   // Get conflicts for a date (games/events the player would be marked OUT for)
   const getConflictsForDate = (dateStr: string) => {
@@ -158,27 +160,86 @@ export default function MyAvailabilityScreen() {
   const goToPreviousMonth = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCurrentMonth(subMonths(currentMonth, 1));
-    setCalendarSelectedDate(null);
   };
 
   const goToNextMonth = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCurrentMonth(addMonths(currentMonth, 1));
-    setCalendarSelectedDate(null);
   };
 
   const handleCalendarDatePress = (date: Date) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const dateStr = format(date, 'yyyy-MM-dd');
 
-    if (isDateUnavailable(date)) {
-      // If already unavailable, offer to remove
-      handleRemoveDate(dateStr);
+    if (isSelectionMode) {
+      // Multi-select mode - toggle selection
+      if (calendarSelectedDates.includes(dateStr)) {
+        setCalendarSelectedDates(calendarSelectedDates.filter((d) => d !== dateStr));
+      } else if (!isDateUnavailable(date)) {
+        setCalendarSelectedDates([...calendarSelectedDates, dateStr]);
+      }
     } else {
-      // Offer to add as unavailable
-      setSelectedDate(date);
-      setShowAddModal(true);
+      if (isDateUnavailable(date)) {
+        // If already unavailable, offer to remove
+        handleRemoveDate(dateStr);
+      } else {
+        // Start selection mode with this date
+        setIsSelectionMode(true);
+        setCalendarSelectedDates([dateStr]);
+      }
     }
+  };
+
+  const handleAddSelectedDates = () => {
+    if (!currentPlayerId || calendarSelectedDates.length === 0) return;
+
+    // Check for conflicts
+    let hasConflicts = false;
+    const allConflicts: string[] = [];
+
+    calendarSelectedDates.forEach((dateStr) => {
+      const conflicts = getConflictsForDate(dateStr);
+      if (conflicts.length > 0) {
+        hasConflicts = true;
+        conflicts.forEach((c) => {
+          if (c.type === 'game') {
+            allConflicts.push(`${dateStr}: Game vs ${(c.item as Game).opponent}`);
+          } else {
+            allConflicts.push(`${dateStr}: ${(c.item as Event).title}`);
+          }
+        });
+      }
+    });
+
+    const addDates = () => {
+      calendarSelectedDates.forEach((dateStr) => {
+        if (!unavailableDates.includes(dateStr)) {
+          addUnavailableDate(currentPlayerId, dateStr);
+        }
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setCalendarSelectedDates([]);
+      setIsSelectionMode(false);
+    };
+
+    if (hasConflicts) {
+      Alert.alert(
+        'Schedule Conflicts',
+        `Adding these dates will mark you OUT for:\n\n${allConflicts.slice(0, 5).join('\n')}${allConflicts.length > 5 ? `\n...and ${allConflicts.length - 5} more` : ''}\n\nDo you want to continue?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Mark Unavailable', style: 'destructive', onPress: addDates },
+        ]
+      );
+    } else {
+      addDates();
+    }
+  };
+
+  const cancelSelection = () => {
+    setCalendarSelectedDates([]);
+    setIsSelectionMode(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   // Count unavailable dates this month
@@ -396,32 +457,35 @@ export default function MyAvailabilityScreen() {
 
                 {/* Actual days */}
                 {daysInMonth.map((date) => {
+                  const dateStr = format(date, 'yyyy-MM-dd');
                   const isUnavailable = isDateUnavailable(date);
                   const hasSchedule = hasGameOrEvent(date);
                   const isTodayDate = isToday(date);
                   const isPast = isBefore(date, today);
+                  const isSelected = calendarSelectedDates.includes(dateStr);
 
                   return (
                     <Pressable
                       key={date.toISOString()}
                       onPress={() => handleCalendarDatePress(date)}
-                      disabled={isPast}
+                      disabled={isPast || isUnavailable}
                       className="w-[14.28%] aspect-square p-0.5"
                     >
                       <View
                         className={cn(
                           'flex-1 rounded-xl items-center justify-center relative',
                           isUnavailable && 'bg-red-500/30 border border-red-500/50',
-                          !isUnavailable && hasSchedule && 'bg-cyan-500/20 border border-cyan-500/30',
-                          !isUnavailable && !hasSchedule && 'bg-slate-800/40',
-                          isTodayDate && !isUnavailable && 'border-2 border-cyan-400',
+                          isSelected && !isUnavailable && 'bg-amber-500/30 border-2 border-amber-400',
+                          !isUnavailable && !isSelected && hasSchedule && 'bg-cyan-500/20 border border-cyan-500/30',
+                          !isUnavailable && !isSelected && !hasSchedule && 'bg-slate-800/40',
+                          isTodayDate && !isUnavailable && !isSelected && 'border-2 border-cyan-400',
                           isPast && 'opacity-40'
                         )}
                       >
                         <Text
                           className={cn(
                             'text-sm font-medium',
-                            isUnavailable ? 'text-red-400' : isTodayDate ? 'text-cyan-400' : 'text-white'
+                            isSelected ? 'text-amber-400' : isUnavailable ? 'text-red-400' : isTodayDate ? 'text-cyan-400' : 'text-white'
                           )}
                         >
                           {format(date, 'd')}
@@ -431,8 +495,11 @@ export default function MyAvailabilityScreen() {
                           {isUnavailable && (
                             <View className="w-1.5 h-1.5 rounded-full bg-red-400 mx-0.5" />
                           )}
-                          {hasSchedule && !isUnavailable && (
+                          {hasSchedule && !isUnavailable && !isSelected && (
                             <View className="w-1.5 h-1.5 rounded-full bg-cyan-400 mx-0.5" />
+                          )}
+                          {isSelected && (
+                            <View className="w-1.5 h-1.5 rounded-full bg-amber-400 mx-0.5" />
                           )}
                         </View>
                       </View>
@@ -440,6 +507,37 @@ export default function MyAvailabilityScreen() {
                   );
                 })}
               </View>
+
+              {/* Selection Mode Actions */}
+              {isSelectionMode && (
+                <Animated.View
+                  entering={FadeInDown.springify()}
+                  className="mt-4 bg-amber-500/10 rounded-xl p-4 border border-amber-500/30"
+                >
+                  <Text className="text-amber-400 font-semibold text-center mb-3">
+                    {calendarSelectedDates.length} date{calendarSelectedDates.length !== 1 ? 's' : ''} selected
+                  </Text>
+                  <Text className="text-slate-400 text-xs text-center mb-4">
+                    Tap more dates to add to selection
+                  </Text>
+                  <View className="flex-row">
+                    <Pressable
+                      onPress={cancelSelection}
+                      className="flex-1 bg-slate-700 rounded-xl py-3 mr-2 flex-row items-center justify-center"
+                    >
+                      <X size={18} color="#94a3b8" />
+                      <Text className="text-slate-300 font-semibold ml-2">Cancel</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={handleAddSelectedDates}
+                      className="flex-1 bg-amber-500 rounded-xl py-3 ml-2 flex-row items-center justify-center"
+                    >
+                      <Check size={18} color="white" />
+                      <Text className="text-white font-semibold ml-2">Add Dates</Text>
+                    </Pressable>
+                  </View>
+                </Animated.View>
+              )}
 
               {/* Legend */}
               <View className="mt-6 bg-slate-800/40 rounded-xl p-4">
@@ -455,13 +553,17 @@ export default function MyAvailabilityScreen() {
                     <View className="w-4 h-4 rounded bg-cyan-500/20 border border-cyan-500/30 mr-2" />
                     <Text className="text-slate-300 text-sm">Game/Event</Text>
                   </View>
-                  <View className="flex-row items-center mb-2">
+                  <View className="flex-row items-center mr-6 mb-2">
                     <View className="w-4 h-4 rounded bg-slate-800/40 border-2 border-cyan-400 mr-2" />
                     <Text className="text-slate-300 text-sm">Today</Text>
                   </View>
+                  <View className="flex-row items-center mb-2">
+                    <View className="w-4 h-4 rounded bg-amber-500/30 border-2 border-amber-400 mr-2" />
+                    <Text className="text-slate-300 text-sm">Selected</Text>
+                  </View>
                 </View>
                 <Text className="text-slate-500 text-xs mt-2">
-                  Tap a date to mark as unavailable or remove
+                  Tap dates to select multiple, then add them all at once
                 </Text>
               </View>
             </Animated.View>
