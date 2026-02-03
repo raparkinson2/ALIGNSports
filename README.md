@@ -133,6 +133,10 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 ### Payments Tab
 - **Payment Methods**: Admin can add Venmo, PayPal, Zelle, or Cash App accounts
 - **One-Tap Payments**: Players tap a button to open the payment app directly
+- **Team Total Amount Owed** (Admin-only): Set and view the total amount owed by the team
+  - Displayed prominently at the top of the Payment Tracking section
+  - Only visible to admin users
+  - Tap to edit or clear the amount
 - **Payment Tracking** (Admin/Captain):
   - Create payment periods (e.g., "Season Dues - Fall 2025")
   - Set total amount per player

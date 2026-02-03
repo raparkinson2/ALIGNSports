@@ -546,6 +546,7 @@ export interface TeamSettings {
   refreshmentDutyIs21Plus?: boolean; // If true, use beer icon; if false, use juice box icon
   showLineups?: boolean; // Toggle to show/hide lines/lineups feature
   upcomingGamesViewMode?: UpcomingGamesViewMode; // Persisted view mode preference for upcoming games (list or calendar)
+  teamTotalAmountOwed?: number; // Total amount owed by the team (admin-only view)
 }
 
 // Multi-team support: A complete team with all its data

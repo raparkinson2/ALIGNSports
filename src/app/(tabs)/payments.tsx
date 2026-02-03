@@ -524,6 +524,10 @@ export default function PaymentsScreen() {
   const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null);
   const [editPeriodAmount, setEditPeriodAmount] = useState('');
 
+  // Team total amount owed (admin only)
+  const [isEditTeamTotalModalVisible, setIsEditTeamTotalModalVisible] = useState(false);
+  const [editTeamTotalAmount, setEditTeamTotalAmount] = useState('');
+
   // Add player to period modal
   const [isAddPlayerModalVisible, setIsAddPlayerModalVisible] = useState(false);
 
@@ -605,6 +609,24 @@ export default function PaymentsScreen() {
     setIsEditAmountModalVisible(false);
     setEditingPeriodId(null);
     setEditPeriodAmount('');
+  };
+
+  const handleUpdateTeamTotalAmount = () => {
+    if (!editTeamTotalAmount.trim()) {
+      // Allow clearing the amount
+      setTeamSettings({ teamTotalAmountOwed: undefined });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setIsEditTeamTotalModalVisible(false);
+      setEditTeamTotalAmount('');
+      return;
+    }
+    const amount = parseFloat(editTeamTotalAmount);
+    if (isNaN(amount) || amount < 0) return;
+
+    setTeamSettings({ teamTotalAmountOwed: amount });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsEditTeamTotalModalVisible(false);
+    setEditTeamTotalAmount('');
   };
 
   const handleAddPaymentEntry = () => {
@@ -811,6 +833,38 @@ export default function PaymentsScreen() {
           {/* Payment Periods - Admin Only */}
           {(isAdmin() || canManageTeam()) && (
             <Animated.View entering={FadeInDown.delay(150).springify()}>
+              {/* Team Total Amount Owed - Admin Only */}
+              {isAdmin() && (
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setEditTeamTotalAmount(teamSettings.teamTotalAmountOwed?.toString() || '');
+                    setIsEditTeamTotalModalVisible(true);
+                  }}
+                  className="bg-amber-500/20 rounded-xl p-4 mb-4 border border-amber-500/30 active:bg-amber-500/30"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1">
+                      <View className="w-10 h-10 rounded-full bg-amber-500/30 items-center justify-center mr-3">
+                        <DollarSign size={20} color="#f59e0b" />
+                      </View>
+                      <View>
+                        <Text className="text-amber-300 text-xs font-medium uppercase tracking-wider">Team Total Owed</Text>
+                        <Text className="text-amber-400 text-2xl font-bold">
+                          {teamSettings.teamTotalAmountOwed !== undefined
+                            ? `$${teamSettings.teamTotalAmountOwed.toLocaleString()}`
+                            : 'Not Set'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="bg-amber-500/30 rounded-lg px-3 py-2 flex-row items-center">
+                      <Edit3 size={14} color="#f59e0b" />
+                      <Text className="text-amber-400 text-xs font-medium ml-1">Edit</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              )}
+
               <View className="flex-row items-center justify-between mb-3">
                 <View className="flex-row items-center">
                   <Users size={16} color="#a78bfa" />
@@ -1633,6 +1687,53 @@ export default function PaymentsScreen() {
               </View>
               <Text className="text-slate-500 text-sm mt-3">
                 This will update the amount due for all players in this period.
+              </Text>
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Edit Team Total Amount Modal */}
+      <Modal
+        visible={isEditTeamTotalModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => {
+          setIsEditTeamTotalModalVisible(false);
+          setEditTeamTotalAmount('');
+        }}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => {
+                setIsEditTeamTotalModalVisible(false);
+                setEditTeamTotalAmount('');
+              }}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Team Total Owed</Text>
+              <Pressable onPress={handleUpdateTeamTotalAmount}>
+                <Text className="text-cyan-400 font-semibold">Save</Text>
+              </Pressable>
+            </View>
+
+            <View className="px-5 pt-6">
+              <Text className="text-slate-400 text-sm mb-2">Total Amount ($)</Text>
+              <View className="flex-row items-center bg-slate-800 rounded-xl px-4 py-3">
+                <Text className="text-white text-2xl font-bold mr-1">$</Text>
+                <TextInput
+                  value={editTeamTotalAmount}
+                  onChangeText={setEditTeamTotalAmount}
+                  placeholder="0.00"
+                  placeholderTextColor="#64748b"
+                  keyboardType="decimal-pad"
+                  autoFocus
+                  className="flex-1 text-white text-2xl font-bold"
+                />
+              </View>
+              <Text className="text-slate-500 text-sm mt-3">
+                Enter the total amount owed by the team. This is visible only to admins. Leave empty to clear.
               </Text>
             </View>
           </SafeAreaView>
