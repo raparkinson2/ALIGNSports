@@ -426,15 +426,15 @@ function EventCard({ event, index, onPress, skipAnimation = false }: EventCardPr
       style={{ transform: [{ scale: 1 }] }}
     >
       <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
-        {/* Red Color Bar for Events */}
-        <View style={{ backgroundColor: '#ef4444', height: 6 }} />
+        {/* Blue Color Bar for Events */}
+        <View style={{ backgroundColor: '#3b82f6', height: 6 }} />
 
         <View className="p-4">
           {/* Date Badge & Event Title */}
           <View className="flex-row items-center justify-between mb-3">
             <View className="flex-row items-center flex-1">
-              <View className="bg-red-500/20 px-3 py-1 rounded-full mr-3">
-                <Text className="text-red-400 text-xs font-semibold">
+              <View className="bg-blue-500/20 px-3 py-1 rounded-full mr-3">
+                <Text className="text-blue-400 text-xs font-semibold">
                   {getDateLabel(event.date)}
                 </Text>
               </View>
@@ -448,18 +448,18 @@ function EventCard({ event, index, onPress, skipAnimation = false }: EventCardPr
           {/* Info Grid */}
           <View className="flex-row mb-3">
             <View className="flex-1 flex-row items-center">
-              <Clock size={14} color="#f87171" />
+              <Clock size={14} color="#60a5fa" />
               <Text className="text-slate-300 text-sm ml-2">{event.time}</Text>
             </View>
             <View className="flex-1 flex-row items-center">
-              <Calendar size={14} color="#f87171" />
+              <Calendar size={14} color="#60a5fa" />
               <Text className="text-slate-300 text-sm ml-2">Event</Text>
             </View>
           </View>
 
           {/* Location */}
           <View className="flex-row items-center mb-3">
-            <MapPin size={14} color="#f87171" />
+            <MapPin size={14} color="#60a5fa" />
             <Text className="text-slate-400 text-sm ml-2">{event.location}</Text>
           </View>
 
