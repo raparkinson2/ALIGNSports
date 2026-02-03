@@ -1818,7 +1818,7 @@ export default function AdminScreen() {
                           <DateTimePicker
                             value={selectedPlayer.statusEndDate ? parseISO(selectedPlayer.statusEndDate) : new Date()}
                             mode="date"
-                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            display={Platform.OS === 'ios' ? 'inline' : 'default'}
                             onChange={(event, selectedDate) => {
                               if (Platform.OS === 'android') {
                                 setShowSelectedPlayerEndDatePicker(false);
@@ -1830,7 +1830,6 @@ export default function AdminScreen() {
                               }
                             }}
                             minimumDate={new Date()}
-                            textColor="#ffffff"
                             themeVariant="dark"
                           />
                           {Platform.OS === 'ios' && (
@@ -2557,7 +2556,7 @@ export default function AdminScreen() {
                         <DateTimePicker
                           value={newPlayerStatusEndDate ? parseISO(newPlayerStatusEndDate) : new Date()}
                           mode="date"
-                          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                          display={Platform.OS === 'ios' ? 'inline' : 'default'}
                           onChange={(event, selectedDate) => {
                             if (Platform.OS === 'android') {
                               setShowNewPlayerEndDatePicker(false);
@@ -2567,7 +2566,6 @@ export default function AdminScreen() {
                             }
                           }}
                           minimumDate={new Date()}
-                          textColor="#ffffff"
                           themeVariant="dark"
                         />
                         {Platform.OS === 'ios' && (

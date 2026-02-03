@@ -1165,7 +1165,7 @@ export default function RosterScreen() {
                           <DateTimePicker
                             value={statusEndDate ? parseISO(statusEndDate) : new Date()}
                             mode="date"
-                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            display={Platform.OS === 'ios' ? 'inline' : 'default'}
                             onChange={(event, selectedDate) => {
                               if (Platform.OS === 'android') {
                                 setShowEndDatePicker(false);
@@ -1175,7 +1175,6 @@ export default function RosterScreen() {
                               }
                             }}
                             minimumDate={new Date()}
-                            textColor="#ffffff"
                             themeVariant="dark"
                           />
                           {Platform.OS === 'ios' && (
