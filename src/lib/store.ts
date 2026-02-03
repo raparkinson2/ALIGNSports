@@ -812,7 +812,37 @@ export const useTeamStore = create<TeamStore>()(
       })),
 
       games: initialGames,
-      addGame: (game) => set((state) => ({ games: [...state.games, game] })),
+      addGame: (game) => set((state) => {
+        // Check if any invited players are unavailable on this date
+        const gameDate = game.date.split('T')[0]; // Get YYYY-MM-DD
+        const unavailablePlayers = state.players.filter((p) =>
+          game.invitedPlayers.includes(p.id) &&
+          (p.unavailableDates || []).includes(gameDate)
+        );
+
+        // Auto-mark unavailable players as OUT
+        const checkedOutPlayers = [
+          ...(game.checkedOutPlayers || []),
+          ...unavailablePlayers.map((p) => p.id).filter((id) => !(game.checkedOutPlayers || []).includes(id)),
+        ];
+        const checkoutNotes = { ...(game.checkoutNotes || {}) };
+        unavailablePlayers.forEach((p) => {
+          if (!checkoutNotes[p.id]) {
+            checkoutNotes[p.id] = 'Unavailable';
+          }
+        });
+
+        return {
+          games: [
+            ...state.games,
+            {
+              ...game,
+              checkedOutPlayers,
+              checkoutNotes,
+            },
+          ],
+        };
+      }),
       updateGame: (id, updates) => set((state) => ({
         games: state.games.map((g) => (g.id === id ? { ...g, ...updates } : g)),
       })),
@@ -924,7 +954,37 @@ export const useTeamStore = create<TeamStore>()(
       },
 
       events: [],
-      addEvent: (event) => set((state) => ({ events: [...state.events, event] })),
+      addEvent: (event) => set((state) => {
+        // Check if any invited players are unavailable on this date
+        const eventDate = event.date.split('T')[0]; // Get YYYY-MM-DD
+        const unavailablePlayers = state.players.filter((p) =>
+          event.invitedPlayers.includes(p.id) &&
+          (p.unavailableDates || []).includes(eventDate)
+        );
+
+        // Auto-mark unavailable players as declined
+        const declinedPlayers = [
+          ...(event.declinedPlayers || []),
+          ...unavailablePlayers.map((p) => p.id).filter((id) => !(event.declinedPlayers || []).includes(id)),
+        ];
+        const declinedNotes = { ...(event.declinedNotes || {}) };
+        unavailablePlayers.forEach((p) => {
+          if (!declinedNotes[p.id]) {
+            declinedNotes[p.id] = 'Unavailable';
+          }
+        });
+
+        return {
+          events: [
+            ...state.events,
+            {
+              ...event,
+              declinedPlayers,
+              declinedNotes,
+            },
+          ],
+        };
+      }),
       updateEvent: (id, updates) => set((state) => ({
         events: state.events.map((e) => (e.id === id ? { ...e, ...updates } : e)),
       })),
