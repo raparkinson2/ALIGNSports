@@ -323,6 +323,7 @@ interface SwipeablePaymentPeriodRowProps {
   onMoveUp: () => void;
   onMoveDown: () => void;
   onEditAmount: () => void;
+  onEditTeamTotal: () => void;
   totalPeriods: number;
   isAdmin: boolean;
 }
@@ -336,6 +337,7 @@ function SwipeablePaymentPeriodRow({
   onMoveUp,
   onMoveDown,
   onEditAmount,
+  onEditTeamTotal,
   totalPeriods,
   isAdmin,
 }: SwipeablePaymentPeriodRowProps) {
@@ -344,6 +346,11 @@ function SwipeablePaymentPeriodRow({
 
   const paidCount = period.playerPayments.filter((pp) => pp.status === 'paid').length;
   const totalCount = period.playerPayments.length;
+
+  // Calculate total collected from all player payments
+  const totalCollected = period.playerPayments.reduce((sum, pp) => sum + (pp.amount ?? 0), 0);
+  const teamTotalOwed = period.teamTotalOwed;
+  const remainingBalance = teamTotalOwed !== undefined ? teamTotalOwed - totalCollected : undefined;
 
   const handleDelete = () => {
     translateX.value = withSpring(0);
@@ -412,11 +419,61 @@ function SwipeablePaymentPeriodRow({
           !isReorderMode && 'active:bg-slate-700/80'
         )}
       >
+        {/* Team Total Owed - Admin Only */}
+        {isAdmin && teamTotalOwed !== undefined && !isReorderMode && (
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation();
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onEditTeamTotal();
+            }}
+            className="bg-amber-500/20 rounded-lg p-3 mb-3 border border-amber-500/30 active:bg-amber-500/30"
+          >
+            <View className="flex-row items-center justify-between">
+              <View>
+                <Text className="text-amber-300 text-xs font-medium">Team Total Owed</Text>
+                <Text className="text-amber-400 text-lg font-bold">${teamTotalOwed.toLocaleString()}</Text>
+              </View>
+              <View>
+                <Text className="text-slate-400 text-xs">Collected</Text>
+                <Text className="text-green-400 text-lg font-bold">${totalCollected.toLocaleString()}</Text>
+              </View>
+              <View>
+                <Text className="text-slate-400 text-xs">Remaining</Text>
+                <Text className={cn(
+                  'text-lg font-bold',
+                  remainingBalance !== undefined && remainingBalance <= 0 ? 'text-green-400' : 'text-red-400'
+                )}>
+                  ${Math.max(0, remainingBalance ?? 0).toLocaleString()}
+                </Text>
+              </View>
+            </View>
+          </Pressable>
+        )}
+
+        {/* Add Team Total button if not set - Admin Only */}
+        {isAdmin && teamTotalOwed === undefined && !isReorderMode && (
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation();
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onEditTeamTotal();
+            }}
+            className="bg-amber-500/10 rounded-lg p-2 mb-3 border border-dashed border-amber-500/30 active:bg-amber-500/20"
+          >
+            <View className="flex-row items-center justify-center">
+              <Plus size={14} color="#f59e0b" />
+              <Text className="text-amber-400 text-xs font-medium ml-1">Add Team Total</Text>
+            </View>
+          </Pressable>
+        )}
+
         <View className="flex-row items-center justify-between">
           <View className="flex-1">
             <Text className="text-white font-semibold text-lg">{period.title}</Text>
             <View className="flex-row items-center">
               <Text className="text-green-400 font-bold">${period.amount}</Text>
+              <Text className="text-slate-500 text-xs ml-1">per player</Text>
               {isAdmin && !isReorderMode && (
                 <Pressable
                   onPress={(e) => {
@@ -524,9 +581,10 @@ export default function PaymentsScreen() {
   const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null);
   const [editPeriodAmount, setEditPeriodAmount] = useState('');
 
-  // Team total amount owed (admin only)
+  // Team total amount owed (admin only) - tied to a specific period
   const [isEditTeamTotalModalVisible, setIsEditTeamTotalModalVisible] = useState(false);
   const [editTeamTotalAmount, setEditTeamTotalAmount] = useState('');
+  const [editingTeamTotalPeriodId, setEditingTeamTotalPeriodId] = useState<string | null>(null);
 
   // Add player to period modal
   const [isAddPlayerModalVisible, setIsAddPlayerModalVisible] = useState(false);
@@ -612,21 +670,25 @@ export default function PaymentsScreen() {
   };
 
   const handleUpdateTeamTotalAmount = () => {
+    if (!editingTeamTotalPeriodId) return;
+
     if (!editTeamTotalAmount.trim()) {
       // Allow clearing the amount
-      setTeamSettings({ teamTotalAmountOwed: undefined });
+      updatePaymentPeriod(editingTeamTotalPeriodId, { teamTotalOwed: undefined });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setIsEditTeamTotalModalVisible(false);
       setEditTeamTotalAmount('');
+      setEditingTeamTotalPeriodId(null);
       return;
     }
     const amount = parseFloat(editTeamTotalAmount);
     if (isNaN(amount) || amount < 0) return;
 
-    setTeamSettings({ teamTotalAmountOwed: amount });
+    updatePaymentPeriod(editingTeamTotalPeriodId, { teamTotalOwed: amount });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsEditTeamTotalModalVisible(false);
     setEditTeamTotalAmount('');
+    setEditingTeamTotalPeriodId(null);
   };
 
   const handleAddPaymentEntry = () => {
@@ -833,38 +895,6 @@ export default function PaymentsScreen() {
           {/* Payment Periods - Admin Only */}
           {(isAdmin() || canManageTeam()) && (
             <Animated.View entering={FadeInDown.delay(150).springify()}>
-              {/* Team Total Amount Owed - Admin Only */}
-              {isAdmin() && (
-                <Pressable
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setEditTeamTotalAmount(teamSettings.teamTotalAmountOwed?.toString() || '');
-                    setIsEditTeamTotalModalVisible(true);
-                  }}
-                  className="bg-amber-500/20 rounded-xl p-4 mb-4 border border-amber-500/30 active:bg-amber-500/30"
-                >
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center flex-1">
-                      <View className="w-10 h-10 rounded-full bg-amber-500/30 items-center justify-center mr-3">
-                        <DollarSign size={20} color="#f59e0b" />
-                      </View>
-                      <View>
-                        <Text className="text-amber-300 text-xs font-medium uppercase tracking-wider">Team Total Owed</Text>
-                        <Text className="text-amber-400 text-2xl font-bold">
-                          {teamSettings.teamTotalAmountOwed !== undefined
-                            ? `$${teamSettings.teamTotalAmountOwed.toLocaleString()}`
-                            : 'Not Set'}
-                        </Text>
-                      </View>
-                    </View>
-                    <View className="bg-amber-500/30 rounded-lg px-3 py-2 flex-row items-center">
-                      <Edit3 size={14} color="#f59e0b" />
-                      <Text className="text-amber-400 text-xs font-medium ml-1">Edit</Text>
-                    </View>
-                  </View>
-                </Pressable>
-              )}
-
               <View className="flex-row items-center justify-between mb-3">
                 <View className="flex-row items-center">
                   <Users size={16} color="#a78bfa" />
@@ -932,6 +962,11 @@ export default function PaymentsScreen() {
                         setEditingPeriodId(period.id);
                         setEditPeriodAmount(period.amount.toString());
                         setIsEditAmountModalVisible(true);
+                      }}
+                      onEditTeamTotal={() => {
+                        setEditingTeamTotalPeriodId(period.id);
+                        setEditTeamTotalAmount(period.teamTotalOwed?.toString() || '');
+                        setIsEditTeamTotalModalVisible(true);
                       }}
                       totalPeriods={paymentPeriods.length}
                       isAdmin={isAdmin()}
@@ -1701,6 +1736,7 @@ export default function PaymentsScreen() {
         onRequestClose={() => {
           setIsEditTeamTotalModalVisible(false);
           setEditTeamTotalAmount('');
+          setEditingTeamTotalPeriodId(null);
         }}
       >
         <View className="flex-1 bg-slate-900">
@@ -1709,6 +1745,7 @@ export default function PaymentsScreen() {
               <Pressable onPress={() => {
                 setIsEditTeamTotalModalVisible(false);
                 setEditTeamTotalAmount('');
+                setEditingTeamTotalPeriodId(null);
               }}>
                 <X size={24} color="#64748b" />
               </Pressable>
@@ -1733,7 +1770,7 @@ export default function PaymentsScreen() {
                 />
               </View>
               <Text className="text-slate-500 text-sm mt-3">
-                Enter the total amount owed by the team. This is visible only to admins. Leave empty to clear.
+                Enter the total amount owed by the team for this payment period. Player payments will automatically subtract from this total. Leave empty to clear.
               </Text>
             </View>
           </SafeAreaView>

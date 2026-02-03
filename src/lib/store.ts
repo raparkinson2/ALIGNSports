@@ -466,6 +466,7 @@ export interface PaymentPeriod {
   dueDate?: string;
   playerPayments: PlayerPayment[];
   createdAt: string;
+  teamTotalOwed?: number; // Optional: Total amount owed by team for this period (admin-only)
 }
 
 export interface Event {
