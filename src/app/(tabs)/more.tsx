@@ -1146,7 +1146,7 @@ export default function MoreScreen() {
             >
               <Pressable
                 onPress={() => handleEditProfile(currentPlayer)}
-                className="bg-slate-800/80 rounded-2xl p-4 mb-6 border border-slate-700/50 active:bg-slate-700/80"
+                className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center">
                   <View className="relative">
@@ -1167,8 +1167,21 @@ export default function MoreScreen() {
             </Animated.View>
           )}
 
+          {/* Switch Team - only show if user belongs to multiple teams */}
+          {hasMultipleTeams && (
+            <Animated.View entering={FadeInDown.delay(75).springify()}>
+              <MenuItem
+                icon={<ArrowLeftRight size={20} color="#67e8f9" />}
+                title="Switch Team"
+                subtitle={`You're on ${userTeams.length} teams`}
+                onPress={handleSwitchTeam}
+                index={0}
+              />
+            </Animated.View>
+          )}
+
           {/* Communication Section */}
-          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-2">
             Communication
           </Text>
 
@@ -1282,17 +1295,6 @@ export default function MoreScreen() {
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
             Account
           </Text>
-
-          {/* Switch Team - only show if user belongs to multiple teams */}
-          {hasMultipleTeams && (
-            <MenuItem
-              icon={<ArrowLeftRight size={20} color="#67e8f9" />}
-              title="Switch Team"
-              subtitle={`You're on ${userTeams.length} teams`}
-              onPress={handleSwitchTeam}
-              index={3}
-            />
-          )}
 
           {/* Create New Team option */}
           <MenuItem
