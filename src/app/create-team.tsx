@@ -3,12 +3,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { useState } from 'react';
-import { ChevronLeft, User, Mail, Lock, Users, Check, Palette, X, Camera, ImageIcon, Phone, Hash, Edit3 } from 'lucide-react-native';
+import { ChevronLeft, User, Mail, Lock, Users, Check, Palette, X, Camera, ImageIcon, Phone, Hash, Edit3, UserCog, UserMinus, Heart } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { useTeamStore, Sport, SPORT_NAMES, Player, PlayerRole, SPORT_POSITIONS } from '@/lib/store';
+import { useTeamStore, Sport, SPORT_NAMES, Player, PlayerRole, PlayerStatus, SPORT_POSITIONS } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg';
@@ -98,6 +98,8 @@ export default function CreateTeamScreen() {
   const [phone, setPhone] = useState('');
   const [jerseyNumber, setJerseyNumber] = useState('');
   const [isCoach, setIsCoach] = useState(false);
+  const [playerStatus, setPlayerStatus] = useState<PlayerStatus>('active');
+  const [isParent, setIsParent] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [teamNameInput, setTeamNameInput] = useState('');
@@ -431,7 +433,9 @@ export default function CreateTeamScreen() {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      const roles: PlayerRole[] = isCoach ? ['admin', 'coach'] : ['admin'];
+      const roles: PlayerRole[] = ['admin'];
+      if (isCoach) roles.push('coach');
+      if (isParent) roles.push('parent');
 
       // Create the admin player object
       const adminPlayer: Player = {
@@ -444,7 +448,7 @@ export default function CreateTeamScreen() {
         number: isCoach ? '' : (jerseyNumber.trim() || '1'),
         position: isCoach ? 'Coach' : SPORT_POSITIONS[sport][0],
         roles,
-        status: 'active',
+        status: playerStatus,
         ...(avatar && { avatar }),
       };
 
@@ -659,49 +663,104 @@ export default function CreateTeamScreen() {
                   ) : null}
                 </View>
 
-                {/* Role Toggle: Coach or Player */}
+                {/* Role Selector - 2x2 Grid */}
                 <View className="mb-4">
                   <Text className="text-slate-400 text-sm mb-2">Your Role</Text>
-                  <View className="flex-row bg-slate-800/80 rounded-xl overflow-hidden border border-slate-700/50">
+                  {/* Row 1: Player & Reserve */}
+                  <View className="flex-row mb-2">
+                    {/* Player (Active) */}
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setIsCoach(false);
+                        setPlayerStatus('active');
                       }}
                       className={cn(
-                        'flex-1 py-4 items-center',
-                        !isCoach
-                          ? 'bg-cyan-600'
-                          : 'bg-transparent'
+                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
+                        playerStatus === 'active' ? 'bg-green-500' : 'bg-slate-800/80'
                       )}
                     >
-                      <Text className={cn(
-                        'font-semibold',
-                        !isCoach ? 'text-white' : 'text-slate-400'
-                      )}>
+                      <User size={16} color={playerStatus === 'active' ? 'white' : '#22c55e'} />
+                      <Text
+                        className={cn(
+                          'font-semibold text-sm mt-1',
+                          playerStatus === 'active' ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
                         Player
                       </Text>
                     </Pressable>
+                    {/* Reserve */}
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setIsCoach(true);
+                        setPlayerStatus('reserve');
                       }}
                       className={cn(
-                        'flex-1 py-4 items-center',
-                        isCoach
-                          ? 'bg-purple-600'
-                          : 'bg-transparent'
+                        'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                        playerStatus === 'reserve' ? 'bg-slate-600' : 'bg-slate-800/80'
                       )}
                     >
-                      <Text className={cn(
-                        'font-semibold',
-                        isCoach ? 'text-white' : 'text-slate-400'
-                      )}>
-                        Coach
+                      <UserMinus size={16} color={playerStatus === 'reserve' ? 'white' : '#94a3b8'} />
+                      <Text
+                        className={cn(
+                          'font-semibold text-sm mt-1',
+                          playerStatus === 'reserve' ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Reserve
                       </Text>
                     </Pressable>
                   </View>
+                  {/* Row 2: Coach & Parent */}
+                  <View className="flex-row">
+                    {/* Coach */}
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setIsCoach(!isCoach);
+                      }}
+                      className={cn(
+                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
+                        isCoach ? 'bg-cyan-500' : 'bg-slate-800/80'
+                      )}
+                    >
+                      <UserCog size={16} color={isCoach ? 'white' : '#67e8f9'} />
+                      <Text
+                        className={cn(
+                          'font-semibold text-sm mt-1',
+                          isCoach ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Coach
+                      </Text>
+                    </Pressable>
+                    {/* Parent */}
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setIsParent(!isParent);
+                      }}
+                      className={cn(
+                        'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                        isParent ? 'bg-pink-500' : 'bg-slate-800/80'
+                      )}
+                    >
+                      <Heart size={16} color={isParent ? 'white' : '#ec4899'} />
+                      <Text
+                        className={cn(
+                          'font-semibold text-sm mt-1',
+                          isParent ? 'text-white' : 'text-slate-400'
+                        )}
+                      >
+                        Parent
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <Text className="text-slate-500 text-xs mt-2">
+                    {isCoach
+                      ? 'Coaches don\'t need jersey numbers or positions'
+                      : 'Tap to toggle roles. You can have multiple roles.'}
+                  </Text>
                 </View>
 
                 {/* Jersey Number - Only shown for players */}
