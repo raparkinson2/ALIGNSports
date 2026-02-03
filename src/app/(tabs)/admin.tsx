@@ -348,7 +348,7 @@ export default function AdminScreen() {
   const [newPlayerStatus, setNewPlayerStatus] = useState<PlayerStatus>('active');
   const [newPlayerIsInjured, setNewPlayerIsInjured] = useState(false);
   const [newPlayerIsSuspended, setNewPlayerIsSuspended] = useState(false);
-  const [newPlayerIsCoach, setNewPlayerIsCoach] = useState(false);
+  const [newPlayerMemberRole, setNewPlayerMemberRole] = useState<'player' | 'reserve' | 'coach' | 'parent'>('player');
 
   // Invite modal state
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
@@ -519,11 +519,13 @@ export default function AdminScreen() {
     setNewPlayerStatus('active');
     setNewPlayerIsInjured(false);
     setNewPlayerIsSuspended(false);
-    setNewPlayerIsCoach(false);
+    setNewPlayerMemberRole('player');
   };
 
   const handleCreatePlayer = () => {
     const rawPhone = unformatPhone(newPlayerPhone);
+    const isCoachRole = newPlayerMemberRole === 'coach';
+    const isParentRole = newPlayerMemberRole === 'parent';
 
     if (!newPlayerFirstName.trim()) {
       Alert.alert('Missing Info', 'Please enter a first name.');
@@ -533,8 +535,8 @@ export default function AdminScreen() {
       Alert.alert('Missing Info', 'Please enter a last name.');
       return;
     }
-    // Only require jersey number if not a coach
-    if (!newPlayerIsCoach && !newPlayerNumber.trim()) {
+    // Only require jersey number if not a coach or parent
+    if (!isCoachRole && !isParentRole && !newPlayerNumber.trim()) {
       Alert.alert('Missing Info', 'Please enter a jersey number.');
       return;
     }
@@ -546,30 +548,36 @@ export default function AdminScreen() {
       Alert.alert('Missing Info', 'Please enter an email address.');
       return;
     }
-    // Require at least one position if not a coach
-    if (!newPlayerIsCoach && newPlayerPositions.length === 0) {
+    // Require at least one position if not a coach or parent
+    if (!isCoachRole && !isParentRole && newPlayerPositions.length === 0) {
       Alert.alert('Missing Info', 'Please select at least one position.');
       return;
     }
 
-    // Build roles array - include 'coach' if isCoach is true
-    const roles: PlayerRole[] = [...newPlayerRoles];
-    if (newPlayerIsCoach && !roles.includes('coach')) {
+    // Build roles array based on memberRole
+    const roles: PlayerRole[] = newPlayerRoles.filter(r => r !== 'coach' && r !== 'parent');
+    if (isCoachRole) {
       roles.push('coach');
     }
+    if (isParentRole) {
+      roles.push('parent');
+    }
+
+    // Determine status based on memberRole
+    const effectiveStatus: PlayerStatus = newPlayerMemberRole === 'reserve' ? 'reserve' : 'active';
 
     const newPlayer: Player = {
       id: Date.now().toString(),
       firstName: newPlayerFirstName.trim(),
       lastName: newPlayerLastName.trim(),
-      number: newPlayerIsCoach ? '' : newPlayerNumber.trim(),
-      position: newPlayerIsCoach ? 'Coach' : newPlayerPositions[0],
-      positions: newPlayerIsCoach ? ['Coach'] : newPlayerPositions,
+      number: (isCoachRole || isParentRole) ? '' : newPlayerNumber.trim(),
+      position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : newPlayerPositions[0]),
+      positions: isCoachRole ? ['Coach'] : (isParentRole ? ['Parent'] : newPlayerPositions),
       phone: rawPhone,
       email: newPlayerEmail.trim(),
       avatar: undefined,
       roles: roles,
-      status: newPlayerStatus,
+      status: effectiveStatus,
       isInjured: newPlayerIsInjured,
       isSuspended: newPlayerIsSuspended,
     };
@@ -2160,8 +2168,8 @@ export default function AdminScreen() {
                 </View>
               </View>
 
-              {/* Jersey Number Row - Hidden for coaches */}
-              {!newPlayerIsCoach && (
+              {/* Jersey Number Row - Hidden for coaches and parents */}
+              {newPlayerMemberRole !== 'coach' && newPlayerMemberRole !== 'parent' && (
                 <View className="mb-5">
                   <Text className="text-slate-400 text-sm mb-2">Jersey Number<Text className="text-red-400">*</Text></Text>
                   <TextInput
@@ -2210,8 +2218,8 @@ export default function AdminScreen() {
                 />
               </View>
 
-              {/* Position - Hidden for coaches */}
-              {!newPlayerIsCoach && (
+              {/* Position - Hidden for coaches and parents */}
+              {newPlayerMemberRole !== 'coach' && newPlayerMemberRole !== 'parent' && (
                 <View className="mb-5">
                   <Text className="text-slate-400 text-sm mb-1">Positions<Text className="text-red-400">*</Text></Text>
                   <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
@@ -2250,9 +2258,9 @@ export default function AdminScreen() {
                 </View>
               )}
 
-              {/* Roles - 2x2 Grid */}
+              {/* Roles - 2x2 Grid - Single Select */}
               <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Roles</Text>
+                <Text className="text-slate-400 text-sm mb-2">Role</Text>
                 {(() => {
                   const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
                   const showPlayer = enabledRoles.includes('player');
@@ -2271,19 +2279,19 @@ export default function AdminScreen() {
                             <Pressable
                               onPress={() => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                setNewPlayerStatus('active');
+                                setNewPlayerMemberRole('player');
                               }}
                               className={cn(
                                 'flex-1 py-3 px-2 rounded-xl items-center justify-center',
                                 showReserve && 'mr-2',
-                                newPlayerStatus === 'active' ? 'bg-green-500' : 'bg-slate-800'
+                                newPlayerMemberRole === 'player' ? 'bg-green-500' : 'bg-slate-800'
                               )}
                             >
-                              <User size={16} color={newPlayerStatus === 'active' ? 'white' : '#22c55e'} />
+                              <User size={16} color={newPlayerMemberRole === 'player' ? 'white' : '#22c55e'} />
                               <Text
                                 className={cn(
                                   'font-semibold text-sm mt-1',
-                                  newPlayerStatus === 'active' ? 'text-white' : 'text-slate-400'
+                                  newPlayerMemberRole === 'player' ? 'text-white' : 'text-slate-400'
                                 )}
                               >
                                 Player
@@ -2294,18 +2302,18 @@ export default function AdminScreen() {
                             <Pressable
                               onPress={() => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                setNewPlayerStatus('reserve');
+                                setNewPlayerMemberRole('reserve');
                               }}
                               className={cn(
                                 'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                                newPlayerStatus === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
+                                newPlayerMemberRole === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
                               )}
                             >
-                              <UserMinus size={16} color={newPlayerStatus === 'reserve' ? 'white' : '#94a3b8'} />
+                              <UserMinus size={16} color={newPlayerMemberRole === 'reserve' ? 'white' : '#94a3b8'} />
                               <Text
                                 className={cn(
                                   'font-semibold text-sm mt-1',
-                                  newPlayerStatus === 'reserve' ? 'text-white' : 'text-slate-400'
+                                  newPlayerMemberRole === 'reserve' ? 'text-white' : 'text-slate-400'
                                 )}
                               >
                                 Reserve
@@ -2321,19 +2329,19 @@ export default function AdminScreen() {
                             <Pressable
                               onPress={() => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                setNewPlayerIsCoach(!newPlayerIsCoach);
+                                setNewPlayerMemberRole('coach');
                               }}
                               className={cn(
                                 'flex-1 py-3 px-2 rounded-xl items-center justify-center',
                                 showParent && 'mr-2',
-                                newPlayerIsCoach ? 'bg-cyan-500' : 'bg-slate-800'
+                                newPlayerMemberRole === 'coach' ? 'bg-cyan-500' : 'bg-slate-800'
                               )}
                             >
-                              <UserCog size={16} color={newPlayerIsCoach ? 'white' : '#67e8f9'} />
+                              <UserCog size={16} color={newPlayerMemberRole === 'coach' ? 'white' : '#67e8f9'} />
                               <Text
                                 className={cn(
                                   'font-semibold text-sm mt-1',
-                                  newPlayerIsCoach ? 'text-white' : 'text-slate-400'
+                                  newPlayerMemberRole === 'coach' ? 'text-white' : 'text-slate-400'
                                 )}
                               >
                                 Coach
@@ -2344,22 +2352,18 @@ export default function AdminScreen() {
                             <Pressable
                               onPress={() => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                if (newPlayerRoles.includes('parent')) {
-                                  setNewPlayerRoles(newPlayerRoles.filter((r) => r !== 'parent'));
-                                } else {
-                                  setNewPlayerRoles([...newPlayerRoles, 'parent']);
-                                }
+                                setNewPlayerMemberRole('parent');
                               }}
                               className={cn(
                                 'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                                newPlayerRoles.includes('parent') ? 'bg-pink-500' : 'bg-slate-800'
+                                newPlayerMemberRole === 'parent' ? 'bg-pink-500' : 'bg-slate-800'
                               )}
                             >
-                              <Heart size={16} color={newPlayerRoles.includes('parent') ? 'white' : '#ec4899'} />
+                              <Heart size={16} color={newPlayerMemberRole === 'parent' ? 'white' : '#ec4899'} />
                               <Text
                                 className={cn(
                                   'font-semibold text-sm mt-1',
-                                  newPlayerRoles.includes('parent') ? 'text-white' : 'text-slate-400'
+                                  newPlayerMemberRole === 'parent' ? 'text-white' : 'text-slate-400'
                                 )}
                               >
                                 Parent
@@ -2372,9 +2376,9 @@ export default function AdminScreen() {
                   );
                 })()}
                 <Text className="text-slate-500 text-xs mt-2">
-                  {newPlayerIsCoach
-                    ? 'Coaches don\'t need jersey numbers or positions'
-                    : 'Tap to toggle roles. Members can have multiple roles.'}
+                  {newPlayerMemberRole === 'coach' || newPlayerMemberRole === 'parent'
+                    ? `${newPlayerMemberRole === 'coach' ? 'Coaches' : 'Parents'} don't need jersey numbers or positions`
+                    : 'Select one role for this member.'}
                 </Text>
               </View>
 

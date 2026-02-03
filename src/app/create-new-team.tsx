@@ -8,7 +8,7 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { useTeamStore, Sport, SPORT_NAMES, Player, PlayerRole, PlayerStatus, SPORT_POSITIONS, getPlayerName } from '@/lib/store';
+import { useTeamStore, Sport, SPORT_NAMES, Player, PlayerRole, SPORT_POSITIONS, getPlayerName } from '@/lib/store';
 import { cn } from '@/lib/cn';
 
 // Preset jersey colors for quick selection
@@ -49,9 +49,17 @@ export default function CreateNewTeamScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
   const [editingColorName, setEditingColorName] = useState('');
-  const [isCoach, setIsCoach] = useState(currentPlayer?.roles?.includes('coach') ?? false);
-  const [playerStatus, setPlayerStatus] = useState<PlayerStatus>(currentPlayer?.status || 'active');
-  const [isParent, setIsParent] = useState(currentPlayer?.roles?.includes('parent') ?? false);
+
+  // Initialize memberRole based on current player's role
+  const getInitialMemberRole = (): 'player' | 'reserve' | 'coach' | 'parent' => {
+    if (currentPlayer?.roles?.includes('coach')) return 'coach';
+    if (currentPlayer?.roles?.includes('parent')) return 'parent';
+    if (currentPlayer?.status === 'reserve') return 'reserve';
+    return 'player';
+  };
+  const [memberRole, setMemberRole] = useState<'player' | 'reserve' | 'coach' | 'parent'>(getInitialMemberRole());
+  const isCoach = memberRole === 'coach';
+  const isParent = memberRole === 'parent';
   const [jerseyNumber, setJerseyNumber] = useState(currentPlayer?.number || '');
 
   // Team logo picker functions
@@ -156,7 +164,7 @@ export default function CreateNewTeamScreen() {
         number: isCoach ? '' : (jerseyNumber.trim() || '1'),
         position: isCoach ? 'Coach' : SPORT_POSITIONS[sport][0],
         roles,
-        status: playerStatus,
+        status: memberRole === 'reserve' ? 'reserve' : 'active',
         avatar: currentPlayer.avatar,
       };
 
@@ -366,18 +374,18 @@ export default function CreateNewTeamScreen() {
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setPlayerStatus('active');
+                        setMemberRole('player');
                       }}
                       className={cn(
                         'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                        playerStatus === 'active' ? 'bg-green-500' : 'bg-slate-800/80'
+                        memberRole === 'player' ? 'bg-green-500' : 'bg-slate-800/80'
                       )}
                     >
-                      <User size={16} color={playerStatus === 'active' ? 'white' : '#22c55e'} />
+                      <User size={16} color={memberRole === 'player' ? 'white' : '#22c55e'} />
                       <Text
                         className={cn(
                           'font-semibold text-sm mt-1',
-                          playerStatus === 'active' ? 'text-white' : 'text-slate-400'
+                          memberRole === 'player' ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Player
@@ -387,18 +395,18 @@ export default function CreateNewTeamScreen() {
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setPlayerStatus('reserve');
+                        setMemberRole('reserve');
                       }}
                       className={cn(
                         'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                        playerStatus === 'reserve' ? 'bg-slate-600' : 'bg-slate-800/80'
+                        memberRole === 'reserve' ? 'bg-slate-600' : 'bg-slate-800/80'
                       )}
                     >
-                      <UserMinus size={16} color={playerStatus === 'reserve' ? 'white' : '#94a3b8'} />
+                      <UserMinus size={16} color={memberRole === 'reserve' ? 'white' : '#94a3b8'} />
                       <Text
                         className={cn(
                           'font-semibold text-sm mt-1',
-                          playerStatus === 'reserve' ? 'text-white' : 'text-slate-400'
+                          memberRole === 'reserve' ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Reserve
@@ -411,18 +419,18 @@ export default function CreateNewTeamScreen() {
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setIsCoach(!isCoach);
+                        setMemberRole('coach');
                       }}
                       className={cn(
                         'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                        isCoach ? 'bg-cyan-500' : 'bg-slate-800/80'
+                        memberRole === 'coach' ? 'bg-cyan-500' : 'bg-slate-800/80'
                       )}
                     >
-                      <UserCog size={16} color={isCoach ? 'white' : '#67e8f9'} />
+                      <UserCog size={16} color={memberRole === 'coach' ? 'white' : '#67e8f9'} />
                       <Text
                         className={cn(
                           'font-semibold text-sm mt-1',
-                          isCoach ? 'text-white' : 'text-slate-400'
+                          memberRole === 'coach' ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Coach
@@ -432,18 +440,18 @@ export default function CreateNewTeamScreen() {
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setIsParent(!isParent);
+                        setMemberRole('parent');
                       }}
                       className={cn(
                         'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                        isParent ? 'bg-pink-500' : 'bg-slate-800/80'
+                        memberRole === 'parent' ? 'bg-pink-500' : 'bg-slate-800/80'
                       )}
                     >
-                      <Heart size={16} color={isParent ? 'white' : '#ec4899'} />
+                      <Heart size={16} color={memberRole === 'parent' ? 'white' : '#ec4899'} />
                       <Text
                         className={cn(
                           'font-semibold text-sm mt-1',
-                          isParent ? 'text-white' : 'text-slate-400'
+                          memberRole === 'parent' ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Parent
@@ -453,7 +461,7 @@ export default function CreateNewTeamScreen() {
                   <Text className="text-slate-500 text-xs mt-2">
                     {isCoach
                       ? 'Coaches don\'t need jersey numbers or positions'
-                      : 'Tap to toggle roles. You can have multiple roles.'}
+                      : 'Select your role on the team'}
                   </Text>
                 </View>
 

@@ -404,11 +404,11 @@ export default function RosterScreen() {
   const [email, setEmail] = useState('');
   const [playerRoles, setPlayerRoles] = useState<PlayerRole[]>([]);
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus>('active');
+  const [memberRole, setMemberRole] = useState<'player' | 'reserve' | 'coach' | 'parent'>('player');
   const [isInjured, setIsInjured] = useState(false);
   const [isSuspended, setIsSuspended] = useState(false);
   const [injuryDuration, setInjuryDuration] = useState<StatusDuration | undefined>(undefined);
   const [suspensionDuration, setSuspensionDuration] = useState<StatusDuration | undefined>(undefined);
-  const [isCoach, setIsCoach] = useState(false);
 
   // Invite modal state
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
@@ -423,11 +423,11 @@ export default function RosterScreen() {
     setEmail('');
     setPlayerRoles([]);
     setPlayerStatus('active');
+    setMemberRole('player');
     setIsInjured(false);
     setIsSuspended(false);
     setInjuryDuration(undefined);
     setSuspensionDuration(undefined);
-    setIsCoach(false);
     setEditingPlayer(null);
   };
 
@@ -460,7 +460,16 @@ export default function RosterScreen() {
     setIsSuspended(player.isSuspended || false);
     setInjuryDuration(player.injuryDuration);
     setSuspensionDuration(player.suspensionDuration);
-    setIsCoach(player.roles?.includes('coach') || player.position === 'Coach' || false);
+    // Determine member role from player data
+    if (player.roles?.includes('coach') || player.position === 'Coach') {
+      setMemberRole('coach');
+    } else if (player.roles?.includes('parent')) {
+      setMemberRole('parent');
+    } else if (player.status === 'reserve') {
+      setMemberRole('reserve');
+    } else {
+      setMemberRole('player');
+    }
     setIsModalVisible(true);
   };
 
@@ -487,11 +496,14 @@ export default function RosterScreen() {
   };
 
   const handleSave = () => {
-    // Only require jersey number if not a coach
-    if (!firstName.trim() || !lastName.trim() || (!isCoach && !number.trim())) return;
+    const isCoachRole = memberRole === 'coach';
+    const isParentRole = memberRole === 'parent';
 
-    // Require at least one position if not a coach
-    if (!isCoach && selectedPositions.length === 0) {
+    // Only require jersey number if not a coach or parent
+    if (!firstName.trim() || !lastName.trim() || (!isCoachRole && !isParentRole && !number.trim())) return;
+
+    // Require at least one position if not a coach or parent
+    if (!isCoachRole && !isParentRole && selectedPositions.length === 0) {
       Alert.alert('Missing Info', 'Please select at least one position.');
       return;
     }
@@ -501,22 +513,25 @@ export default function RosterScreen() {
     // Store raw phone digits
     const rawPhone = unformatPhone(phone);
 
-    // Build roles array - include 'coach' if isCoach is true
-    const roles: PlayerRole[] = [...playerRoles];
-    if (isCoach && !roles.includes('coach')) {
+    // Build roles array based on memberRole
+    const roles: PlayerRole[] = playerRoles.filter(r => r !== 'coach' && r !== 'parent');
+    if (isCoachRole) {
       roles.push('coach');
-    } else if (!isCoach && roles.includes('coach')) {
-      const idx = roles.indexOf('coach');
-      if (idx > -1) roles.splice(idx, 1);
     }
+    if (isParentRole) {
+      roles.push('parent');
+    }
+
+    // Determine status based on memberRole
+    const effectiveStatus: PlayerStatus = memberRole === 'reserve' ? 'reserve' : 'active';
 
     if (editingPlayer) {
       const updates: Partial<Player> = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        number: isCoach ? '' : number.trim(),
-        position: isCoach ? 'Coach' : selectedPositions[0],
-        positions: isCoach ? ['Coach'] : selectedPositions,
+        number: (isCoachRole || isParentRole) ? '' : number.trim(),
+        position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : selectedPositions[0]),
+        positions: isCoachRole ? ['Coach'] : (isParentRole ? ['Parent'] : selectedPositions),
         phone: rawPhone || undefined,
         email: email.trim() || undefined,
       };
@@ -524,14 +539,14 @@ export default function RosterScreen() {
       // Only admins can change roles and status
       if (isAdmin()) {
         updates.roles = roles;
-        updates.status = playerStatus;
+        updates.status = effectiveStatus;
         updates.isInjured = isInjured;
         updates.isSuspended = isSuspended;
         updates.injuryDuration = isInjured ? injuryDuration : undefined;
         updates.suspensionDuration = isSuspended ? suspensionDuration : undefined;
       }
 
-      console.log('Saving player updates:', { isInjured, isSuspended, isCoach, updates });
+      console.log('Saving player updates:', { isInjured, isSuspended, memberRole, updates });
       updatePlayer(editingPlayer.id, updates);
       setIsModalVisible(false);
       resetForm();
@@ -540,13 +555,13 @@ export default function RosterScreen() {
         id: Date.now().toString(),
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        number: isCoach ? '' : number.trim(),
-        position: isCoach ? 'Coach' : selectedPositions[0],
-        positions: isCoach ? ['Coach'] : selectedPositions,
+        number: (isCoachRole || isParentRole) ? '' : number.trim(),
+        position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : selectedPositions[0]),
+        positions: isCoachRole ? ['Coach'] : (isParentRole ? ['Parent'] : selectedPositions),
         phone: rawPhone || undefined,
         email: email.trim() || undefined,
         roles: isAdmin() ? roles : [],
-        status: isAdmin() ? playerStatus : 'active',
+        status: isAdmin() ? effectiveStatus : 'active',
         isInjured: isAdmin() ? isInjured : false,
         isSuspended: isAdmin() ? isSuspended : false,
       };
@@ -853,8 +868,8 @@ export default function RosterScreen() {
                 </View>
               )}
 
-              {/* Position Selector - Multiple Selection - Hidden for coaches */}
-              {!isCoach && (
+              {/* Position Selector - Multiple Selection - Hidden for coaches and parents */}
+              {memberRole !== 'coach' && memberRole !== 'parent' && (
                 <View className="mb-5">
                   <Text className="text-slate-400 text-sm mb-1">Positions<Text className="text-red-400">*</Text></Text>
                   <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
@@ -1095,10 +1110,10 @@ export default function RosterScreen() {
                 </View>
               )}
 
-              {/* Role Selector - Admin Only */}
+              {/* Role Selector - Admin Only - Single Select */}
               {isAdmin() && (
                 <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Roles</Text>
+                  <Text className="text-slate-400 text-sm mb-2">Role</Text>
                   {(() => {
                     const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
                     const showPlayer = enabledRoles.includes('player');
@@ -1118,19 +1133,19 @@ export default function RosterScreen() {
                               <Pressable
                                 onPress={() => {
                                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                  setPlayerStatus('active');
+                                  setMemberRole('player');
                                 }}
                                 className={cn(
                                   'flex-1 py-3 px-2 rounded-xl items-center justify-center',
                                   showReserve && 'mr-2',
-                                  playerStatus === 'active' ? 'bg-green-500' : 'bg-slate-800'
+                                  memberRole === 'player' ? 'bg-green-500' : 'bg-slate-800'
                                 )}
                               >
-                                <User size={16} color={playerStatus === 'active' ? 'white' : '#22c55e'} />
+                                <User size={16} color={memberRole === 'player' ? 'white' : '#22c55e'} />
                                 <Text
                                   className={cn(
                                     'font-semibold text-sm mt-1',
-                                    playerStatus === 'active' ? 'text-white' : 'text-slate-400'
+                                    memberRole === 'player' ? 'text-white' : 'text-slate-400'
                                   )}
                                 >
                                   Player
@@ -1142,18 +1157,18 @@ export default function RosterScreen() {
                               <Pressable
                                 onPress={() => {
                                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                  setPlayerStatus('reserve');
+                                  setMemberRole('reserve');
                                 }}
                                 className={cn(
                                   'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                                  playerStatus === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
+                                  memberRole === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
                                 )}
                               >
-                                <UserMinus size={16} color={playerStatus === 'reserve' ? 'white' : '#94a3b8'} />
+                                <UserMinus size={16} color={memberRole === 'reserve' ? 'white' : '#94a3b8'} />
                                 <Text
                                   className={cn(
                                     'font-semibold text-sm mt-1',
-                                    playerStatus === 'reserve' ? 'text-white' : 'text-slate-400'
+                                    memberRole === 'reserve' ? 'text-white' : 'text-slate-400'
                                   )}
                                 >
                                   Reserve
@@ -1170,19 +1185,19 @@ export default function RosterScreen() {
                               <Pressable
                                 onPress={() => {
                                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                  setIsCoach(!isCoach);
+                                  setMemberRole('coach');
                                 }}
                                 className={cn(
                                   'flex-1 py-3 px-2 rounded-xl items-center justify-center',
                                   showParent && 'mr-2',
-                                  isCoach ? 'bg-cyan-500' : 'bg-slate-800'
+                                  memberRole === 'coach' ? 'bg-cyan-500' : 'bg-slate-800'
                                 )}
                               >
-                                <UserCog size={16} color={isCoach ? 'white' : '#67e8f9'} />
+                                <UserCog size={16} color={memberRole === 'coach' ? 'white' : '#67e8f9'} />
                                 <Text
                                   className={cn(
                                     'font-semibold text-sm mt-1',
-                                    isCoach ? 'text-white' : 'text-slate-400'
+                                    memberRole === 'coach' ? 'text-white' : 'text-slate-400'
                                   )}
                                 >
                                   Coach
@@ -1194,22 +1209,18 @@ export default function RosterScreen() {
                               <Pressable
                                 onPress={() => {
                                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                  if (playerRoles.includes('parent')) {
-                                    setPlayerRoles(playerRoles.filter((r) => r !== 'parent'));
-                                  } else {
-                                    setPlayerRoles([...playerRoles, 'parent']);
-                                  }
+                                  setMemberRole('parent');
                                 }}
                                 className={cn(
                                   'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                                  playerRoles.includes('parent') ? 'bg-pink-500' : 'bg-slate-800'
+                                  memberRole === 'parent' ? 'bg-pink-500' : 'bg-slate-800'
                                 )}
                               >
-                                <Heart size={16} color={playerRoles.includes('parent') ? 'white' : '#ec4899'} />
+                                <Heart size={16} color={memberRole === 'parent' ? 'white' : '#ec4899'} />
                                 <Text
                                   className={cn(
                                     'font-semibold text-sm mt-1',
-                                    playerRoles.includes('parent') ? 'text-white' : 'text-slate-400'
+                                    memberRole === 'parent' ? 'text-white' : 'text-slate-400'
                                   )}
                                 >
                                   Parent
@@ -1222,9 +1233,9 @@ export default function RosterScreen() {
                     );
                   })()}
                   <Text className="text-slate-500 text-xs mt-2">
-                    {isCoach
-                      ? 'Coaches don\'t need jersey numbers or positions'
-                      : 'Tap to toggle roles. Members can have multiple roles.'}
+                    {memberRole === 'coach' || memberRole === 'parent'
+                      ? `${memberRole === 'coach' ? 'Coaches' : 'Parents'} don't need jersey numbers or positions`
+                      : 'Select one role for this member.'}
                   </Text>
 
                   {/* Admin Roles: Captain & Admin */}

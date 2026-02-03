@@ -97,9 +97,9 @@ export default function CreateTeamScreen() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [jerseyNumber, setJerseyNumber] = useState('');
-  const [isCoach, setIsCoach] = useState(false);
-  const [playerStatus, setPlayerStatus] = useState<PlayerStatus>('active');
-  const [isParent, setIsParent] = useState(false);
+  const [memberRole, setMemberRole] = useState<'player' | 'reserve' | 'coach' | 'parent'>('player');
+  const isCoach = memberRole === 'coach';
+  const isParent = memberRole === 'parent';
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [teamNameInput, setTeamNameInput] = useState('');
@@ -448,7 +448,7 @@ export default function CreateTeamScreen() {
         number: isCoach ? '' : (jerseyNumber.trim() || '1'),
         position: isCoach ? 'Coach' : SPORT_POSITIONS[sport][0],
         roles,
-        status: playerStatus,
+        status: memberRole === 'reserve' ? 'reserve' : 'active',
         ...(avatar && { avatar }),
       };
 
@@ -672,18 +672,18 @@ export default function CreateTeamScreen() {
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setPlayerStatus('active');
+                        setMemberRole('player');
                       }}
                       className={cn(
                         'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                        playerStatus === 'active' ? 'bg-green-500' : 'bg-slate-800/80'
+                        memberRole === 'player' ? 'bg-green-500' : 'bg-slate-800/80'
                       )}
                     >
-                      <User size={16} color={playerStatus === 'active' ? 'white' : '#22c55e'} />
+                      <User size={16} color={memberRole === 'player' ? 'white' : '#22c55e'} />
                       <Text
                         className={cn(
                           'font-semibold text-sm mt-1',
-                          playerStatus === 'active' ? 'text-white' : 'text-slate-400'
+                          memberRole === 'player' ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Player
@@ -693,18 +693,18 @@ export default function CreateTeamScreen() {
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setPlayerStatus('reserve');
+                        setMemberRole('reserve');
                       }}
                       className={cn(
                         'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                        playerStatus === 'reserve' ? 'bg-slate-600' : 'bg-slate-800/80'
+                        memberRole === 'reserve' ? 'bg-slate-600' : 'bg-slate-800/80'
                       )}
                     >
-                      <UserMinus size={16} color={playerStatus === 'reserve' ? 'white' : '#94a3b8'} />
+                      <UserMinus size={16} color={memberRole === 'reserve' ? 'white' : '#94a3b8'} />
                       <Text
                         className={cn(
                           'font-semibold text-sm mt-1',
-                          playerStatus === 'reserve' ? 'text-white' : 'text-slate-400'
+                          memberRole === 'reserve' ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Reserve
@@ -717,18 +717,18 @@ export default function CreateTeamScreen() {
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setIsCoach(!isCoach);
+                        setMemberRole('coach');
                       }}
                       className={cn(
                         'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                        isCoach ? 'bg-cyan-500' : 'bg-slate-800/80'
+                        memberRole === 'coach' ? 'bg-cyan-500' : 'bg-slate-800/80'
                       )}
                     >
-                      <UserCog size={16} color={isCoach ? 'white' : '#67e8f9'} />
+                      <UserCog size={16} color={memberRole === 'coach' ? 'white' : '#67e8f9'} />
                       <Text
                         className={cn(
                           'font-semibold text-sm mt-1',
-                          isCoach ? 'text-white' : 'text-slate-400'
+                          memberRole === 'coach' ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Coach
@@ -738,18 +738,18 @@ export default function CreateTeamScreen() {
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setIsParent(!isParent);
+                        setMemberRole('parent');
                       }}
                       className={cn(
                         'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                        isParent ? 'bg-pink-500' : 'bg-slate-800/80'
+                        memberRole === 'parent' ? 'bg-pink-500' : 'bg-slate-800/80'
                       )}
                     >
-                      <Heart size={16} color={isParent ? 'white' : '#ec4899'} />
+                      <Heart size={16} color={memberRole === 'parent' ? 'white' : '#ec4899'} />
                       <Text
                         className={cn(
                           'font-semibold text-sm mt-1',
-                          isParent ? 'text-white' : 'text-slate-400'
+                          memberRole === 'parent' ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Parent
@@ -759,7 +759,7 @@ export default function CreateTeamScreen() {
                   <Text className="text-slate-500 text-xs mt-2">
                     {isCoach
                       ? 'Coaches don\'t need jersey numbers or positions'
-                      : 'Tap to toggle roles. You can have multiple roles.'}
+                      : 'Select your role on the team'}
                   </Text>
                 </View>
 
