@@ -253,6 +253,7 @@ export interface Player {
   isSuspended?: boolean; // Player is suspended
   injuryDuration?: StatusDuration; // Duration of injury
   suspensionDuration?: StatusDuration; // Duration of suspension
+  statusEndDate?: string; // ISO date string (YYYY-MM-DD) when injury/suspension ends
   notificationPreferences?: NotificationPreferences;
   stats?: PlayerStats; // Regular player stats (batter for baseball, skater for hockey/soccer)
   pitcherStats?: BaseballPitcherStats; // Separate stats for pitching (baseball only)
@@ -287,6 +288,29 @@ export const getPrimaryPosition = (player: Player): string => {
     return player.positions[0];
   }
   return player.position;
+};
+
+// Helper to check if a player is unavailable due to injury/suspension on a specific date
+export const isPlayerUnavailableForDate = (player: Player, dateStr: string): { unavailable: boolean; reason?: string } => {
+  // Check if player is injured or suspended AND has an end date
+  if ((player.isInjured || player.isSuspended) && player.statusEndDate) {
+    // Parse dates for comparison (compare date strings directly for YYYY-MM-DD format)
+    const gameDate = dateStr.split('T')[0]; // Ensure we have just the date part
+    const endDate = player.statusEndDate;
+
+    // If game date is on or before the end date, player is unavailable
+    if (gameDate <= endDate) {
+      const reason = player.isInjured ? 'Injured' : 'Suspended';
+      return { unavailable: true, reason };
+    }
+  }
+
+  // Also check unavailableDates (existing availability system)
+  if (player.unavailableDates?.includes(dateStr.split('T')[0])) {
+    return { unavailable: true, reason: 'Unavailable' };
+  }
+
+  return { unavailable: false };
 };
 
 // Hockey Lines Types
@@ -816,20 +840,39 @@ export const useTeamStore = create<TeamStore>()(
       addGame: (game) => set((state) => {
         // Check if any invited players are unavailable on this date
         const gameDate = game.date.split('T')[0]; // Get YYYY-MM-DD
+
+        // Players unavailable due to their availability calendar
         const unavailablePlayers = state.players.filter((p) =>
           game.invitedPlayers.includes(p.id) &&
           (p.unavailableDates || []).includes(gameDate)
         );
 
+        // Players unavailable due to injury/suspension with end date
+        const injuredSuspendedPlayers = state.players.filter((p) => {
+          if (!game.invitedPlayers.includes(p.id)) return false;
+          const result = isPlayerUnavailableForDate(p, gameDate);
+          return result.unavailable && result.reason !== 'Unavailable'; // Already handled above
+        });
+
+        // Combine all unavailable players
+        const allUnavailablePlayers = [...unavailablePlayers, ...injuredSuspendedPlayers];
+
         // Auto-mark unavailable players as OUT
         const checkedOutPlayers = [
           ...(game.checkedOutPlayers || []),
-          ...unavailablePlayers.map((p) => p.id).filter((id) => !(game.checkedOutPlayers || []).includes(id)),
+          ...allUnavailablePlayers.map((p) => p.id).filter((id) => !(game.checkedOutPlayers || []).includes(id)),
         ];
         const checkoutNotes = { ...(game.checkoutNotes || {}) };
-        unavailablePlayers.forEach((p) => {
+        allUnavailablePlayers.forEach((p) => {
           if (!checkoutNotes[p.id]) {
-            checkoutNotes[p.id] = 'Unavailable';
+            // Set appropriate reason
+            if (p.isInjured && p.statusEndDate && gameDate <= p.statusEndDate) {
+              checkoutNotes[p.id] = 'Injured';
+            } else if (p.isSuspended && p.statusEndDate && gameDate <= p.statusEndDate) {
+              checkoutNotes[p.id] = 'Suspended';
+            } else {
+              checkoutNotes[p.id] = 'Unavailable';
+            }
           }
         });
 

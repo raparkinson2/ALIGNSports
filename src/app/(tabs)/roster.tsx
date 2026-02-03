@@ -18,11 +18,14 @@ import {
   User,
   UserMinus,
   Heart,
+  Calendar,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { format, parseISO } from 'date-fns';
 import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, PlayerStats, getPlayerPositions, getPrimaryPosition, getPlayerName, StatusDuration, DurationUnit } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
@@ -277,26 +280,34 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
             </View>
             <View className="flex-row items-center">
               <Text className="text-slate-400 text-sm">{positionDisplay}</Text>
-              {/* Injured indicator with duration */}
+              {/* Injured indicator with end date */}
               {player.isInjured && (
                 <View className="flex-row items-center ml-2">
                   <Text className="text-red-500 font-black text-base">+</Text>
-                  {player.injuryDuration && (
+                  {player.statusEndDate ? (
+                    <Text className="text-red-400 text-xs ml-1">
+                      (until {format(parseISO(player.statusEndDate), 'MMM d')})
+                    </Text>
+                  ) : player.injuryDuration ? (
                     <Text className="text-red-400 text-xs ml-1">
                       ({formatStatusDuration(player.injuryDuration)})
                     </Text>
-                  )}
+                  ) : null}
                 </View>
               )}
-              {/* Suspended indicator with duration */}
+              {/* Suspended indicator with end date */}
               {player.isSuspended && (
                 <View className="flex-row items-center ml-2">
                   <Text className="text-red-500 font-bold text-sm">SUS</Text>
-                  {player.suspensionDuration && (
+                  {player.statusEndDate ? (
+                    <Text className="text-red-400 text-xs ml-1">
+                      (until {format(parseISO(player.statusEndDate), 'MMM d')})
+                    </Text>
+                  ) : player.suspensionDuration ? (
                     <Text className="text-red-400 text-xs ml-1">
                       ({formatStatusDuration(player.suspensionDuration)})
                     </Text>
-                  )}
+                  ) : null}
                 </View>
               )}
             </View>
@@ -409,6 +420,8 @@ export default function RosterScreen() {
   const [isSuspended, setIsSuspended] = useState(false);
   const [injuryDuration, setInjuryDuration] = useState<StatusDuration | undefined>(undefined);
   const [suspensionDuration, setSuspensionDuration] = useState<StatusDuration | undefined>(undefined);
+  const [statusEndDate, setStatusEndDate] = useState<string>(''); // YYYY-MM-DD format
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
   // Invite modal state
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
@@ -428,6 +441,7 @@ export default function RosterScreen() {
     setIsSuspended(false);
     setInjuryDuration(undefined);
     setSuspensionDuration(undefined);
+    setStatusEndDate('');
     setEditingPlayer(null);
   };
 
@@ -460,6 +474,7 @@ export default function RosterScreen() {
     setIsSuspended(player.isSuspended || false);
     setInjuryDuration(player.injuryDuration);
     setSuspensionDuration(player.suspensionDuration);
+    setStatusEndDate(player.statusEndDate || '');
     // Determine member role from player data
     if (player.roles?.includes('coach') || player.position === 'Coach') {
       setMemberRole('coach');
@@ -544,6 +559,8 @@ export default function RosterScreen() {
         updates.isSuspended = isSuspended;
         updates.injuryDuration = isInjured ? injuryDuration : undefined;
         updates.suspensionDuration = isSuspended ? suspensionDuration : undefined;
+        // Only save end date if injured or suspended
+        updates.statusEndDate = (isInjured || isSuspended) ? (statusEndDate || undefined) : undefined;
       }
 
       console.log('Saving player updates:', { isInjured, isSuspended, memberRole, updates });
@@ -564,6 +581,7 @@ export default function RosterScreen() {
         status: isAdmin() ? effectiveStatus : 'active',
         isInjured: isAdmin() ? isInjured : false,
         isSuspended: isAdmin() ? isSuspended : false,
+        statusEndDate: isAdmin() && (isInjured || isSuspended) ? (statusEndDate || undefined) : undefined,
       };
       addPlayer(newPlayer);
       setIsModalVisible(false);
@@ -1105,6 +1123,71 @@ export default function RosterScreen() {
                           </Pressable>
                         </View>
                       </View>
+                    </View>
+                  )}
+
+                  {/* End Date Picker - shown when injured or suspended */}
+                  {(isInjured || isSuspended) && (
+                    <View className="mt-3 bg-amber-500/10 rounded-xl p-3 border border-amber-500/20">
+                      <Text className="text-amber-400 text-sm font-medium mb-2">
+                        End Date (Auto-mark OUT for games)
+                      </Text>
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setShowEndDatePicker(true);
+                        }}
+                        className="flex-row items-center bg-slate-800 rounded-xl px-4 py-3"
+                      >
+                        <Calendar size={18} color="#f59e0b" />
+                        <Text className="text-white ml-3 flex-1">
+                          {statusEndDate
+                            ? format(parseISO(statusEndDate), 'MMM d, yyyy')
+                            : 'Select end date'}
+                        </Text>
+                        {statusEndDate && (
+                          <Pressable
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              setStatusEndDate('');
+                            }}
+                            hitSlop={8}
+                          >
+                            <X size={16} color="#94a3b8" />
+                          </Pressable>
+                        )}
+                      </Pressable>
+                      <Text className="text-slate-500 text-xs mt-2">
+                        Games on or before this date will have this player auto-marked as OUT
+                      </Text>
+                      {showEndDatePicker && (
+                        <View className="mt-3">
+                          <DateTimePicker
+                            value={statusEndDate ? parseISO(statusEndDate) : new Date()}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={(event, selectedDate) => {
+                              if (Platform.OS === 'android') {
+                                setShowEndDatePicker(false);
+                              }
+                              if (selectedDate) {
+                                setStatusEndDate(format(selectedDate, 'yyyy-MM-dd'));
+                              }
+                            }}
+                            minimumDate={new Date()}
+                            textColor="#ffffff"
+                            themeVariant="dark"
+                          />
+                          {Platform.OS === 'ios' && (
+                            <Pressable
+                              onPress={() => setShowEndDatePicker(false)}
+                              className="mt-2 bg-cyan-500 rounded-xl py-2"
+                            >
+                              <Text className="text-white text-center font-semibold">Done</Text>
+                            </Pressable>
+                          )}
+                        </View>
+                      )}
                     </View>
                   )}
                 </View>

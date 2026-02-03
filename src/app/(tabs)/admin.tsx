@@ -30,6 +30,7 @@ import {
   User,
   UserMinus,
   Heart,
+  Calendar,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -38,6 +39,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
 import * as Clipboard from 'expo-clipboard';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { format, parseISO } from 'date-fns';
 import Svg, { Path, Circle as SvgCircle, Line, Rect, Ellipse } from 'react-native-svg';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import {
@@ -322,6 +325,7 @@ export default function AdminScreen() {
 
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isPlayerModalVisible, setIsPlayerModalVisible] = useState(false);
+  const [showSelectedPlayerEndDatePicker, setShowSelectedPlayerEndDatePicker] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const [isJerseyModalVisible, setIsJerseyModalVisible] = useState(false);
   const [isRolesModalVisible, setIsRolesModalVisible] = useState(false);
@@ -348,6 +352,8 @@ export default function AdminScreen() {
   const [newPlayerStatus, setNewPlayerStatus] = useState<PlayerStatus>('active');
   const [newPlayerIsInjured, setNewPlayerIsInjured] = useState(false);
   const [newPlayerIsSuspended, setNewPlayerIsSuspended] = useState(false);
+  const [newPlayerStatusEndDate, setNewPlayerStatusEndDate] = useState<string>(''); // YYYY-MM-DD format
+  const [showNewPlayerEndDatePicker, setShowNewPlayerEndDatePicker] = useState(false);
   const [newPlayerMemberRole, setNewPlayerMemberRole] = useState<'player' | 'reserve' | 'coach' | 'parent'>('player');
 
   // Invite modal state
@@ -408,6 +414,8 @@ export default function AdminScreen() {
     setEditPlayerPositions(playerPositions.filter(p => p && p !== 'Coach'));
     // Set coach status
     setEditPlayerIsCoach(player.roles?.includes('coach') || player.position === 'Coach' || false);
+    // Reset date picker state
+    setShowSelectedPlayerEndDatePicker(false);
     // Close manage players modal first, then open player edit modal
     setIsManagePlayersModalVisible(false);
     setTimeout(() => {
@@ -519,6 +527,8 @@ export default function AdminScreen() {
     setNewPlayerStatus('active');
     setNewPlayerIsInjured(false);
     setNewPlayerIsSuspended(false);
+    setNewPlayerStatusEndDate('');
+    setShowNewPlayerEndDatePicker(false);
     setNewPlayerMemberRole('player');
   };
 
@@ -580,6 +590,7 @@ export default function AdminScreen() {
       status: effectiveStatus,
       isInjured: newPlayerIsInjured,
       isSuspended: newPlayerIsSuspended,
+      statusEndDate: (newPlayerIsInjured || newPlayerIsSuspended) ? (newPlayerStatusEndDate || undefined) : undefined,
     };
 
     addPlayer(newPlayer);
@@ -1766,6 +1777,74 @@ export default function AdminScreen() {
                       </Text>
                     </Pressable>
                   </View>
+
+                  {/* End Date Picker - shown when injured or suspended */}
+                  {(selectedPlayer.isInjured || selectedPlayer.isSuspended) && (
+                    <View className="mt-3 bg-amber-500/10 rounded-xl p-3 border border-amber-500/20">
+                      <Text className="text-amber-400 text-sm font-medium mb-2">
+                        End Date (Auto-mark OUT for games)
+                      </Text>
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setShowSelectedPlayerEndDatePicker(true);
+                        }}
+                        className="flex-row items-center bg-slate-800 rounded-xl px-4 py-3"
+                      >
+                        <Calendar size={18} color="#f59e0b" />
+                        <Text className="text-white ml-3 flex-1">
+                          {selectedPlayer.statusEndDate
+                            ? format(parseISO(selectedPlayer.statusEndDate), 'MMM d, yyyy')
+                            : 'Select end date'}
+                        </Text>
+                        {selectedPlayer.statusEndDate && (
+                          <Pressable
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              updatePlayer(selectedPlayer.id, { statusEndDate: undefined });
+                              setSelectedPlayer({ ...selectedPlayer, statusEndDate: undefined });
+                            }}
+                            hitSlop={8}
+                          >
+                            <X size={16} color="#94a3b8" />
+                          </Pressable>
+                        )}
+                      </Pressable>
+                      <Text className="text-slate-500 text-xs mt-2">
+                        Games on or before this date will have this player auto-marked as OUT
+                      </Text>
+                      {showSelectedPlayerEndDatePicker && (
+                        <View className="mt-3">
+                          <DateTimePicker
+                            value={selectedPlayer.statusEndDate ? parseISO(selectedPlayer.statusEndDate) : new Date()}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={(event, selectedDate) => {
+                              if (Platform.OS === 'android') {
+                                setShowSelectedPlayerEndDatePicker(false);
+                              }
+                              if (selectedDate) {
+                                const dateStr = format(selectedDate, 'yyyy-MM-dd');
+                                updatePlayer(selectedPlayer.id, { statusEndDate: dateStr });
+                                setSelectedPlayer({ ...selectedPlayer, statusEndDate: dateStr });
+                              }
+                            }}
+                            minimumDate={new Date()}
+                            textColor="#ffffff"
+                            themeVariant="dark"
+                          />
+                          {Platform.OS === 'ios' && (
+                            <Pressable
+                              onPress={() => setShowSelectedPlayerEndDatePicker(false)}
+                              className="mt-2 bg-cyan-500 rounded-xl py-2"
+                            >
+                              <Text className="text-white text-center font-semibold">Done</Text>
+                            </Pressable>
+                          )}
+                        </View>
+                      )}
+                    </View>
+                  )}
                 </View>
 
                 {/* Roles */}
@@ -2438,6 +2517,71 @@ export default function AdminScreen() {
                     </Text>
                   </Pressable>
                 </View>
+
+                {/* End Date Picker - shown when injured or suspended */}
+                {(newPlayerIsInjured || newPlayerIsSuspended) && (
+                  <View className="mt-3 bg-amber-500/10 rounded-xl p-3 border border-amber-500/20">
+                    <Text className="text-amber-400 text-sm font-medium mb-2">
+                      End Date (Auto-mark OUT for games)
+                    </Text>
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setShowNewPlayerEndDatePicker(true);
+                      }}
+                      className="flex-row items-center bg-slate-800 rounded-xl px-4 py-3"
+                    >
+                      <Calendar size={18} color="#f59e0b" />
+                      <Text className="text-white ml-3 flex-1">
+                        {newPlayerStatusEndDate
+                          ? format(parseISO(newPlayerStatusEndDate), 'MMM d, yyyy')
+                          : 'Select end date'}
+                      </Text>
+                      {newPlayerStatusEndDate && (
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setNewPlayerStatusEndDate('');
+                          }}
+                          hitSlop={8}
+                        >
+                          <X size={16} color="#94a3b8" />
+                        </Pressable>
+                      )}
+                    </Pressable>
+                    <Text className="text-slate-500 text-xs mt-2">
+                      Games on or before this date will have this player auto-marked as OUT
+                    </Text>
+                    {showNewPlayerEndDatePicker && (
+                      <View className="mt-3">
+                        <DateTimePicker
+                          value={newPlayerStatusEndDate ? parseISO(newPlayerStatusEndDate) : new Date()}
+                          mode="date"
+                          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                          onChange={(event, selectedDate) => {
+                            if (Platform.OS === 'android') {
+                              setShowNewPlayerEndDatePicker(false);
+                            }
+                            if (selectedDate) {
+                              setNewPlayerStatusEndDate(format(selectedDate, 'yyyy-MM-dd'));
+                            }
+                          }}
+                          minimumDate={new Date()}
+                          textColor="#ffffff"
+                          themeVariant="dark"
+                        />
+                        {Platform.OS === 'ios' && (
+                          <Pressable
+                            onPress={() => setShowNewPlayerEndDatePicker(false)}
+                            className="mt-2 bg-cyan-500 rounded-xl py-2"
+                          >
+                            <Text className="text-white text-center font-semibold">Done</Text>
+                          </Pressable>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                )}
               </View>
 
               {/* Admin Roles */}
