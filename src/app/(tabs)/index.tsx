@@ -155,7 +155,9 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false }: 
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const players = useTeamStore((s) => s.players);
   const checkedInCount = game.checkedInPlayers?.length ?? 0;
+  const checkedOutCount = game.checkedOutPlayers?.length ?? 0;
   const invitedCount = game.invitedPlayers?.length ?? 0;
+  const pendingCount = invitedCount - checkedInCount - checkedOutCount;
 
   // Get refreshment duty player if assigned and feature is enabled
   const showRefreshmentDuty = teamSettings.showRefreshmentDuty !== false;
@@ -286,9 +288,17 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false }: 
           {/* Footer */}
           <View className="flex-row items-center pt-3 border-t border-slate-700/50">
             <View className="flex-row items-center">
-              <Users size={14} color="#22c55e" />
+              <Users size={14} color="#94a3b8" />
               <Text className="text-green-400 text-sm ml-2 font-medium">
-                {checkedInCount}/{invitedCount} checked in
+                {checkedInCount}
+              </Text>
+              <Text className="text-slate-500 text-sm mx-1">/</Text>
+              <Text className="text-red-400 text-sm font-medium">
+                {checkedOutCount}
+              </Text>
+              <Text className="text-slate-500 text-sm mx-1">/</Text>
+              <Text className="text-slate-400 text-sm font-medium">
+                {pendingCount}
               </Text>
             </View>
             {beerDutyPlayer && (
