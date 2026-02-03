@@ -1250,24 +1250,13 @@ export default function MoreScreen() {
           />
 
           <MenuItem
-            icon={<Users size={20} color="#67e8f9" />}
-            title="Team Roster"
-            subtitle={`${players.length} players`}
-            onPress={() => {
-              // Navigate to roster tab
-              router.push('/(tabs)/roster');
-            }}
-            index={3}
-          />
-
-          <MenuItem
             icon={<BarChart3 size={20} color="#67e8f9" />}
             title="Team Polls"
             subtitle="Create and vote on polls"
             onPress={() => {
               router.push('/polls');
             }}
-            index={4}
+            index={3}
           />
 
           <MenuItem
@@ -1275,6 +1264,17 @@ export default function MoreScreen() {
             title="Team Links"
             subtitle={teamLinks.length > 0 ? `${teamLinks.length} link${teamLinks.length !== 1 ? 's' : ''}` : 'Add useful links for your team'}
             onPress={() => setLinksModalVisible(true)}
+            index={4}
+          />
+
+          <MenuItem
+            icon={<Users size={20} color="#67e8f9" />}
+            title="Team Roster"
+            subtitle={`${players.length} players`}
+            onPress={() => {
+              // Navigate to roster tab
+              router.push('/(tabs)/roster');
+            }}
             index={5}
           />
 
