@@ -353,3 +353,60 @@ export async function scheduleEventReminderDayBefore(
     reminderDate
   );
 }
+
+/**
+ * Send a chat mention notification immediately
+ */
+export async function sendChatMentionNotification(
+  senderName: string,
+  messagePreview: string,
+  mentionType: 'all' | 'specific'
+): Promise<void> {
+  try {
+    const title = mentionType === 'all'
+      ? `${senderName} mentioned everyone`
+      : `${senderName} mentioned you`;
+
+    const body = messagePreview.length > 100
+      ? messagePreview.substring(0, 100) + '...'
+      : messagePreview;
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        data: { type: 'chat_mention' },
+        sound: true,
+      },
+      trigger: null, // Sends immediately
+    });
+  } catch (error) {
+    console.log('Error sending chat mention notification:', error);
+  }
+}
+
+/**
+ * Send a chat message notification immediately (for general chat messages)
+ */
+export async function sendChatMessageNotification(
+  senderName: string,
+  messagePreview: string
+): Promise<void> {
+  try {
+    const body = messagePreview.length > 100
+      ? messagePreview.substring(0, 100) + '...'
+      : messagePreview;
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: `New message from ${senderName}`,
+        body: body || 'Sent an image',
+        data: { type: 'chat_message' },
+        sound: true,
+      },
+      trigger: null, // Sends immediately
+    });
+  } catch (error) {
+    console.log('Error sending chat message notification:', error);
+  }
+}

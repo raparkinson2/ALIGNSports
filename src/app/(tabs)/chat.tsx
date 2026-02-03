@@ -10,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTeamStore, ChatMessage, getPlayerName, getPlayerInitials, Player } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
+import { sendChatMentionNotification, sendChatMessageNotification } from '@/lib/notifications';
 
 // GIPHY API key
 const GIPHY_API_KEY = 'mUSMkXeohjZdAa2fSpTRGq7ljx5h00fI';
@@ -458,6 +459,13 @@ export default function ChatScreen() {
     };
 
     addChatMessage(newMessage);
+
+    // Send push notification for mentions
+    if (mentionType && currentPlayer) {
+      const senderName = getPlayerName(currentPlayer);
+      sendChatMentionNotification(senderName, messageText.trim(), mentionType);
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setMessageText('');
     setShowMentionPicker(false);
