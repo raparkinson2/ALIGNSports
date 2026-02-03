@@ -427,12 +427,23 @@ function SwipeablePaymentPeriodRow({
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onEditTeamTotal();
             }}
-            className="bg-amber-500/20 rounded-lg p-3 mb-3 border border-amber-500/30 active:bg-amber-500/30"
+            className={cn(
+              "rounded-lg p-3 mb-3 border active:opacity-80",
+              remainingBalance !== undefined && remainingBalance <= 0
+                ? "bg-green-500/20 border-green-500/30"
+                : "bg-amber-500/20 border-amber-500/30"
+            )}
           >
             <View className="flex-row items-center justify-between">
               <View>
-                <Text className="text-amber-300 text-xs font-medium">Team Total Owed</Text>
-                <Text className="text-amber-400 text-lg font-bold">${teamTotalOwed.toLocaleString()}</Text>
+                <Text className={cn(
+                  "text-xs font-medium",
+                  remainingBalance !== undefined && remainingBalance <= 0 ? "text-green-300" : "text-amber-300"
+                )}>Team Total Owed</Text>
+                <Text className={cn(
+                  "text-lg font-bold",
+                  remainingBalance !== undefined && remainingBalance <= 0 ? "text-green-400" : "text-amber-400"
+                )}>${teamTotalOwed.toLocaleString()}</Text>
               </View>
               <View>
                 <Text className="text-slate-400 text-xs">Collected</Text>
