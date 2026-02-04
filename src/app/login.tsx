@@ -518,7 +518,7 @@ export default function LoginScreen() {
             className="items-center pt-8 pb-6"
           >
             <Image
-              source={require('../../assets/align-logo.png')}
+              source={require('../../assets/app-logo.png')}
               style={{ width: 160, height: 160, marginBottom: 24 }}
               contentFit="contain"
             />
