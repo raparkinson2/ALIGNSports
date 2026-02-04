@@ -1131,6 +1131,13 @@ export default function AdminScreen() {
                 <ChevronRight size={20} color="#64748b" />
               </View>
             </Pressable>
+          </Animated.View>
+
+          {/* Team Communications Section */}
+          <Animated.View entering={FadeInDown.delay(150).springify()}>
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
+              Team Communications
+            </Text>
 
             {/* Email Team Button */}
             <Pressable
@@ -1223,6 +1230,13 @@ export default function AdminScreen() {
                 <ChevronRight size={20} color="#64748b" />
               </View>
             </Pressable>
+          </Animated.View>
+
+          {/* Team Options Section */}
+          <Animated.View entering={FadeInDown.delay(200).springify()}>
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
+              Team Options
+            </Text>
 
             {/* Team Chat Toggle */}
             <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
@@ -1469,6 +1483,13 @@ export default function AdminScreen() {
                 </View>
               </View>
             )}
+          </Animated.View>
+
+          {/* Account Deletion Section */}
+          <Animated.View entering={FadeInDown.delay(250).springify()}>
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
+              Danger Zone
+            </Text>
 
             {/* Erase All Data */}
             <Pressable
