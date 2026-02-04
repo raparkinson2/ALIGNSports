@@ -70,19 +70,21 @@ function AuthNavigator() {
   useEffect(() => {
     if (!isHydrated) return;
 
-    // Check for invalid Supabase sessions on startup
+    // Check for invalid Supabase sessions on startup (non-blocking)
     const checkSupabaseSession = async () => {
       try {
         await getSafeSession();
       } catch (e: any) {
-        // If there's a refresh token error, clear the invalid session
+        // Handle any errors gracefully - don't block the app
+        console.warn('Session check error on startup:', e?.message || e);
         if (e?.message?.includes('Refresh Token') ||
-            e?.message?.includes('refresh_token')) {
-          console.warn('Invalid Supabase session detected on startup, clearing...');
+            e?.message?.includes('refresh_token') ||
+            e?.message?.includes('timed out')) {
           await clearInvalidSession();
         }
       }
     };
+    // Run in background - don't await to prevent blocking app startup
     checkSupabaseSession();
 
     // Additional safety: if somehow isLoggedIn is true but no players exist, force logout

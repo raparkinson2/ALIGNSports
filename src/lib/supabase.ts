@@ -51,11 +51,25 @@ export async function clearInvalidSession(): Promise<void> {
 }
 
 /**
- * Safe wrapper for getting session that handles refresh token errors
+ * Helper to add timeout to promises
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Network request timed out')), ms)
+  );
+  return Promise.race([promise, timeout]);
+}
+
+/**
+ * Safe wrapper for getting session that handles refresh token errors and timeouts
  */
 export async function getSafeSession() {
   try {
-    const { data, error } = await supabase.auth.getSession();
+    // Add 10 second timeout to prevent app from hanging on slow networks
+    const { data, error } = await withTimeout(
+      supabase.auth.getSession(),
+      10000
+    );
 
     if (error) {
       // Check for refresh token errors
@@ -71,7 +85,12 @@ export async function getSafeSession() {
 
     return { session: data.session, error: null };
   } catch (e: any) {
-    // Handle unexpected errors
+    // Handle timeout errors - don't block the app
+    if (e?.message?.includes('timed out')) {
+      console.warn('Session check timed out, continuing without session');
+      return { session: null, error: null };
+    }
+    // Handle refresh token errors
     if (e?.message?.includes('Refresh Token') ||
         e?.message?.includes('refresh_token')) {
       console.warn('Refresh token error caught, clearing session');
