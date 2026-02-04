@@ -42,15 +42,34 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
   - No more waiting until the end to find out there's a conflict
 
 ### Schedule Tab
-- View upcoming games with opponent, date, time, and location
+- View upcoming games, practices, and events with date, time, and location
 - See jersey color for each game (shows color name like "White" or "Black")
 - Quick view of check-in status
-- Admins/Captains can add new games via the + button
-- Tap any game to view full details
+- Admins/Captains can add new games, practices, or events via the + button
+- Tap any item to view full details
 - **View Toggle**: Switch between List and Calendar views
-  - List view shows games in a scrollable list
-  - Calendar view shows a monthly calendar with game days highlighted
+  - List view shows items in a scrollable list
+  - Calendar view shows a monthly calendar with indicators:
+    - Green: Games
+    - Orange: Practices
+    - Blue: Events
   - **Persistent Preference**: Your last selected view is remembered and restored on app reopen
+
+### Creating Games, Practices & Events (Admin/Captain)
+- **Game**: Schedule a game against an opponent
+  - Set opponent, date, time, jersey color
+  - Add optional notes
+  - Invite players and set invite release options
+- **Practice**: Schedule a team practice
+  - Set date, time, and location
+  - Add optional notes
+  - Invite players
+  - Practices display with orange accent color
+- **Event**: Schedule team events (meetings, dinners, social gatherings)
+  - Set event name, date, time, and location
+  - Add optional notes
+  - Invite players
+  - Events display with blue accent color
 
 ### Game Details
 - Full game information including time, location, and jersey color

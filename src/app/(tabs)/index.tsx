@@ -422,6 +422,15 @@ function EventCard({ event, index, onPress, skipAnimation = false }: EventCardPr
   const invitedCount = event.invitedPlayers?.length ?? 0;
   const pendingCount = invitedCount - confirmedCount - declinedCount;
 
+  // Determine if this is a practice
+  const isPractice = event.type === 'practice';
+
+  // Color theming based on type
+  const accentColor = isPractice ? '#f97316' : '#3b82f6'; // Orange for practice, blue for event
+  const badgeBgClass = isPractice ? 'bg-orange-500/20' : 'bg-blue-500/20';
+  const badgeTextClass = isPractice ? 'text-orange-400' : 'text-blue-400';
+  const iconColor = isPractice ? '#fb923c' : '#60a5fa';
+
   const cardContent = (
     <Pressable
       onPress={onPress}
@@ -429,15 +438,15 @@ function EventCard({ event, index, onPress, skipAnimation = false }: EventCardPr
       style={{ transform: [{ scale: 1 }] }}
     >
       <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
-        {/* Blue Color Bar for Events */}
-        <View style={{ backgroundColor: '#3b82f6', height: 6 }} />
+        {/* Color Bar based on type */}
+        <View style={{ backgroundColor: accentColor, height: 6 }} />
 
         <View className="p-4">
           {/* Date Badge & Event Title */}
           <View className="flex-row items-center justify-between mb-3">
             <View className="flex-row items-center flex-1">
-              <View className="bg-blue-500/20 px-3 py-1 rounded-full mr-3">
-                <Text className="text-blue-400 text-xs font-semibold">
+              <View className={cn(badgeBgClass, 'px-3 py-1 rounded-full mr-3')}>
+                <Text className={cn(badgeTextClass, 'text-xs font-semibold')}>
                   {getDateLabel(event.date)}
                 </Text>
               </View>
@@ -451,18 +460,18 @@ function EventCard({ event, index, onPress, skipAnimation = false }: EventCardPr
           {/* Info Grid */}
           <View className="flex-row mb-3">
             <View className="flex-1 flex-row items-center">
-              <Clock size={14} color="#60a5fa" />
+              <Clock size={14} color={iconColor} />
               <Text className="text-slate-300 text-sm ml-2">{event.time}</Text>
             </View>
             <View className="flex-1 flex-row items-center">
-              <Calendar size={14} color="#60a5fa" />
-              <Text className="text-slate-300 text-sm ml-2">Event</Text>
+              <Calendar size={14} color={iconColor} />
+              <Text className="text-slate-300 text-sm ml-2">{isPractice ? 'Practice' : 'Event'}</Text>
             </View>
           </View>
 
           {/* Location */}
           <View className="flex-row items-center mb-3">
-            <MapPin size={14} color="#60a5fa" />
+            <MapPin size={14} color={iconColor} />
             <Text className="text-slate-400 text-sm ml-2">{event.location}</Text>
           </View>
 
@@ -608,17 +617,26 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
     });
   };
 
-  // Get events for a specific date
+  // Get events for a specific date (non-practice events)
   const getEventsForDate = (date: Date) => {
     return events.filter((event) => {
       const eventDate = parseISO(event.date);
-      return isSameDay(eventDate, date);
+      return isSameDay(eventDate, date) && event.type !== 'practice';
     });
   };
 
-  // Get games and events for selected date
+  // Get practices for a specific date
+  const getPracticesForDate = (date: Date) => {
+    return events.filter((event) => {
+      const eventDate = parseISO(event.date);
+      return isSameDay(eventDate, date) && event.type === 'practice';
+    });
+  };
+
+  // Get games, events, and practices for selected date
   const selectedDateGames = selectedDate ? getGamesForDate(selectedDate) : [];
   const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : [];
+  const selectedDatePractices = selectedDate ? getPracticesForDate(selectedDate) : [];
 
   // Count items in current month
   const gamesThisMonth = games.filter((game) => {
@@ -628,10 +646,15 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
 
   const eventsThisMonth = events.filter((event) => {
     const eventDate = parseISO(event.date);
-    return isSameMonth(eventDate, currentMonth);
+    return isSameMonth(eventDate, currentMonth) && event.type !== 'practice';
   }).length;
 
-  const totalThisMonth = gamesThisMonth + eventsThisMonth;
+  const practicesThisMonth = events.filter((event) => {
+    const eventDate = parseISO(event.date);
+    return isSameMonth(eventDate, currentMonth) && event.type === 'practice';
+  }).length;
+
+  const totalThisMonth = gamesThisMonth + eventsThisMonth + practicesThisMonth;
 
   const goToPreviousMonth = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -680,7 +703,9 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
           {totalThisMonth > 0 && (
             <Text className="text-slate-400 text-sm">
               {gamesThisMonth > 0 && `${gamesThisMonth} game${gamesThisMonth !== 1 ? 's' : ''}`}
-              {gamesThisMonth > 0 && eventsThisMonth > 0 && ', '}
+              {gamesThisMonth > 0 && (practicesThisMonth > 0 || eventsThisMonth > 0) && ', '}
+              {practicesThisMonth > 0 && `${practicesThisMonth} practice${practicesThisMonth !== 1 ? 's' : ''}`}
+              {practicesThisMonth > 0 && eventsThisMonth > 0 && ', '}
               {eventsThisMonth > 0 && `${eventsThisMonth} event${eventsThisMonth !== 1 ? 's' : ''}`}
             </Text>
           )}
@@ -713,9 +738,11 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
         {daysInMonth.map((date) => {
           const dayGames = getGamesForDate(date);
           const dayEvents = getEventsForDate(date);
+          const dayPractices = getPracticesForDate(date);
           const hasGames = dayGames.length > 0;
           const hasEvents = dayEvents.length > 0;
-          const hasItems = hasGames || hasEvents;
+          const hasPractices = dayPractices.length > 0;
+          const hasItems = hasGames || hasEvents || hasPractices;
           const isSelected = selectedDate && isSameDay(selectedDate, date);
           const isTodayDate = isToday(date);
           const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
@@ -746,7 +773,7 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
                 >
                   {format(date, 'd')}
                 </Text>
-                {/* Indicator bars - green for games, blue for events */}
+                {/* Indicator bars - green for games, orange for practices, blue for events */}
                 {hasItems && (
                   <View className="flex-row mt-1 gap-0.5">
                     {hasGames && (
@@ -755,6 +782,15 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
                           'h-1.5 rounded-full',
                           isSelected ? 'bg-cyan-400' : 'bg-emerald-500',
                           dayGames.length === 1 ? 'w-4' : dayGames.length === 2 ? 'w-6' : 'w-8'
+                        )}
+                      />
+                    )}
+                    {hasPractices && (
+                      <View
+                        className={cn(
+                          'h-1.5 rounded-full',
+                          isSelected ? 'bg-cyan-400' : 'bg-orange-500',
+                          dayPractices.length === 1 ? 'w-4' : dayPractices.length === 2 ? 'w-6' : 'w-8'
                         )}
                       />
                     )}
@@ -776,7 +812,7 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
       </View>
 
       {/* Selected Date Items */}
-      {selectedDate && (selectedDateGames.length > 0 || selectedDateEvents.length > 0) && (
+      {selectedDate && (selectedDateGames.length > 0 || selectedDateEvents.length > 0 || selectedDatePractices.length > 0) && (
         <Animated.View entering={FadeInDown.springify()} className="mt-4">
           <View className="bg-slate-800/50 rounded-2xl p-4">
             <Text className="text-cyan-400 font-semibold mb-3">
@@ -790,6 +826,16 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
                 index={index}
                 onPress={() => onSelectGame(game)}
                 onViewLines={() => onViewLines(game)}
+                skipAnimation
+              />
+            ))}
+            {/* Practices */}
+            {selectedDatePractices.map((practice, index) => (
+              <EventCard
+                key={practice.id}
+                event={practice}
+                index={index}
+                onPress={() => onSelectEvent(practice)}
                 skipAnimation
               />
             ))}
@@ -855,8 +901,8 @@ export default function ScheduleScreen() {
     setViewMode(persistedViewMode);
   }, [persistedViewMode]);
 
-  // Toggle between Game and Event creation
-  const [recordType, setRecordType] = useState<'game' | 'event'>('game');
+  // Toggle between Game, Practice, and Event creation
+  const [recordType, setRecordType] = useState<'game' | 'practice' | 'event'>('game');
   const [eventName, setEventName] = useState('');
 
   const [opponent, setOpponent] = useState('');
@@ -1052,9 +1098,70 @@ export default function ScheduleScreen() {
     resetForm();
   };
 
+  const handleCreatePractice = () => {
+    if (!location.trim()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    // Combine time value and period
+    const fullPracticeTime = `${gameTimeValue.trim() || '7:00'} ${gameTimePeriod}`;
+
+    // Use selected players or default to active players if none selected
+    const invitedPlayerIds = selectedPlayerIds.length > 0
+      ? selectedPlayerIds
+      : activePlayers.map((p) => p.id);
+
+    const newPractice: Event = {
+      id: Date.now().toString(),
+      title: 'Practice',
+      type: 'practice',
+      date: gameDate.toISOString(),
+      time: fullPracticeTime,
+      location: location.trim(),
+      address: '',
+      notes: notes.trim() || undefined,
+      invitedPlayers: invitedPlayerIds,
+      confirmedPlayers: [],
+    };
+
+    addEvent(newPractice);
+
+    // Send notifications to invited players
+    const formattedDate = format(gameDate, 'EEE, MMM d');
+
+    // Send immediate notification
+    sendEventInviteNotification(newPractice.id, 'Practice', formattedDate, fullPracticeTime);
+
+    // Create in-app notifications for each invited player
+    invitedPlayerIds.forEach((playerId) => {
+      const notification: AppNotification = {
+        id: `practice-invite-${newPractice.id}-${playerId}-${Date.now()}`,
+        type: 'game_invite',
+        title: 'Practice Scheduled!',
+        message: `Practice on ${formattedDate} at ${fullPracticeTime}`,
+        gameId: newPractice.id,
+        toPlayerId: playerId,
+        read: false,
+        createdAt: new Date().toISOString(),
+      };
+      addNotification(notification);
+    });
+
+    // Schedule reminders
+    scheduleEventReminderDayBefore(newPractice.id, 'Practice', gameDate, fullPracticeTime);
+    scheduleEventReminderHourBefore(newPractice.id, 'Practice', gameDate, fullPracticeTime);
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsModalVisible(false);
+    resetForm();
+  };
+
   const handleCreate = () => {
     if (recordType === 'game') {
       handleCreateGame();
+    } else if (recordType === 'practice') {
+      handleCreatePractice();
     } else {
       handleCreateEvent();
     }
@@ -1328,7 +1435,7 @@ export default function ScheduleScreen() {
                 <X size={24} color="#64748b" />
               </Pressable>
               <Text className="text-white text-lg font-semibold">
-                {recordType === 'game' ? 'New Game' : 'New Event'}
+                {recordType === 'game' ? 'New Game' : recordType === 'practice' ? 'New Practice' : 'New Event'}
               </Text>
               <Pressable onPress={handleCreate}>
                 <Text className="text-cyan-400 font-semibold">Create</Text>
@@ -1336,7 +1443,7 @@ export default function ScheduleScreen() {
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6">
-              {/* Game/Event Toggle */}
+              {/* Game/Practice/Event Toggle */}
               <View className="mb-5">
                 <View className="flex-row bg-slate-800 rounded-xl p-1">
                   <Pressable
@@ -1359,16 +1466,33 @@ export default function ScheduleScreen() {
                   <Pressable
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setRecordType('event');
+                      setRecordType('practice');
                     }}
                     className={cn(
                       'flex-1 py-3 rounded-lg items-center',
-                      recordType === 'event' && 'bg-cyan-500/30'
+                      recordType === 'practice' && 'bg-orange-500/30'
                     )}
                   >
                     <Text className={cn(
                       'font-semibold',
-                      recordType === 'event' ? 'text-cyan-400' : 'text-slate-400'
+                      recordType === 'practice' ? 'text-orange-400' : 'text-slate-400'
+                    )}>
+                      Practice
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setRecordType('event');
+                    }}
+                    className={cn(
+                      'flex-1 py-3 rounded-lg items-center',
+                      recordType === 'event' && 'bg-blue-500/30'
+                    )}
+                  >
+                    <Text className={cn(
+                      'font-semibold',
+                      recordType === 'event' ? 'text-blue-400' : 'text-slate-400'
                     )}>
                       Event
                     </Text>
@@ -1391,7 +1515,7 @@ export default function ScheduleScreen() {
                 </View>
               )}
 
-              {/* Event Name (Event only) */}
+              {/* Event Name (Event only - not for Practice) */}
               {recordType === 'event' && (
                 <View className="mb-5">
                   <Text className="text-slate-400 text-sm mb-2">Event Name <Text className="text-red-400">*</Text></Text>
