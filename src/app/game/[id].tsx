@@ -18,7 +18,6 @@ import {
   BellRing,
   BellOff,
   Beer,
-  Settings,
   X,
   ChevronDown,
   ChevronUp,
@@ -603,12 +602,20 @@ export default function GameDetailScreen() {
           </Pressable>
 
           {canManageTeam() && (
-            <Pressable
-              onPress={() => setIsSettingsModalVisible(true)}
-              className="w-10 h-10 rounded-full bg-black/30 items-center justify-center"
-            >
-              <Settings size={22} color="white" />
-            </Pressable>
+            <View className="flex-row">
+              <Pressable
+                onPress={() => setIsSettingsModalVisible(true)}
+                className="w-10 h-10 rounded-full bg-black/30 items-center justify-center mr-2"
+              >
+                <Pencil size={20} color="white" />
+              </Pressable>
+              <Pressable
+                onPress={handleDeleteGame}
+                className="w-10 h-10 rounded-full bg-red-500/80 items-center justify-center"
+              >
+                <Trash2 size={20} color="white" />
+              </Pressable>
+            </View>
           )}
         </Animated.View>
 
@@ -1581,7 +1588,7 @@ export default function GameDetailScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      {/* Game Settings Modal (Admin only) */}
+      {/* Edit Game Modal (Admin only) */}
       <Modal
         visible={isSettingsModalVisible}
         animationType="slide"
@@ -1594,7 +1601,7 @@ export default function GameDetailScreen() {
               <Pressable onPress={() => setIsSettingsModalVisible(false)}>
                 <X size={24} color="#64748b" />
               </Pressable>
-              <Text className="text-white text-lg font-semibold">Game Settings</Text>
+              <Text className="text-white text-lg font-semibold">Edit Game</Text>
               <View style={{ width: 24 }} />
             </View>
 
