@@ -1169,6 +1169,17 @@ export default function RosterScreen() {
                             onChange={(event, selectedDate) => {
                               if (Platform.OS === 'android') {
                                 setShowEndDatePicker(false);
+                                // On Android, save immediately when date is selected
+                                if (selectedDate && editingPlayer) {
+                                  const newEndDate = format(selectedDate, 'yyyy-MM-dd');
+                                  setStatusEndDate(newEndDate);
+                                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                                  updatePlayer(editingPlayer.id, {
+                                    isInjured,
+                                    isSuspended,
+                                    statusEndDate: newEndDate,
+                                  });
+                                }
                               }
                               if (selectedDate) {
                                 setStatusEndDate(format(selectedDate, 'yyyy-MM-dd'));
@@ -1179,10 +1190,23 @@ export default function RosterScreen() {
                           />
                           {Platform.OS === 'ios' && (
                             <Pressable
-                              onPress={() => setShowEndDatePicker(false)}
-                              className="mt-2 bg-cyan-500 rounded-xl py-2"
+                              onPress={() => {
+                                setShowEndDatePicker(false);
+                                // Save when tapping Save on iOS
+                                if (statusEndDate && editingPlayer) {
+                                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                                  updatePlayer(editingPlayer.id, {
+                                    isInjured,
+                                    isSuspended,
+                                    statusEndDate,
+                                  });
+                                  setIsModalVisible(false);
+                                  resetForm();
+                                }
+                              }}
+                              className="mt-2 bg-green-500 rounded-xl py-2"
                             >
-                              <Text className="text-white text-center font-semibold">Done</Text>
+                              <Text className="text-white text-center font-semibold">Save</Text>
                             </Pressable>
                           )}
                         </View>
