@@ -1199,8 +1199,38 @@ export const useTeamStore = create<TeamStore>()(
       })),
 
       photos: [],
-      addPhoto: (photo) => set((state) => ({ photos: [...state.photos, photo] })),
-      removePhoto: (id) => set((state) => ({ photos: state.photos.filter((p) => p.id !== id) })),
+      addPhoto: (photo) => set((state) => {
+        const newPhotos = [...state.photos, photo];
+        // Also update in teams array if activeTeamId exists
+        let updatedTeams = state.teams;
+        if (state.activeTeamId) {
+          updatedTeams = state.teams.map((team) =>
+            team.id === state.activeTeamId
+              ? { ...team, photos: newPhotos }
+              : team
+          );
+        }
+        return {
+          photos: newPhotos,
+          teams: updatedTeams,
+        };
+      }),
+      removePhoto: (id) => set((state) => {
+        const newPhotos = state.photos.filter((p) => p.id !== id);
+        // Also update in teams array if activeTeamId exists
+        let updatedTeams = state.teams;
+        if (state.activeTeamId) {
+          updatedTeams = state.teams.map((team) =>
+            team.id === state.activeTeamId
+              ? { ...team, photos: newPhotos }
+              : team
+          );
+        }
+        return {
+          photos: newPhotos,
+          teams: updatedTeams,
+        };
+      }),
 
       // Notifications - start empty
       notifications: [],
