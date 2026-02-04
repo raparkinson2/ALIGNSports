@@ -2814,7 +2814,7 @@ export default function AdminScreen() {
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setNewPlayerPositions([positions[0]]);
+                  setNewPlayerPositions([]);
                   // Close manage players modal first, then open new player modal
                   setIsManagePlayersModalVisible(false);
                   setTimeout(() => {
