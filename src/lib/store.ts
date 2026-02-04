@@ -763,13 +763,32 @@ export const useTeamStore = create<TeamStore>()(
               stats: undefined, // Clear stats when switching sports
             };
           });
+          // Also update in teams array if activeTeamId exists
+          let updatedTeams = state.teams;
+          if (state.activeTeamId) {
+            updatedTeams = state.teams.map((team) =>
+              team.id === state.activeTeamId
+                ? { ...team, teamSettings: newSettings, players: updatedPlayers }
+                : team
+            );
+          }
           return {
             teamSettings: newSettings,
             players: updatedPlayers,
+            teams: updatedTeams,
           };
         }
 
-        return { teamSettings: newSettings };
+        // Also update in teams array if activeTeamId exists
+        let updatedTeams = state.teams;
+        if (state.activeTeamId) {
+          updatedTeams = state.teams.map((team) =>
+            team.id === state.activeTeamId
+              ? { ...team, teamSettings: newSettings }
+              : team
+          );
+        }
+        return { teamSettings: newSettings, teams: updatedTeams };
       }),
 
       players: initialPlayers,

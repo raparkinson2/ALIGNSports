@@ -710,7 +710,7 @@ export default function TeamStatsScreen() {
             className="flex-row items-center"
           >
             <ChevronLeft size={24} color="#67e8f9" />
-            <Text className="text-cyan-400 text-base ml-1">More</Text>
+            <Text className="text-cyan-400 text-base ml-1">Back</Text>
           </Pressable>
         </Animated.View>
 
