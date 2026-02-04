@@ -1490,6 +1490,7 @@ export default function MoreScreen() {
                   onChangeText={setEmailSubject}
                   placeholder="Enter email subject"
                   placeholderTextColor="#64748b"
+                  autoCapitalize="sentences"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-base mb-4"
                 />
 
@@ -1502,6 +1503,7 @@ export default function MoreScreen() {
                   multiline
                   numberOfLines={6}
                   textAlignVertical="top"
+                  autoCapitalize="sentences"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-base mb-4 min-h-[120px]"
                 />
 
