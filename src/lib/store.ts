@@ -783,7 +783,7 @@ export const useTeamStore = create<TeamStore>()(
 
         const updatedPlayer = { ...currentPlayer, ...updates };
 
-        // Check if injury/suspension status changed - need to update games
+        // Check if injury/suspension status changed - need to update games and events
         const statusChanged =
           updates.isInjured !== undefined ||
           updates.isSuspended !== undefined ||
@@ -836,9 +836,55 @@ export const useTeamStore = create<TeamStore>()(
           return game;
         });
 
+        // Status changed - update existing events/practices to mark player OUT if injured
+        // Note: Suspensions do NOT affect events/practices - only games
+        const updatedEvents = state.events.map((event) => {
+          // Only process events where player is invited
+          if (!event.invitedPlayers.includes(id)) return event;
+
+          const eventDate = event.date.split('T')[0]; // Get YYYY-MM-DD
+
+          // Check if player is injured (suspensions don't apply to events/practices)
+          const isInjuredForEvent = updatedPlayer.isInjured &&
+            updatedPlayer.statusEndDate &&
+            eventDate <= updatedPlayer.statusEndDate;
+
+          if (isInjuredForEvent) {
+            // Player should be marked as declined for this event due to injury
+            const isAlreadyDeclined = (event.declinedPlayers || []).includes(id);
+            if (isAlreadyDeclined) return event; // Already declined, no change needed
+
+            return {
+              ...event,
+              confirmedPlayers: event.confirmedPlayers.filter((pid) => pid !== id),
+              declinedPlayers: [...(event.declinedPlayers || []), id],
+              declinedNotes: {
+                ...(event.declinedNotes || {}),
+                [id]: 'Injured',
+              },
+            };
+          }
+
+          // Player is no longer injured - only clear their declined status if reason was Injured
+          // (Don't clear if they manually declined or marked unavailable for other reasons)
+          const currentNote = event.declinedNotes?.[id];
+          if (currentNote === 'Injured') {
+            const newDeclinedNotes = { ...(event.declinedNotes || {}) };
+            delete newDeclinedNotes[id];
+            return {
+              ...event,
+              declinedPlayers: (event.declinedPlayers || []).filter((pid) => pid !== id),
+              declinedNotes: newDeclinedNotes,
+            };
+          }
+
+          return event;
+        });
+
         return {
           players: state.players.map((p) => (p.id === id ? updatedPlayer : p)),
           games: updatedGames,
+          events: updatedEvents,
         };
       }),
       removePlayer: (id) => set((state) => ({ players: state.players.filter((p) => p.id !== id) })),
@@ -1065,20 +1111,46 @@ export const useTeamStore = create<TeamStore>()(
       addEvent: (event) => set((state) => {
         // Check if any invited players are unavailable on this date
         const eventDate = event.date.split('T')[0]; // Get YYYY-MM-DD
+
+        // Players unavailable due to their availability calendar
         const unavailablePlayers = state.players.filter((p) =>
           event.invitedPlayers.includes(p.id) &&
           (p.unavailableDates || []).includes(eventDate)
         );
 
+        // Players unavailable due to injury (applies to all events including practices)
+        // Note: Suspended players are NOT auto-declined for practices/events - only games
+        const injuredPlayers = state.players.filter((p) => {
+          if (!event.invitedPlayers.includes(p.id)) return false;
+          if (!p.isInjured || !p.statusEndDate) return false;
+          // Check if event date is on or before the injury end date
+          return eventDate <= p.statusEndDate;
+        });
+
+        // Combine all unavailable players (deduped)
+        const allUnavailableIds = new Set([
+          ...unavailablePlayers.map((p) => p.id),
+          ...injuredPlayers.map((p) => p.id),
+        ]);
+
         // Auto-mark unavailable players as declined
         const declinedPlayers = [
           ...(event.declinedPlayers || []),
-          ...unavailablePlayers.map((p) => p.id).filter((id) => !(event.declinedPlayers || []).includes(id)),
+          ...Array.from(allUnavailableIds).filter((id) => !(event.declinedPlayers || []).includes(id)),
         ];
         const declinedNotes = { ...(event.declinedNotes || {}) };
+
+        // Set notes for unavailable players
         unavailablePlayers.forEach((p) => {
           if (!declinedNotes[p.id]) {
             declinedNotes[p.id] = 'Unavailable';
+          }
+        });
+
+        // Set notes for injured players
+        injuredPlayers.forEach((p) => {
+          if (!declinedNotes[p.id]) {
+            declinedNotes[p.id] = 'Injured';
           }
         });
 
