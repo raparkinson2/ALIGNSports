@@ -121,6 +121,7 @@ function QuestionEditor({
               onChangeText={(text) => onChange({ ...question, question: text })}
               placeholder="What do you want to ask?"
               placeholderTextColor="#64748b"
+              autoCapitalize="sentences"
               className="bg-slate-900/60 rounded-xl px-4 py-3 text-white text-base border border-slate-700/50"
               multiline
             />
@@ -135,6 +136,7 @@ function QuestionEditor({
                   onChangeText={(value) => handleOptionChange(optIndex, value)}
                   placeholder={`Option ${optIndex + 1}`}
                   placeholderTextColor="#64748b"
+                  autoCapitalize="sentences"
                   className="flex-1 bg-slate-900/60 rounded-xl px-4 py-3 text-white text-base border border-slate-700/50"
                 />
                 {question.options.length > 2 && (
@@ -297,6 +299,7 @@ function CreatePollModal({
                   onChangeText={setPollName}
                   placeholder="e.g., Team Preferences, Jersey Vote"
                   placeholderTextColor="#64748b"
+                  autoCapitalize="words"
                   className="bg-slate-800/60 rounded-xl px-4 py-3 text-white text-base border border-slate-700/50"
                 />
               </View>
