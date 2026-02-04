@@ -774,9 +774,73 @@ export const useTeamStore = create<TeamStore>()(
 
       players: initialPlayers,
       addPlayer: (player) => set((state) => ({ players: [...state.players, player] })),
-      updatePlayer: (id, updates) => set((state) => ({
-        players: state.players.map((p) => (p.id === id ? { ...p, ...updates } : p)),
-      })),
+      updatePlayer: (id, updates) => set((state) => {
+        // Get the updated player data
+        const currentPlayer = state.players.find((p) => p.id === id);
+        if (!currentPlayer) {
+          return { players: state.players };
+        }
+
+        const updatedPlayer = { ...currentPlayer, ...updates };
+
+        // Check if injury/suspension status changed - need to update games
+        const statusChanged =
+          updates.isInjured !== undefined ||
+          updates.isSuspended !== undefined ||
+          updates.statusEndDate !== undefined;
+
+        if (!statusChanged) {
+          // No status change, just update player
+          return {
+            players: state.players.map((p) => (p.id === id ? updatedPlayer : p)),
+          };
+        }
+
+        // Status changed - update existing games to mark player OUT if within end date
+        const updatedGames = state.games.map((game) => {
+          // Only process games where player is invited
+          if (!game.invitedPlayers.includes(id)) return game;
+
+          const gameDate = game.date.split('T')[0]; // Get YYYY-MM-DD
+          const result = isPlayerUnavailableForDate(updatedPlayer, gameDate);
+
+          if (result.unavailable) {
+            // Player should be marked OUT for this game
+            const isAlreadyOut = (game.checkedOutPlayers || []).includes(id);
+            if (isAlreadyOut) return game; // Already OUT, no change needed
+
+            return {
+              ...game,
+              checkedInPlayers: (game.checkedInPlayers || []).filter((pid) => pid !== id),
+              checkedOutPlayers: [...(game.checkedOutPlayers || []), id],
+              checkoutNotes: {
+                ...(game.checkoutNotes || {}),
+                [id]: result.reason || 'Unavailable',
+              },
+            };
+          }
+
+          // Player is no longer unavailable due to injury/suspension
+          // Only clear their OUT status if the reason was Injured or Suspended
+          const currentNote = game.checkoutNotes?.[id];
+          if (currentNote === 'Injured' || currentNote === 'Suspended') {
+            const newCheckoutNotes = { ...(game.checkoutNotes || {}) };
+            delete newCheckoutNotes[id];
+            return {
+              ...game,
+              checkedOutPlayers: (game.checkedOutPlayers || []).filter((pid) => pid !== id),
+              checkoutNotes: newCheckoutNotes,
+            };
+          }
+
+          return game;
+        });
+
+        return {
+          players: state.players.map((p) => (p.id === id ? updatedPlayer : p)),
+          games: updatedGames,
+        };
+      }),
       removePlayer: (id) => set((state) => ({ players: state.players.filter((p) => p.id !== id) })),
       addUnavailableDate: (playerId, date) => set((state) => {
         // Add date to player's unavailable dates

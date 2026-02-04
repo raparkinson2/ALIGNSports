@@ -243,6 +243,9 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 ## Player Status
 - **Active**: Regular roster players, auto-invited to games
 - **Reserve**: Backup players, can be selectively invited
+- **Injured/Suspended**: Set end date to automatically mark player OUT for games within that period
+  - When you set or update an injury/suspension end date, all existing games on or before that date will have the player auto-marked as OUT
+  - When the end date is cleared or player is no longer injured/suspended, the OUT status is automatically removed from games where it was set for that reason
 
 ## Communication
 - **In-App Notifications**: Game invites and reminders delivered within the app
