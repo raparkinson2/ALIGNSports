@@ -13,6 +13,7 @@ import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg';
 import { signUpWithEmail, checkEmailExists, checkPhoneExists } from '@/lib/supabase-auth';
+import { ParentChildIcon } from '@/components/ParentChildIcon';
 
 // Preset jersey colors for quick selection
 const PRESET_COLORS = [
@@ -745,7 +746,7 @@ export default function CreateTeamScreen() {
                         memberRole === 'parent' ? 'bg-pink-500' : 'bg-slate-800/80'
                       )}
                     >
-                      <Heart size={16} color={memberRole === 'parent' ? 'white' : '#ec4899'} />
+                      <ParentChildIcon size={16} color={memberRole === 'parent' ? 'white' : '#ec4899'} />
                       <Text
                         className={cn(
                           'font-semibold text-sm mt-1',

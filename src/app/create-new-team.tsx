@@ -10,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useTeamStore, Sport, SPORT_NAMES, Player, PlayerRole, SPORT_POSITIONS, getPlayerName } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { ParentChildIcon } from '@/components/ParentChildIcon';
 
 // Preset jersey colors for quick selection
 const PRESET_COLORS = [
@@ -447,7 +448,7 @@ export default function CreateNewTeamScreen() {
                         memberRole === 'parent' ? 'bg-pink-500' : 'bg-slate-800/80'
                       )}
                     >
-                      <Heart size={16} color={memberRole === 'parent' ? 'white' : '#ec4899'} />
+                      <ParentChildIcon size={16} color={memberRole === 'parent' ? 'white' : '#ec4899'} />
                       <Text
                         className={cn(
                           'font-semibold text-sm mt-1',

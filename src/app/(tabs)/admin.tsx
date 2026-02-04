@@ -43,6 +43,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, parseISO } from 'date-fns';
 import Svg, { Path, Circle as SvgCircle, Line, Rect, Ellipse } from 'react-native-svg';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
+import { ParentChildIcon } from '@/components/ParentChildIcon';
 import {
   useTeamStore,
   Player,
@@ -2134,7 +2135,7 @@ export default function AdminScreen() {
                 { id: 'player' as const, label: 'Player', description: 'Active team member', icon: <User size={20} color="#22c55e" />, bgColor: 'bg-green-500', iconBg: 'bg-green-500/20' },
                 { id: 'reserve' as const, label: 'Reserve', description: 'Backup/substitute player', icon: <UserMinus size={20} color="#94a3b8" />, bgColor: 'bg-slate-600', iconBg: 'bg-slate-600/20' },
                 { id: 'coach' as const, label: 'Coach', description: 'Team coach (no jersey number needed)', icon: <UserCog size={20} color="#67e8f9" />, bgColor: 'bg-cyan-500', iconBg: 'bg-cyan-500/20' },
-                { id: 'parent' as const, label: 'Parent', description: 'Parent/guardian of a player', icon: <Heart size={20} color="#ec4899" />, bgColor: 'bg-pink-500', iconBg: 'bg-pink-500/20' },
+                { id: 'parent' as const, label: 'Parent', description: 'Parent/guardian of a player', icon: <ParentChildIcon size={20} color="#ec4899" />, bgColor: 'bg-pink-500', iconBg: 'bg-pink-500/20' },
               ].map((role) => {
                 const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
                 const isEnabled = enabledRoles.includes(role.id);
@@ -2437,7 +2438,7 @@ export default function AdminScreen() {
                                 newPlayerMemberRole === 'parent' ? 'bg-pink-500' : 'bg-slate-800'
                               )}
                             >
-                              <Heart size={16} color={newPlayerMemberRole === 'parent' ? 'white' : '#ec4899'} />
+                              <ParentChildIcon size={16} color={newPlayerMemberRole === 'parent' ? 'white' : '#ec4899'} />
                               <Text
                                 className={cn(
                                   'font-semibold text-sm mt-1',

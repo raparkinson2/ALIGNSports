@@ -30,6 +30,7 @@ import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { ParentChildIcon } from '@/components/ParentChildIcon';
 
 // Format status duration for display
 function formatStatusDuration(duration: StatusDuration | undefined): string {
@@ -1322,7 +1323,7 @@ export default function RosterScreen() {
                                   memberRole === 'parent' ? 'bg-pink-500' : 'bg-slate-800'
                                 )}
                               >
-                                <Heart size={16} color={memberRole === 'parent' ? 'white' : '#ec4899'} />
+                                <ParentChildIcon size={16} color={memberRole === 'parent' ? 'white' : '#ec4899'} />
                                 <Text
                                   className={cn(
                                     'font-semibold text-sm mt-1',
