@@ -582,9 +582,11 @@ interface CalendarViewProps {
   onSelectGame: (game: Game) => void;
   onSelectEvent: (event: Event) => void;
   onViewLines: (game: Game) => void;
+  onAddGameOnDate?: (date: Date) => void;
+  canManageTeam?: boolean;
 }
 
-function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines }: CalendarViewProps) {
+function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines, onAddGameOnDate, canManageTeam = false }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -643,17 +645,19 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines 
     setSelectedDate(null);
   };
 
-  const handleDatePress = (date: Date) => {
+  const handleDatePress = (date: Date, hasItems: boolean) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const gamesOnDate = getGamesForDate(date);
-    const eventsOnDate = getEventsForDate(date);
-    if (gamesOnDate.length > 0 || eventsOnDate.length > 0) {
+
+    if (hasItems) {
+      // Date has games/events - toggle selection to show them
       if (selectedDate && isSameDay(selectedDate, date)) {
-        // If already selected, deselect
         setSelectedDate(null);
       } else {
         setSelectedDate(date);
       }
+    } else if (canManageTeam && onAddGameOnDate) {
+      // Empty date and user can manage team - open add game modal with this date
+      onAddGameOnDate(date);
     }
   };
 
@@ -719,8 +723,8 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines 
           return (
             <Pressable
               key={date.toISOString()}
-              onPress={() => handleDatePress(date)}
-              disabled={!hasItems}
+              onPress={() => handleDatePress(date, hasItems)}
+              disabled={isPast && !hasItems}
               className="w-[14.28%] aspect-square p-0.5"
             >
               <View
@@ -1300,6 +1304,11 @@ export default function ScheduleScreen() {
               onSelectGame={(game) => router.push(`/game/${game.id}`)}
               onSelectEvent={(event) => router.push(`/event/${event.id}`)}
               onViewLines={(game) => setLineupViewerGame(game)}
+              canManageTeam={canManageTeam()}
+              onAddGameOnDate={(date) => {
+                setGameDate(date);
+                setIsModalVisible(true);
+              }}
             />
           )}
         </ScrollView>
