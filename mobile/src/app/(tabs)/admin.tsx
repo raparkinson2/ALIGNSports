@@ -2282,20 +2282,58 @@ export default function AdminScreen() {
                 </View>
               </View>
 
-              {/* Jersey Number Row - Hidden for coaches and parents */}
+              {/* Jersey Number and Position Row - Hidden for coaches and parents */}
               {newPlayerMemberRole !== 'coach' && newPlayerMemberRole !== 'parent' && (
-                <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Jersey Number<Text className="text-red-400">*</Text></Text>
-                  <TextInput
-                    value={newPlayerNumber}
-                    onChangeText={setNewPlayerNumber}
-                    placeholder="00"
-                    placeholderTextColor="#64748b"
-                    keyboardType="number-pad"
-                    maxLength={2}
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                    style={{ width: 100 }}
-                  />
+                <View className="flex-row mb-5">
+                  {/* Jersey Number */}
+                  <View style={{ width: 100 }} className="mr-3">
+                    <Text className="text-slate-400 text-sm mb-2">Number<Text className="text-red-400">*</Text></Text>
+                    <TextInput
+                      value={newPlayerNumber}
+                      onChangeText={setNewPlayerNumber}
+                      placeholder="00"
+                      placeholderTextColor="#64748b"
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    />
+                  </View>
+
+                  {/* Position Selection */}
+                  <View className="flex-1">
+                    <Text className="text-slate-400 text-sm mb-2">Position<Text className="text-red-400">*</Text></Text>
+                    <View className="flex-row flex-wrap">
+                      {positions.map((pos) => {
+                        const isSelected = newPlayerPositions.includes(pos);
+                        return (
+                          <Pressable
+                            key={pos}
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              if (isSelected) {
+                                setNewPlayerPositions(newPlayerPositions.filter(p => p !== pos));
+                              } else {
+                                setNewPlayerPositions([...newPlayerPositions, pos]);
+                              }
+                            }}
+                            className={cn(
+                              'py-2 px-3 rounded-lg mr-1.5 mb-1.5 items-center',
+                              isSelected ? 'bg-cyan-500' : 'bg-slate-800'
+                            )}
+                          >
+                            <Text
+                              className={cn(
+                                'font-semibold text-sm',
+                                isSelected ? 'text-white' : 'text-slate-400'
+                              )}
+                            >
+                              {pos}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
                 </View>
               )}
 
@@ -2331,46 +2369,6 @@ export default function AdminScreen() {
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                 />
               </View>
-
-              {/* Position - Hidden for coaches and parents */}
-              {newPlayerMemberRole !== 'coach' && newPlayerMemberRole !== 'parent' && (
-                <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-1">Positions<Text className="text-red-400">*</Text></Text>
-                  <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
-                  <View className="flex-row flex-wrap">
-                    {positions.map((pos) => {
-                      const isSelected = newPlayerPositions.includes(pos);
-                      return (
-                        <Pressable
-                          key={pos}
-                          onPress={() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            if (isSelected) {
-                              // Allow deselecting even the last position
-                              setNewPlayerPositions(newPlayerPositions.filter(p => p !== pos));
-                            } else {
-                              setNewPlayerPositions([...newPlayerPositions, pos]);
-                            }
-                          }}
-                          className={cn(
-                            'py-3 px-4 rounded-xl mr-2 mb-2 items-center',
-                            isSelected ? 'bg-cyan-500' : 'bg-slate-800'
-                          )}
-                        >
-                          <Text
-                            className={cn(
-                              'font-semibold',
-                              isSelected ? 'text-white' : 'text-slate-400'
-                            )}
-                          >
-                            {pos}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-              )}
 
               {/* Roles - 2x2 Grid - Single Select */}
               <View className="mb-5">
