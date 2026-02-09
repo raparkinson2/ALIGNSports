@@ -1488,7 +1488,41 @@ export const useTeamStore = create<TeamStore>()(
 
       isLoggedIn: false,
       setIsLoggedIn: (loggedIn) => set({ isLoggedIn: loggedIn }),
-      logout: () => set({ isLoggedIn: false, currentPlayerId: null, userEmail: null, userPhone: null, pendingTeamIds: null }),
+      logout: () => {
+        const state = get();
+        // Sync active team data back to teams array before logging out
+        if (state.activeTeamId) {
+          const syncedTeams = state.teams.map((team) =>
+            team.id === state.activeTeamId
+              ? {
+                  ...team,
+                  teamName: state.teamName,
+                  teamSettings: state.teamSettings,
+                  players: state.players,
+                  games: state.games,
+                  events: state.events,
+                  photos: state.photos,
+                  notifications: state.notifications,
+                  chatMessages: state.chatMessages,
+                  chatLastReadAt: state.chatLastReadAt,
+                  paymentPeriods: state.paymentPeriods,
+                  polls: state.polls,
+                  teamLinks: state.teamLinks,
+                }
+              : team
+          );
+          set({
+            teams: syncedTeams,
+            isLoggedIn: false,
+            currentPlayerId: null,
+            userEmail: null,
+            userPhone: null,
+            pendingTeamIds: null
+          });
+        } else {
+          set({ isLoggedIn: false, currentPlayerId: null, userEmail: null, userPhone: null, pendingTeamIds: null });
+        }
+      },
 
       // Authentication
       loginWithEmail: (email, password) => {
@@ -1948,27 +1982,55 @@ export const useTeamStore = create<TeamStore>()(
         const team = state.teams.find((t) => t.id === teamId);
         if (!team) return;
 
+        // First, sync current active team data back to teams array
+        let updatedTeams = state.teams;
+        if (state.activeTeamId && state.activeTeamId !== teamId) {
+          updatedTeams = state.teams.map((t) =>
+            t.id === state.activeTeamId
+              ? {
+                  ...t,
+                  teamName: state.teamName,
+                  teamSettings: state.teamSettings,
+                  players: state.players,
+                  games: state.games,
+                  events: state.events,
+                  photos: state.photos,
+                  notifications: state.notifications,
+                  chatMessages: state.chatMessages,
+                  chatLastReadAt: state.chatLastReadAt,
+                  paymentPeriods: state.paymentPeriods,
+                  polls: state.polls,
+                  teamLinks: state.teamLinks,
+                }
+              : t
+          );
+        }
+
+        // Get the team data from the updated teams array (in case it was the one we just synced)
+        const targetTeam = updatedTeams.find((t) => t.id === teamId) || team;
+
         // Find the current user in the new team
-        const userInTeam = team.players.find(
+        const userInTeam = targetTeam.players.find(
           (p) => (state.userEmail && p.email?.toLowerCase() === state.userEmail.toLowerCase()) ||
                  (state.userPhone && p.phone?.replace(/\D/g, '') === state.userPhone.replace(/\D/g, ''))
         );
 
         set({
+          teams: updatedTeams,
           activeTeamId: teamId,
           // Load team data into the "active" slots for backward compatibility
-          teamName: team.teamName,
-          teamSettings: team.teamSettings,
-          players: team.players,
-          games: team.games,
-          events: team.events,
-          photos: team.photos,
-          notifications: team.notifications,
-          chatMessages: team.chatMessages,
-          chatLastReadAt: team.chatLastReadAt,
-          paymentPeriods: team.paymentPeriods,
-          polls: team.polls || [],
-          teamLinks: team.teamLinks || [],
+          teamName: targetTeam.teamName,
+          teamSettings: targetTeam.teamSettings,
+          players: targetTeam.players,
+          games: targetTeam.games,
+          events: targetTeam.events,
+          photos: targetTeam.photos,
+          notifications: targetTeam.notifications,
+          chatMessages: targetTeam.chatMessages,
+          chatLastReadAt: targetTeam.chatLastReadAt,
+          paymentPeriods: targetTeam.paymentPeriods,
+          polls: targetTeam.polls || [],
+          teamLinks: targetTeam.teamLinks || [],
           currentPlayerId: userInTeam?.id || null,
           pendingTeamIds: null,
         });
