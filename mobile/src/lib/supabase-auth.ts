@@ -291,42 +291,62 @@ export function onAuthStateChange(callback: (event: string, session: any) => voi
 
 /**
  * Check if an email is already registered in Supabase Auth
- * NOTE: We skip real-time Supabase checks to avoid accidentally creating users.
- * The actual duplicate check happens during signUpWithEmail.
- * This function only does local/format validation now.
+ * Calls a Supabase Edge Function that uses admin API to check
  */
-export async function checkEmailExists(_email: string): Promise<{ exists: boolean; error?: string }> {
-  // We intentionally don't check Supabase here to avoid side effects
-  // The signUpWithEmail function will return an error if the email is already registered
-  return { exists: false };
+export async function checkEmailExists(email: string): Promise<{ exists: boolean; error?: string }> {
+  try {
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/check-user-exists`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email: email.toLowerCase() }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.warn('checkEmailExists error:', data.error);
+      return { exists: false };
+    }
+
+    return { exists: data.exists };
+  } catch (err) {
+    console.error('checkEmailExists error:', err);
+    return { exists: false };
+  }
 }
 
 /**
  * Check if a phone number is already associated with a user
- * Queries the profiles table or auth.users via RPC
+ * Calls a Supabase Edge Function that uses admin API to check
  */
 export async function checkPhoneExists(phone: string): Promise<{ exists: boolean; error?: string }> {
   try {
-    // First normalize the phone number (remove formatting)
     const normalizedPhone = phone.replace(/\D/g, '');
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 
-    // Try to query the profiles table if it exists
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('phone', normalizedPhone)
-      .maybeSingle();
+    const response = await fetch(`${supabaseUrl}/functions/v1/check-user-exists`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ phone: normalizedPhone }),
+    });
 
-    if (error) {
-      // Table might not exist or other error - try alternative approach
-      console.warn('Could not check profiles table:', error.message);
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.warn('checkPhoneExists error:', data.error);
       return { exists: false };
     }
 
-    return { exists: !!data };
+    return { exists: data.exists };
   } catch (err) {
     console.error('checkPhoneExists error:', err);
-    return { exists: false, error: 'Could not verify phone' };
+    return { exists: false };
   }
 }
 
