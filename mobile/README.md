@@ -40,6 +40,9 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Real-Time Validation**: Email and phone are validated immediately when you move to the next field
   - If email or phone is already in use, you'll see an error right away
   - No more waiting until the end to find out there's a conflict
+- **Form Persistence**: Your progress is automatically saved for 10 minutes
+  - If you leave the app (e.g., to allow photo permissions), your data is preserved
+  - Form is cleared when you successfully create a team or go back to login
 
 ### Schedule Tab
 - View upcoming games, practices, and events with date, time, and location

@@ -2060,3 +2060,77 @@ export const useStoreHydrated = () => {
 
   return hydrated;
 };
+
+// ============================================
+// Create Team Form Persistence Store
+// ============================================
+// This store persists form data during team creation so users don't lose progress
+// when the app goes to background (e.g., to allow photo permissions)
+
+export interface CreateTeamFormState {
+  // Form data
+  step: number;
+  name: string;
+  email: string;
+  phone: string;
+  jerseyNumber: string;
+  memberRole: 'player' | 'reserve' | 'coach' | 'parent';
+  password: string;
+  confirmPassword: string;
+  teamNameInput: string;
+  sport: Sport | null;
+  jerseyColors: { name: string; color: string }[];
+  avatar: string | null;
+  teamLogo: string | null;
+  // Timestamp to auto-expire old data
+  lastUpdated: number;
+  // Actions
+  setFormData: (data: Partial<Omit<CreateTeamFormState, 'setFormData' | 'clearFormData' | 'lastUpdated'>>) => void;
+  clearFormData: () => void;
+}
+
+const initialCreateTeamFormState = {
+  step: 1,
+  name: '',
+  email: '',
+  phone: '',
+  jerseyNumber: '',
+  memberRole: 'player' as const,
+  password: '',
+  confirmPassword: '',
+  teamNameInput: '',
+  sport: null as Sport | null,
+  jerseyColors: [] as { name: string; color: string }[],
+  avatar: null as string | null,
+  teamLogo: null as string | null,
+  lastUpdated: 0,
+};
+
+export const useCreateTeamFormStore = create<CreateTeamFormState>()(
+  persist(
+    (set) => ({
+      ...initialCreateTeamFormState,
+      setFormData: (data) => set((state) => ({
+        ...state,
+        ...data,
+        lastUpdated: Date.now()
+      })),
+      clearFormData: () => set({
+        ...initialCreateTeamFormState,
+        lastUpdated: 0,
+      }),
+    }),
+    {
+      name: 'create-team-form-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+      version: 1,
+    }
+  )
+);
+
+// Hook to check if form data is still valid (not expired after 10 minutes)
+export const useCreateTeamFormValid = () => {
+  const lastUpdated = useCreateTeamFormStore((s) => s.lastUpdated);
+  const TEN_MINUTES = 10 * 60 * 1000;
+  return lastUpdated > 0 && (Date.now() - lastUpdated) < TEN_MINUTES;
+};

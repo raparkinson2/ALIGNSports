@@ -2,13 +2,13 @@ import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, Scrol
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, User, Mail, Lock, Users, Check, Palette, X, Camera, ImageIcon, Phone, Hash, Edit3, UserCog, UserMinus, Heart } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { useTeamStore, Sport, SPORT_NAMES, Player, PlayerRole, PlayerStatus, SPORT_POSITIONS } from '@/lib/store';
+import { useTeamStore, Sport, SPORT_NAMES, Player, PlayerRole, PlayerStatus, SPORT_POSITIONS, useCreateTeamFormStore, useCreateTeamFormValid } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg';
@@ -93,6 +93,10 @@ export default function CreateTeamScreen() {
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
   const teams = useTeamStore((s) => s.teams);
 
+  // Persisted form store
+  const formStore = useCreateTeamFormStore();
+  const isFormValid = useCreateTeamFormValid();
+
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -112,12 +116,55 @@ export default function CreateTeamScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
   const [editingColorName, setEditingColorName] = useState('');
+  const [hasRestoredForm, setHasRestoredForm] = useState(false);
 
   // Real-time validation states
   const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [isValidatingEmail, setIsValidatingEmail] = useState(false);
   const [isValidatingPhone, setIsValidatingPhone] = useState(false);
+
+  // Restore form state on mount if valid (within 10 minutes)
+  useEffect(() => {
+    if (isFormValid && !hasRestoredForm) {
+      console.log('Restoring create-team form state from storage');
+      setStep(formStore.step);
+      setName(formStore.name);
+      setEmail(formStore.email);
+      setPhone(formStore.phone);
+      setJerseyNumber(formStore.jerseyNumber);
+      setMemberRole(formStore.memberRole);
+      setPassword(formStore.password);
+      setConfirmPassword(formStore.confirmPassword);
+      setTeamNameInput(formStore.teamNameInput);
+      setSport(formStore.sport);
+      setJerseyColors(formStore.jerseyColors);
+      setAvatar(formStore.avatar);
+      setTeamLogo(formStore.teamLogo);
+      setHasRestoredForm(true);
+    }
+  }, [isFormValid, hasRestoredForm]);
+
+  // Save form state whenever it changes
+  useEffect(() => {
+    if (hasRestoredForm || step > 1 || name || email) {
+      formStore.setFormData({
+        step,
+        name,
+        email,
+        phone,
+        jerseyNumber,
+        memberRole,
+        password,
+        confirmPassword,
+        teamNameInput,
+        sport,
+        jerseyColors,
+        avatar,
+        teamLogo,
+      });
+    }
+  }, [step, name, email, phone, jerseyNumber, memberRole, password, confirmPassword, teamNameInput, sport, jerseyColors, avatar, teamLogo]);
 
   // Image picker functions
   const handlePickImage = async () => {
@@ -563,6 +610,9 @@ export default function CreateTeamScreen() {
         },
       });
 
+      // Clear the persisted form data on success
+      formStore.clearFormData();
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace('/(tabs)');
     } catch (err) {
@@ -599,6 +649,8 @@ export default function CreateTeamScreen() {
                   setStep(step - 1);
                   setError('');
                 } else {
+                  // Clear form data when leaving the create-team flow entirely
+                  formStore.clearFormData();
                   router.back();
                 }
               }}
