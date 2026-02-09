@@ -701,6 +701,8 @@ interface TeamStore {
 
   // Reset all data
   resetAllData: () => void;
+  // Delete only the current team (preserves other teams)
+  deleteCurrentTeam: () => void;
 
   // Multi-team support
   teams: Team[];
@@ -1842,6 +1844,92 @@ export const useTeamStore = create<TeamStore>()(
           userPhone: null,
           pendingTeamIds: null,
         };
+      }),
+
+      // Delete only the current team, preserve other teams user belongs to
+      deleteCurrentTeam: () => set((state) => {
+        const { activeTeamId, teams, userEmail, userPhone } = state;
+
+        if (!activeTeamId) {
+          // No active team, nothing to delete
+          return state;
+        }
+
+        // Remove the current team from the teams array
+        const remainingTeams = teams.filter(t => t.id !== activeTeamId);
+
+        // Find other teams this user belongs to
+        const userTeams = remainingTeams.filter(team =>
+          team.players.some(p =>
+            (userEmail && p.email?.toLowerCase() === userEmail.toLowerCase()) ||
+            (userPhone && p.phone?.replace(/\D/g, '') === userPhone.replace(/\D/g, ''))
+          )
+        );
+
+        if (userTeams.length > 0) {
+          // User has other teams - switch to the first one
+          const newActiveTeam = userTeams[0];
+          return {
+            teams: remainingTeams,
+            activeTeamId: newActiveTeam.id,
+            teamName: newActiveTeam.teamName,
+            teamSettings: newActiveTeam.teamSettings,
+            players: newActiveTeam.players,
+            games: newActiveTeam.games || [],
+            events: newActiveTeam.events || [],
+            photos: newActiveTeam.photos || [],
+            notifications: newActiveTeam.notifications || [],
+            chatMessages: newActiveTeam.chatMessages || [],
+            chatLastReadAt: newActiveTeam.chatLastReadAt || {},
+            paymentPeriods: newActiveTeam.paymentPeriods || [],
+            polls: newActiveTeam.polls || [],
+            teamLinks: newActiveTeam.teamLinks || [],
+            // Keep user logged in since they have other teams
+            isLoggedIn: true,
+            currentPlayerId: newActiveTeam.players.find(p =>
+              (userEmail && p.email?.toLowerCase() === userEmail.toLowerCase()) ||
+              (userPhone && p.phone?.replace(/\D/g, '') === userPhone.replace(/\D/g, ''))
+            )?.id || null,
+            pendingTeamIds: userTeams.length > 1 ? userTeams.map(t => t.id) : null,
+          };
+        } else {
+          // User has no other teams - log them out but preserve other teams data
+          return {
+            teams: remainingTeams,
+            activeTeamId: null,
+            teamName: 'My Team',
+            teamSettings: {
+              sport: 'hockey',
+              jerseyColors: [
+                { name: 'White', color: '#ffffff' },
+                { name: 'Black', color: '#1a1a1a' },
+              ],
+              paymentMethods: [],
+              teamLogo: undefined,
+              record: undefined,
+              showTeamStats: true,
+              showPayments: true,
+              showTeamChat: true,
+              showPhotos: true,
+              showRefreshmentDuty: true,
+              refreshmentDutyIs21Plus: true,
+              showLineups: true,
+            },
+            players: [],
+            games: [],
+            events: [],
+            photos: [],
+            notifications: [],
+            chatMessages: [],
+            chatLastReadAt: {},
+            paymentPeriods: [],
+            polls: [],
+            teamLinks: [],
+            currentPlayerId: null,
+            isLoggedIn: false,
+            pendingTeamIds: null,
+          };
+        }
       }),
 
       // Multi-team support

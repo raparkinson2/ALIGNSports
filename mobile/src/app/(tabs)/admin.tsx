@@ -319,6 +319,7 @@ export default function AdminScreen() {
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const resetAllData = useTeamStore((s) => s.resetAllData);
+  const deleteCurrentTeam = useTeamStore((s) => s.deleteCurrentTeam);
   const games = useTeamStore((s) => s.games);
   const updateGame = useTeamStore((s) => s.updateGame);
 
@@ -2948,10 +2949,11 @@ export default function AdminScreen() {
                 onPress={() => {
                   if (deleteConfirmText === 'DELETE') {
                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                    resetAllData();
+                    // Use deleteCurrentTeam to only delete this team, not all teams
+                    deleteCurrentTeam();
                     setIsDeleteTeamModalVisible(false);
                     setDeleteConfirmText('');
-                    // Navigate to login screen after deleting all data
+                    // Navigate to login screen after deleting team
                     router.replace('/login');
                   }
                 }}
