@@ -476,6 +476,11 @@ export default function ChatScreen() {
   const handlePickImage = async () => {
     if (!currentPlayerId) return;
 
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
