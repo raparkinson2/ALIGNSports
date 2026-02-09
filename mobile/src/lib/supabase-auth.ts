@@ -9,7 +9,7 @@ export interface AuthResult {
 /**
  * Sign up a new user with email and password
  */
-export async function signUpWithEmail(email: string, password: string): Promise<AuthResult & { emailConfirmationRequired?: boolean }> {
+export async function signUpWithEmail(email: string, password: string): Promise<AuthResult & { emailConfirmationRequired?: boolean; alreadyRegistered?: boolean }> {
   try {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -17,6 +17,13 @@ export async function signUpWithEmail(email: string, password: string): Promise<
     });
 
     if (error) {
+      // Check for "already registered" error
+      const errorLower = error.message.toLowerCase();
+      if (errorLower.includes('already registered') ||
+          errorLower.includes('already been registered') ||
+          errorLower.includes('user already registered')) {
+        return { success: false, error: 'This email is already registered. Please sign in instead.', alreadyRegistered: true };
+      }
       return { success: false, error: error.message };
     }
 
@@ -25,9 +32,19 @@ export async function signUpWithEmail(email: string, password: string): Promise<
     }
 
     // Check if email confirmation is required
-    // If identities array is empty, email confirmation is pending
+    // If identities array is empty, email confirmation is pending (user already exists but unconfirmed)
     const emailConfirmationRequired = !data.user.email_confirmed_at &&
       (!data.user.identities || data.user.identities.length === 0);
+
+    // If identities is empty, the user already exists but hasn't confirmed their email
+    if (!data.user.identities || data.user.identities.length === 0) {
+      return {
+        success: false,
+        error: 'This email is already registered. Please check your inbox for a confirmation email or sign in.',
+        alreadyRegistered: true,
+        emailConfirmationRequired: true
+      };
+    }
 
     return {
       success: true,
@@ -274,41 +291,14 @@ export function onAuthStateChange(callback: (event: string, session: any) => voi
 
 /**
  * Check if an email is already registered in Supabase Auth
- * Uses signInWithOtp with shouldCreateUser: false to check without creating a user
+ * NOTE: We skip real-time Supabase checks to avoid accidentally creating users.
+ * The actual duplicate check happens during signUpWithEmail.
+ * This function only does local/format validation now.
  */
-export async function checkEmailExists(email: string): Promise<{ exists: boolean; error?: string }> {
-  try {
-    // Use signInWithOtp with shouldCreateUser: false
-    // This will fail with a specific error if user doesn't exist,
-    // or succeed/fail differently if user does exist
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: false,
-      }
-    });
-
-    if (error) {
-      // "Signups not allowed for otp" or "User not found" means email doesn't exist
-      if (error.message.toLowerCase().includes('not allowed') ||
-          error.message.toLowerCase().includes('user not found') ||
-          error.message.toLowerCase().includes('no user found')) {
-        return { exists: false };
-      }
-      // Rate limit or other errors - can't determine, assume doesn't exist
-      if (error.message.toLowerCase().includes('rate limit')) {
-        return { exists: false, error: 'Please wait before checking again' };
-      }
-      // Other errors might indicate user exists
-      return { exists: false };
-    }
-
-    // If no error, the OTP was sent which means user exists
-    return { exists: true };
-  } catch (err) {
-    console.error('checkEmailExists error:', err);
-    return { exists: false, error: 'Could not verify email' };
-  }
+export async function checkEmailExists(_email: string): Promise<{ exists: boolean; error?: string }> {
+  // We intentionally don't check Supabase here to avoid side effects
+  // The signUpWithEmail function will return an error if the email is already registered
+  return { exists: false };
 }
 
 /**

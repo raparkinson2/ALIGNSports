@@ -515,6 +515,13 @@ export default function CreateTeamScreen() {
       if (!supabaseResult.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError(supabaseResult.error || 'Failed to create account');
+
+        // If already registered, go back to step 1 so user can change email
+        if (supabaseResult.alreadyRegistered) {
+          setStep(1);
+          setEmailError(supabaseResult.error || 'This email is already registered');
+        }
+
         setIsLoading(false);
         return;
       }
