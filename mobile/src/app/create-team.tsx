@@ -1,4 +1,4 @@
-import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
@@ -121,9 +121,33 @@ export default function CreateTeamScreen() {
 
   // Image picker functions
   const handlePickImage = async () => {
+    // First check current permission status
+    const { status: currentStatus } = await ImagePicker.getMediaLibraryPermissionsAsync();
+
+    if (currentStatus === 'denied') {
+      // Permission was previously denied - need to go to Settings
+      Alert.alert(
+        'Photo Access Required',
+        'Please enable photo access in Settings to upload a profile picture.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() }
+        ]
+      );
+      return;
+    }
+
+    // Request permission if not granted
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      setError('Please allow access to your photos');
+      Alert.alert(
+        'Photo Access Required',
+        'Please enable photo access in Settings to upload a profile picture.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() }
+        ]
+      );
       return;
     }
 
@@ -141,9 +165,31 @@ export default function CreateTeamScreen() {
   };
 
   const handleTakePhoto = async () => {
+    // First check current permission status
+    const { status: currentStatus } = await ImagePicker.getCameraPermissionsAsync();
+
+    if (currentStatus === 'denied') {
+      Alert.alert(
+        'Camera Access Required',
+        'Please enable camera access in Settings to take a photo.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() }
+        ]
+      );
+      return;
+    }
+
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      setError('Please allow access to your camera');
+      Alert.alert(
+        'Camera Access Required',
+        'Please enable camera access in Settings to take a photo.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() }
+        ]
+      );
       return;
     }
 
@@ -161,9 +207,31 @@ export default function CreateTeamScreen() {
 
   // Team logo picker functions
   const handlePickTeamLogo = async () => {
+    // First check current permission status
+    const { status: currentStatus } = await ImagePicker.getMediaLibraryPermissionsAsync();
+
+    if (currentStatus === 'denied') {
+      Alert.alert(
+        'Photo Access Required',
+        'Please enable photo access in Settings to upload a team logo.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() }
+        ]
+      );
+      return;
+    }
+
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      setError('Please allow access to your photos');
+      Alert.alert(
+        'Photo Access Required',
+        'Please enable photo access in Settings to upload a team logo.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() }
+        ]
+      );
       return;
     }
 
@@ -181,9 +249,31 @@ export default function CreateTeamScreen() {
   };
 
   const handleTakeTeamLogoPhoto = async () => {
+    // First check current permission status
+    const { status: currentStatus } = await ImagePicker.getCameraPermissionsAsync();
+
+    if (currentStatus === 'denied') {
+      Alert.alert(
+        'Camera Access Required',
+        'Please enable camera access in Settings to take a photo.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() }
+        ]
+      );
+      return;
+    }
+
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      setError('Please allow access to your camera');
+      Alert.alert(
+        'Camera Access Required',
+        'Please enable camera access in Settings to take a photo.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() }
+        ]
+      );
       return;
     }
 

@@ -274,46 +274,37 @@ export function onAuthStateChange(callback: (event: string, session: any) => voi
 
 /**
  * Check if an email is already registered in Supabase Auth
- * Uses signInWithPassword to check - if we get "Invalid login credentials",
- * we try to sign up to see if the email is taken
+ * Uses signInWithOtp with shouldCreateUser: false to check without creating a user
  */
 export async function checkEmailExists(email: string): Promise<{ exists: boolean; error?: string }> {
   try {
-    // Try to sign up with a dummy password - if email exists, Supabase will tell us
-    const { data, error } = await supabase.auth.signUp({
+    // Use signInWithOtp with shouldCreateUser: false
+    // This will fail with a specific error if user doesn't exist,
+    // or succeed/fail differently if user does exist
+    const { error } = await supabase.auth.signInWithOtp({
       email,
-      password: 'DummyPassword123!@#$%^', // Will never actually create account
       options: {
-        // Prevent sending confirmation email
-        emailRedirectTo: undefined,
+        shouldCreateUser: false,
       }
     });
 
     if (error) {
-      // If the error mentions the email is already registered
-      if (error.message.toLowerCase().includes('already registered') ||
-          error.message.toLowerCase().includes('already been registered') ||
-          error.message.toLowerCase().includes('user already registered')) {
-        return { exists: true };
+      // "Signups not allowed for otp" or "User not found" means email doesn't exist
+      if (error.message.toLowerCase().includes('not allowed') ||
+          error.message.toLowerCase().includes('user not found') ||
+          error.message.toLowerCase().includes('no user found')) {
+        return { exists: false };
       }
-      // Other errors - assume email doesn't exist or return error
+      // Rate limit or other errors - can't determine, assume doesn't exist
+      if (error.message.toLowerCase().includes('rate limit')) {
+        return { exists: false, error: 'Please wait before checking again' };
+      }
+      // Other errors might indicate user exists
       return { exists: false };
     }
 
-    // If sign up succeeds but user has no identities, email exists but not confirmed
-    if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
-      return { exists: true };
-    }
-
-    // If we get here with a user and identities, we accidentally created a user
-    // This shouldn't happen with email confirmation enabled, but clean up just in case
-    if (data.user && data.user.identities && data.user.identities.length > 0) {
-      // Email was available and user was created - this is a new email
-      // The user won't be able to sign in without confirming email anyway
-      return { exists: false };
-    }
-
-    return { exists: false };
+    // If no error, the OTP was sent which means user exists
+    return { exists: true };
   } catch (err) {
     console.error('checkEmailExists error:', err);
     return { exists: false, error: 'Could not verify email' };
