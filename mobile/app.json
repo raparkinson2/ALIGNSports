@@ -21,7 +21,8 @@
       }
     },
     "android": {
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.vibecode.alignsports"
     },
     "plugins": [
       "expo-router"
