@@ -22,7 +22,8 @@
     },
     "android": {
       "edgeToEdgeEnabled": true,
-      "package": "com.vibecode.alignsports"
+      "package": "com.vibecode.alignsports",
+      "versionCode": 2
     },
     "extra": {
       "eas": {
