@@ -1,16 +1,16 @@
 {
   "expo": {
     "name": "Align Sports",
-    "slug": "align-sports-4gvibl",
+    "slug": "align-sports",
     "scheme": "vibecode",
-    "version": "2.3.4",
+    "version": "2.3.5",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.vibecode.alignsports-jy5wjr",
-      "buildNumber": "28",
+      "buildNumber": "29",
       "infoPlist": {
         "NSCameraUsageDescription": "Align Sports uses the camera to capture photos inside the app before you publish them.",
         "NSPhotoLibraryUsageDescription": "Align Sports accesses your photo library to let you choose media that appears in the app.",
@@ -24,11 +24,7 @@
       "edgeToEdgeEnabled": true,
       "package": "com.vibecode.alignsports"
     },
-    "extra": {
-      "eas": {
-        "projectId": "727371d5-f124-42e2-af0e-40f420477bce"
-      }
-    },
+    "extra": {},
     "plugins": [
       "expo-router"
     ],
