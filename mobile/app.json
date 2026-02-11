@@ -24,6 +24,11 @@
       "edgeToEdgeEnabled": true,
       "package": "com.vibecode.alignsports"
     },
+    "extra": {
+      "eas": {
+        "projectId": "727371d5-f124-42e2-af0e-40f420477bce"
+      }
+    },
     "plugins": [
       "expo-router"
     ],
