@@ -922,6 +922,7 @@ export default function ScheduleScreen() {
   const [inviteReleaseOption, setInviteReleaseOption] = useState<InviteReleaseOption>('now');
   const [inviteReleaseDate, setInviteReleaseDate] = useState(new Date());
   const [showInviteReleaseDatePicker, setShowInviteReleaseDatePicker] = useState(false);
+  const [androidPickerMode, setAndroidPickerMode] = useState<'date' | 'time'>('date');
 
   // Record editing state
   const [recordWins, setRecordWins] = useState(teamSettings.record?.wins?.toString() ?? '0');
@@ -1857,6 +1858,7 @@ export default function ScheduleScreen() {
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setInviteReleaseOption('scheduled');
+                      setAndroidPickerMode('date');
                       setShowInviteReleaseDatePicker(true);
                     }}
                     className={cn(
@@ -1885,7 +1887,10 @@ export default function ScheduleScreen() {
                   {inviteReleaseOption === 'scheduled' && (
                     <View className="mt-2">
                       <Pressable
-                        onPress={() => setShowInviteReleaseDatePicker(!showInviteReleaseDatePicker)}
+                        onPress={() => {
+                          setAndroidPickerMode('date');
+                          setShowInviteReleaseDatePicker(!showInviteReleaseDatePicker);
+                        }}
                         className="bg-slate-700/80 rounded-xl px-4 py-3"
                       >
                         <Text className="text-cyan-400 text-base">
@@ -1894,18 +1899,45 @@ export default function ScheduleScreen() {
                       </Pressable>
                       {showInviteReleaseDatePicker && (
                         <View className="bg-slate-700/80 rounded-xl mt-2 overflow-hidden items-center">
-                          <DateTimePicker
-                            value={inviteReleaseDate}
-                            mode="datetime"
-                            display="inline"
-                            onChange={(event, date) => {
-                              if (date) setInviteReleaseDate(date);
-                              if (Platform.OS === 'android') setShowInviteReleaseDatePicker(false);
-                            }}
-                            minimumDate={new Date()}
-                            themeVariant="dark"
-                            accentColor="#22d3ee"
-                          />
+                          {Platform.OS === 'ios' ? (
+                            <DateTimePicker
+                              value={inviteReleaseDate}
+                              mode="datetime"
+                              display="inline"
+                              onChange={(event, date) => {
+                                if (date) setInviteReleaseDate(date);
+                              }}
+                              minimumDate={new Date()}
+                              themeVariant="dark"
+                              accentColor="#22d3ee"
+                            />
+                          ) : (
+                            <DateTimePicker
+                              value={inviteReleaseDate}
+                              mode={androidPickerMode}
+                              display="default"
+                              onChange={(event, date) => {
+                                if (event.type === 'dismissed') {
+                                  setShowInviteReleaseDatePicker(false);
+                                  setAndroidPickerMode('date');
+                                  return;
+                                }
+                                if (date) {
+                                  if (androidPickerMode === 'date') {
+                                    // Save the date and show time picker
+                                    setInviteReleaseDate(date);
+                                    setAndroidPickerMode('time');
+                                  } else {
+                                    // Time selected, save and close
+                                    setInviteReleaseDate(date);
+                                    setShowInviteReleaseDatePicker(false);
+                                    setAndroidPickerMode('date');
+                                  }
+                                }
+                              }}
+                              minimumDate={androidPickerMode === 'date' ? new Date() : undefined}
+                            />
+                          )}
                         </View>
                       )}
                     </View>
