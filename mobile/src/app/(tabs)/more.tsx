@@ -1173,7 +1173,7 @@ export default function MoreScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {/* Current Player Card */}
+          {/* Profile Card */}
           {currentPlayer && (
             <Animated.View
               entering={FadeInDown.delay(50).springify()}
@@ -1201,31 +1201,49 @@ export default function MoreScreen() {
             </Animated.View>
           )}
 
+          {/* Teams Section */}
+          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-2">
+            Teams
+          </Text>
+
           {/* Switch Team - only show if user belongs to multiple teams */}
           {hasMultipleTeams && (
-            <Animated.View entering={FadeInDown.delay(75).springify()}>
-              <MenuItem
-                icon={<ArrowLeftRight size={20} color="#67e8f9" />}
-                title="Switch Team"
-                subtitle={`You're on ${userTeams.length} teams`}
-                onPress={handleSwitchTeam}
-                index={0}
-              />
-            </Animated.View>
+            <MenuItem
+              icon={<ArrowLeftRight size={20} color="#67e8f9" />}
+              title="Switch Team"
+              subtitle={`You're on ${userTeams.length} teams`}
+              onPress={handleSwitchTeam}
+              index={0}
+            />
           )}
 
-          {/* Log Out - right below Switch Team */}
           <MenuItem
-            icon={<LogOut size={20} color="#f87171" />}
-            title="Log Out"
-            onPress={handleLogout}
+            icon={<Plus size={20} color="#67e8f9" />}
+            title="Create New Team"
+            subtitle="Start a new team"
+            onPress={() => router.push('/create-new-team')}
             index={1}
-            variant="danger"
           />
 
-          {/* Communication Section */}
-          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-2">
-            Communication
+          <MenuItem
+            icon={<Users size={20} color="#67e8f9" />}
+            title="Team Roster"
+            subtitle={`${players.length} players`}
+            onPress={() => router.push('/(tabs)/roster')}
+            index={2}
+          />
+
+          <MenuItem
+            icon={<Link size={20} color="#67e8f9" />}
+            title="Team Links"
+            subtitle={teamLinks.length > 0 ? `${teamLinks.length} link${teamLinks.length !== 1 ? 's' : ''}` : 'Add useful links for your team'}
+            onPress={() => setLinksModalVisible(true)}
+            index={3}
+          />
+
+          {/* Communication & Alerts Section */}
+          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
+            Communication & Alerts
           </Text>
 
           {/* Notifications with badge */}
@@ -1280,7 +1298,7 @@ export default function MoreScreen() {
             title="Email Team"
             subtitle="Send an email to all players"
             onPress={handleEmailTeam}
-            index={0}
+            index={4}
           />
 
           <MenuItem
@@ -1288,13 +1306,12 @@ export default function MoreScreen() {
             title="Text Team"
             subtitle="Send a group text to all players"
             onPress={handleTextTeam}
-            index={1}
+            index={5}
           />
 
-
-          {/* Team Info Section */}
+          {/* Team Activity Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
-            Team
+            Team Activity
           </Text>
 
           <MenuItem
@@ -1302,46 +1319,15 @@ export default function MoreScreen() {
             title="My Availability"
             subtitle="Set dates you're unavailable"
             onPress={() => router.push('/my-availability')}
-            index={2}
+            index={6}
           />
-
-          {showTeamStats && (
-            <MenuItem
-              icon={<BarChart3 size={20} color="#67e8f9" />}
-              title="Team Stats"
-              subtitle="View player and team statistics"
-              onPress={() => router.push('/team-stats')}
-              index={3}
-            />
-          )}
 
           <MenuItem
             icon={<BarChart3 size={20} color="#67e8f9" />}
             title="Team Polls"
             subtitle="Create and vote on polls"
-            onPress={() => {
-              router.push('/polls');
-            }}
-            index={3}
-          />
-
-          <MenuItem
-            icon={<Link size={20} color="#67e8f9" />}
-            title="Team Links"
-            subtitle={teamLinks.length > 0 ? `${teamLinks.length} link${teamLinks.length !== 1 ? 's' : ''}` : 'Add useful links for your team'}
-            onPress={() => setLinksModalVisible(true)}
-            index={4}
-          />
-
-          <MenuItem
-            icon={<Users size={20} color="#67e8f9" />}
-            title="Team Roster"
-            subtitle={`${players.length} players`}
-            onPress={() => {
-              // Navigate to roster tab
-              router.push('/(tabs)/roster');
-            }}
-            index={5}
+            onPress={() => router.push('/polls')}
+            index={7}
           />
 
           {/* Account Section */}
@@ -1349,31 +1335,44 @@ export default function MoreScreen() {
             Account
           </Text>
 
-          {/* Create New Team option */}
-          <MenuItem
-            icon={<Plus size={20} color="#67e8f9" />}
-            title="Create New Team"
-            subtitle="Start a new team"
-            onPress={() => {
-              router.push('/create-new-team');
-            }}
-            index={4}
-          />
-
           <MenuItem
             icon={<Lock size={20} color="#67e8f9" />}
             title="Change Password"
             subtitle="Update your account password"
             onPress={() => setPasswordModalVisible(true)}
-            index={5}
+            index={8}
           />
+
+          <MenuItem
+            icon={<LogOut size={20} color="#f87171" />}
+            title="Log Out"
+            onPress={handleLogout}
+            index={9}
+            variant="danger"
+          />
+
+          <View className="mt-3">
+            <MenuItem
+              icon={<UserX size={20} color="#f87171" />}
+              title="Delete My Account"
+              subtitle="Permanently delete all your data"
+              onPress={handleDeleteAccount}
+              index={10}
+              variant="danger"
+            />
+          </View>
+
+          {/* Support Section */}
+          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
+            Support
+          </Text>
 
           <MenuItem
             icon={<Lightbulb size={20} color="#67e8f9" />}
             title="Feature Request"
             subtitle="Suggest a new feature"
             onPress={() => router.push('/feature-request')}
-            index={6}
+            index={11}
           />
 
           <MenuItem
@@ -1381,7 +1380,8 @@ export default function MoreScreen() {
             title="Report Bug"
             subtitle="Let us know about issues"
             onPress={() => router.push('/report-bug')}
-            index={7}
+            index={12}
+            variant="danger"
           />
 
           <MenuItem
@@ -1389,16 +1389,7 @@ export default function MoreScreen() {
             title="Notices"
             subtitle="Privacy policy & legal"
             onPress={() => router.push('/notices')}
-            index={8}
-          />
-
-          <MenuItem
-            icon={<UserX size={20} color="#f87171" />}
-            title="Delete My Account"
-            subtitle="Permanently delete all your data"
-            onPress={handleDeleteAccount}
-            index={10}
-            variant="danger"
+            index={13}
           />
         </ScrollView>
       </SafeAreaView>
