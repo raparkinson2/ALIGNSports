@@ -857,7 +857,7 @@ export default function AdminScreen() {
             <Shield size={20} color="#a78bfa" />
             <Text className="text-purple-400 text-sm font-medium ml-2">Admin</Text>
           </View>
-          <Text className="text-white text-3xl font-bold">Control Panel</Text>
+          <Text className="text-white text-3xl font-bold">Control Panel – {teamName}</Text>
         </Animated.View>
 
         <ScrollView
@@ -865,19 +865,19 @@ export default function AdminScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {/* Sport Selection - Above Team Settings */}
+          {/* Sport Selection - Above Team Identity */}
           <Animated.View entering={FadeInDown.delay(50).springify()}>
-            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">
               Sport
             </Text>
 
-            <View className="flex-row justify-between mb-4">
+            <View className="flex-row justify-between mb-6">
               {(Object.keys(SPORT_NAMES) as Sport[]).map((sport) => (
                 <Pressable
                   key={sport}
                   onPress={() => handleChangeSport(sport)}
                   className={cn(
-                    'flex-1 items-center py-3 rounded-xl mx-1 border',
+                    'flex-1 items-center py-3 rounded-2xl mx-1 border',
                     teamSettings.sport === sport
                       ? 'bg-cyan-500/20 border-cyan-500/50'
                       : 'bg-slate-800/80 border-slate-700/50'
@@ -896,10 +896,10 @@ export default function AdminScreen() {
             </View>
           </Animated.View>
 
-          {/* Team Settings Section */}
+          {/* Team Identity Section */}
           <Animated.View entering={FadeInDown.delay(100).springify()}>
-            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-              Team Settings
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">
+              Team Identity
             </Text>
 
             <Pressable
@@ -907,7 +907,7 @@ export default function AdminScreen() {
                 setEditTeamName(teamName);
                 setIsSettingsModalVisible(true);
               }}
-              className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
@@ -926,7 +926,7 @@ export default function AdminScreen() {
             {/* Team Logo */}
             <Pressable
               onPress={handlePickLogo}
-              className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
@@ -967,7 +967,7 @@ export default function AdminScreen() {
 
             <Pressable
               onPress={() => setIsJerseyModalVisible(true)}
-              className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
@@ -993,6 +993,35 @@ export default function AdminScreen() {
                 </View>
               </View>
             </Pressable>
+          </Animated.View>
+
+          {/* Team Structure Section */}
+          <Animated.View entering={FadeInDown.delay(150).springify()}>
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4 mt-8">
+              Team Structure
+            </Text>
+
+            {/* Manage Team Menu Item */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsManagePlayersModalVisible(true);
+              }}
+              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <View className="bg-cyan-500/20 p-2 rounded-full">
+                    <Users size={20} color="#67e8f9" />
+                  </View>
+                  <View className="ml-3">
+                    <Text className="text-white font-semibold">Manage Team</Text>
+                    <Text className="text-slate-400 text-sm">{players.length} members on roster</Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color="#64748b" />
+              </View>
+            </Pressable>
 
             {/* Manage Roles Menu Item */}
             <Pressable
@@ -1000,7 +1029,7 @@ export default function AdminScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setIsRolesModalVisible(true);
               }}
-              className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
@@ -1018,34 +1047,98 @@ export default function AdminScreen() {
               </View>
             </Pressable>
 
-            {/* Manage Team Menu Item */}
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setIsManagePlayersModalVisible(true);
-              }}
-              className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
-            >
+            {/* Lineup Management Toggle */}
+            <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center">
-                  <View className="bg-cyan-500/20 p-2 rounded-full">
-                    <Users size={20} color="#67e8f9" />
+                <View className="flex-row items-center flex-1">
+                  <View className="bg-emerald-500/20 p-2 rounded-full">
+                    <ListOrdered size={20} color="#22c55e" />
                   </View>
-                  <View className="ml-3">
-                    <Text className="text-white font-semibold">Manage Team</Text>
-                    <Text className="text-slate-400 text-sm">{players.length} members on roster</Text>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-white font-semibold">Lineup Management</Text>
+                    <Text className="text-slate-400 text-sm">
+                      {teamSettings.sport === 'hockey'
+                        ? 'Set forward, defense, and goalie lines'
+                        : teamSettings.sport === 'basketball'
+                          ? 'Set starting five and rotations'
+                          : teamSettings.sport === 'baseball'
+                            ? 'Set batting order and field positions'
+                            : 'Set formation and starting lineup'}
+                    </Text>
                   </View>
                 </View>
-                <ChevronRight size={20} color="#64748b" />
+                <Switch
+                  value={teamSettings.showLineups !== false}
+                  onValueChange={(value) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setTeamSettings({ showLineups: value });
+                  }}
+                  trackColor={{ false: '#334155', true: '#22c55e' }}
+                  thumbColor="#ffffff"
+                />
               </View>
-            </Pressable>
+            </View>
+
+            {/* Softball Mode Toggle - Only for Baseball */}
+            {teamSettings.sport === 'baseball' && teamSettings.showLineups !== false && (
+              <View className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/30 ml-4">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View className="bg-amber-500/20 p-2 rounded-full">
+                      <Users size={20} color="#f59e0b" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="text-white font-semibold">Softball Mode</Text>
+                      <Text className="text-slate-400 text-sm">
+                        Enable 10th fielder (Short Fielder)
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={teamSettings.isSoftball === true}
+                    onValueChange={(value) => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setTeamSettings({ isSoftball: value });
+                    }}
+                    trackColor={{ false: '#334155', true: '#22c55e' }}
+                    thumbColor="#ffffff"
+                  />
+                </View>
+              </View>
+            )}
           </Animated.View>
 
-          {/* Team Communications Section */}
-          <Animated.View entering={FadeInDown.delay(150).springify()}>
-            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
-              Team Communications
+          {/* Communication Section */}
+          <Animated.View entering={FadeInDown.delay(200).springify()}>
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4 mt-8">
+              Communication
             </Text>
+
+            {/* Team Chat Toggle */}
+            <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View className="bg-cyan-500/20 p-2 rounded-full">
+                    <MessageSquare size={20} color="#67e8f9" />
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-white font-semibold">Team Chat</Text>
+                    <Text className="text-slate-400 text-sm">
+                      Enable in-app team messaging
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={teamSettings.showTeamChat !== false}
+                  onValueChange={(value) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setTeamSettings({ showTeamChat: value });
+                  }}
+                  trackColor={{ false: '#334155', true: '#22c55e' }}
+                  thumbColor="#ffffff"
+                />
+              </View>
+            </View>
 
             {/* Email Team Button */}
             <Pressable
@@ -1065,7 +1158,7 @@ export default function AdminScreen() {
                 setEmailBody('');
                 setIsEmailModalVisible(true);
               }}
-              className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
@@ -1123,7 +1216,7 @@ export default function AdminScreen() {
                   ]
                 );
               }}
-              className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
@@ -1140,105 +1233,26 @@ export default function AdminScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Team Options Section */}
-          <Animated.View entering={FadeInDown.delay(200).springify()}>
-            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
-              Team Options
+          {/* Team Features Section */}
+          <Animated.View entering={FadeInDown.delay(250).springify()}>
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4 mt-8">
+              Team Features
             </Text>
 
-            {/* Team Chat Toggle */}
-            <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center flex-1">
-                  <View className="bg-cyan-500/20 p-2 rounded-full">
-                    <MessageSquare size={20} color="#67e8f9" />
-                  </View>
-                  <View className="ml-3 flex-1">
-                    <Text className="text-white font-semibold">Use Team Chat</Text>
-                    <Text className="text-slate-400 text-sm">
-                      Enable team messaging
-                    </Text>
-                  </View>
-                </View>
-                <Switch
-                  value={teamSettings.showTeamChat !== false}
-                  onValueChange={(value) => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setTeamSettings({ showTeamChat: value });
-                  }}
-                  trackColor={{ false: '#334155', true: '#67e8f9' }}
-                  thumbColor="#ffffff"
-                />
-              </View>
-            </View>
-
-            {/* Create Lines/Lineups Toggle */}
-            <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center flex-1">
-                  <View className="bg-emerald-500/20 p-2 rounded-full">
-                    <ListOrdered size={20} color="#10b981" />
-                  </View>
-                  <View className="ml-3 flex-1">
-                    <Text className="text-white font-semibold">
-                      Use Create {teamSettings.sport === 'hockey' ? 'Lines' : 'Lineups'}
-                    </Text>
-                    <Text className="text-slate-400 text-sm">
-                      {teamSettings.sport === 'hockey'
-                        ? 'Set forward, defense, and goalie lines'
-                        : 'Set starting lineups for games'}
-                    </Text>
-                  </View>
-                </View>
-                <Switch
-                  value={teamSettings.showLineups !== false}
-                  onValueChange={(value) => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setTeamSettings({ showLineups: value });
-                  }}
-                  trackColor={{ false: '#334155', true: '#10b981' }}
-                  thumbColor="#ffffff"
-                />
-              </View>
-            </View>
-
-            {/* Softball Mode Toggle - Only for Baseball */}
-            {teamSettings.sport === 'baseball' && (
-              <View className="bg-slate-800/60 rounded-xl p-4 mb-3 border border-slate-700/30 ml-4">
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1">
-                    <View className="bg-amber-500/20 p-2 rounded-full">
-                      <Users size={20} color="#f59e0b" />
-                    </View>
-                    <View className="ml-3 flex-1">
-                      <Text className="text-white font-semibold">Softball Mode</Text>
-                      <Text className="text-slate-400 text-sm">
-                        Enable 10th fielder (Short Fielder)
-                      </Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={teamSettings.isSoftball === true}
-                    onValueChange={(value) => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setTeamSettings({ isSoftball: value });
-                    }}
-                    trackColor={{ false: '#334155', true: '#f59e0b' }}
-                    thumbColor="#ffffff"
-                  />
-                </View>
-              </View>
-            )}
+            {/* Media Subsection Label */}
+            <Text className="text-slate-500 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
+              Media
+            </Text>
 
             {/* Photos Toggle */}
-            <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
+            <View className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
                   <View className="bg-purple-500/20 p-2 rounded-full">
                     <ImageIcon size={20} color="#a78bfa" />
                   </View>
                   <View className="ml-3 flex-1">
-                    <Text className="text-white font-semibold">Use Photos</Text>
+                    <Text className="text-white font-semibold">Photos</Text>
                     <Text className="text-slate-400 text-sm">
                       Share team photos and memories
                     </Text>
@@ -1250,21 +1264,26 @@ export default function AdminScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setTeamSettings({ showPhotos: value });
                   }}
-                  trackColor={{ false: '#334155', true: '#a78bfa' }}
+                  trackColor={{ false: '#334155', true: '#22c55e' }}
                   thumbColor="#ffffff"
                 />
               </View>
             </View>
 
+            {/* Financial Subsection Label */}
+            <Text className="text-slate-500 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
+              Financial
+            </Text>
+
             {/* Payments Toggle */}
-            <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
+            <View className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
                   <View className="bg-green-500/20 p-2 rounded-full">
                     <DollarSign size={20} color="#22c55e" />
                   </View>
                   <View className="ml-3 flex-1">
-                    <Text className="text-white font-semibold">Use Payments</Text>
+                    <Text className="text-white font-semibold">Payments</Text>
                     <Text className="text-slate-400 text-sm">
                       Track team dues and payments
                     </Text>
@@ -1282,15 +1301,20 @@ export default function AdminScreen() {
               </View>
             </View>
 
+            {/* Performance Subsection Label */}
+            <Text className="text-slate-500 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
+              Performance
+            </Text>
+
             {/* Team Stats Toggle */}
-            <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
+            <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
                   <View className="bg-emerald-500/20 p-2 rounded-full">
                     <BarChart3 size={20} color="#10b981" />
                   </View>
                   <View className="ml-3 flex-1">
-                    <Text className="text-white font-semibold">Use Team Stats</Text>
+                    <Text className="text-white font-semibold">Team Stats</Text>
                     <Text className="text-slate-400 text-sm">
                       Track player and team statistics
                     </Text>
@@ -1302,7 +1326,7 @@ export default function AdminScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setTeamSettings({ showTeamStats: value });
                   }}
-                  trackColor={{ false: '#334155', true: '#10b981' }}
+                  trackColor={{ false: '#334155', true: '#22c55e' }}
                   thumbColor="#ffffff"
                 />
               </View>
@@ -1310,7 +1334,7 @@ export default function AdminScreen() {
 
             {/* Allow Player Self Stats Toggle - only show when team stats is enabled */}
             {teamSettings.showTeamStats !== false && (
-              <View className="bg-slate-800/60 rounded-xl p-4 mb-3 border border-slate-700/30 ml-4">
+              <View className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/30 ml-4">
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center flex-1">
                     <View className="bg-emerald-500/10 p-2 rounded-full">
@@ -1329,7 +1353,7 @@ export default function AdminScreen() {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setTeamSettings({ allowPlayerSelfStats: value });
                     }}
-                    trackColor={{ false: '#334155', true: '#059669' }}
+                    trackColor={{ false: '#334155', true: '#22c55e' }}
                     thumbColor="#ffffff"
                   />
                 </View>
@@ -1343,7 +1367,7 @@ export default function AdminScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push('/team-stats');
                 }}
-                className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+                className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center flex-1">
@@ -1351,7 +1375,7 @@ export default function AdminScreen() {
                       <BarChart3 size={20} color="#67e8f9" />
                     </View>
                     <View className="ml-3 flex-1">
-                      <Text className="text-white font-semibold">Team Stats</Text>
+                      <Text className="text-white font-semibold">View Team Stats</Text>
                       <Text className="text-slate-400 text-sm">
                         View and edit player statistics
                       </Text>
@@ -1362,19 +1386,20 @@ export default function AdminScreen() {
               </Pressable>
             )}
 
+            {/* Culture Subsection Label */}
+            <Text className="text-slate-500 text-xs font-medium uppercase tracking-wide mb-2 ml-1 mt-2">
+              Culture
+            </Text>
+
             {/* Refreshment Duty Toggle */}
-            <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
+            <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
                   <View className="bg-amber-500/20 p-2 rounded-full">
-                    {teamSettings.refreshmentDutyIs21Plus !== false ? (
-                      <Beer size={20} color="#f59e0b" />
-                    ) : (
-                      <JuiceBoxIcon size={20} color="#f59e0b" />
-                    )}
+                    <JuiceBoxIcon size={20} color="#f59e0b" />
                   </View>
                   <View className="ml-3 flex-1">
-                    <Text className="text-white font-semibold">Use Refreshment Duty</Text>
+                    <Text className="text-white font-semibold">Refreshments</Text>
                     <Text className="text-slate-400 text-sm">
                       Assign players to bring refreshments
                     </Text>
@@ -1386,7 +1411,7 @@ export default function AdminScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setTeamSettings({ showRefreshmentDuty: value });
                   }}
-                  trackColor={{ false: '#334155', true: '#f59e0b' }}
+                  trackColor={{ false: '#334155', true: '#22c55e' }}
                   thumbColor="#ffffff"
                 />
               </View>
@@ -1394,7 +1419,7 @@ export default function AdminScreen() {
 
             {/* 21+ Toggle - only show when refreshment duty is enabled */}
             {teamSettings.showRefreshmentDuty !== false && (
-              <View className="bg-slate-800/60 rounded-xl p-4 mb-3 border border-slate-700/30 ml-4">
+              <View className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/30 ml-4">
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center flex-1">
                     <View className="bg-amber-500/10 p-2 rounded-full">
@@ -1403,17 +1428,17 @@ export default function AdminScreen() {
                     <View className="ml-3 flex-1">
                       <Text className="text-slate-200 font-medium">21+ Beverages</Text>
                       <Text className="text-slate-500 text-sm">
-                        Show beer mug icon
+                        Show beer mug icon instead
                       </Text>
                     </View>
                   </View>
                   <Switch
-                    value={teamSettings.refreshmentDutyIs21Plus !== false}
+                    value={teamSettings.refreshmentDutyIs21Plus === true}
                     onValueChange={(value) => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setTeamSettings({ refreshmentDutyIs21Plus: value });
                     }}
-                    trackColor={{ false: '#334155', true: '#d97706' }}
+                    trackColor={{ false: '#334155', true: '#22c55e' }}
                     thumbColor="#ffffff"
                   />
                 </View>
@@ -1421,16 +1446,16 @@ export default function AdminScreen() {
             )}
           </Animated.View>
 
-          {/* Account Deletion Section */}
-          <Animated.View entering={FadeInDown.delay(250).springify()}>
-            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
+          {/* Danger Zone Section */}
+          <Animated.View entering={FadeInDown.delay(300).springify()}>
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4 mt-8">
               Danger Zone
             </Text>
 
             {/* Erase All Data */}
             <Pressable
               onPress={handleEraseAllData}
-              className="bg-orange-500/10 rounded-xl p-4 mb-3 border border-orange-500/30 active:bg-orange-500/20"
+              className="bg-orange-500/10 rounded-2xl p-4 mb-3 border border-orange-500/30 active:bg-orange-500/20"
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
@@ -1455,7 +1480,7 @@ export default function AdminScreen() {
                 setDeleteConfirmText('');
                 setIsDeleteTeamModalVisible(true);
               }}
-              className="bg-red-900/30 rounded-xl p-4 mb-3 border border-red-700/50 active:bg-red-900/50"
+              className="bg-red-900/30 rounded-2xl p-4 mb-3 border border-red-700/50 active:bg-red-900/50"
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
