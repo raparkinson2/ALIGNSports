@@ -31,6 +31,7 @@ import {
   UserMinus,
   Heart,
   Calendar,
+  RefreshCw,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -41,7 +42,6 @@ import * as Clipboard from 'expo-clipboard';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, parseISO } from 'date-fns';
-import Svg, { Path, Circle as SvgCircle, Line, Rect, Ellipse } from 'react-native-svg';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { ParentChildIcon } from '@/components/ParentChildIcon';
 import {
@@ -58,112 +58,6 @@ import {
 import { cn } from '@/lib/cn';
 import { formatPhoneNumber, formatPhoneInput, unformatPhone } from '@/lib/phone';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-
-// Custom Sport Icons
-function HockeyIcon({ color, size = 18 }: { color: string; size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {/* Hockey stick */}
-      <Path
-        d="M4 3L4 17L8 21L12 21L12 17"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      {/* Stick blade */}
-      <Path
-        d="M4 17L12 17"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-      />
-      {/* Puck */}
-      <Ellipse cx="18" cy="19" rx="4" ry="2" stroke={color} strokeWidth={2} fill="none" />
-    </Svg>
-  );
-}
-
-function BaseballIcon({ color, size = 18 }: { color: string; size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {/* Baseball circle */}
-      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
-      {/* Left stitching */}
-      <Path
-        d="M7 5C8 7 8 9 7 12C6 15 6 17 7 19"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        fill="none"
-      />
-      {/* Right stitching */}
-      <Path
-        d="M17 5C16 7 16 9 17 12C18 15 18 17 17 19"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        fill="none"
-      />
-    </Svg>
-  );
-}
-
-function BasketballIcon({ color, size = 18 }: { color: string; size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {/* Ball outline */}
-      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
-      {/* Vertical line */}
-      <Line x1="12" y1="3" x2="12" y2="21" stroke={color} strokeWidth={1.5} />
-      {/* Horizontal line */}
-      <Line x1="3" y1="12" x2="21" y2="12" stroke={color} strokeWidth={1.5} />
-      {/* Left curve */}
-      <Path d="M8 3.5C6 6 5 9 5 12C5 15 6 18 8 20.5" stroke={color} strokeWidth={1.5} fill="none" />
-      {/* Right curve */}
-      <Path d="M16 3.5C18 6 19 9 19 12C19 15 18 18 16 20.5" stroke={color} strokeWidth={1.5} fill="none" />
-    </Svg>
-  );
-}
-
-function SoccerIcon({ color, size = 18 }: { color: string; size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {/* Ball outline */}
-      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
-      {/* Center pentagon */}
-      <Path
-        d="M12 8L15 10.5L13.5 14.5H10.5L9 10.5L12 8Z"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-        fill={color}
-      />
-      {/* Lines from pentagon to edge */}
-      <Line x1="12" y1="8" x2="12" y2="3.5" stroke={color} strokeWidth={1.5} />
-      <Line x1="15" y1="10.5" x2="20" y2="9" stroke={color} strokeWidth={1.5} />
-      <Line x1="13.5" y1="14.5" x2="17" y2="19" stroke={color} strokeWidth={1.5} />
-      <Line x1="10.5" y1="14.5" x2="7" y2="19" stroke={color} strokeWidth={1.5} />
-      <Line x1="9" y1="10.5" x2="4" y2="9" stroke={color} strokeWidth={1.5} />
-    </Svg>
-  );
-}
-
-function SportIcon({ sport, color, size = 18 }: { sport: Sport; color: string; size?: number }) {
-  switch (sport) {
-    case 'hockey':
-      return <HockeyIcon color={color} size={size} />;
-    case 'baseball':
-      return <BaseballIcon color={color} size={size} />;
-    case 'basketball':
-      return <BasketballIcon color={color} size={size} />;
-    case 'soccer':
-      return <SoccerIcon color={color} size={size} />;
-    default:
-      return null;
-  }
-}
 
 interface PlayerManageCardProps {
   player: Player;
@@ -2779,7 +2673,7 @@ export default function AdminScreen() {
             {/* Header */}
             <View className="items-center mb-6">
               <View className="w-16 h-16 rounded-full bg-amber-500/20 items-center justify-center mb-4">
-                {pendingSport && <SportIcon sport={pendingSport} color="#f59e0b" size={32} />}
+                <RefreshCw size={32} color="#f59e0b" />
               </View>
               <Text className="text-white text-xl font-bold text-center">
                 Change Sport?
