@@ -1308,6 +1308,34 @@ export default function AdminScreen() {
               </View>
             </View>
 
+            {/* Softball Mode Toggle - Only for Baseball */}
+            {teamSettings.sport === 'baseball' && (
+              <View className="bg-slate-800/60 rounded-xl p-4 mb-3 border border-slate-700/30 ml-4">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View className="bg-amber-500/20 p-2 rounded-full">
+                      <Users size={20} color="#f59e0b" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="text-white font-semibold">Softball Mode</Text>
+                      <Text className="text-slate-400 text-sm">
+                        Enable 10th fielder (Short Fielder)
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={teamSettings.isSoftball === true}
+                    onValueChange={(value) => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setTeamSettings({ isSoftball: value });
+                    }}
+                    trackColor={{ false: '#334155', true: '#f59e0b' }}
+                    thumbColor="#ffffff"
+                  />
+                </View>
+              </View>
+            )}
+
             {/* Photos Toggle */}
             <View className="bg-slate-800/80 rounded-xl p-4 mb-3 border border-slate-700/50">
               <View className="flex-row items-center justify-between">

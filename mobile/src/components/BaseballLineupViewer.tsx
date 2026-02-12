@@ -12,9 +12,10 @@ interface BaseballLineupViewerProps {
   lineup: BaseballLineup;
   players: Player[];
   opponent: string;
+  isSoftball?: boolean; // When true, shows 10th fielder position
 }
 
-type PositionKey = 'lf' | 'cf' | 'rf' | 'thirdBase' | 'shortstop' | 'secondBase' | 'firstBase' | 'pitcher' | 'catcher';
+type PositionKey = 'lf' | 'cf' | 'rf' | 'thirdBase' | 'shortstop' | 'secondBase' | 'firstBase' | 'pitcher' | 'catcher' | 'shortFielder';
 
 const POSITION_LABELS: Record<PositionKey, string> = {
   lf: 'LF',
@@ -26,6 +27,7 @@ const POSITION_LABELS: Record<PositionKey, string> = {
   firstBase: '1B',
   pitcher: 'P',
   catcher: 'C',
+  shortFielder: 'SF',
 };
 
 export function BaseballLineupViewer({
@@ -34,6 +36,7 @@ export function BaseballLineupViewer({
   lineup,
   players,
   opponent,
+  isSoftball = false,
 }: BaseballLineupViewerProps) {
   const getPlayer = (playerId: string | undefined) => {
     return playerId ? players.find((p) => p.id === playerId) : null;
@@ -109,6 +112,13 @@ export function BaseballLineupViewer({
                   {renderPositionSlot('cf', 'large')}
                   {renderPositionSlot('rf')}
                 </View>
+
+                {/* Short Fielder - Only for Softball (10th fielder between outfield and infield) */}
+                {isSoftball && (
+                  <View className="items-center mb-4">
+                    {renderPositionSlot('shortFielder')}
+                  </View>
+                )}
 
                 {/* Infield Row - SS and 2B */}
                 <View className="flex-row justify-center gap-16 mb-4">

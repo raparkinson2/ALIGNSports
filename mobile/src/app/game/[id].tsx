@@ -2133,6 +2133,7 @@ export default function GameDetailScreen() {
         onSave={handleSaveBaseballLineup}
         initialLineup={game.baseballLineup}
         players={checkedInPlayers}
+        isSoftball={teamSettings.isSoftball}
       />
 
       {/* Soccer Lineup Editor Modal */}

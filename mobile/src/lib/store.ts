@@ -348,12 +348,13 @@ export interface BasketballStartingFive {
 
 export interface BasketballLineup {
   starters: BasketballStartingFive;
-  bench: (string | undefined)[]; // Up to 10 bench spots
+  bench: (string | undefined)[]; // Bench spots (configurable)
   // Configuration for how many of each position in starting 5
   numGuards: number; // 0-3
   numForwards: number; // 0-2
   numCenters: number; // 0-2
   hasPG: boolean; // 0 or 1
+  numBenchSpots: number; // Number of bench spots (default 10, configurable 0-15)
 }
 
 // Baseball Lineup Types
@@ -367,6 +368,7 @@ export interface BaseballLineup {
   firstBase?: string; // 1B
   pitcher?: string; // P
   catcher?: string; // C
+  shortFielder?: string; // SF - 10th fielder for softball
 }
 
 // Soccer Lineup Types (11 starters)
@@ -576,6 +578,7 @@ export interface TeamSettings {
   upcomingGamesViewMode?: UpcomingGamesViewMode; // Persisted view mode preference for upcoming games (list or calendar)
   teamTotalAmountOwed?: number; // Total amount owed by the team (admin-only view)
   enabledRoles?: ('player' | 'reserve' | 'coach' | 'parent')[]; // Which roles are available for this team
+  isSoftball?: boolean; // If true, adds 10th fielder (Short Fielder) for softball
 }
 
 // Multi-team support: A complete team with all its data

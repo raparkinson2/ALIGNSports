@@ -75,6 +75,7 @@ const createEmptyLineup = (): BasketballLineup => ({
   numForwards: 2,
   numCenters: 0,
   hasPG: true,
+  numBenchSpots: 10,
 });
 
 export function BasketballLineupEditor({
@@ -145,7 +146,7 @@ export function BasketballLineupEditor({
   };
 
   const handleConfigChange = (
-    type: 'pg' | 'guards' | 'forwards' | 'centers',
+    type: 'pg' | 'guards' | 'forwards' | 'centers' | 'bench',
     delta: number
   ) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -195,6 +196,19 @@ export function BasketballLineupEditor({
           newLineup.starters.centers = [...prev.starters.centers];
           while (newLineup.starters.centers.length < newNum) {
             newLineup.starters.centers.push(undefined);
+          }
+        }
+      } else if (type === 'bench') {
+        const currentBenchSpots = prev.numBenchSpots ?? 10;
+        const newNum = Math.max(0, Math.min(15, currentBenchSpots + delta));
+        newLineup.numBenchSpots = newNum;
+        // Adjust bench array size
+        if (newNum < prev.bench.length) {
+          newLineup.bench = prev.bench.slice(0, newNum);
+        } else {
+          newLineup.bench = [...prev.bench];
+          while (newLineup.bench.length < newNum) {
+            newLineup.bench.push(undefined);
           }
         }
       }
@@ -276,8 +290,8 @@ export function BasketballLineupEditor({
     return 'bench';
   };
 
-  // Count filled bench spots
-  const filledBenchCount = lineup.bench.filter(Boolean).length;
+  // Count filled bench spots (only count within the configured number of bench spots)
+  const filledBenchCount = lineup.bench.slice(0, lineup.numBenchSpots ?? 10).filter(Boolean).length;
 
   return (
     <Modal
@@ -515,27 +529,54 @@ export function BasketballLineupEditor({
             <Animated.View entering={FadeIn.delay(300)} className="px-5 pt-4">
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-white text-lg font-semibold">Bench</Text>
-                <Text className="text-slate-400 text-sm">{filledBenchCount}/10</Text>
+                <View className="flex-row items-center">
+                  <Text className="text-slate-400 text-sm mr-3">{filledBenchCount}/{lineup.numBenchSpots ?? 10}</Text>
+                  <View className="flex-row items-center bg-slate-800 rounded-lg">
+                    <Pressable
+                      onPress={() => handleConfigChange('bench', -1)}
+                      className="p-2"
+                      disabled={(lineup.numBenchSpots ?? 10) <= 0}
+                    >
+                      <Minus
+                        size={20}
+                        color={(lineup.numBenchSpots ?? 10) <= 0 ? '#475569' : '#10b981'}
+                      />
+                    </Pressable>
+                    <Text className="text-white font-bold px-3">{lineup.numBenchSpots ?? 10}</Text>
+                    <Pressable
+                      onPress={() => handleConfigChange('bench', 1)}
+                      className="p-2"
+                      disabled={(lineup.numBenchSpots ?? 10) >= 15}
+                    >
+                      <Plus
+                        size={20}
+                        color={(lineup.numBenchSpots ?? 10) >= 15 ? '#475569' : '#10b981'}
+                      />
+                    </Pressable>
+                  </View>
+                </View>
               </View>
 
-              <Animated.View
-                entering={FadeInDown.delay(50)}
-                className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/50"
-              >
-                <View className="flex-row flex-wrap justify-start">
-                  {lineup.bench.map((playerId, index) => (
-                    <View key={`bench-${index}`} className="w-1/5 items-center mb-4">
-                      <PositionSlot
-                        position="bench"
-                        playerId={playerId}
-                        players={availablePlayers}
-                        onSelect={() => handleSelectPosition('bench', index)}
-                        label={`#${index + 1}`}
-                      />
-                    </View>
-                  ))}
-                </View>
-              </Animated.View>
+              {(lineup.numBenchSpots ?? 10) > 0 && (
+                <Animated.View
+                  entering={FadeInDown.delay(50)}
+                  className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/50"
+                >
+                  <View className="flex-row flex-wrap justify-start">
+                    {lineup.bench.slice(0, lineup.numBenchSpots ?? 10).map((playerId, index) => (
+                      <View key={`bench-${index}`} className="w-1/5 items-center mb-4">
+                        <PositionSlot
+                          position="bench"
+                          playerId={playerId}
+                          players={availablePlayers}
+                          onSelect={() => handleSelectPosition('bench', index)}
+                          label={`#${index + 1}`}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                </Animated.View>
+              )}
             </Animated.View>
           </ScrollView>
         </SafeAreaView>

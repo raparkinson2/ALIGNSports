@@ -15,9 +15,10 @@ interface BaseballLineupEditorProps {
   onSave: (lineup: BaseballLineup) => void;
   initialLineup?: BaseballLineup;
   players: Player[];
+  isSoftball?: boolean; // When true, shows 10th fielder position
 }
 
-type PositionKey = 'lf' | 'cf' | 'rf' | 'thirdBase' | 'shortstop' | 'secondBase' | 'firstBase' | 'pitcher' | 'catcher';
+type PositionKey = 'lf' | 'cf' | 'rf' | 'thirdBase' | 'shortstop' | 'secondBase' | 'firstBase' | 'pitcher' | 'catcher' | 'shortFielder';
 
 const POSITION_LABELS: Record<PositionKey, string> = {
   lf: 'LF',
@@ -29,6 +30,7 @@ const POSITION_LABELS: Record<PositionKey, string> = {
   firstBase: '1B',
   pitcher: 'P',
   catcher: 'C',
+  shortFielder: 'SF',
 };
 
 const POSITION_NAMES: Record<PositionKey, string> = {
@@ -41,6 +43,7 @@ const POSITION_NAMES: Record<PositionKey, string> = {
   firstBase: 'First Base',
   pitcher: 'Pitcher',
   catcher: 'Catcher',
+  shortFielder: 'Short Fielder',
 };
 
 const createEmptyLineup = (): BaseballLineup => ({
@@ -53,6 +56,7 @@ const createEmptyLineup = (): BaseballLineup => ({
   firstBase: undefined,
   pitcher: undefined,
   catcher: undefined,
+  shortFielder: undefined,
 });
 
 // Helper function to check if a lineup has any assigned players
@@ -67,7 +71,8 @@ export function hasAssignedBaseballPlayers(lineup: BaseballLineup | undefined): 
     lineup.secondBase ||
     lineup.firstBase ||
     lineup.pitcher ||
-    lineup.catcher
+    lineup.catcher ||
+    lineup.shortFielder
   );
 }
 
@@ -77,6 +82,7 @@ export function BaseballLineupEditor({
   onSave,
   initialLineup,
   players,
+  isSoftball = false,
 }: BaseballLineupEditorProps) {
   const [lineup, setLineup] = useState<BaseballLineup>(initialLineup || createEmptyLineup());
   const [selectedPosition, setSelectedPosition] = useState<PositionKey | null>(null);
@@ -232,6 +238,13 @@ export function BaseballLineupEditor({
                   {renderPositionSlot('cf', 'large')}
                   {renderPositionSlot('rf')}
                 </View>
+
+                {/* Short Fielder - Only for Softball (10th fielder between outfield and infield) */}
+                {isSoftball && (
+                  <View className="items-center mb-4">
+                    {renderPositionSlot('shortFielder')}
+                  </View>
+                )}
 
                 {/* Infield Row - SS and 2B */}
                 <View className="flex-row justify-center gap-16 mb-4">

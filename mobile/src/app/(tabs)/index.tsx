@@ -2203,6 +2203,7 @@ export default function ScheduleScreen() {
           lineup={lineupViewerGame.baseballLineup}
           players={players}
           opponent={lineupViewerGame.opponent}
+          isSoftball={teamSettings.isSoftball}
         />
       )}
 

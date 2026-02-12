@@ -91,6 +91,14 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
   - **Diamond 4-1-2-1-2**: Diamond midfield with CDM, LM, RM, CAM, and 2 strikers
   - Formation selector shows visual preview of each formation
   - Configured lineups display on game detail screen
+- **Basketball Lineups** (Basketball only):
+  - Configure starting 5 with flexible position slots (PG, Guards, Forwards, Centers)
+  - **Customizable Bench Spots**: Use +/- controls to set 0-15 bench spots
+  - Assign players to bench in order
+- **Baseball/Softball Lineups** (Baseball only):
+  - Standard 9-position diamond layout
+  - **Softball Mode**: Enable in Admin settings to add 10th fielder (Short Fielder/SF)
+  - Short Fielder positioned between outfield and infield
 - Send game invites via text or email (pre-fills recipients)
 - **Invite More Players**: Admins/Captains can invite additional players after game creation
   - Invite individual players with one tap
@@ -204,6 +212,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Payment Methods**: Configure Venmo/PayPal/Zelle/Cash App for the team
 - **Refreshment Duty Toggle**: Enable/disable per game
 - **Create Lines/Lineups Toggle**: Enable/disable the ability to set game lines (hockey) or lineups (other sports)
+- **Softball Mode** (Baseball only): Enable to add 10th fielder (Short Fielder) position for softball teams
 - **Team Stats Settings**:
   - **Use Team Stats**: Enable/disable the team stats feature
   - **Allow Player to Manage Own Stats**: When enabled, players can add and update their own game stats (not just admins)
