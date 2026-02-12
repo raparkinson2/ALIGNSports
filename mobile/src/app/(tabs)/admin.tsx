@@ -857,7 +857,12 @@ export default function AdminScreen() {
             <Shield size={20} color="#a78bfa" />
             <Text className="text-purple-400 text-sm font-medium ml-2">Admin</Text>
           </View>
-          <Text className="text-white text-3xl font-bold">Control Panel – {teamName}</Text>
+          <Text
+            className="text-white text-3xl font-bold"
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}
+          >Control Panel – {teamName}</Text>
         </Animated.View>
 
         <ScrollView
