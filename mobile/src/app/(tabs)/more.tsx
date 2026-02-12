@@ -28,6 +28,7 @@ import {
   Link,
   ExternalLink,
   CalendarOff,
+  FileText,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -1355,10 +1356,18 @@ export default function MoreScreen() {
           />
 
           <MenuItem
+            icon={<FileText size={20} color="#67e8f9" />}
+            title="Notices"
+            subtitle="Privacy policy & legal"
+            onPress={() => router.push('/notices')}
+            index={8}
+          />
+
+          <MenuItem
             icon={<LogOut size={20} color="#f87171" />}
             title="Log Out"
             onPress={handleLogout}
-            index={8}
+            index={9}
             variant="danger"
           />
         </ScrollView>
