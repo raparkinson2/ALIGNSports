@@ -29,6 +29,7 @@ import {
   ExternalLink,
   CalendarOff,
   FileText,
+  UserX,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -946,6 +947,7 @@ export default function MoreScreen() {
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const teamName = useTeamStore((s) => s.teamName);
   const logout = useTeamStore((s) => s.logout);
+  const deleteAccount = useTeamStore((s) => s.deleteAccount);
   const games = useTeamStore((s) => s.games);
   const notifications = useTeamStore((s) => s.notifications);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
@@ -986,6 +988,8 @@ export default function MoreScreen() {
   const [notifPrefsVisible, setNotifPrefsVisible] = useState(false);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [linksModalVisible, setLinksModalVisible] = useState(false);
+  const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   // Email Team modal state
   const [isEmailModalVisible, setIsEmailModalVisible] = useState(false);
@@ -1122,6 +1126,22 @@ export default function MoreScreen() {
         },
       ]
     );
+  };
+
+  const handleDeleteAccount = () => {
+    setDeleteAccountModalVisible(true);
+    setDeleteConfirmText('');
+  };
+
+  const confirmDeleteAccount = () => {
+    if (deleteConfirmText !== 'DELETE') {
+      Alert.alert('Error', 'Please type DELETE to confirm');
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    deleteAccount();
+    setDeleteAccountModalVisible(false);
+    router.replace('/login');
   };
 
   const handleSwitchTeam = () => {
@@ -1370,6 +1390,15 @@ export default function MoreScreen() {
             index={9}
             variant="danger"
           />
+
+          <MenuItem
+            icon={<UserX size={20} color="#f87171" />}
+            title="Delete My Account"
+            subtitle="Permanently delete all your data"
+            onPress={handleDeleteAccount}
+            index={10}
+            variant="danger"
+          />
         </ScrollView>
       </SafeAreaView>
 
@@ -1590,6 +1619,89 @@ export default function MoreScreen() {
                 </View>
               </ScrollView>
             </SafeAreaView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Delete Account Modal */}
+      <Modal
+        visible={deleteAccountModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setDeleteAccountModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1"
+        >
+          <View className="flex-1 bg-black/60 justify-end">
+            <View className="bg-slate-900 rounded-t-3xl">
+              {/* Header */}
+              <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+                <Pressable onPress={() => setDeleteAccountModalVisible(false)}>
+                  <X size={24} color="#94a3b8" />
+                </Pressable>
+                <Text className="text-white text-lg font-bold">Delete Account</Text>
+                <View style={{ width: 24 }} />
+              </View>
+
+              <View className="px-5 py-6">
+                {/* Warning */}
+                <View className="bg-red-500/10 rounded-xl p-4 border border-red-500/30 mb-6">
+                  <View className="flex-row items-center mb-2">
+                    <UserX size={20} color="#f87171" />
+                    <Text className="text-red-400 font-bold text-base ml-2">Warning</Text>
+                  </View>
+                  <Text className="text-red-300 text-sm leading-5">
+                    This action is permanent and cannot be undone. All your data will be deleted, including:
+                  </Text>
+                  <View className="mt-3">
+                    <Text className="text-red-300 text-sm">• Your profile and account</Text>
+                    <Text className="text-red-300 text-sm">• Your membership from all teams</Text>
+                    <Text className="text-red-300 text-sm">• Your chat messages and notifications</Text>
+                    <Text className="text-red-300 text-sm">• Your game attendance history</Text>
+                  </View>
+                </View>
+
+                {/* Confirmation Input */}
+                <Text className="text-slate-400 text-sm mb-2">
+                  Type <Text className="text-red-400 font-bold">DELETE</Text> to confirm
+                </Text>
+                <TextInput
+                  value={deleteConfirmText}
+                  onChangeText={setDeleteConfirmText}
+                  placeholder="Type DELETE here"
+                  placeholderTextColor="#64748b"
+                  autoCapitalize="characters"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-base mb-6 border border-slate-700"
+                />
+
+                {/* Delete Button */}
+                <Pressable
+                  onPress={confirmDeleteAccount}
+                  disabled={deleteConfirmText !== 'DELETE'}
+                  className={`rounded-xl py-4 items-center ${
+                    deleteConfirmText === 'DELETE'
+                      ? 'bg-red-500 active:bg-red-600'
+                      : 'bg-slate-700'
+                  }`}
+                >
+                  <Text className={`font-semibold text-base ${
+                    deleteConfirmText === 'DELETE' ? 'text-white' : 'text-slate-500'
+                  }`}>
+                    Delete My Account
+                  </Text>
+                </Pressable>
+
+                {/* Cancel Button */}
+                <Pressable
+                  onPress={() => setDeleteAccountModalVisible(false)}
+                  className="py-4 items-center mt-2"
+                >
+                  <Text className="text-slate-400 font-medium">Cancel</Text>
+                </Pressable>
+              </View>
+            </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>

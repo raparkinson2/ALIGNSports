@@ -264,6 +264,11 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
   - **Auto Check-Out**: When you add an unavailable date that has a game or event, you are automatically marked as OUT with note "Unavailable"
   - View conflicts with scheduled games/events before confirming
 - Log out to switch players
+- **Delete My Account**: Permanently delete your account and all associated data
+  - Removes you from all teams you belong to
+  - Deletes your profile, messages, and game attendance history
+  - Requires typing "DELETE" to confirm (prevents accidental deletion)
+  - This action cannot be undone
 
 ### Photos Tab
 - View team photos in a gallery grid

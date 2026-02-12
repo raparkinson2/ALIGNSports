@@ -680,6 +680,7 @@ interface TeamStore {
   isLoggedIn: boolean;
   setIsLoggedIn: (loggedIn: boolean) => void;
   logout: () => void;
+  deleteAccount: () => void;
 
   // Authentication
   loginWithEmail: (email: string, password: string) => { success: boolean; error?: string; playerId?: string; multipleTeams?: boolean; teamCount?: number };
@@ -1525,6 +1526,62 @@ export const useTeamStore = create<TeamStore>()(
         } else {
           set({ isLoggedIn: false, currentPlayerId: null, userEmail: null, userPhone: null, pendingTeamIds: null });
         }
+      },
+
+      deleteAccount: () => {
+        const state = get();
+        const { userEmail, userPhone, currentPlayerId } = state;
+
+        // Remove the current player from all teams they belong to
+        const updatedTeams = state.teams.map((team) => {
+          const playerInTeam = team.players.find(
+            (p) =>
+              (userEmail && p.email?.toLowerCase() === userEmail.toLowerCase()) ||
+              (userPhone && p.phone?.replace(/\D/g, '') === userPhone?.replace(/\D/g, '')) ||
+              p.id === currentPlayerId
+          );
+
+          if (playerInTeam) {
+            return {
+              ...team,
+              players: team.players.filter((p) => p.id !== playerInTeam.id),
+              // Remove player from checked in/out lists in games
+              games: team.games.map((g) => ({
+                ...g,
+                checkedInPlayers: g.checkedInPlayers.filter((id) => id !== playerInTeam.id),
+                checkedOutPlayers: g.checkedOutPlayers.filter((id) => id !== playerInTeam.id),
+                invitedPlayers: g.invitedPlayers.filter((id) => id !== playerInTeam.id),
+              })),
+              notifications: team.notifications.filter(
+                (n) => n.toPlayerId !== playerInTeam.id && n.fromPlayerId !== playerInTeam.id
+              ),
+              chatMessages: team.chatMessages.filter((m) => m.senderId !== playerInTeam.id),
+            };
+          }
+          return team;
+        });
+
+        // Also update current active team's players if loaded
+        const updatedPlayers = state.players.filter(
+          (p) =>
+            !(
+              (userEmail && p.email?.toLowerCase() === userEmail.toLowerCase()) ||
+              (userPhone && p.phone?.replace(/\D/g, '') === userPhone?.replace(/\D/g, '')) ||
+              p.id === currentPlayerId
+            )
+        );
+
+        // Clear all user data and log out
+        set({
+          teams: updatedTeams,
+          players: updatedPlayers,
+          isLoggedIn: false,
+          currentPlayerId: null,
+          userEmail: null,
+          userPhone: null,
+          pendingTeamIds: null,
+          activeTeamId: null,
+        });
       },
 
       // Authentication
