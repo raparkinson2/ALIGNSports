@@ -1,9 +1,9 @@
 {
   "expo": {
     "name": "Align Sports",
-    "slug": "align-sports-4gvibl",
+    "slug": "align-sports",
     "scheme": "vibecode",
-    "version": "2.3.5",
+    "version": "2.5",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -25,11 +25,7 @@
       "package": "com.vibecode.alignsports",
       "versionCode": 2
     },
-    "extra": {
-      "eas": {
-        "projectId": "727371d5-f124-42e2-af0e-40f420477bce"
-      }
-    },
+    "extra": {},
     "plugins": [
       "expo-router"
     ],
