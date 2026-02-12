@@ -876,13 +876,13 @@ export default function AdminScreen() {
               Type
             </Text>
 
-            <View className="flex-row flex-wrap justify-start mb-6 -mx-1">
+            <View className="flex-row justify-between mb-6 gap-2">
               {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => SPORT_NAMES[a].localeCompare(SPORT_NAMES[b])).map((sport) => (
                 <Pressable
                   key={sport}
                   onPress={() => handleChangeSport(sport)}
                   className={cn(
-                    'items-center py-3 px-4 rounded-2xl m-1 border',
+                    'flex-1 items-center justify-center py-3 rounded-2xl border',
                     teamSettings.sport === sport
                       ? 'bg-cyan-500/20 border-cyan-500/50'
                       : 'bg-slate-800/80 border-slate-700/50'
@@ -893,6 +893,9 @@ export default function AdminScreen() {
                       'text-xs font-medium',
                       teamSettings.sport === sport ? 'text-cyan-400' : 'text-slate-400'
                     )}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
                   >
                     {SPORT_NAMES[sport]}
                   </Text>
