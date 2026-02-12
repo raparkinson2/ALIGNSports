@@ -78,12 +78,38 @@ function SoccerIcon({ color, size = 24 }: { color: string; size?: number }) {
   );
 }
 
+function LacrosseIcon({ color, size = 24 }: { color: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {/* Lacrosse stick handle */}
+      <Line x1="4" y1="20" x2="14" y2="6" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      {/* Lacrosse head (net area) */}
+      <Path d="M14 6C14 6 16 3 19 3C21 3 22 5 22 7C22 9 20 11 18 11C16 11 14 9 14 6Z" stroke={color} strokeWidth={2} fill="none" />
+      {/* Net strings */}
+      <Path d="M16 5C16 5 17 7 18 7" stroke={color} strokeWidth={1} strokeLinecap="round" />
+      <Path d="M18 5C18 5 18.5 7 19.5 7.5" stroke={color} strokeWidth={1} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function SoftballIcon({ color, size = 24 }: { color: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
+      <Path d="M7 5C8 7 8 9 7 12C6 15 6 17 7 19" stroke={color} strokeWidth={1.5} strokeLinecap="round" fill="none" />
+      <Path d="M17 5C16 7 16 9 17 12C18 15 18 17 17 19" stroke={color} strokeWidth={1.5} strokeLinecap="round" fill="none" />
+    </Svg>
+  );
+}
+
 function SportIcon({ sport, color, size = 24 }: { sport: Sport; color: string; size?: number }) {
   switch (sport) {
-    case 'hockey': return <HockeyIcon color={color} size={size} />;
     case 'baseball': return <BaseballIcon color={color} size={size} />;
     case 'basketball': return <BasketballIcon color={color} size={size} />;
+    case 'hockey': return <HockeyIcon color={color} size={size} />;
+    case 'lacrosse': return <LacrosseIcon color={color} size={size} />;
     case 'soccer': return <SoccerIcon color={color} size={size} />;
+    case 'softball': return <SoftballIcon color={color} size={size} />;
   }
 }
 

@@ -4,12 +4,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState, useEffect } from 'react';
 
 // Sport Types and Positions
-export type Sport = 'baseball' | 'basketball' | 'hockey' | 'soccer' | 'softball';
+export type Sport = 'baseball' | 'basketball' | 'hockey' | 'lacrosse' | 'soccer' | 'softball';
 
 export const SPORT_POSITIONS: Record<Sport, string[]> = {
   baseball: ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'RF', 'CF'],
   basketball: ['PG', 'SG', 'SF', 'PF', 'C'],
   hockey: ['C', 'LW', 'RW', 'LD', 'RD', 'G'],
+  lacrosse: ['G', 'A', 'M', 'D'],
   soccer: ['GK', 'DEF', 'MID', 'FWD'],
   softball: ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'RF', 'CF'],
 };
@@ -41,6 +42,12 @@ export const SPORT_POSITION_NAMES: Record<Sport, Record<string, string>> = {
     RD: 'Right Defense',
     G: 'Goalie',
   },
+  lacrosse: {
+    G: 'Goalie',
+    A: 'Attacker',
+    M: 'Midfielder',
+    D: 'Defender',
+  },
   soccer: {
     GK: 'Goalkeeper',
     DEF: 'Defender',
@@ -63,47 +70,53 @@ export const SPORT_POSITION_NAMES: Record<Sport, Record<string, string>> = {
 // Map positions from one sport to another based on role similarity
 export const POSITION_MAPPING: Record<Sport, Record<string, Record<Sport, string>>> = {
   baseball: {
-    P: { baseball: 'P', basketball: 'C', hockey: 'G', soccer: 'GK', softball: 'P' },
-    C: { baseball: 'C', basketball: 'C', hockey: 'G', soccer: 'GK', softball: 'C' },
-    '1B': { baseball: '1B', basketball: 'PF', hockey: 'LD', soccer: 'DEF', softball: '1B' },
-    '2B': { baseball: '2B', basketball: 'PG', hockey: 'C', soccer: 'MID', softball: '2B' },
-    '3B': { baseball: '3B', basketball: 'PF', hockey: 'LD', soccer: 'DEF', softball: '3B' },
-    SS: { baseball: 'SS', basketball: 'PG', hockey: 'C', soccer: 'MID', softball: 'SS' },
-    LF: { baseball: 'LF', basketball: 'SG', hockey: 'LW', soccer: 'FWD', softball: 'LF' },
-    RF: { baseball: 'RF', basketball: 'SF', hockey: 'RW', soccer: 'FWD', softball: 'RF' },
-    CF: { baseball: 'CF', basketball: 'SF', hockey: 'C', soccer: 'MID', softball: 'CF' },
+    P: { baseball: 'P', basketball: 'C', hockey: 'G', lacrosse: 'G', soccer: 'GK', softball: 'P' },
+    C: { baseball: 'C', basketball: 'C', hockey: 'G', lacrosse: 'G', soccer: 'GK', softball: 'C' },
+    '1B': { baseball: '1B', basketball: 'PF', hockey: 'LD', lacrosse: 'D', soccer: 'DEF', softball: '1B' },
+    '2B': { baseball: '2B', basketball: 'PG', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: '2B' },
+    '3B': { baseball: '3B', basketball: 'PF', hockey: 'LD', lacrosse: 'D', soccer: 'DEF', softball: '3B' },
+    SS: { baseball: 'SS', basketball: 'PG', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: 'SS' },
+    LF: { baseball: 'LF', basketball: 'SG', hockey: 'LW', lacrosse: 'A', soccer: 'FWD', softball: 'LF' },
+    RF: { baseball: 'RF', basketball: 'SF', hockey: 'RW', lacrosse: 'A', soccer: 'FWD', softball: 'RF' },
+    CF: { baseball: 'CF', basketball: 'SF', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: 'CF' },
   },
   basketball: {
-    PG: { baseball: 'SS', basketball: 'PG', hockey: 'C', soccer: 'MID', softball: 'SS' },
-    SG: { baseball: 'LF', basketball: 'SG', hockey: 'LW', soccer: 'FWD', softball: 'LF' },
-    SF: { baseball: 'RF', basketball: 'SF', hockey: 'RW', soccer: 'FWD', softball: 'RF' },
-    PF: { baseball: '3B', basketball: 'PF', hockey: 'LD', soccer: 'DEF', softball: '3B' },
-    C: { baseball: 'C', basketball: 'C', hockey: 'G', soccer: 'GK', softball: 'C' },
+    PG: { baseball: 'SS', basketball: 'PG', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: 'SS' },
+    SG: { baseball: 'LF', basketball: 'SG', hockey: 'LW', lacrosse: 'A', soccer: 'FWD', softball: 'LF' },
+    SF: { baseball: 'RF', basketball: 'SF', hockey: 'RW', lacrosse: 'A', soccer: 'FWD', softball: 'RF' },
+    PF: { baseball: '3B', basketball: 'PF', hockey: 'LD', lacrosse: 'D', soccer: 'DEF', softball: '3B' },
+    C: { baseball: 'C', basketball: 'C', hockey: 'G', lacrosse: 'G', soccer: 'GK', softball: 'C' },
   },
   hockey: {
-    G: { baseball: 'C', basketball: 'C', hockey: 'G', soccer: 'GK', softball: 'C' },
-    LD: { baseball: '3B', basketball: 'PF', hockey: 'LD', soccer: 'DEF', softball: '3B' },
-    RD: { baseball: 'SS', basketball: 'C', hockey: 'RD', soccer: 'DEF', softball: 'SS' },
-    C: { baseball: 'SS', basketball: 'PG', hockey: 'C', soccer: 'MID', softball: 'SS' },
-    LW: { baseball: 'LF', basketball: 'SG', hockey: 'LW', soccer: 'FWD', softball: 'LF' },
-    RW: { baseball: 'RF', basketball: 'SF', hockey: 'RW', soccer: 'FWD', softball: 'RF' },
+    G: { baseball: 'C', basketball: 'C', hockey: 'G', lacrosse: 'G', soccer: 'GK', softball: 'C' },
+    LD: { baseball: '3B', basketball: 'PF', hockey: 'LD', lacrosse: 'D', soccer: 'DEF', softball: '3B' },
+    RD: { baseball: 'SS', basketball: 'C', hockey: 'RD', lacrosse: 'D', soccer: 'DEF', softball: 'SS' },
+    C: { baseball: 'SS', basketball: 'PG', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: 'SS' },
+    LW: { baseball: 'LF', basketball: 'SG', hockey: 'LW', lacrosse: 'A', soccer: 'FWD', softball: 'LF' },
+    RW: { baseball: 'RF', basketball: 'SF', hockey: 'RW', lacrosse: 'A', soccer: 'FWD', softball: 'RF' },
+  },
+  lacrosse: {
+    G: { baseball: 'C', basketball: 'C', hockey: 'G', lacrosse: 'G', soccer: 'GK', softball: 'C' },
+    A: { baseball: 'LF', basketball: 'SG', hockey: 'LW', lacrosse: 'A', soccer: 'FWD', softball: 'LF' },
+    M: { baseball: 'SS', basketball: 'PG', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: 'SS' },
+    D: { baseball: '3B', basketball: 'PF', hockey: 'LD', lacrosse: 'D', soccer: 'DEF', softball: '3B' },
   },
   soccer: {
-    GK: { baseball: 'C', basketball: 'C', hockey: 'G', soccer: 'GK', softball: 'C' },
-    DEF: { baseball: '3B', basketball: 'PF', hockey: 'LD', soccer: 'DEF', softball: '3B' },
-    MID: { baseball: 'SS', basketball: 'PG', hockey: 'C', soccer: 'MID', softball: 'SS' },
-    FWD: { baseball: 'LF', basketball: 'SG', hockey: 'LW', soccer: 'FWD', softball: 'LF' },
+    GK: { baseball: 'C', basketball: 'C', hockey: 'G', lacrosse: 'G', soccer: 'GK', softball: 'C' },
+    DEF: { baseball: '3B', basketball: 'PF', hockey: 'LD', lacrosse: 'D', soccer: 'DEF', softball: '3B' },
+    MID: { baseball: 'SS', basketball: 'PG', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: 'SS' },
+    FWD: { baseball: 'LF', basketball: 'SG', hockey: 'LW', lacrosse: 'A', soccer: 'FWD', softball: 'LF' },
   },
   softball: {
-    P: { baseball: 'P', basketball: 'C', hockey: 'G', soccer: 'GK', softball: 'P' },
-    C: { baseball: 'C', basketball: 'C', hockey: 'G', soccer: 'GK', softball: 'C' },
-    '1B': { baseball: '1B', basketball: 'PF', hockey: 'LD', soccer: 'DEF', softball: '1B' },
-    '2B': { baseball: '2B', basketball: 'PG', hockey: 'C', soccer: 'MID', softball: '2B' },
-    '3B': { baseball: '3B', basketball: 'PF', hockey: 'LD', soccer: 'DEF', softball: '3B' },
-    SS: { baseball: 'SS', basketball: 'PG', hockey: 'C', soccer: 'MID', softball: 'SS' },
-    LF: { baseball: 'LF', basketball: 'SG', hockey: 'LW', soccer: 'FWD', softball: 'LF' },
-    RF: { baseball: 'RF', basketball: 'SF', hockey: 'RW', soccer: 'FWD', softball: 'RF' },
-    CF: { baseball: 'CF', basketball: 'SF', hockey: 'C', soccer: 'MID', softball: 'CF' },
+    P: { baseball: 'P', basketball: 'C', hockey: 'G', lacrosse: 'G', soccer: 'GK', softball: 'P' },
+    C: { baseball: 'C', basketball: 'C', hockey: 'G', lacrosse: 'G', soccer: 'GK', softball: 'C' },
+    '1B': { baseball: '1B', basketball: 'PF', hockey: 'LD', lacrosse: 'D', soccer: 'DEF', softball: '1B' },
+    '2B': { baseball: '2B', basketball: 'PG', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: '2B' },
+    '3B': { baseball: '3B', basketball: 'PF', hockey: 'LD', lacrosse: 'D', soccer: 'DEF', softball: '3B' },
+    SS: { baseball: 'SS', basketball: 'PG', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: 'SS' },
+    LF: { baseball: 'LF', basketball: 'SG', hockey: 'LW', lacrosse: 'A', soccer: 'FWD', softball: 'LF' },
+    RF: { baseball: 'RF', basketball: 'SF', hockey: 'RW', lacrosse: 'A', soccer: 'FWD', softball: 'RF' },
+    CF: { baseball: 'CF', basketball: 'SF', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: 'CF' },
   },
 };
 
@@ -125,6 +138,7 @@ export const SPORT_NAMES: Record<Sport, string> = {
   baseball: 'Baseball',
   basketball: 'Basketball',
   hockey: 'Hockey',
+  lacrosse: 'Lacrosse',
   soccer: 'Soccer',
   softball: 'Softball',
 };
@@ -425,6 +439,17 @@ export interface SoccerDiamondLineup {
   st2?: string; // Striker 2
 }
 
+// Lacrosse Lineup Types (configurable positions)
+export interface LacrosseLineup {
+  goalie?: string; // Goalie
+  attackers: (string | undefined)[]; // Attackers (configurable: 3 for boys, 4 for girls)
+  midfielders: (string | undefined)[]; // Midfielders (configurable: 3)
+  defenders: (string | undefined)[]; // Defenders (configurable: 3 for boys, 4 for girls)
+  numAttackers: number; // Number of attackers (3-4)
+  numMidfielders: number; // Number of midfielders (3)
+  numDefenders: number; // Number of defenders (3-4)
+}
+
 // Invite release options
 export type InviteReleaseOption = 'now' | 'scheduled' | 'none';
 
@@ -449,6 +474,7 @@ export interface Game {
   baseballLineup?: BaseballLineup; // Baseball lineup
   soccerLineup?: SoccerLineup; // Soccer lineup (4-4-2)
   soccerDiamondLineup?: SoccerDiamondLineup; // Soccer diamond midfield lineup (4-1-2-1-2)
+  lacrosseLineup?: LacrosseLineup; // Lacrosse lineup (configurable)
   // Invite release settings
   inviteReleaseOption?: InviteReleaseOption; // 'now' | 'scheduled' | 'none'
   inviteReleaseDate?: string; // ISO string - when to release invites (only if scheduled)

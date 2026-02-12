@@ -36,7 +36,7 @@ import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, SoccerLineup, SoccerDiamondLineup, getPlayerName, InviteReleaseOption } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, SoccerLineup, SoccerDiamondLineup, LacrosseLineup, getPlayerName, InviteReleaseOption } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
@@ -52,6 +52,8 @@ import { SoccerLineupEditor, hasAssignedSoccerPlayers } from '@/components/Socce
 import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
 import { SoccerDiamondLineupEditor, hasAssignedSoccerDiamondPlayers } from '@/components/SoccerDiamondLineupEditor';
 import { SoccerDiamondLineupViewer } from '@/components/SoccerDiamondLineupViewer';
+import { LacrosseLineupEditor, hasAssignedLacrossePlayers } from '@/components/LacrosseLineupEditor';
+import { LacrosseLineupViewer } from '@/components/LacrosseLineupViewer';
 
 // Helper to convert hex codes to readable color names
 const hexToColorName = (hex: string): string => {
@@ -212,6 +214,7 @@ export default function GameDetailScreen() {
   const [isSoccerLineupModalVisible, setIsSoccerLineupModalVisible] = useState(false);
   const [isSoccerDiamondLineupModalVisible, setIsSoccerDiamondLineupModalVisible] = useState(false);
   const [isSoccerFormationModalVisible, setIsSoccerFormationModalVisible] = useState(false);
+  const [isLacrosseLineupModalVisible, setIsLacrosseLineupModalVisible] = useState(false);
   const [isLinesExpanded, setIsLinesExpanded] = useState(false);
 
   // Edit form state
@@ -570,6 +573,11 @@ export default function GameDetailScreen() {
     setIsSoccerDiamondLineupModalVisible(false);
   };
 
+  const handleSaveLacrosseLineup = (lacrosseLineup: LacrosseLineup) => {
+    updateGame(game.id, { lacrosseLineup });
+    setIsLacrosseLineupModalVisible(false);
+  };
+
   const handleSelectSoccerFormation = (formation: '442' | 'diamond') => {
     setIsSoccerFormationModalVisible(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -818,6 +826,30 @@ export default function GameDetailScreen() {
                     <Text className="text-emerald-400 font-semibold">Set Lineup</Text>
                     <Text className="text-slate-400 text-sm">
                       {(hasAssignedSoccerPlayers(game.soccerLineup) || hasAssignedSoccerDiamondPlayers(game.soccerDiamondLineup)) ? 'Edit starting XI' : 'Configure starting XI'}
+                    </Text>
+                  </View>
+                  <ChevronDown size={20} color="#10b981" />
+                </View>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* Set Lineup Button - Only for lacrosse and captains/admins */}
+          {teamSettings.sport === 'lacrosse' && teamSettings.showLineups !== false && canManageTeam() && (
+            <Animated.View
+              entering={FadeInUp.delay(115).springify()}
+              className="mx-4 mb-4"
+            >
+              <Pressable
+                onPress={() => setIsLacrosseLineupModalVisible(true)}
+                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30 active:bg-emerald-500/30"
+              >
+                <View className="flex-row items-center">
+                  <ListOrdered size={24} color="#10b981" />
+                  <View className="flex-1 ml-3">
+                    <Text className="text-emerald-400 font-semibold">Set Lineup</Text>
+                    <Text className="text-slate-400 text-sm">
+                      {hasAssignedLacrossePlayers(game.lacrosseLineup) ? 'Edit field positions' : 'Configure attackers, midfielders, defenders'}
                     </Text>
                   </View>
                   <ChevronDown size={20} color="#10b981" />
@@ -1435,6 +1467,117 @@ export default function GameDetailScreen() {
                         ) : (
                           <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
                             <Text className="text-slate-500 text-[10px]">GK</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })()}
+                </View>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* Lacrosse Lineup Display - Only when lineup is set and has players */}
+          {teamSettings.sport === 'lacrosse' && teamSettings.showLineups !== false && game.lacrosseLineup && hasAssignedLacrossePlayers(game.lacrosseLineup) && (
+            <Animated.View
+              entering={FadeInUp.delay(125).springify()}
+              className="mx-4 mb-4"
+            >
+              <Pressable
+                onPress={canManageTeam() ? () => setIsLacrosseLineupModalVisible(true) : undefined}
+                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30"
+              >
+                <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center">
+                    <ListOrdered size={20} color="#10b981" />
+                    <Text className="text-emerald-400 font-semibold ml-2">Lineup ({game.lacrosseLineup.numAttackers}A-{game.lacrosseLineup.numMidfielders}M-{game.lacrosseLineup.numDefenders}D)</Text>
+                  </View>
+                  {canManageTeam() && (
+                    <ChevronDown size={20} color="#10b981" />
+                  )}
+                </View>
+
+                {/* Attackers Preview */}
+                <Text className="text-slate-400 text-xs mb-2">Attackers</Text>
+                <View className="flex-row justify-around mb-3">
+                  {game.lacrosseLineup.attackers.slice(0, game.lacrosseLineup.numAttackers).map((playerId, index) => {
+                    const player = playerId ? players.find((p) => p.id === playerId) : null;
+                    return (
+                      <View key={`attacker-${index}`} className="items-center">
+                        {player ? (
+                          <>
+                            <PlayerAvatar player={player} size={32} />
+                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                          </>
+                        ) : (
+                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                            <Text className="text-slate-500 text-[10px]">A{index + 1}</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {/* Midfielders Preview */}
+                <Text className="text-slate-400 text-xs mb-2">Midfielders</Text>
+                <View className="flex-row justify-around mb-3">
+                  {game.lacrosseLineup.midfielders.slice(0, game.lacrosseLineup.numMidfielders).map((playerId, index) => {
+                    const player = playerId ? players.find((p) => p.id === playerId) : null;
+                    return (
+                      <View key={`midfielder-${index}`} className="items-center">
+                        {player ? (
+                          <>
+                            <PlayerAvatar player={player} size={32} />
+                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                          </>
+                        ) : (
+                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                            <Text className="text-slate-500 text-[10px]">M{index + 1}</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {/* Defenders Preview */}
+                <Text className="text-slate-400 text-xs mb-2">Defenders</Text>
+                <View className="flex-row justify-around mb-3">
+                  {game.lacrosseLineup.defenders.slice(0, game.lacrosseLineup.numDefenders).map((playerId, index) => {
+                    const player = playerId ? players.find((p) => p.id === playerId) : null;
+                    return (
+                      <View key={`defender-${index}`} className="items-center">
+                        {player ? (
+                          <>
+                            <PlayerAvatar player={player} size={32} />
+                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                          </>
+                        ) : (
+                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                            <Text className="text-slate-500 text-[10px]">D{index + 1}</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {/* Goalie Preview */}
+                <Text className="text-slate-400 text-xs mb-2">Goalie</Text>
+                <View className="flex-row justify-center">
+                  {(() => {
+                    const player = game.lacrosseLineup!.goalie ? players.find((p) => p.id === game.lacrosseLineup!.goalie) : null;
+                    return (
+                      <View className="items-center">
+                        {player ? (
+                          <>
+                            <PlayerAvatar player={player} size={32} />
+                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                          </>
+                        ) : (
+                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                            <Text className="text-slate-500 text-[10px]">G</Text>
                           </View>
                         )}
                       </View>
@@ -2152,6 +2295,15 @@ export default function GameDetailScreen() {
         onSave={handleSaveSoccerDiamondLineup}
         initialLineup={game.soccerDiamondLineup}
         players={checkedInPlayers}
+      />
+
+      {/* Lacrosse Lineup Editor Modal */}
+      <LacrosseLineupEditor
+        visible={isLacrosseLineupModalVisible}
+        onClose={() => setIsLacrosseLineupModalVisible(false)}
+        onSave={handleSaveLacrosseLineup}
+        initialLineup={game.lacrosseLineup}
+        availablePlayers={checkedInPlayers}
       />
 
       {/* Soccer Formation Selector Modal */}

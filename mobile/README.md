@@ -1,14 +1,15 @@
 # Team Manager
 
-A mobile app for recreational sports teams to manage schedules, rosters, check-ins, payments, and team communication. Supports multiple sports including Hockey, Baseball, Basketball, and Soccer.
+A mobile app for recreational sports teams to manage schedules, rosters, check-ins, payments, and team communication. Supports multiple sports including Hockey, Baseball, Basketball, Lacrosse, Soccer, and Softball.
 
 ## Features
 
 ### Multi-Sport Support
-- Choose your sport: Hockey, Baseball, Basketball, or Soccer
+- Choose your sport: Baseball, Basketball, Hockey, Lacrosse, Soccer, or Softball
 - Sport-specific positions automatically configured
 - **Multiple Positions**: Players can be assigned multiple positions (e.g., LW/RW, SS/2B)
 - Position names displayed appropriately for each sport
+- **Lacrosse Support**: Configurable lineup with adjustable attackers (3-4), midfielders (3), and defenders (3-4) to support both boys and girls lacrosse formats
 
 ### Role-Based Access
 - **Admin**: Full control - manage players, settings, create games, payment tracking
