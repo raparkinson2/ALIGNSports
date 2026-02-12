@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { ArrowLeft, FileText, ChevronDown, ChevronUp } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -13,6 +13,7 @@ export default function NoticesScreen() {
 
   return (
     <View className="flex-1 bg-slate-900">
+      <Stack.Screen options={{ headerShown: false }} />
       <LinearGradient
         colors={['#0f172a', '#1e293b', '#0f172a']}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
