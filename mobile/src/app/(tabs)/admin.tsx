@@ -865,19 +865,19 @@ export default function AdminScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {/* Sport Selection - Above Team Identity */}
+          {/* Type Selection - Above Team Identity */}
           <Animated.View entering={FadeInDown.delay(50).springify()}>
             <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">
-              Sport
+              Type
             </Text>
 
-            <View className="flex-row justify-between mb-6">
-              {(Object.keys(SPORT_NAMES) as Sport[]).map((sport) => (
+            <View className="flex-row flex-wrap justify-start mb-6 -mx-1">
+              {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => SPORT_NAMES[a].localeCompare(SPORT_NAMES[b])).map((sport) => (
                 <Pressable
                   key={sport}
                   onPress={() => handleChangeSport(sport)}
                   className={cn(
-                    'flex-1 items-center py-3 rounded-2xl mx-1 border',
+                    'items-center py-3 px-4 rounded-2xl m-1 border',
                     teamSettings.sport === sport
                       ? 'bg-cyan-500/20 border-cyan-500/50'
                       : 'bg-slate-800/80 border-slate-700/50'
@@ -2701,7 +2701,7 @@ export default function AdminScreen() {
                 <RefreshCw size={32} color="#f59e0b" />
               </View>
               <Text className="text-white text-xl font-bold text-center">
-                Change Sport?
+                Change Type?
               </Text>
               <Text className="text-slate-400 text-center mt-2">
                 Switching to {pendingSport ? SPORT_NAMES[pendingSport] : ''} will reset all player positions and clear their statistics.
