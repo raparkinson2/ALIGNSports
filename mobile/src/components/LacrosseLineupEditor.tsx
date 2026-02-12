@@ -286,24 +286,8 @@ export function LacrosseLineupEditor({
               </View>
             </Animated.View>
 
-            {/* Goalie Section */}
-            <Animated.View entering={FadeIn.delay(100)} className="px-5 pt-2">
-              <Text className="text-white text-lg font-semibold mb-4">Goalie</Text>
-              <View className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/50">
-                <View className="items-center">
-                  <PositionSlot
-                    position="goalie"
-                    playerId={lineup.goalie}
-                    players={availablePlayers}
-                    onSelect={() => handleSelectPosition('goalie', 0)}
-                    label="G"
-                  />
-                </View>
-              </View>
-            </Animated.View>
-
             {/* Attackers Section */}
-            <Animated.View entering={FadeIn.delay(150)} className="px-5 pt-4">
+            <Animated.View entering={FadeIn.delay(100)} className="px-5 pt-2">
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-white text-lg font-semibold">Attackers (A)</Text>
                 <View className="flex-row items-center bg-slate-800 rounded-lg">
@@ -348,7 +332,7 @@ export function LacrosseLineupEditor({
             </Animated.View>
 
             {/* Midfielders Section */}
-            <Animated.View entering={FadeIn.delay(200)} className="px-5 pt-4">
+            <Animated.View entering={FadeIn.delay(150)} className="px-5 pt-4">
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-white text-lg font-semibold">Midfielders (M)</Text>
                 <View className="flex-row items-center bg-slate-800 rounded-lg">
@@ -393,7 +377,7 @@ export function LacrosseLineupEditor({
             </Animated.View>
 
             {/* Defenders Section */}
-            <Animated.View entering={FadeIn.delay(250)} className="px-5 pt-4">
+            <Animated.View entering={FadeIn.delay(200)} className="px-5 pt-4">
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-white text-lg font-semibold">Defenders (D)</Text>
                 <View className="flex-row items-center bg-slate-800 rounded-lg">
@@ -437,8 +421,24 @@ export function LacrosseLineupEditor({
               </View>
             </Animated.View>
 
-            {/* Tips */}
+            {/* Goalie Section */}
             <Animated.View entering={FadeIn.delay(300)} className="px-5 pt-4">
+              <Text className="text-white text-lg font-semibold mb-4">Goalie</Text>
+              <View className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/50">
+                <View className="items-center">
+                  <PositionSlot
+                    position="goalie"
+                    playerId={lineup.goalie}
+                    players={availablePlayers}
+                    onSelect={() => handleSelectPosition('goalie', 0)}
+                    label="G"
+                  />
+                </View>
+              </View>
+            </Animated.View>
+
+            {/* Tips */}
+            <Animated.View entering={FadeIn.delay(350)} className="px-5 pt-4">
               <View className="bg-slate-800/40 rounded-xl p-4">
                 <Text className="text-slate-400 text-sm text-center">
                   Boys: 3A, 3M, 3D | Girls: 4A, 3M, 4D
