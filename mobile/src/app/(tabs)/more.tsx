@@ -1173,31 +1173,80 @@ export default function MoreScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {/* Profile Card */}
+          {/* Profile Card with Account Options */}
           {currentPlayer && (
             <Animated.View
               entering={FadeInDown.delay(50).springify()}
             >
-              <Pressable
-                onPress={() => handleEditProfile(currentPlayer)}
-                className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/80"
-              >
-                <View className="flex-row items-center">
-                  <View className="relative">
-                    <PlayerAvatar player={currentPlayer} size={60} />
-                    <View className="absolute -bottom-1 -right-1 bg-cyan-500 rounded-full px-2 py-0.5">
-                      <Text className="text-white text-xs font-bold">#{currentPlayer.number}</Text>
+              <View className="bg-slate-800/80 rounded-2xl mb-4 border border-slate-700/50">
+                {/* Profile Info - Tappable to edit */}
+                <Pressable
+                  onPress={() => handleEditProfile(currentPlayer)}
+                  className="p-4 active:bg-slate-700/80 rounded-t-2xl"
+                >
+                  <View className="flex-row items-center">
+                    <View className="relative">
+                      <PlayerAvatar player={currentPlayer} size={60} />
+                      <View className="absolute -bottom-1 -right-1 bg-cyan-500 rounded-full px-2 py-0.5">
+                        <Text className="text-white text-xs font-bold">#{currentPlayer.number}</Text>
+                      </View>
+                    </View>
+                    <View className="flex-1 ml-4">
+                      <Text className="text-white text-xl font-bold">{getPlayerName(currentPlayer)}</Text>
+                      <Text className="text-cyan-400 text-sm">{currentPlayer.position} · {teamName}</Text>
+                    </View>
+                    <View className="w-8 h-8 rounded-full bg-slate-700 items-center justify-center">
+                      <Pencil size={16} color="#94a3b8" />
                     </View>
                   </View>
-                  <View className="flex-1 ml-4">
-                    <Text className="text-white text-xl font-bold">{getPlayerName(currentPlayer)}</Text>
-                    <Text className="text-cyan-400 text-sm">{currentPlayer.position} · {teamName}</Text>
+                </Pressable>
+
+                {/* Account Options inside card */}
+                <View className="border-t border-slate-700/50">
+                  {/* Change Password */}
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setPasswordModalVisible(true);
+                    }}
+                    className="flex-row items-center py-3 px-4 active:bg-slate-700/50"
+                  >
+                    <Lock size={18} color="#67e8f9" />
+                    <Text className="text-white ml-3 flex-1">Change Password</Text>
+                    <ChevronRight size={18} color="#64748b" />
+                  </Pressable>
+
+                  {/* Log Out */}
+                  <View className="border-t border-slate-700/30">
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        handleLogout();
+                      }}
+                      className="flex-row items-center py-3 px-4 active:bg-slate-700/50"
+                    >
+                      <LogOut size={18} color="#f87171" />
+                      <Text className="text-red-400 ml-3 flex-1">Log Out</Text>
+                      <ChevronRight size={18} color="#64748b" />
+                    </Pressable>
                   </View>
-                  <View className="w-8 h-8 rounded-full bg-slate-700 items-center justify-center">
-                    <Pencil size={16} color="#94a3b8" />
+
+                  {/* Delete My Account */}
+                  <View className="border-t border-slate-700/30">
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        handleDeleteAccount();
+                      }}
+                      className="flex-row items-center py-3 px-4 active:bg-slate-700/50 rounded-b-2xl"
+                    >
+                      <UserX size={18} color="#f87171" />
+                      <Text className="text-red-400 ml-3 flex-1">Delete My Account</Text>
+                      <ChevronRight size={18} color="#64748b" />
+                    </Pressable>
                   </View>
                 </View>
-              </Pressable>
+              </View>
             </Animated.View>
           )}
 
@@ -1316,38 +1365,6 @@ export default function MoreScreen() {
             onPress={handleTextTeam}
             index={5}
           />
-
-          {/* Account Section */}
-          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
-            Account
-          </Text>
-
-          <MenuItem
-            icon={<Lock size={20} color="#67e8f9" />}
-            title="Change Password"
-            subtitle="Update your account password"
-            onPress={() => setPasswordModalVisible(true)}
-            index={8}
-          />
-
-          <MenuItem
-            icon={<LogOut size={20} color="#f87171" />}
-            title="Log Out"
-            onPress={handleLogout}
-            index={9}
-            variant="danger"
-          />
-
-          <View className="mt-3">
-            <MenuItem
-              icon={<UserX size={20} color="#f87171" />}
-              title="Delete My Account"
-              subtitle="Permanently delete all your data"
-              onPress={handleDeleteAccount}
-              index={10}
-              variant="danger"
-            />
-          </View>
 
           {/* Support Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
