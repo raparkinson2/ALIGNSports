@@ -89,9 +89,12 @@ interface EditProfileModalProps {
   onClose: () => void;
   player: Player;
   onSave: (updates: Partial<Player>) => void;
+  onChangePassword: () => void;
+  onLogout: () => void;
+  onDeleteAccount: () => void;
 }
 
-function EditProfileModal({ visible, onClose, player, onSave }: EditProfileModalProps) {
+function EditProfileModal({ visible, onClose, player, onSave, onChangePassword, onLogout, onDeleteAccount }: EditProfileModalProps) {
   const [avatar, setAvatar] = useState(player.avatar || '');
   const [number, setNumber] = useState(player.number);
   const [phone, setPhone] = useState(formatPhoneNumber(player.phone));
@@ -246,10 +249,59 @@ function EditProfileModal({ visible, onClose, player, onSave }: EditProfileModal
               {/* Save Button */}
               <Pressable
                 onPress={handleSave}
-                className="bg-cyan-500 rounded-xl py-4 items-center mb-8 active:bg-cyan-600"
+                className="bg-cyan-500 rounded-xl py-4 items-center mb-6 active:bg-cyan-600"
               >
                 <Text className="text-white font-semibold text-base">Save Changes</Text>
               </Pressable>
+
+              {/* Account Section */}
+              <View className="border-t border-slate-700/50 pt-4 mb-8">
+                <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                  Account
+                </Text>
+
+                {/* Change Password */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    onClose();
+                    onChangePassword();
+                  }}
+                  className="flex-row items-center py-3 px-4 bg-slate-800/60 rounded-xl mb-2 active:bg-slate-700/80"
+                >
+                  <Lock size={18} color="#67e8f9" />
+                  <Text className="text-white ml-3 flex-1">Change Password</Text>
+                  <ChevronRight size={18} color="#64748b" />
+                </Pressable>
+
+                {/* Log Out */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    onClose();
+                    onLogout();
+                  }}
+                  className="flex-row items-center py-3 px-4 bg-slate-800/60 rounded-xl mb-2 active:bg-slate-700/80"
+                >
+                  <LogOut size={18} color="#f87171" />
+                  <Text className="text-red-400 ml-3 flex-1">Log Out</Text>
+                  <ChevronRight size={18} color="#64748b" />
+                </Pressable>
+
+                {/* Delete My Account */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    onClose();
+                    onDeleteAccount();
+                  }}
+                  className="flex-row items-center py-3 px-4 bg-slate-800/60 rounded-xl active:bg-slate-700/80"
+                >
+                  <UserX size={18} color="#f87171" />
+                  <Text className="text-red-400 ml-3 flex-1">Delete My Account</Text>
+                  <ChevronRight size={18} color="#64748b" />
+                </Pressable>
+              </View>
             </ScrollView>
           </View>
         </View>
@@ -1173,80 +1225,31 @@ export default function MoreScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {/* Profile Card with Account Options */}
+          {/* Profile Card */}
           {currentPlayer && (
             <Animated.View
               entering={FadeInDown.delay(50).springify()}
             >
-              <View className="bg-slate-800/80 rounded-2xl mb-4 border border-slate-700/50">
-                {/* Profile Info - Tappable to edit */}
-                <Pressable
-                  onPress={() => handleEditProfile(currentPlayer)}
-                  className="p-4 active:bg-slate-700/80 rounded-t-2xl"
-                >
-                  <View className="flex-row items-center">
-                    <View className="relative">
-                      <PlayerAvatar player={currentPlayer} size={60} />
-                      <View className="absolute -bottom-1 -right-1 bg-cyan-500 rounded-full px-2 py-0.5">
-                        <Text className="text-white text-xs font-bold">#{currentPlayer.number}</Text>
-                      </View>
-                    </View>
-                    <View className="flex-1 ml-4">
-                      <Text className="text-white text-xl font-bold">{getPlayerName(currentPlayer)}</Text>
-                      <Text className="text-cyan-400 text-sm">{currentPlayer.position} · {teamName}</Text>
-                    </View>
-                    <View className="w-8 h-8 rounded-full bg-slate-700 items-center justify-center">
-                      <Pencil size={16} color="#94a3b8" />
+              <Pressable
+                onPress={() => handleEditProfile(currentPlayer)}
+                className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/80"
+              >
+                <View className="flex-row items-center">
+                  <View className="relative">
+                    <PlayerAvatar player={currentPlayer} size={60} />
+                    <View className="absolute -bottom-1 -right-1 bg-cyan-500 rounded-full px-2 py-0.5">
+                      <Text className="text-white text-xs font-bold">#{currentPlayer.number}</Text>
                     </View>
                   </View>
-                </Pressable>
-
-                {/* Account Options inside card */}
-                <View className="border-t border-slate-700/50">
-                  {/* Change Password */}
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setPasswordModalVisible(true);
-                    }}
-                    className="flex-row items-center py-3 px-4 active:bg-slate-700/50"
-                  >
-                    <Lock size={18} color="#67e8f9" />
-                    <Text className="text-white ml-3 flex-1">Change Password</Text>
-                    <ChevronRight size={18} color="#64748b" />
-                  </Pressable>
-
-                  {/* Log Out */}
-                  <View className="border-t border-slate-700/30">
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        handleLogout();
-                      }}
-                      className="flex-row items-center py-3 px-4 active:bg-slate-700/50"
-                    >
-                      <LogOut size={18} color="#f87171" />
-                      <Text className="text-red-400 ml-3 flex-1">Log Out</Text>
-                      <ChevronRight size={18} color="#64748b" />
-                    </Pressable>
+                  <View className="flex-1 ml-4">
+                    <Text className="text-white text-xl font-bold">{getPlayerName(currentPlayer)}</Text>
+                    <Text className="text-cyan-400 text-sm">{currentPlayer.position} · {teamName}</Text>
                   </View>
-
-                  {/* Delete My Account */}
-                  <View className="border-t border-slate-700/30">
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        handleDeleteAccount();
-                      }}
-                      className="flex-row items-center py-3 px-4 active:bg-slate-700/50 rounded-b-2xl"
-                    >
-                      <UserX size={18} color="#f87171" />
-                      <Text className="text-red-400 ml-3 flex-1">Delete My Account</Text>
-                      <ChevronRight size={18} color="#64748b" />
-                    </Pressable>
+                  <View className="w-8 h-8 rounded-full bg-slate-700 items-center justify-center">
+                    <Pencil size={16} color="#94a3b8" />
                   </View>
                 </View>
-              </View>
+              </Pressable>
             </Animated.View>
           )}
 
@@ -1408,6 +1411,9 @@ export default function MoreScreen() {
           }}
           player={playerToEdit}
           onSave={handleSaveProfile}
+          onChangePassword={() => setPasswordModalVisible(true)}
+          onLogout={handleLogout}
+          onDeleteAccount={handleDeleteAccount}
         />
       )}
 
