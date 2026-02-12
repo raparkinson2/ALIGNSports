@@ -168,25 +168,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="admin"
-        options={{
-          title: 'Admin',
-          href: isAdminUser ? undefined : null,
-          tabBarIcon: ({ color, focused }) => (
-            <View
-              style={{
-                backgroundColor: focused ? 'rgba(167, 139, 250, 0.15)' : 'transparent',
-                borderRadius: 10,
-                padding: 6,
-              }}
-            >
-              <Shield size={22} color={focused ? '#a78bfa' : color} />
-            </View>
-          ),
-          tabBarActiveTintColor: '#a78bfa',
-        }}
-      />
-      <Tabs.Screen
         name="more"
         options={{
           title: 'More',
@@ -222,6 +203,25 @@ export default function TabLayout() {
               )}
             </View>
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="admin"
+        options={{
+          title: 'Admin',
+          href: isAdminUser ? undefined : null,
+          tabBarIcon: ({ color, focused }) => (
+            <View
+              style={{
+                backgroundColor: focused ? 'rgba(167, 139, 250, 0.15)' : 'transparent',
+                borderRadius: 10,
+                padding: 6,
+              }}
+            >
+              <Shield size={22} color={focused ? '#a78bfa' : color} />
+            </View>
+          ),
+          tabBarActiveTintColor: '#a78bfa',
         }}
       />
       <Tabs.Screen
