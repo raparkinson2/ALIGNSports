@@ -1234,11 +1234,19 @@ export default function MoreScreen() {
           />
 
           <MenuItem
+            icon={<BarChart3 size={20} color="#67e8f9" />}
+            title="Team Polls"
+            subtitle="Create and vote on polls"
+            onPress={() => router.push('/polls')}
+            index={3}
+          />
+
+          <MenuItem
             icon={<Plus size={20} color="#67e8f9" />}
             title="Create New Team"
             subtitle="Start a new team"
             onPress={() => router.push('/create-new-team')}
-            index={3}
+            index={4}
           />
 
           {/* Communication & Alerts Section */}
@@ -1307,19 +1315,6 @@ export default function MoreScreen() {
             subtitle="Send a group text to all players"
             onPress={handleTextTeam}
             index={5}
-          />
-
-          {/* Team Activity Section */}
-          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
-            Team Activity
-          </Text>
-
-          <MenuItem
-            icon={<BarChart3 size={20} color="#67e8f9" />}
-            title="Team Polls"
-            subtitle="Create and vote on polls"
-            onPress={() => router.push('/polls')}
-            index={7}
           />
 
           {/* Account Section */}
