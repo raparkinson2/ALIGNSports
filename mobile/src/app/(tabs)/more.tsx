@@ -1214,6 +1214,15 @@ export default function MoreScreen() {
             </Animated.View>
           )}
 
+          {/* Log Out - right below Switch Team */}
+          <MenuItem
+            icon={<LogOut size={20} color="#f87171" />}
+            title="Log Out"
+            onPress={handleLogout}
+            index={1}
+            variant="danger"
+          />
+
           {/* Communication Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-2">
             Communication
@@ -1381,14 +1390,6 @@ export default function MoreScreen() {
             subtitle="Privacy policy & legal"
             onPress={() => router.push('/notices')}
             index={8}
-          />
-
-          <MenuItem
-            icon={<LogOut size={20} color="#f87171" />}
-            title="Log Out"
-            onPress={handleLogout}
-            index={9}
-            variant="danger"
           />
 
           <MenuItem
