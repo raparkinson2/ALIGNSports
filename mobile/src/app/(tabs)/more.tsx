@@ -1218,19 +1218,11 @@ export default function MoreScreen() {
           )}
 
           <MenuItem
-            icon={<Plus size={20} color="#67e8f9" />}
-            title="Create New Team"
-            subtitle="Start a new team"
-            onPress={() => router.push('/create-new-team')}
+            icon={<CalendarOff size={20} color="#67e8f9" />}
+            title="My Availability"
+            subtitle="Set dates you're unavailable"
+            onPress={() => router.push('/my-availability')}
             index={1}
-          />
-
-          <MenuItem
-            icon={<Users size={20} color="#67e8f9" />}
-            title="Team Roster"
-            subtitle={`${players.length} players`}
-            onPress={() => router.push('/(tabs)/roster')}
-            index={2}
           />
 
           <MenuItem
@@ -1238,6 +1230,14 @@ export default function MoreScreen() {
             title="Team Links"
             subtitle={teamLinks.length > 0 ? `${teamLinks.length} link${teamLinks.length !== 1 ? 's' : ''}` : 'Add useful links for your team'}
             onPress={() => setLinksModalVisible(true)}
+            index={2}
+          />
+
+          <MenuItem
+            icon={<Plus size={20} color="#67e8f9" />}
+            title="Create New Team"
+            subtitle="Start a new team"
+            onPress={() => router.push('/create-new-team')}
             index={3}
           />
 
@@ -1313,14 +1313,6 @@ export default function MoreScreen() {
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
             Team Activity
           </Text>
-
-          <MenuItem
-            icon={<CalendarOff size={20} color="#67e8f9" />}
-            title="My Availability"
-            subtitle="Set dates you're unavailable"
-            onPress={() => router.push('/my-availability')}
-            index={6}
-          />
 
           <MenuItem
             icon={<BarChart3 size={20} color="#67e8f9" />}
