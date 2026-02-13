@@ -2,9 +2,9 @@ import { View, Text, Pressable, ScrollView, Modal } from 'react-native';
 import { useState, useMemo, useCallback } from 'react';
 import { X, Plus, Minus, User, Trash2, GripVertical } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, useAnimatedReaction, runOnJS } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import Sortable from 'react-native-sortables';
+import Sortable, { useItemContext } from 'react-native-sortables';
 import { cn } from '@/lib/cn';
 import {
   Player,
@@ -60,6 +60,28 @@ type BattingOrderEntry = {
   playerId: string;
   position: string;
 } | undefined;
+
+// Animated order number that updates during drag
+function AnimatedOrderNumber({ itemKey }: { itemKey: string }) {
+  const { keyToIndex } = useItemContext();
+  const [displayNumber, setDisplayNumber] = useState(1);
+
+  useAnimatedReaction(
+    () => keyToIndex.value[itemKey],
+    (index) => {
+      if (index !== undefined) {
+        runOnJS(setDisplayNumber)(index + 1);
+      }
+    },
+    [itemKey]
+  );
+
+  return (
+    <View className="w-8 h-8 rounded-full bg-emerald-500/20 items-center justify-center mr-3">
+      <Text className="text-emerald-400 font-bold">{displayNumber}</Text>
+    </View>
+  );
+}
 
 export function BattingOrderLineupEditor({
   visible,
@@ -257,14 +279,14 @@ export function BattingOrderLineupEditor({
                     originalIndex: index,
                   }))}
                   columns={1}
-                  renderItem={({ item, index }) => {
+                  renderItem={({ item, index: visualIndex }) => {
                     const player = item.entry?.playerId ? getPlayer(item.entry.playerId) : null;
 
                     return (
                       <View
                         className={cn(
                           'flex-row items-center p-3 bg-slate-800/60',
-                          index < lineup.numHitters - 1 && 'border-b border-slate-700/50'
+                          visualIndex < lineup.numHitters - 1 && 'border-b border-slate-700/50'
                         )}
                       >
                         {/* Drag Handle */}
@@ -278,14 +300,12 @@ export function BattingOrderLineupEditor({
                           <View className="w-[34px]" />
                         )}
 
-                        {/* Order Number */}
-                        <View className="w-8 h-8 rounded-full bg-emerald-500/20 items-center justify-center mr-3">
-                          <Text className="text-emerald-400 font-bold">{index + 1}</Text>
-                        </View>
+                        {/* Order Number - animates with current position during drag */}
+                        <AnimatedOrderNumber itemKey={item.id} />
 
                         {/* Player Info / Empty Slot */}
                         <Pressable
-                          onPress={() => setSelectingSlot(index)}
+                          onPress={() => setSelectingSlot(visualIndex)}
                           className="flex-1 flex-row items-center"
                         >
                           {player ? (
@@ -312,7 +332,7 @@ export function BattingOrderLineupEditor({
                         {/* Clear Button */}
                         {player && (
                           <Pressable
-                            onPress={() => handleClearSlot(index)}
+                            onPress={() => handleClearSlot(visualIndex)}
                             className="p-2 ml-2"
                           >
                             <X size={18} color="#ef4444" />
@@ -324,9 +344,11 @@ export function BattingOrderLineupEditor({
                   keyExtractor={(item) => item.id}
                   onDragEnd={({ data }) => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    // Update batting order with the new order and reassign IDs
+                    const newBattingOrder = data.map((item) => item.entry);
                     setLineup((prev) => ({
                       ...prev,
-                      battingOrder: data.map((item) => item.entry),
+                      battingOrder: newBattingOrder,
                     }));
                   }}
                   customHandle
