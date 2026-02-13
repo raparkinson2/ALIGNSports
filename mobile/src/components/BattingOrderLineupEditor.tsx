@@ -426,7 +426,7 @@ export function BattingOrderLineupEditor({
             </View>
 
             <ScrollView className="flex-1 px-5 pt-4">
-              <View className="flex-row flex-wrap gap-3">
+              <View className="flex-row flex-wrap justify-center gap-3">
                 {positions.map((position) => {
                   const isAssigned = assignedPositions.has(position) && position !== 'EH';
                   return (
