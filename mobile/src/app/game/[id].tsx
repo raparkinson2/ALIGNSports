@@ -1702,7 +1702,7 @@ export default function GameDetailScreen() {
             </Animated.View>
           )}
 
-          {/* Invite Release Status - Visible to admins/captains */}
+          {/* Release Invites Status - Visible to admins/captains */}
           {canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(155).springify()}
@@ -1710,7 +1710,7 @@ export default function GameDetailScreen() {
             >
               <View className="flex-row items-center justify-center py-2.5 px-3 bg-slate-800/40 rounded-xl">
                 <Calendar size={14} color="#67e8f9" />
-                <Text className="text-cyan-400 text-sm ml-1.5">Invite Release:</Text>
+                <Text className="text-cyan-400 text-sm ml-1.5">Release Invites:</Text>
                 {game.invitesSent ? (
                   <View className="flex-row items-center ml-1.5">
                     <Check size={14} color="#22c55e" />

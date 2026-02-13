@@ -1065,6 +1065,9 @@ export default function ScheduleScreen() {
       notes: notes.trim() || undefined,
       invitedPlayers: invitedPlayerIds,
       confirmedPlayers: [],
+      inviteReleaseOption: inviteReleaseOption,
+      inviteReleaseDate: inviteReleaseOption === 'scheduled' ? inviteReleaseDate.toISOString() : undefined,
+      invitesSent: inviteReleaseOption === 'now',
     };
 
     addEvent(newEvent);
@@ -1072,27 +1075,31 @@ export default function ScheduleScreen() {
     // Send notifications to invited players
     const formattedDate = format(gameDate, 'EEE, MMM d');
 
-    // Send immediate notification
-    sendEventInviteNotification(newEvent.id, eventName.trim(), formattedDate, fullEventTime);
+    // Only send immediate notification if inviteReleaseOption is 'now'
+    if (inviteReleaseOption === 'now') {
+      sendEventInviteNotification(newEvent.id, eventName.trim(), formattedDate, fullEventTime);
 
-    // Create in-app notifications for each invited player
-    invitedPlayerIds.forEach((playerId) => {
-      const notification: AppNotification = {
-        id: `event-invite-${newEvent.id}-${playerId}-${Date.now()}`,
-        type: 'game_invite', // Reuse game_invite type for now
-        title: 'New Event Added!',
-        message: `You've been invited to "${eventName.trim()}" on ${formattedDate} at ${fullEventTime}`,
-        gameId: newEvent.id, // Store event ID here
-        toPlayerId: playerId,
-        read: false,
-        createdAt: new Date().toISOString(),
-      };
-      addNotification(notification);
-    });
+      // Create in-app notifications for each invited player
+      invitedPlayerIds.forEach((playerId) => {
+        const notification: AppNotification = {
+          id: `event-invite-${newEvent.id}-${playerId}-${Date.now()}`,
+          type: 'game_invite',
+          title: 'New Event Added!',
+          message: `You've been invited to "${eventName.trim()}" on ${formattedDate} at ${fullEventTime}`,
+          gameId: newEvent.id,
+          toPlayerId: playerId,
+          read: false,
+          createdAt: new Date().toISOString(),
+        };
+        addNotification(notification);
+      });
 
-    // Schedule reminders
-    scheduleEventReminderDayBefore(newEvent.id, eventName.trim(), gameDate, fullEventTime);
-    scheduleEventReminderHourBefore(newEvent.id, eventName.trim(), gameDate, fullEventTime);
+      // Schedule reminders
+      scheduleEventReminderDayBefore(newEvent.id, eventName.trim(), gameDate, fullEventTime);
+      scheduleEventReminderHourBefore(newEvent.id, eventName.trim(), gameDate, fullEventTime);
+    } else if (inviteReleaseOption === 'scheduled') {
+      console.log('Event invites scheduled for:', inviteReleaseDate.toISOString());
+    }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsModalVisible(false);
@@ -1124,6 +1131,9 @@ export default function ScheduleScreen() {
       notes: notes.trim() || undefined,
       invitedPlayers: invitedPlayerIds,
       confirmedPlayers: [],
+      inviteReleaseOption: inviteReleaseOption,
+      inviteReleaseDate: inviteReleaseOption === 'scheduled' ? inviteReleaseDate.toISOString() : undefined,
+      invitesSent: inviteReleaseOption === 'now',
     };
 
     addEvent(newPractice);
@@ -1131,27 +1141,31 @@ export default function ScheduleScreen() {
     // Send notifications to invited players
     const formattedDate = format(gameDate, 'EEE, MMM d');
 
-    // Send immediate notification
-    sendEventInviteNotification(newPractice.id, 'Practice', formattedDate, fullPracticeTime);
+    // Only send immediate notification if inviteReleaseOption is 'now'
+    if (inviteReleaseOption === 'now') {
+      sendEventInviteNotification(newPractice.id, 'Practice', formattedDate, fullPracticeTime);
 
-    // Create in-app notifications for each invited player
-    invitedPlayerIds.forEach((playerId) => {
-      const notification: AppNotification = {
-        id: `practice-invite-${newPractice.id}-${playerId}-${Date.now()}`,
-        type: 'game_invite',
-        title: 'Practice Scheduled!',
-        message: `Practice on ${formattedDate} at ${fullPracticeTime}`,
-        gameId: newPractice.id,
-        toPlayerId: playerId,
-        read: false,
-        createdAt: new Date().toISOString(),
-      };
-      addNotification(notification);
-    });
+      // Create in-app notifications for each invited player
+      invitedPlayerIds.forEach((playerId) => {
+        const notification: AppNotification = {
+          id: `practice-invite-${newPractice.id}-${playerId}-${Date.now()}`,
+          type: 'game_invite',
+          title: 'Practice Scheduled!',
+          message: `Practice on ${formattedDate} at ${fullPracticeTime}`,
+          gameId: newPractice.id,
+          toPlayerId: playerId,
+          read: false,
+          createdAt: new Date().toISOString(),
+        };
+        addNotification(notification);
+      });
 
-    // Schedule reminders
-    scheduleEventReminderDayBefore(newPractice.id, 'Practice', gameDate, fullPracticeTime);
-    scheduleEventReminderHourBefore(newPractice.id, 'Practice', gameDate, fullPracticeTime);
+      // Schedule reminders
+      scheduleEventReminderDayBefore(newPractice.id, 'Practice', gameDate, fullPracticeTime);
+      scheduleEventReminderHourBefore(newPractice.id, 'Practice', gameDate, fullPracticeTime);
+    } else if (inviteReleaseOption === 'scheduled') {
+      console.log('Practice invites scheduled for:', inviteReleaseDate.toISOString());
+    }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsModalVisible(false);
@@ -1819,10 +1833,9 @@ export default function ScheduleScreen() {
                 )}
               </View>
 
-              {/* Invite Release Options (Game only) */}
-              {recordType === 'game' && (
+              {/* Invite Release Options */}
               <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">When to Send Invites</Text>
+                <Text className="text-slate-400 text-sm mb-2">Release Invites</Text>
                 <View className="bg-slate-800/50 rounded-xl p-3">
                   {/* Release Now Option */}
                   <Pressable
@@ -1966,14 +1979,13 @@ export default function ScheduleScreen() {
                         Don't send invites
                       </Text>
                       <Text className="text-slate-500 text-xs mt-0.5">
-                        Send manually from game details later
+                        Send manually later
                       </Text>
                     </View>
                     {inviteReleaseOption === 'none' && <Check size={18} color="#94a3b8" />}
                   </Pressable>
                 </View>
               </View>
-              )}
 
               {/* Refreshment Duty (Game only) */}
               {recordType === 'game' && (
