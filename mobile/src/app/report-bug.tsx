@@ -223,32 +223,32 @@ export default function ReportBugScreen() {
             {/* Title Input */}
             <Animated.View
               entering={FadeInDown.delay(150).springify()}
-              className="mb-4"
+              className="mb-3"
             >
-              <Text className="text-slate-400 text-sm font-medium mb-2">Bug Title</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-2">Bug Title</Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
                 placeholder="e.g., App crashes when opening photos"
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 autoCapitalize="sentences"
                 className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
                 maxLength={100}
               />
-              <Text className="text-slate-500 text-xs mt-1 text-right">{title.length}/100</Text>
+              <Text className="text-slate-600 text-[10px] mt-1 text-right">{title.length}/100</Text>
             </Animated.View>
 
             {/* Description Input */}
             <Animated.View
               entering={FadeInDown.delay(200).springify()}
-              className="mb-4"
+              className="mb-3"
             >
-              <Text className="text-slate-400 text-sm font-medium mb-2">What happened?</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-2">What happened?</Text>
               <TextInput
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Describe what went wrong. What did you expect to happen vs what actually happened?"
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 autoCapitalize="sentences"
                 className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
                 multiline
@@ -257,20 +257,20 @@ export default function ReportBugScreen() {
                 style={{ minHeight: 100 }}
                 maxLength={1000}
               />
-              <Text className="text-slate-500 text-xs mt-1 text-right">{description.length}/1000</Text>
+              <Text className="text-slate-600 text-[10px] mt-1 text-right">{description.length}/1000</Text>
             </Animated.View>
 
             {/* Steps to Reproduce Input */}
             <Animated.View
               entering={FadeInDown.delay(250).springify()}
-              className="mb-4"
+              className="mb-3"
             >
-              <Text className="text-slate-400 text-sm font-medium mb-2">Steps to reproduce (optional)</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-2">Steps to reproduce (optional)</Text>
               <TextInput
                 value={stepsToReproduce}
                 onChangeText={setStepsToReproduce}
                 placeholder="1. Go to Photos tab&#10;2. Tap on a photo&#10;3. App crashes"
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 autoCapitalize="sentences"
                 className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
                 multiline
@@ -279,20 +279,20 @@ export default function ReportBugScreen() {
                 style={{ minHeight: 100 }}
                 maxLength={500}
               />
-              <Text className="text-slate-500 text-xs mt-1 text-right">{stepsToReproduce.length}/500</Text>
+              <Text className="text-slate-600 text-[10px] mt-1 text-right">{stepsToReproduce.length}/500</Text>
             </Animated.View>
 
             {/* Contact Email Input */}
             <Animated.View
               entering={FadeInDown.delay(300).springify()}
-              className="mb-6"
+              className="mb-5"
             >
-              <Text className="text-slate-400 text-sm font-medium mb-2">Your email (optional)</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-2">Your email (optional)</Text>
               <TextInput
                 value={contactEmail}
                 onChangeText={setContactEmail}
                 placeholder="email@example.com"
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoComplete="email"
@@ -305,13 +305,20 @@ export default function ReportBugScreen() {
             <Animated.View entering={FadeInDown.delay(350).springify()}>
               <Pressable
                 onPress={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !title.trim() || !description.trim()}
                 className={`rounded-xl py-4 items-center flex-row justify-center ${
-                  isSubmitting ? 'bg-red-600/50' : 'bg-red-500 active:bg-red-600'
+                  isSubmitting || !title.trim() || !description.trim() ? 'bg-red-600/40' : 'bg-red-500 active:bg-red-600'
                 }`}
+                style={(!isSubmitting && title.trim() && description.trim()) ? {
+                  shadowColor: '#ef4444',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 8,
+                  elevation: 6,
+                } : undefined}
               >
                 <Send size={20} color="white" />
-                <Text className="text-white font-semibold text-base ml-2">
+                <Text className="text-white font-bold text-base ml-2">
                   {isSubmitting ? 'Sending...' : 'Submit Bug Report'}
                 </Text>
               </Pressable>
@@ -320,9 +327,9 @@ export default function ReportBugScreen() {
             {/* Note */}
             <Animated.View
               entering={FadeInDown.delay(400).springify()}
-              className="mt-6"
+              className="mt-5"
             >
-              <Text className="text-slate-500 text-sm text-center">
+              <Text className="text-slate-400 text-sm text-center">
                 Your bug report will be sent directly to our development team.
               </Text>
             </Animated.View>
