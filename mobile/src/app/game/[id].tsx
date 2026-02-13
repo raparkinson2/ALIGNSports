@@ -1132,7 +1132,9 @@ export default function GameDetailScreen() {
                 <View className="flex-row items-center justify-between mb-3">
                   <View className="flex-row items-center">
                     <ListOrdered size={20} color="#10b981" />
-                    <Text className="text-emerald-400 font-semibold ml-2">Batting Order</Text>
+                    <Text className="text-emerald-400 font-semibold ml-2">
+                      Batting Order{(game.battingOrderLineup?.numHitters ?? 9) > 9 ? ` (${game.battingOrderLineup?.numHitters} hitters)` : ''}
+                    </Text>
                   </View>
                   {canManageTeam() && (
                     <ChevronDown size={20} color="#10b981" />

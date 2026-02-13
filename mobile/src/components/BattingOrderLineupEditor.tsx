@@ -26,7 +26,7 @@ const getPositionsForSport = (sport: 'baseball' | 'softball'): string[] => {
   if (sport === 'softball') {
     return ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'SF', 'EH'];
   }
-  return ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF'];
+  return ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'EH'];
 };
 
 const getPositionName = (position: string): string => {
@@ -68,7 +68,7 @@ export function BattingOrderLineupEditor({
 
   const positions = getPositionsForSport(sport);
   const minHitters = sport === 'baseball' ? 9 : 10;
-  const maxHitters = sport === 'baseball' ? 9 : 15; // Softball can have extra hitters
+  const maxHitters = 20; // Allow up to 20 hitters for any league that needs extra hitters
 
   // Get all currently assigned player IDs
   const assignedPlayerIds = useMemo(() => {
@@ -91,8 +91,6 @@ export function BattingOrderLineupEditor({
   }, [lineup]);
 
   const handleNumHittersChange = (delta: number) => {
-    if (sport === 'baseball') return; // Baseball is fixed at 9
-
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLineup((prev) => {
       const newNum = Math.max(minHitters, Math.min(maxHitters, prev.numHitters + delta));
@@ -230,37 +228,35 @@ export function BattingOrderLineupEditor({
           </View>
 
           <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
-            {/* Hitter Count (Softball only) */}
-            {sport === 'softball' && (
-              <Animated.View entering={FadeIn.delay(50)} className="px-5 pt-4">
-                <View className="flex-row items-center justify-between mb-4">
-                  <Text className="text-white text-lg font-semibold">Number of Hitters</Text>
-                  <View className="flex-row items-center bg-slate-800 rounded-lg">
-                    <Pressable
-                      onPress={() => handleNumHittersChange(-1)}
-                      className="p-2"
-                      disabled={lineup.numHitters <= minHitters}
-                    >
-                      <Minus
-                        size={20}
-                        color={lineup.numHitters <= minHitters ? '#475569' : '#10b981'}
-                      />
-                    </Pressable>
-                    <Text className="text-white font-bold px-3">{lineup.numHitters}</Text>
-                    <Pressable
-                      onPress={() => handleNumHittersChange(1)}
-                      className="p-2"
-                      disabled={lineup.numHitters >= maxHitters}
-                    >
-                      <Plus
-                        size={20}
-                        color={lineup.numHitters >= maxHitters ? '#475569' : '#10b981'}
-                      />
-                    </Pressable>
-                  </View>
+            {/* Hitter Count */}
+            <Animated.View entering={FadeIn.delay(50)} className="px-5 pt-4">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-white text-lg font-semibold">Number of Hitters</Text>
+                <View className="flex-row items-center bg-slate-800 rounded-lg">
+                  <Pressable
+                    onPress={() => handleNumHittersChange(-1)}
+                    className="p-2"
+                    disabled={lineup.numHitters <= minHitters}
+                  >
+                    <Minus
+                      size={20}
+                      color={lineup.numHitters <= minHitters ? '#475569' : '#10b981'}
+                    />
+                  </Pressable>
+                  <Text className="text-white font-bold px-3">{lineup.numHitters}</Text>
+                  <Pressable
+                    onPress={() => handleNumHittersChange(1)}
+                    className="p-2"
+                    disabled={lineup.numHitters >= maxHitters}
+                  >
+                    <Plus
+                      size={20}
+                      color={lineup.numHitters >= maxHitters ? '#475569' : '#10b981'}
+                    />
+                  </Pressable>
                 </View>
-              </Animated.View>
-            )}
+              </View>
+            </Animated.View>
 
             {/* Batting Order List */}
             <Animated.View entering={FadeIn.delay(100)} className="px-5 pt-2">
