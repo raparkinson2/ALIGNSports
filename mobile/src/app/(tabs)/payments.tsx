@@ -457,6 +457,56 @@ function SwipeablePaymentPeriodRow({
           !isReorderMode && 'active:bg-slate-700/80'
         )}
       >
+        {/* Title and Due Date Row */}
+        <View className="flex-row items-start justify-between mb-3">
+          <Text className="text-white font-semibold text-lg">{period.title}</Text>
+          {isAdmin && !isReorderMode && (
+            period.dueDate ? (() => {
+              const allPaid = paidCount === totalCount;
+              const dueDateColor = getDueDateColor(period.dueDate, allPaid);
+              return (
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    onEditDueDate();
+                  }}
+                  className="flex-row items-center py-1 active:opacity-70"
+                >
+                  <Calendar size={14} color={dueDateColor.hex} />
+                  <Text className={cn('text-sm font-medium ml-1.5', dueDateColor.text)}>
+                    Due {format(parseISO(period.dueDate), 'MMMM d, yyyy')}
+                  </Text>
+                </Pressable>
+              );
+            })() : (
+              <Pressable
+                onPress={(e) => {
+                  e.stopPropagation();
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onEditDueDate();
+                }}
+                className="flex-row items-center py-1 active:opacity-70"
+              >
+                <Calendar size={14} color="#64748b" />
+                <Text className="text-slate-500 text-sm ml-1.5">Add due date</Text>
+              </Pressable>
+            )
+          )}
+          {!isAdmin && period.dueDate && (() => {
+            const allPaid = paidCount === totalCount;
+            const dueDateColor = getDueDateColor(period.dueDate, allPaid);
+            return (
+              <View className="flex-row items-center">
+                <Calendar size={14} color={dueDateColor.hex} />
+                <Text className={cn('text-sm font-medium ml-1.5', dueDateColor.text)}>
+                  Due {format(parseISO(period.dueDate), 'MMMM d, yyyy')}
+                </Text>
+              </View>
+            );
+          })()}
+        </View>
+
         {/* Team Total Owed - Admin Only */}
         {isAdmin && !isReorderMode && (
           <Pressable
@@ -500,68 +550,12 @@ function SwipeablePaymentPeriodRow({
           </Pressable>
         )}
 
+        {/* Amount and Progress Row */}
         <View className="flex-row items-center justify-between">
-          <View className="flex-1">
-            <Text className="text-white font-semibold text-lg">{period.title}</Text>
+          <View>
             <View className="flex-row items-center">
               <Text className="text-green-400 font-bold">${period.amount}</Text>
               <Text className="text-slate-500 text-xs ml-1">per player</Text>
-            </View>
-            {isAdmin && !isReorderMode && (
-              period.dueDate ? (() => {
-                const allPaid = paidCount === totalCount;
-                const dueDateColor = getDueDateColor(period.dueDate, allPaid);
-                return (
-                  <Pressable
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      onEditDueDate();
-                    }}
-                    className="flex-row items-center mt-1.5 py-1 active:opacity-70"
-                  >
-                    <Calendar size={14} color={dueDateColor.hex} />
-                    <Text className={cn('text-sm font-medium ml-1.5', dueDateColor.text)}>
-                      Due {format(parseISO(period.dueDate), 'MMMM d, yyyy')}
-                    </Text>
-                  </Pressable>
-                );
-              })() : (
-                <Pressable
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    onEditDueDate();
-                  }}
-                  className="flex-row items-center mt-1.5 py-1 active:opacity-70"
-                >
-                  <Calendar size={14} color="#64748b" />
-                  <Text className="text-slate-500 text-sm ml-1.5">Add due date</Text>
-                </Pressable>
-              )
-            )}
-            {!isAdmin && period.dueDate && (() => {
-              const allPaid = paidCount === totalCount;
-              const dueDateColor = getDueDateColor(period.dueDate, allPaid);
-              return (
-                <View className="flex-row items-center mt-1.5">
-                  <Calendar size={14} color={dueDateColor.hex} />
-                  <Text className={cn('text-sm font-medium ml-1.5', dueDateColor.text)}>
-                    Due {format(parseISO(period.dueDate), 'MMMM d, yyyy')}
-                  </Text>
-                </View>
-              );
-            })()}
-            <View className="flex-row items-center mt-2">
-              <View className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
-                <View
-                  className="h-full bg-green-500 rounded-full"
-                  style={{ width: `${totalCount > 0 ? (paidCount / totalCount) * 100 : 0}%` }}
-                />
-              </View>
-              <Text className="text-slate-400 text-sm ml-2">
-                {paidCount}/{totalCount} paid
-              </Text>
             </View>
             {isAdmin && !isReorderMode && (
               <Pressable
@@ -578,7 +572,18 @@ function SwipeablePaymentPeriodRow({
             )}
           </View>
           <View className="items-end">
-            {!isReorderMode && <ChevronRight size={18} color="#64748b" />}
+            <View className="flex-row items-center">
+              <Text className="text-slate-400 text-sm mr-2">
+                {paidCount}/{totalCount} paid
+              </Text>
+              {!isReorderMode && <ChevronRight size={18} color="#64748b" />}
+            </View>
+            <View className="w-24 h-2 bg-slate-700 rounded-full mt-2 overflow-hidden">
+              <View
+                className="h-full bg-green-500 rounded-full"
+                style={{ width: `${totalCount > 0 ? (paidCount / totalCount) * 100 : 0}%` }}
+              />
+            </View>
           </View>
         </View>
       </Pressable>
