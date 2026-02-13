@@ -218,6 +218,16 @@ export default function MyAvailabilityScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
+          {/* Explanatory Text */}
+          <Animated.View entering={FadeInDown.delay(80).springify()} className="mb-4">
+            <Text className="text-slate-300 text-sm text-center leading-5">
+              You'll automatically be marked <Text className="text-red-400 font-semibold">Out</Text> for events on these dates.
+            </Text>
+            <Text className="text-slate-500 text-xs text-center mt-1">
+              You can manually change your RSVP for any event.
+            </Text>
+          </Animated.View>
+
           {/* Calendar View */}
           <Animated.View entering={FadeInDown.delay(100).springify()}>
             {/* Month Navigation */}
@@ -354,22 +364,22 @@ export default function MyAvailabilityScreen() {
               <View className="flex-row flex-wrap">
                 <View className="flex-row items-center mr-6 mb-2">
                   <View className="w-4 h-4 rounded bg-red-500/30 border border-red-500/50 mr-2" />
-                  <Text className="text-slate-300 text-sm">Unavailable</Text>
+                  <Text className="text-slate-200 text-sm">Unavailable</Text>
                 </View>
                 <View className="flex-row items-center mr-6 mb-2">
                   <View className="w-4 h-4 rounded bg-cyan-500/20 border border-cyan-500/30 mr-2" />
-                  <Text className="text-slate-300 text-sm">Game/Event</Text>
+                  <Text className="text-slate-200 text-sm">Game/Event</Text>
                 </View>
                 <View className="flex-row items-center mr-6 mb-2">
                   <View className="w-4 h-4 rounded bg-slate-800/40 border-2 border-cyan-400 mr-2" />
-                  <Text className="text-slate-300 text-sm">Today</Text>
+                  <Text className="text-slate-200 text-sm">Today</Text>
                 </View>
                 <View className="flex-row items-center mb-2">
                   <View className="w-4 h-4 rounded bg-amber-500/30 border-2 border-amber-400 mr-2" />
-                  <Text className="text-slate-300 text-sm">Selected</Text>
+                  <Text className="text-slate-200 text-sm">Selected</Text>
                 </View>
               </View>
-              <Text className="text-slate-500 text-xs mt-2">
+              <Text className="text-slate-400 text-xs mt-2">
                 Tap dates to select multiple, then add them all at once
               </Text>
             </View>
