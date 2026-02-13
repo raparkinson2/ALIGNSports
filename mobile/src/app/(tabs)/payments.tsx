@@ -385,10 +385,8 @@ function SwipeablePaymentPeriodRow({
   // Calculate total collected from all player payments
   const totalCollected = period.playerPayments.reduce((sum, pp) => sum + (pp.amount ?? 0), 0);
 
-  // Auto-calculate team total based on players × amount per player
-  // Use manual teamTotalOwed if set, otherwise calculate automatically
-  const calculatedTeamTotal = totalCount * period.amount;
-  const teamTotalOwed = period.teamTotalOwed ?? calculatedTeamTotal;
+  // Always auto-calculate team total based on players × amount per player
+  const teamTotalOwed = totalCount * period.amount;
   const remainingBalance = teamTotalOwed - totalCollected;
 
   const handleDelete = () => {
