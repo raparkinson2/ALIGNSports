@@ -1370,25 +1370,25 @@ export default function PaymentsScreen() {
 
                   {/* Balance Summary */}
                   <View className={cn(
-                    'rounded-2xl p-5 mb-6 border',
+                    'rounded-xl p-4 mb-6 border',
                     selectedPlayerPayment?.status === 'paid'
-                      ? 'bg-green-500/20 border-green-500/30'
+                      ? 'bg-green-500/10 border-green-500/20'
                       : selectedPlayerPayment?.status === 'partial'
-                        ? 'bg-amber-500/20 border-amber-500/30'
-                        : 'bg-slate-800 border-slate-700'
+                        ? 'bg-amber-500/10 border-amber-500/20'
+                        : 'bg-slate-800/50 border-slate-700/50'
                   )}>
-                    <View className="flex-row justify-between items-center mb-3">
-                      <Text className="text-slate-400">Total Due</Text>
-                      <Text className="text-white text-xl font-bold">${selectedPeriod.amount}</Text>
+                    <View className="flex-row justify-between items-center mb-2">
+                      <Text className="text-slate-500 text-sm">Total Due</Text>
+                      <Text className="text-white text-lg font-semibold">${selectedPeriod.amount}</Text>
                     </View>
-                    <View className="flex-row justify-between items-center mb-3">
-                      <Text className="text-slate-400">Paid</Text>
-                      <Text className="text-green-400 text-xl font-bold">${selectedPlayerPayment?.amount ?? 0}</Text>
+                    <View className="flex-row justify-between items-center mb-2">
+                      <Text className="text-slate-500 text-sm">Paid</Text>
+                      <Text className="text-green-400/90 text-lg font-semibold">${selectedPlayerPayment?.amount ?? 0}</Text>
                     </View>
 
                     {/* Progress Bar */}
-                    <View className="mb-3">
-                      <View className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <View className="mb-2">
+                      <View className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
                         <View
                           className={cn(
                             'h-full rounded-full',
@@ -1401,21 +1401,21 @@ export default function PaymentsScreen() {
                           }}
                         />
                       </View>
-                      <Text className="text-slate-500 text-xs text-center mt-1">
+                      <Text className="text-slate-600 text-xs text-center mt-1">
                         {selectedPeriod.amount > 0
                           ? Math.round(((selectedPlayerPayment?.amount ?? 0) / selectedPeriod.amount) * 100)
                           : 0}% paid
                       </Text>
                     </View>
 
-                    <View className="h-px bg-slate-700 my-2" />
+                    <View className="h-px bg-slate-700/50 my-2" />
                     <View className="flex-row justify-between items-center">
-                      <Text className="text-slate-400">Balance</Text>
+                      <Text className="text-slate-500 text-sm">Balance</Text>
                       <Text className={cn(
-                        'text-xl font-bold',
+                        'text-lg font-semibold',
                         (selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0)) <= 0
                           ? 'text-green-400'
-                          : 'text-amber-400'
+                          : 'text-amber-400/90'
                       )}>
                         ${Math.max(0, selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0))}
                       </Text>
