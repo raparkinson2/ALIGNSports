@@ -1137,39 +1137,21 @@ export default function PaymentsScreen() {
                       'rounded-xl p-4 mb-3 border active:opacity-80',
                       payment?.status === 'paid' ? 'bg-green-500/20 border-green-500/30' :
                       payment?.status === 'partial' ? 'bg-amber-500/20 border-amber-500/30' :
-                      'bg-slate-800/80 border-slate-700/50',
-                      // Add red left border for overdue unpaid/partial
-                      period.dueDate && payment?.status !== 'paid' && differenceInDays(new Date(), parseISO(period.dueDate)) > 0 && 'border-l-4 border-l-red-500'
+                      'bg-slate-800/80 border-slate-700/50'
                     )}
                   >
                     <View className="flex-row items-center justify-between">
                       <View className="flex-1">
-                        <View className="flex-row items-center">
-                          <Text className="text-white font-semibold text-lg">{period.title}</Text>
-                          {period.dueDate && payment?.status !== 'paid' && (() => {
-                            const daysOverdue = differenceInDays(new Date(), parseISO(period.dueDate));
-                            if (daysOverdue > 0) {
-                              return (
-                                <View className="ml-2 bg-red-500 rounded px-1.5 py-0.5">
-                                  <Text className="text-white text-xs font-semibold">
-                                    {daysOverdue === 1 ? '1 day overdue' : `${daysOverdue} days overdue`}
-                                  </Text>
-                                </View>
-                              );
-                            }
-                            return null;
-                          })()}
-                        </View>
+                        <Text className="text-white font-semibold text-lg">{period.title}</Text>
                         <Text className="text-slate-400 text-sm">Amount Due: ${period.amount}</Text>
                         {period.dueDate && (() => {
                           const allPaid = payment?.status === 'paid';
-                          const isOverdue = !allPaid && differenceInDays(new Date(), parseISO(period.dueDate)) > 0;
                           const dueDateColor = getDueDateColor(period.dueDate, allPaid);
                           return (
                             <View className="flex-row items-center mt-1">
                               <Calendar size={14} color={dueDateColor.hex} />
                               <Text className={cn('text-sm font-medium ml-1.5', dueDateColor.text)}>
-                                {isOverdue ? 'Overdue' : `Due ${format(parseISO(period.dueDate), 'MMMM d, yyyy')}`}
+                                Due {format(parseISO(period.dueDate), 'MMMM d, yyyy')}
                               </Text>
                             </View>
                           );
@@ -1183,17 +1165,15 @@ export default function PaymentsScreen() {
                           </>
                         ) : payment?.status === 'partial' ? (
                           <>
-                            <AlertCircle size={28} color={period.dueDate && differenceInDays(new Date(), parseISO(period.dueDate)) > 0 ? "#ef4444" : "#f59e0b"} />
-                            <Text className={cn("font-semibold mt-1", period.dueDate && differenceInDays(new Date(), parseISO(period.dueDate)) > 0 ? "text-red-400" : "text-amber-400")}>
+                            <AlertCircle size={28} color="#f59e0b" />
+                            <Text className="text-amber-400 font-semibold mt-1">
                               ${payment.amount ?? 0} / ${period.amount}
                             </Text>
                           </>
                         ) : (
                           <>
-                            <AlertCircle size={28} color={period.dueDate && differenceInDays(new Date(), parseISO(period.dueDate)) > 0 ? "#ef4444" : "#64748b"} />
-                            <Text className={cn("font-semibold mt-1", period.dueDate && differenceInDays(new Date(), parseISO(period.dueDate)) > 0 ? "text-red-400" : "text-slate-400")}>
-                              {period.dueDate && differenceInDays(new Date(), parseISO(period.dueDate)) > 0 ? 'Overdue' : 'Unpaid'}
-                            </Text>
+                            <Circle size={28} color="#64748b" />
+                            <Text className="text-slate-400 font-semibold mt-1">Unpaid</Text>
                           </>
                         )}
                       </View>
@@ -1563,58 +1543,94 @@ export default function PaymentsScreen() {
                   </View>
 
                   {/* Balance Summary */}
-                  <View className={cn(
-                    'rounded-xl p-4 mb-6 border',
-                    selectedPlayerPayment?.status === 'paid'
-                      ? 'bg-green-500/10 border-green-500/20'
-                      : selectedPlayerPayment?.status === 'partial'
-                        ? 'bg-amber-500/10 border-amber-500/20'
-                        : 'bg-slate-800/50 border-slate-700/50'
-                  )}>
-                    <View className="flex-row justify-between items-center mb-2">
-                      <Text className="text-slate-500 text-sm">Total Due</Text>
-                      <Text className="text-white text-lg font-semibold">${selectedPeriod.amount}</Text>
-                    </View>
-                    <View className="flex-row justify-between items-center mb-2">
-                      <Text className="text-slate-500 text-sm">Paid</Text>
-                      <Text className="text-green-400/90 text-lg font-semibold">${selectedPlayerPayment?.amount ?? 0}</Text>
-                    </View>
+                  {(() => {
+                    const isOverdue = selectedPeriod.dueDate &&
+                      selectedPlayerPayment?.status !== 'paid' &&
+                      differenceInDays(new Date(), parseISO(selectedPeriod.dueDate)) > 0;
+                    const daysOverdue = selectedPeriod.dueDate
+                      ? Math.max(0, differenceInDays(new Date(), parseISO(selectedPeriod.dueDate)))
+                      : 0;
+                    const balance = selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0);
 
-                    {/* Progress Bar */}
-                    <View className="mb-2">
-                      <View className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                        <View
-                          className={cn(
-                            'h-full rounded-full',
-                            selectedPlayerPayment?.status === 'paid' ? 'bg-green-500' : 'bg-amber-500'
-                          )}
-                          style={{
-                            width: `${selectedPeriod.amount > 0
-                              ? Math.min(100, ((selectedPlayerPayment?.amount ?? 0) / selectedPeriod.amount) * 100)
-                              : 0}%`
-                          }}
-                        />
-                      </View>
-                      <Text className="text-slate-600 text-xs text-center mt-1">
-                        {selectedPeriod.amount > 0
-                          ? Math.round(((selectedPlayerPayment?.amount ?? 0) / selectedPeriod.amount) * 100)
-                          : 0}% paid
-                      </Text>
-                    </View>
-
-                    <View className="h-px bg-slate-700/50 my-2" />
-                    <View className="flex-row justify-between items-center">
-                      <Text className="text-slate-500 text-sm">Balance</Text>
-                      <Text className={cn(
-                        'text-lg font-semibold',
-                        (selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0)) <= 0
-                          ? 'text-green-400'
-                          : 'text-amber-400/90'
+                    return (
+                      <View className={cn(
+                        'rounded-xl p-4 mb-6 border',
+                        selectedPlayerPayment?.status === 'paid'
+                          ? 'bg-green-500/10 border-green-500/20'
+                          : isOverdue
+                            ? 'bg-slate-800/50 border-l-4 border-l-red-500 border-slate-700/50'
+                            : selectedPlayerPayment?.status === 'partial'
+                              ? 'bg-amber-500/10 border-amber-500/20'
+                              : 'bg-slate-800/50 border-slate-700/50'
                       )}>
-                        ${Math.max(0, selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0))}
-                      </Text>
-                    </View>
-                  </View>
+                        {/* Overdue Badge */}
+                        {isOverdue && (
+                          <View className="flex-row items-center justify-between mb-3">
+                            <View className="bg-red-500 rounded px-2 py-1">
+                              <Text className="text-white text-xs font-semibold">
+                                {daysOverdue === 0 ? 'Due Today' : `${daysOverdue} ${daysOverdue === 1 ? 'day' : 'days'} overdue`}
+                              </Text>
+                            </View>
+                            {selectedPeriod.dueDate && (
+                              <Text className="text-slate-500 text-xs">
+                                Due {format(parseISO(selectedPeriod.dueDate), 'MMM d, yyyy')}
+                              </Text>
+                            )}
+                          </View>
+                        )}
+
+                        <View className="flex-row justify-between items-center mb-2">
+                          <Text className="text-slate-500 text-sm">Total Due</Text>
+                          <Text className="text-white text-lg font-semibold">${selectedPeriod.amount}</Text>
+                        </View>
+                        <View className="flex-row justify-between items-center mb-2">
+                          <Text className="text-slate-500 text-sm">Paid</Text>
+                          <Text className="text-green-400/90 text-lg font-semibold">${selectedPlayerPayment?.amount ?? 0}</Text>
+                        </View>
+
+                        {/* Progress Bar */}
+                        <View className="mb-2">
+                          <View className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                            <View
+                              className={cn(
+                                'h-full rounded-full',
+                                selectedPlayerPayment?.status === 'paid'
+                                  ? 'bg-green-500'
+                                  : isOverdue
+                                    ? 'bg-red-500'
+                                    : 'bg-amber-500'
+                              )}
+                              style={{
+                                width: `${selectedPeriod.amount > 0
+                                  ? Math.min(100, ((selectedPlayerPayment?.amount ?? 0) / selectedPeriod.amount) * 100)
+                                  : 0}%`
+                              }}
+                            />
+                          </View>
+                          <Text className="text-slate-600 text-xs text-center mt-1">
+                            {selectedPeriod.amount > 0
+                              ? Math.round(((selectedPlayerPayment?.amount ?? 0) / selectedPeriod.amount) * 100)
+                              : 0}% paid
+                          </Text>
+                        </View>
+
+                        <View className="h-px bg-slate-700/50 my-2" />
+                        <View className="flex-row justify-between items-center">
+                          <Text className="text-slate-500 text-sm">Balance</Text>
+                          <Text className={cn(
+                            'text-lg font-semibold',
+                            balance <= 0
+                              ? 'text-green-400'
+                              : isOverdue
+                                ? 'text-red-400'
+                                : 'text-amber-400/90'
+                          )}>
+                            ${Math.max(0, balance)}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })()}
 
                   {/* Add Payment Section - Only for Admins/Captains */}
                   {canManageTeam() && (
@@ -1811,44 +1827,6 @@ export default function PaymentsScreen() {
                       </View>
                     )}
 
-                    {/* Due Date Section - Non-Admin view */}
-                    {!isAdmin() && selectedPeriod.dueDate && (() => {
-                      const paidCount = selectedPeriod.playerPayments.filter((pp) => pp.status === 'paid').length;
-                      const totalCount = selectedPeriod.playerPayments.length;
-                      const allPaid = paidCount === totalCount;
-                      const dueDateColor = getDueDateColor(selectedPeriod.dueDate, allPaid);
-                      const isOverdue = differenceInDays(new Date(), parseISO(selectedPeriod.dueDate)) > 0 && !allPaid;
-                      const daysOverdue = Math.max(0, differenceInDays(new Date(), parseISO(selectedPeriod.dueDate)));
-
-                      return (
-                        <View className={cn(
-                          "bg-slate-800/60 rounded-xl p-4 mb-6 border",
-                          isOverdue ? "border-red-500/50" : "border-slate-700/50"
-                        )}>
-                          <View className="flex-row items-center justify-between">
-                            <View className="flex-row items-center">
-                              <Calendar size={20} color={dueDateColor.hex} />
-                              <Text className={cn('text-base font-medium ml-3', dueDateColor.text)}>
-                                {isOverdue ? 'Overdue' : `Due ${format(parseISO(selectedPeriod.dueDate), 'MMMM d, yyyy')}`}
-                              </Text>
-                            </View>
-                            {isOverdue && (
-                              <View className="bg-red-500 rounded px-2 py-1">
-                                <Text className="text-white text-xs font-semibold">
-                                  {daysOverdue === 0 ? 'Due Today' : `${daysOverdue} ${daysOverdue === 1 ? 'day' : 'days'} overdue`}
-                                </Text>
-                              </View>
-                            )}
-                          </View>
-                          {isOverdue && (
-                            <Text className="text-slate-400 text-sm mt-2">
-                              Originally due {format(parseISO(selectedPeriod.dueDate), 'MMMM d, yyyy')}
-                            </Text>
-                          )}
-                        </View>
-                      );
-                    })()}
-
                     {/* Due Date Section - Admin only */}
                     {isAdmin() && (
                       <View className="mb-6">
@@ -1860,8 +1838,6 @@ export default function PaymentsScreen() {
                             const dueDateColor = selectedPeriod.dueDate
                               ? getDueDateColor(selectedPeriod.dueDate, allPaid)
                               : { text: 'text-slate-500', hex: '#64748b' };
-                            const isOverdue = selectedPeriod.dueDate && differenceInDays(new Date(), parseISO(selectedPeriod.dueDate)) > 0 && !allPaid;
-                            const daysOverdue = selectedPeriod.dueDate ? Math.max(0, differenceInDays(new Date(), parseISO(selectedPeriod.dueDate))) : 0;
 
                             return (
                               <Pressable
@@ -1870,34 +1846,17 @@ export default function PaymentsScreen() {
                                   setEditDueDate(selectedPeriod.dueDate ? parseISO(selectedPeriod.dueDate) : new Date());
                                   setIsEditDueDateVisible(true);
                                 }}
-                                className={cn(
-                                  "bg-slate-800/60 rounded-xl p-4 active:bg-slate-700/60 border",
-                                  isOverdue ? "border-red-500/50" : "border-slate-700/50"
-                                )}
+                                className="bg-slate-800/60 rounded-xl p-4 flex-row items-center justify-between active:bg-slate-700/60 border border-slate-700/50"
                               >
-                                <View className="flex-row items-center justify-between">
-                                  <View className="flex-row items-center flex-1">
-                                    <Calendar size={20} color={dueDateColor.hex} />
-                                    <Text className={cn('text-base font-medium ml-3', selectedPeriod.dueDate ? dueDateColor.text : 'text-slate-500')}>
-                                      {selectedPeriod.dueDate
-                                        ? (isOverdue ? 'Overdue' : `Due ${format(parseISO(selectedPeriod.dueDate), 'MMMM d, yyyy')}`)
-                                        : 'No due date set'}
-                                    </Text>
-                                  </View>
-                                  {isOverdue && (
-                                    <View className="bg-red-500 rounded px-2 py-1 mr-2">
-                                      <Text className="text-white text-xs font-semibold">
-                                        {daysOverdue === 0 ? 'Due Today' : `${daysOverdue} ${daysOverdue === 1 ? 'day' : 'days'} overdue`}
-                                      </Text>
-                                    </View>
-                                  )}
-                                  <Edit3 size={18} color="#64748b" />
-                                </View>
-                                {isOverdue && selectedPeriod.dueDate && (
-                                  <Text className="text-slate-400 text-sm mt-2 ml-8">
-                                    Originally due {format(parseISO(selectedPeriod.dueDate), 'MMMM d, yyyy')}
+                                <View className="flex-row items-center">
+                                  <Calendar size={20} color={dueDateColor.hex} />
+                                  <Text className={cn('text-base font-medium ml-3', selectedPeriod.dueDate ? dueDateColor.text : 'text-slate-500')}>
+                                    {selectedPeriod.dueDate
+                                      ? `Due ${format(parseISO(selectedPeriod.dueDate), 'MMMM d, yyyy')}`
+                                      : 'No due date set'}
                                   </Text>
-                                )}
+                                </View>
+                                <Edit3 size={18} color="#64748b" />
                               </Pressable>
                             );
                           })()
