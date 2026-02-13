@@ -966,7 +966,7 @@ export default function PaymentsScreen() {
               </View>
             ) : (
               <View className="bg-slate-800/50 rounded-xl p-4 mb-6">
-                <Text className="text-slate-400 text-sm mb-3">Tap to pay:</Text>
+                <Text className="text-slate-400 text-sm mb-3">Tap to Pay Externally:</Text>
                 <View className="flex-row" style={{ gap: 8 }}>
                   {paymentMethods.map((method, index) => (
                     <View key={index} className="relative flex-1" style={{ marginTop: 4 }}>
