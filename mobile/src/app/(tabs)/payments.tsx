@@ -209,7 +209,6 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
   const getBackgroundClass = () => {
     if (isDuesType) {
       if (status === 'paid') return 'bg-green-500/20';
-      if (showOverdue) return 'bg-red-500/20';
       if (status === 'partial') return 'bg-amber-500/20';
       return 'bg-slate-800/60';
     } else {
@@ -230,60 +229,65 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
   };
 
   return (
-    <Pressable
-      onPress={onPress}
-      className={cn(
-        'flex-row items-center p-4 rounded-xl active:opacity-80',
-        getBackgroundClass()
-      )}
-    >
-      <PlayerAvatar player={player} size={44} />
-      <View className="flex-1 ml-3">
-        <View className="flex-row items-center">
-          <Text className="text-white font-medium text-base">{getPlayerName(player)}</Text>
-          {showOverdue && (
-            <View className="ml-2 bg-red-500 rounded px-1.5 py-0.5">
-              <Text className="text-white text-xs font-semibold">
-                {daysOverdue === 0 ? 'Due Today' : `${daysOverdue}d overdue`}
-              </Text>
+    <View className={cn(
+      'rounded-xl overflow-hidden',
+      showOverdue && 'border-l-4 border-l-red-500'
+    )}>
+      <Pressable
+        onPress={onPress}
+        className={cn(
+          'flex-row items-center p-4 active:opacity-80',
+          getBackgroundClass()
+        )}
+      >
+        <PlayerAvatar player={player} size={44} />
+        <View className="flex-1 ml-3">
+          <View className="flex-row items-center">
+            <Text className="text-white font-medium text-base">{getPlayerName(player)}</Text>
+            {showOverdue && (
+              <View className="ml-2 bg-red-500 rounded px-1.5 py-0.5">
+                <Text className="text-white text-xs font-semibold">
+                  {daysOverdue === 0 ? 'Due Today' : `${daysOverdue} ${daysOverdue === 1 ? 'day' : 'days'} overdue`}
+                </Text>
+              </View>
+            )}
+          </View>
+          <Text className={cn('text-sm mt-0.5', getTextClass())}>
+            {getStatusText()}
+          </Text>
+          {/* Progress bar for partial payments */}
+          {isDuesType && status === 'partial' && (
+            <View className="w-full h-1.5 bg-slate-700 rounded-full mt-2 overflow-hidden">
+              <View
+                className={cn("h-full rounded-full", showOverdue ? "bg-red-500" : "bg-amber-500")}
+                style={{ width: `${progressPercent}%` }}
+              />
             </View>
           )}
         </View>
-        <Text className={cn('text-sm mt-0.5', getTextClass())}>
-          {getStatusText()}
-        </Text>
-        {/* Progress bar for partial payments */}
-        {isDuesType && status === 'partial' && (
-          <View className="w-full h-1.5 bg-slate-700 rounded-full mt-2 overflow-hidden">
-            <View
-              className={cn("h-full rounded-full", showOverdue ? "bg-red-500" : "bg-amber-500")}
-              style={{ width: `${progressPercent}%` }}
-            />
-          </View>
-        )}
-      </View>
 
-      <View className="items-end">
-        {isDuesType ? (
-          status === 'paid' ? (
-            <CheckCircle2 size={28} color="#22c55e" />
-          ) : showOverdue ? (
-            <AlertCircle size={28} color="#ef4444" />
-          ) : status === 'partial' ? (
-            <AlertCircle size={28} color="#f59e0b" />
+        <View className="items-end">
+          {isDuesType ? (
+            status === 'paid' ? (
+              <CheckCircle2 size={28} color="#22c55e" />
+            ) : showOverdue ? (
+              <AlertCircle size={28} color="#ef4444" />
+            ) : status === 'partial' ? (
+              <AlertCircle size={28} color="#f59e0b" />
+            ) : (
+              <Circle size={28} color="#64748b" />
+            )
           ) : (
-            <Circle size={28} color="#64748b" />
-          )
-        ) : (
-          (paidAmount && paidAmount > 0) ? (
-            <CheckCircle2 size={28} color="#22c55e" />
-          ) : (
-            <Circle size={28} color="#64748b" />
-          )
-        )}
-      </View>
-      <ChevronRight size={20} color="#64748b" className="ml-2" />
-    </Pressable>
+            (paidAmount && paidAmount > 0) ? (
+              <CheckCircle2 size={28} color="#22c55e" />
+            ) : (
+              <Circle size={28} color="#64748b" />
+            )
+          )}
+        </View>
+        <ChevronRight size={20} color="#64748b" className="ml-2" />
+      </Pressable>
+    </View>
   );
 }
 
