@@ -1,5 +1,4 @@
 import { View, Text, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { format, parseISO } from 'date-fns';
@@ -341,19 +340,13 @@ export default function EventDetailScreen() {
 
   return (
     <View className="flex-1 bg-slate-900">
-      <LinearGradient
-        colors={['#3b82f6', '#2563eb', '#0f172a']}
-        locations={[0, 0.3, 0.6]}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 300 }}
-      />
-
       <SafeAreaView className="flex-1">
         {/* Header */}
         <Animated.View entering={FadeIn.duration(300)} className="px-5 pt-2 pb-4">
           <View className="flex-row items-center justify-between">
             <Pressable
               onPress={() => router.back()}
-              className="w-10 h-10 rounded-full bg-black/30 items-center justify-center"
+              className="w-10 h-10 rounded-full bg-slate-800 items-center justify-center"
             >
               <ChevronLeft size={24} color="white" />
             </Pressable>
@@ -363,13 +356,13 @@ export default function EventDetailScreen() {
                 <>
                   <Pressable
                     onPress={openEditModal}
-                    className="w-10 h-10 rounded-full bg-black/30 items-center justify-center mr-2"
+                    className="w-10 h-10 rounded-full bg-slate-800 items-center justify-center mr-2"
                   >
                     <Pencil size={20} color="white" />
                   </Pressable>
                   <Pressable
                     onPress={deleteEvent}
-                    className="w-10 h-10 rounded-full bg-black/30 items-center justify-center"
+                    className="w-10 h-10 rounded-full bg-slate-800 items-center justify-center"
                   >
                     <Trash2 size={20} color="#ef4444" />
                   </Pressable>
