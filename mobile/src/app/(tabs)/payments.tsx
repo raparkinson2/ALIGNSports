@@ -2227,21 +2227,21 @@ export default function PaymentsScreen() {
               All payments are handled externally (for example, through Venmo or other payment platforms). Payment links are provided for convenience only.
             </Text>
 
-            <Text className="text-slate-400 text-sm font-medium mb-2">
+            <Text className="text-slate-300 text-sm font-medium mb-2">
               ALIGN Sports does not collect, process, or store:
             </Text>
             <View className="mb-4 ml-2">
-              <Text className="text-slate-400 text-sm">• Credit or debit card numbers</Text>
-              <Text className="text-slate-400 text-sm">• Bank account information</Text>
-              <Text className="text-slate-400 text-sm">• Payment login credentials</Text>
-              <Text className="text-slate-400 text-sm">• Payer financial details</Text>
+              <Text className="text-slate-300 text-sm">• Credit or debit card numbers</Text>
+              <Text className="text-slate-300 text-sm">• Bank account information</Text>
+              <Text className="text-slate-300 text-sm">• Payment login credentials</Text>
+              <Text className="text-slate-300 text-sm">• Payer financial details</Text>
             </View>
 
             <Text className="text-slate-300 text-sm mb-4">
               If a payment method is added, only the payee's public username (such as a Venmo handle) is stored. This can be removed at any time in the Payments section of the app.
             </Text>
 
-            <Text className="text-slate-400 text-sm italic mb-4">
+            <Text className="text-slate-300 text-sm italic mb-4">
               Payer details are never stored by ALIGN Sports.
             </Text>
 
