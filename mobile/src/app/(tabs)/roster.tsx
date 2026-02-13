@@ -250,7 +250,7 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
     <Animated.View entering={FadeInDown.delay(index * 60).springify()}>
       <Pressable
         onPress={onPress}
-        className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+        className="bg-slate-800/80 rounded-2xl p-4 mb-2.5 border border-slate-700/50 active:bg-slate-700/80"
       >
         <View className="flex-row items-center">
           <View className="relative">
@@ -264,33 +264,33 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
             <View className="flex-row items-center">
               <Text className="text-white text-lg font-semibold">{getPlayerName(player)}</Text>
               {isCurrentUser && (
-                <View className="ml-2 bg-cyan-500/20 rounded-full px-2 py-0.5">
-                  <Text className="text-cyan-400 text-xs font-medium">You</Text>
+                <View className="ml-1.5 bg-cyan-500/20 rounded-full px-1.5 py-0.5">
+                  <Text className="text-cyan-400 text-[10px] font-semibold">You</Text>
                 </View>
               )}
               {player.roles?.includes('captain') && (
-                <View className="ml-2 bg-amber-500/20 rounded-full w-6 h-6 items-center justify-center">
-                  <Text className="text-amber-500 text-sm font-black">C</Text>
+                <View className="ml-1.5 bg-amber-500/20 rounded-full w-5 h-5 items-center justify-center">
+                  <Text className="text-amber-500 text-xs font-black">C</Text>
                 </View>
               )}
               {player.roles?.includes('admin') && (
-                <View className="ml-2 bg-purple-500/20 rounded-full p-1">
-                  <Shield size={14} color="#a78bfa" />
+                <View className="ml-1.5 bg-purple-500/20 rounded-full w-5 h-5 items-center justify-center">
+                  <Shield size={12} color="#a78bfa" strokeWidth={2.5} />
                 </View>
               )}
             </View>
             <View className="flex-row items-center">
-              <Text className="text-slate-400 text-sm">{positionDisplay}</Text>
+              <Text className="text-slate-300 text-sm">{positionDisplay}</Text>
               {/* Injured indicator with end date */}
               {player.isInjured && (
                 <View className="flex-row items-center ml-2">
-                  <Text className="text-red-500 font-black text-base">+</Text>
+                  <Text className="text-red-400 font-black text-sm">+</Text>
                   {player.statusEndDate ? (
-                    <Text className="text-red-400 text-xs ml-1">
+                    <Text className="text-red-400/80 text-xs ml-0.5">
                       (until {format(parseISO(player.statusEndDate), 'MMM d')})
                     </Text>
                   ) : player.injuryDuration ? (
-                    <Text className="text-red-400 text-xs ml-1">
+                    <Text className="text-red-400/80 text-xs ml-0.5">
                       ({formatStatusDuration(player.injuryDuration)})
                     </Text>
                   ) : null}
@@ -299,13 +299,13 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
               {/* Suspended indicator with end date */}
               {player.isSuspended && (
                 <View className="flex-row items-center ml-2">
-                  <Text className="text-red-500 font-bold text-sm">SUS</Text>
+                  <Text className="text-red-400 font-bold text-xs">SUS</Text>
                   {player.statusEndDate ? (
-                    <Text className="text-red-400 text-xs ml-1">
+                    <Text className="text-red-400/80 text-xs ml-0.5">
                       (until {format(parseISO(player.statusEndDate), 'MMM d')})
                     </Text>
                   ) : player.suspensionDuration ? (
-                    <Text className="text-red-400 text-xs ml-1">
+                    <Text className="text-red-400/80 text-xs ml-0.5">
                       ({formatStatusDuration(player.suspensionDuration)})
                     </Text>
                   ) : null}
@@ -320,11 +320,11 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
 
           {/* Status Badge */}
           <View className={cn(
-            'px-2 py-1 rounded-full',
-            player.status === 'active' ? 'bg-green-500/20' : 'bg-slate-600/50'
+            'px-2.5 py-1 rounded-full',
+            player.status === 'active' ? 'bg-green-500/15' : 'bg-slate-600/50'
           )}>
             <Text className={cn(
-              'text-xs font-medium',
+              'text-xs font-semibold',
               player.status === 'active' ? 'text-green-400' : 'text-slate-400'
             )}>
               {player.status === 'active' ? 'Active' : 'Reserve'}
@@ -760,9 +760,9 @@ export default function RosterScreen() {
             if (group.players.length === 0) return null;
 
             return (
-              <View key={group.title} className="mb-6">
-                <View className="flex-row items-center mb-3">
-                  <Text className="text-cyan-400 font-semibold">
+              <View key={group.title} className="mb-5">
+                <View className="flex-row items-center mb-2">
+                  <Text className="text-cyan-300 font-bold text-base">
                     {group.title} ({group.players.length})
                   </Text>
                 </View>
