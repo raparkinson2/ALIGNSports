@@ -506,19 +506,6 @@ function SwipeablePaymentPeriodRow({
             <View className="flex-row items-center">
               <Text className="text-green-400 font-bold">${period.amount}</Text>
               <Text className="text-slate-500 text-xs ml-1">per player</Text>
-              {isAdmin && !isReorderMode && (
-                <Pressable
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    onEditAmount();
-                  }}
-                  className="ml-3 rounded-lg px-2 py-1 flex-row items-center"
-                >
-                  <Edit3 size={12} color="#22c55e" />
-                  <Text className="text-green-500 text-xs ml-1">Edit</Text>
-                </Pressable>
-              )}
             </View>
             {isAdmin && !isReorderMode && (
               period.dueDate ? (() => {
@@ -565,20 +552,33 @@ function SwipeablePaymentPeriodRow({
                 </View>
               );
             })()}
-          </View>
-          <View className="items-end">
-            <View className="flex-row items-center">
-              <Text className="text-slate-400 text-sm mr-2">
+            <View className="flex-row items-center mt-2">
+              <View className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
+                <View
+                  className="h-full bg-green-500 rounded-full"
+                  style={{ width: `${totalCount > 0 ? (paidCount / totalCount) * 100 : 0}%` }}
+                />
+              </View>
+              <Text className="text-slate-400 text-sm ml-2">
                 {paidCount}/{totalCount} paid
               </Text>
-              {!isReorderMode && <ChevronRight size={18} color="#64748b" />}
             </View>
-            <View className="w-24 h-2 bg-slate-700 rounded-full mt-2 overflow-hidden">
-              <View
-                className="h-full bg-green-500 rounded-full"
-                style={{ width: `${totalCount > 0 ? (paidCount / totalCount) * 100 : 0}%` }}
-              />
-            </View>
+            {isAdmin && !isReorderMode && (
+              <Pressable
+                onPress={(e) => {
+                  e.stopPropagation();
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onEditAmount();
+                }}
+                className="mt-2 rounded-lg py-1 flex-row items-center"
+              >
+                <Edit3 size={12} color="#22c55e" />
+                <Text className="text-green-500 text-xs ml-1">Edit</Text>
+              </Pressable>
+            )}
+          </View>
+          <View className="items-end">
+            {!isReorderMode && <ChevronRight size={18} color="#64748b" />}
           </View>
         </View>
       </Pressable>
