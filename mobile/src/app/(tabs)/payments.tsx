@@ -516,7 +516,7 @@ function SwipeablePaymentPeriodRow({
               onEditTeamTotal();
             }}
             className={cn(
-              "rounded-lg p-2.5 mb-3 border active:opacity-80",
+              "rounded-lg p-3.5 mb-3 border active:opacity-80",
               remainingBalance <= 0
                 ? "bg-green-500/10 border-green-500/20"
                 : "bg-amber-500/10 border-amber-500/20"
@@ -525,22 +525,22 @@ function SwipeablePaymentPeriodRow({
             <View className="flex-row items-center justify-between">
               <View>
                 <Text className={cn(
-                  "text-xs",
+                  "text-sm",
                   remainingBalance <= 0 ? "text-green-400/70" : "text-amber-400/70"
                 )}>Team Total</Text>
                 <Text className={cn(
-                  "text-base font-semibold",
+                  "text-lg font-semibold",
                   remainingBalance <= 0 ? "text-green-400" : "text-amber-400"
                 )}>${teamTotalOwed.toLocaleString()}</Text>
               </View>
               <View>
-                <Text className="text-slate-500 text-xs">Collected</Text>
-                <Text className="text-green-400/90 text-base font-semibold">${totalCollected.toLocaleString()}</Text>
+                <Text className="text-slate-500 text-sm">Collected</Text>
+                <Text className="text-green-400/90 text-lg font-semibold">${totalCollected.toLocaleString()}</Text>
               </View>
               <View>
-                <Text className="text-slate-500 text-xs">Remaining</Text>
+                <Text className="text-slate-500 text-sm">Remaining</Text>
                 <Text className={cn(
-                  'text-base font-semibold',
+                  'text-lg font-semibold',
                   remainingBalance <= 0 ? 'text-green-400' : 'text-red-400/90'
                 )}>
                   ${Math.max(0, remainingBalance).toLocaleString()}
