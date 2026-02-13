@@ -381,12 +381,14 @@ export default function EventDetailScreen() {
           <View className="px-5">
             <Animated.View entering={FadeInDown.delay(100).springify()}>
               <View className="flex-row items-center mb-2">
-                <View className="bg-blue-500/30 px-3 py-1 rounded-full">
-                  <Text className="text-blue-300 text-xs font-semibold">EVENT</Text>
+                <View className={`px-3 py-1 rounded-full ${event.type === 'practice' ? 'bg-orange-500/30' : 'bg-blue-500/30'}`}>
+                  <Text className={`text-xs font-semibold ${event.type === 'practice' ? 'text-orange-300' : 'text-blue-300'}`}>
+                    {event.type === 'practice' ? 'PRACTICE' : 'EVENT'}
+                  </Text>
                 </View>
               </View>
               <Text className="text-white text-3xl font-bold mb-2">{event.title}</Text>
-              <Text className="text-blue-200/80 text-base">{teamName}</Text>
+              <Text className="text-slate-400 text-base">{teamName}</Text>
             </Animated.View>
 
             {/* Quick Stats */}
