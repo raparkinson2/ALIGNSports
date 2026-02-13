@@ -28,6 +28,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, parseISO } from 'date-fns';
 import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, PlayerStats, getPlayerPositions, getPrimaryPosition, getPlayerName, StatusDuration, DurationUnit } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { useResponsive } from '@/lib/useResponsive';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { ParentChildIcon } from '@/components/ParentChildIcon';
@@ -401,6 +402,9 @@ export default function RosterScreen() {
   const showTeamStats = teamSettings.showTeamStats !== false;
   const allowPlayerSelfStats = teamSettings.allowPlayerSelfStats === true;
 
+  // Responsive layout for iPad
+  const { isTablet, columns, containerPadding } = useResponsive();
+
   // Count how many admins exist
   const adminCount = players.filter((p) => p.roles?.includes('admin')).length;
 
@@ -754,9 +758,9 @@ export default function RosterScreen() {
         </Animated.View>
 
         <ScrollView
-          className="flex-1 px-5"
+          className="flex-1"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
         >
           {positionGroups.map((group) => {
             if (group.players.length === 0) return null;
@@ -768,17 +772,27 @@ export default function RosterScreen() {
                     {group.title} ({group.players.length})
                   </Text>
                 </View>
-                {group.players.map((player, index) => (
-                  <PlayerCard
-                    key={player.id}
-                    player={player}
-                    index={index}
-                    onPress={() => handlePlayerPress(player)}
-                    showStats={showTeamStats}
-                    isCurrentUser={player.id === currentPlayerId}
-                    canEditOwnStats={allowPlayerSelfStats && !canManageTeam()}
-                  />
-                ))}
+                {/* Use grid layout on iPad */}
+                <View className={isTablet && columns >= 2 ? 'flex-row flex-wrap' : ''} style={isTablet && columns >= 2 ? { marginHorizontal: -6 } : undefined}>
+                  {group.players.map((player, index) => (
+                    <View
+                      key={player.id}
+                      style={isTablet && columns >= 2 ? {
+                        width: columns >= 3 ? '33.33%' : '50%',
+                        paddingHorizontal: 6
+                      } : undefined}
+                    >
+                      <PlayerCard
+                        player={player}
+                        index={index}
+                        onPress={() => handlePlayerPress(player)}
+                        showStats={showTeamStats}
+                        isCurrentUser={player.id === currentPlayerId}
+                        canEditOwnStats={allowPlayerSelfStats && !canManageTeam()}
+                      />
+                    </View>
+                  ))}
+                </View>
               </View>
             );
           })}

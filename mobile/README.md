@@ -2,6 +2,14 @@
 
 A mobile app for recreational sports teams to manage schedules, rosters, check-ins, payments, and team communication. Supports multiple sports including Hockey, Baseball, Basketball, Lacrosse, Soccer, and Softball.
 
+## Device Support
+
+### iPad Optimization
+- **Responsive Layouts**: The app automatically adapts to iPad screen sizes
+- **Multi-Column Grids**: Roster, Schedule, and Payments screens display in 2-3 column grids on iPad
+- **Wider Content Areas**: Chat and Admin screens use wider content areas on larger screens
+- **Consistent Padding**: All screens have responsive padding that scales with screen size
+
 ## Features
 
 ### Multi-Sport Support

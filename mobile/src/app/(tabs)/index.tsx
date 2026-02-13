@@ -33,6 +33,7 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useTeamStore, Game, Event, TeamRecord, Sport, getPlayerName, InviteReleaseOption, UpcomingGamesViewMode, AppNotification } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { useResponsive } from '@/lib/useResponsive';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { AddressSearch } from '@/components/AddressSearch';
@@ -1252,6 +1253,9 @@ export default function ScheduleScreen() {
   const isAllActiveSelected = activePlayers.every((p) => selectedPlayerIds.includes(p.id));
   const isAllReserveSelected = reservePlayers.length > 0 && reservePlayers.every((p) => selectedPlayerIds.includes(p.id));
 
+  // Responsive layout for iPad
+  const { isTablet, columns, containerPadding } = useResponsive();
+
   return (
     <View className="flex-1 bg-slate-900">
       <LinearGradient
@@ -1316,9 +1320,9 @@ export default function ScheduleScreen() {
 
         {/* Schedule Section */}
         <ScrollView
-          className="flex-1 px-5"
+          className="flex-1"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
         >
           <View className="flex-row items-center justify-between mb-4">
             <View className="flex-row items-center">
@@ -1380,61 +1384,81 @@ export default function ScheduleScreen() {
                 </View>
               ) : (
                 <>
-                  {/* Games */}
-                  {upcomingGames.map((game, index) => (
-                    <SwipeableGameCard
-                      key={game.id}
-                      game={game}
-                      index={index}
-                      onPress={() => router.push(`/game/${game.id}`)}
-                      onViewLines={() => setLineupViewerGame(game)}
-                      canDelete={canManageTeam()}
-                      onDelete={() => {
-                        Alert.alert(
-                          'Delete Game',
-                          `Are you sure you want to delete the game vs ${game.opponent}?`,
-                          [
-                            { text: 'Cancel', style: 'cancel' },
-                            {
-                              text: 'Delete',
-                              style: 'destructive',
-                              onPress: () => {
-                                removeGame(game.id);
-                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                              },
-                            },
-                          ]
-                        );
-                      }}
-                    />
-                  ))}
-                  {/* Events */}
-                  {upcomingEvents.map((event, index) => (
-                    <SwipeableEventCard
-                      key={event.id}
-                      event={event}
-                      index={index}
-                      onPress={() => router.push(`/event/${event.id}`)}
-                      canDelete={canManageTeam()}
-                      onDelete={() => {
-                        Alert.alert(
-                          'Delete Event',
-                          `Are you sure you want to delete "${event.title}"?`,
-                          [
-                            { text: 'Cancel', style: 'cancel' },
-                            {
-                              text: 'Delete',
-                              style: 'destructive',
-                              onPress: () => {
-                                removeEvent(event.id);
-                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                              },
-                            },
-                          ]
-                        );
-                      }}
-                    />
-                  ))}
+                  {/* Games - Grid on iPad */}
+                  <View className={isTablet && columns >= 2 ? 'flex-row flex-wrap' : ''} style={isTablet && columns >= 2 ? { marginHorizontal: -6 } : undefined}>
+                    {upcomingGames.map((game, index) => (
+                      <View
+                        key={game.id}
+                        style={isTablet && columns >= 2 ? {
+                          width: columns >= 3 ? '33.33%' : '50%',
+                          paddingHorizontal: 6,
+                          marginBottom: 12
+                        } : undefined}
+                      >
+                        <SwipeableGameCard
+                          game={game}
+                          index={index}
+                          onPress={() => router.push(`/game/${game.id}`)}
+                          onViewLines={() => setLineupViewerGame(game)}
+                          canDelete={canManageTeam()}
+                          onDelete={() => {
+                            Alert.alert(
+                              'Delete Game',
+                              `Are you sure you want to delete the game vs ${game.opponent}?`,
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                  text: 'Delete',
+                                  style: 'destructive',
+                                  onPress: () => {
+                                    removeGame(game.id);
+                                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                                  },
+                                },
+                              ]
+                            );
+                          }}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                  {/* Events - Grid on iPad */}
+                  <View className={isTablet && columns >= 2 ? 'flex-row flex-wrap' : ''} style={isTablet && columns >= 2 ? { marginHorizontal: -6 } : undefined}>
+                    {upcomingEvents.map((event, index) => (
+                      <View
+                        key={event.id}
+                        style={isTablet && columns >= 2 ? {
+                          width: columns >= 3 ? '33.33%' : '50%',
+                          paddingHorizontal: 6,
+                          marginBottom: 12
+                        } : undefined}
+                      >
+                        <SwipeableEventCard
+                          event={event}
+                          index={index}
+                          onPress={() => router.push(`/event/${event.id}`)}
+                          canDelete={canManageTeam()}
+                          onDelete={() => {
+                            Alert.alert(
+                              'Delete Event',
+                              `Are you sure you want to delete "${event.title}"?`,
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                  text: 'Delete',
+                                  style: 'destructive',
+                                  onPress: () => {
+                                    removeEvent(event.id);
+                                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                                  },
+                                },
+                              ]
+                            );
+                          }}
+                        />
+                      </View>
+                    ))}
+                  </View>
                 </>
               )}
             </>

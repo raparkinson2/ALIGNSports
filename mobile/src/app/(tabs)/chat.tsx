@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useTeamStore, ChatMessage, getPlayerName, getPlayerInitials, Player } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { useResponsive } from '@/lib/useResponsive';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { sendChatMentionNotification, sendChatMessageNotification } from '@/lib/notifications';
 
@@ -264,6 +265,9 @@ export default function ChatScreen() {
   const [showMentionPicker, setShowMentionPicker] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const [mentionStartIndex, setMentionStartIndex] = useState(-1);
+
+  // Responsive layout for iPad
+  const { isTablet, containerPadding } = useResponsive();
 
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
 
@@ -564,9 +568,9 @@ export default function ChatScreen() {
           {/* Messages */}
           <ScrollView
             ref={scrollViewRef}
-            className="flex-1 px-4"
+            className="flex-1"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingVertical: 16, flexGrow: 1 }}
+            contentContainerStyle={{ paddingVertical: 16, flexGrow: 1, paddingHorizontal: isTablet ? containerPadding : 16, maxWidth: isTablet ? 800 : undefined, alignSelf: isTablet ? 'center' as const : undefined, width: isTablet ? '100%' : undefined }}
           >
             {chatMessages.length === 0 ? (
               <View className="flex-1 items-center justify-center">
@@ -607,7 +611,7 @@ export default function ChatScreen() {
           </ScrollView>
 
           {/* Input Area */}
-          <View className="px-4 pb-4 pt-2 border-t border-slate-800 bg-slate-900/95" style={{ zIndex: 10 }}>
+          <View className="pb-4 pt-2 border-t border-slate-800 bg-slate-900/95" style={{ zIndex: 10, paddingHorizontal: isTablet ? containerPadding : 16, maxWidth: isTablet ? 800 : undefined, alignSelf: isTablet ? 'center' as const : undefined, width: isTablet ? '100%' : undefined }}>
             {/* Inline Mention Autocomplete */}
             {showMentionPicker && (
               <View

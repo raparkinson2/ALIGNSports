@@ -39,6 +39,7 @@ import {
   getPlayerName,
 } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { useResponsive } from '@/lib/useResponsive';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 
@@ -701,6 +702,9 @@ export default function PaymentsScreen() {
   // Payment info modal
   const [isPaymentInfoModalVisible, setIsPaymentInfoModalVisible] = useState(false);
 
+  // Responsive layout for iPad
+  const { isTablet, columns, containerPadding } = useResponsive();
+
   const paymentMethods = teamSettings.paymentMethods ?? [];
 
   const handleAddPaymentMethod = () => {
@@ -961,9 +965,9 @@ export default function PaymentsScreen() {
         </Animated.View>
 
         <ScrollView
-          className="flex-1 px-5"
+          className="flex-1"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
         >
           {/* Payment Methods Section */}
           <Animated.View entering={FadeInDown.delay(100).springify()}>
@@ -1063,11 +1067,15 @@ export default function PaymentsScreen() {
                   </Text>
                 </View>
               ) : (
-                <View className="mb-6">
+                <View className={cn('mb-6', isTablet && columns >= 2 && 'flex-row flex-wrap')} style={isTablet && columns >= 2 ? { marginHorizontal: -6 } : undefined}>
                   {paymentPeriods.map((period, index) => (
                     <Animated.View
                       key={period.id}
                       entering={FadeInDown.delay(200 + index * 50).springify()}
+                      style={isTablet && columns >= 2 ? {
+                        width: columns >= 3 ? '33.33%' : '50%',
+                        paddingHorizontal: 6
+                      } : undefined}
                     >
                       <SwipeablePaymentPeriodRow
                         period={period}

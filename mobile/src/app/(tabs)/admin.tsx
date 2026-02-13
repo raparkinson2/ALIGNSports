@@ -56,6 +56,7 @@ import {
   getPlayerName,
 } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { useResponsive } from '@/lib/useResponsive';
 import { formatPhoneNumber, formatPhoneInput, unformatPhone } from '@/lib/phone';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 
@@ -266,6 +267,9 @@ export default function AdminScreen() {
   // Delete team confirmation modal
   const [isDeleteTeamModalVisible, setIsDeleteTeamModalVisible] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  // Responsive layout for iPad
+  const { isTablet, columns, containerPadding } = useResponsive();
 
   // Jersey color form
   const [newColorName, setNewColorName] = useState('');
@@ -866,9 +870,9 @@ export default function AdminScreen() {
         </Animated.View>
 
         <ScrollView
-          className="flex-1 px-5"
+          className="flex-1"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
         >
           {/* Type Selection - Above Team Identity */}
           <Animated.View entering={FadeInDown.delay(50).springify()}>
