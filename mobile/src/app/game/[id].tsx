@@ -664,7 +664,7 @@ export default function GameDetailScreen() {
             <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
               <View className="p-5">
                 <Text className="text-white text-2xl font-bold text-center">
-                  vs {game.opponent}
+                  {teamName} vs {game.opponent}
                 </Text>
               </View>
             </View>
