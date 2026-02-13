@@ -1479,20 +1479,19 @@ export default function ScheduleScreen() {
             <ScrollView className="flex-1 px-5 pt-6">
               {/* Game/Practice/Event Toggle */}
               <View className="mb-5">
-                <View className="flex-row bg-slate-800 rounded-xl p-1">
+                <View className="flex-row bg-slate-800/80 rounded-xl p-1">
                   <Pressable
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setRecordType('game');
                     }}
                     className={cn(
-                      'flex-1 py-3 rounded-lg items-center',
-                      recordType === 'game' && 'bg-cyan-500/30'
+                      'flex-1 py-2.5 rounded-lg items-center',
+                      recordType === 'game' && 'bg-cyan-500'
                     )}
                   >
                     <Text className={cn(
-                      'font-semibold',
-                      recordType === 'game' ? 'text-cyan-400' : 'text-slate-400'
+                      recordType === 'game' ? 'text-white font-bold' : 'text-slate-400 font-medium'
                     )}>
                       Game
                     </Text>
@@ -1503,13 +1502,12 @@ export default function ScheduleScreen() {
                       setRecordType('practice');
                     }}
                     className={cn(
-                      'flex-1 py-3 rounded-lg items-center',
-                      recordType === 'practice' && 'bg-orange-500/30'
+                      'flex-1 py-2.5 rounded-lg items-center',
+                      recordType === 'practice' && 'bg-orange-500'
                     )}
                   >
                     <Text className={cn(
-                      'font-semibold',
-                      recordType === 'practice' ? 'text-orange-400' : 'text-slate-400'
+                      recordType === 'practice' ? 'text-white font-bold' : 'text-slate-400 font-medium'
                     )}>
                       Practice
                     </Text>
@@ -1520,13 +1518,12 @@ export default function ScheduleScreen() {
                       setRecordType('event');
                     }}
                     className={cn(
-                      'flex-1 py-3 rounded-lg items-center',
-                      recordType === 'event' && 'bg-blue-500/30'
+                      'flex-1 py-2.5 rounded-lg items-center',
+                      recordType === 'event' && 'bg-blue-500'
                     )}
                   >
                     <Text className={cn(
-                      'font-semibold',
-                      recordType === 'event' ? 'text-blue-400' : 'text-slate-400'
+                      recordType === 'event' ? 'text-white font-bold' : 'text-slate-400 font-medium'
                     )}>
                       Event
                     </Text>
@@ -1605,22 +1602,22 @@ export default function ScheduleScreen() {
                     className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg flex-1"
                     keyboardType="numbers-and-punctuation"
                   />
-                  <View className="flex-row ml-3">
+                  <View className="flex-row ml-2">
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setGameTimePeriod('AM');
                       }}
                       className={cn(
-                        'px-4 py-3 rounded-l-xl border-r-0',
+                        'px-3 py-3 rounded-l-xl',
                         gameTimePeriod === 'AM'
-                          ? 'bg-cyan-500/30 border border-cyan-500/50'
+                          ? 'bg-cyan-500'
                           : 'bg-slate-800 border border-slate-700'
                       )}
                     >
                       <Text className={cn(
-                        'font-semibold text-lg',
-                        gameTimePeriod === 'AM' ? 'text-cyan-400' : 'text-slate-400'
+                        'font-semibold',
+                        gameTimePeriod === 'AM' ? 'text-white' : 'text-slate-500'
                       )}>
                         AM
                       </Text>
@@ -1631,15 +1628,15 @@ export default function ScheduleScreen() {
                         setGameTimePeriod('PM');
                       }}
                       className={cn(
-                        'px-4 py-3 rounded-r-xl',
+                        'px-3 py-3 rounded-r-xl',
                         gameTimePeriod === 'PM'
-                          ? 'bg-cyan-500/30 border border-cyan-500/50'
+                          ? 'bg-cyan-500'
                           : 'bg-slate-800 border border-slate-700'
                       )}
                     >
                       <Text className={cn(
-                        'font-semibold text-lg',
-                        gameTimePeriod === 'PM' ? 'text-cyan-400' : 'text-slate-400'
+                        'font-semibold',
+                        gameTimePeriod === 'PM' ? 'text-white' : 'text-slate-500'
                       )}>
                         PM
                       </Text>
@@ -1662,8 +1659,8 @@ export default function ScheduleScreen() {
               {recordType === 'game' && (
                 <View className="mb-5">
                   <Text className="text-slate-400 text-sm mb-2">Jersey Color</Text>
-                  <View className="flex-row flex-wrap">
-                    {teamSettings.jerseyColors.map((color) => (
+                  <View className="flex-row bg-slate-800/80 rounded-xl p-1">
+                    {teamSettings.jerseyColors.map((color, index) => (
                       <Pressable
                         key={color.name}
                         onPress={() => {
@@ -1671,27 +1668,26 @@ export default function ScheduleScreen() {
                           setSelectedJersey(color.name);
                         }}
                         className={cn(
-                          'flex-row items-center px-4 py-3 rounded-xl mr-2 mb-2 border',
+                          'flex-1 flex-row items-center justify-center py-2.5 rounded-lg',
                           selectedJersey === color.name
-                            ? 'bg-cyan-500/20 border-cyan-500/50'
-                            : 'bg-slate-800 border-slate-700'
+                            ? 'bg-slate-700'
+                            : ''
                         )}
                       >
                         <View
-                          className="w-5 h-5 rounded-full mr-2 border border-white/30"
+                          className={cn(
+                            "w-4 h-4 rounded-full mr-1.5",
+                            selectedJersey === color.name ? "border-2 border-white" : "border border-white/30"
+                          )}
                           style={{ backgroundColor: color.color }}
                         />
                         <Text
                           className={cn(
-                            'font-medium',
-                            selectedJersey === color.name ? 'text-cyan-400' : 'text-slate-400'
+                            selectedJersey === color.name ? 'text-white font-bold' : 'text-slate-500 font-medium'
                           )}
                         >
                           {color.name}
                         </Text>
-                        {selectedJersey === color.name && (
-                          <Check size={16} color="#67e8f9" className="ml-2" />
-                        )}
                       </Pressable>
                     ))}
                   </View>
@@ -1713,7 +1709,7 @@ export default function ScheduleScreen() {
                     <Users size={20} color="#67e8f9" />
                     <View className="ml-3">
                       <Text className="text-white font-medium">Invite Players</Text>
-                      <Text className="text-slate-400 text-sm">
+                      <Text className="text-slate-300 text-sm">
                         {selectedPlayerIds.length === 0
                           ? 'All active players (default)'
                           : `${selectedPlayerIds.length} player${selectedPlayerIds.length !== 1 ? 's' : ''} selected`}
@@ -1864,21 +1860,21 @@ export default function ScheduleScreen() {
                       setShowInviteReleaseDatePicker(false);
                     }}
                     className={cn(
-                      'flex-row items-center p-3 rounded-xl mb-2 border',
+                      'flex-row items-center p-3 rounded-xl mb-2 border-2',
                       inviteReleaseOption === 'now'
-                        ? 'bg-green-500/20 border-green-500/50'
-                        : 'bg-slate-700/50 border-slate-600'
+                        ? 'bg-green-500/20 border-green-500'
+                        : 'bg-slate-800/50 border-transparent'
                     )}
                   >
                     <Send size={18} color={inviteReleaseOption === 'now' ? '#22c55e' : '#64748b'} />
                     <View className="ml-3 flex-1">
                       <Text className={cn(
                         'font-medium',
-                        inviteReleaseOption === 'now' ? 'text-green-400' : 'text-slate-400'
+                        inviteReleaseOption === 'now' ? 'text-green-400' : 'text-slate-500'
                       )}>
                         Release invites now
                       </Text>
-                      <Text className="text-slate-500 text-xs mt-0.5">
+                      <Text className={cn('text-xs mt-0.5', inviteReleaseOption === 'now' ? 'text-slate-400' : 'text-slate-600')}>
                         Players will be notified immediately
                       </Text>
                     </View>
@@ -1894,21 +1890,21 @@ export default function ScheduleScreen() {
                       setShowInviteReleaseDatePicker(true);
                     }}
                     className={cn(
-                      'flex-row items-center p-3 rounded-xl mb-2 border',
+                      'flex-row items-center p-3 rounded-xl mb-2 border-2',
                       inviteReleaseOption === 'scheduled'
-                        ? 'bg-cyan-500/20 border-cyan-500/50'
-                        : 'bg-slate-700/50 border-slate-600'
+                        ? 'bg-cyan-500/20 border-cyan-500'
+                        : 'bg-slate-800/50 border-transparent'
                     )}
                   >
                     <Bell size={18} color={inviteReleaseOption === 'scheduled' ? '#22d3ee' : '#64748b'} />
                     <View className="ml-3 flex-1">
                       <Text className={cn(
                         'font-medium',
-                        inviteReleaseOption === 'scheduled' ? 'text-cyan-400' : 'text-slate-400'
+                        inviteReleaseOption === 'scheduled' ? 'text-cyan-400' : 'text-slate-500'
                       )}>
                         Schedule release
                       </Text>
-                      <Text className="text-slate-500 text-xs mt-0.5">
+                      <Text className={cn('text-xs mt-0.5', inviteReleaseOption === 'scheduled' ? 'text-slate-400' : 'text-slate-600')}>
                         Choose when to notify players
                       </Text>
                     </View>
@@ -2011,14 +2007,14 @@ export default function ScheduleScreen() {
               <View className="mb-5">
                 <View className="flex-row items-center justify-between bg-slate-800 rounded-xl p-4">
                   <View className="flex-row items-center">
-                    <Beer size={20} color="#f59e0b" />
+                    <Beer size={20} color="#22d3ee" />
                     <Text className="text-white font-medium ml-3">Refreshment Duty</Text>
                   </View>
                   <Switch
                     value={showBeerDuty}
                     onValueChange={setShowBeerDuty}
-                    trackColor={{ false: '#334155', true: '#f59e0b40' }}
-                    thumbColor={showBeerDuty ? '#f59e0b' : '#64748b'}
+                    trackColor={{ false: '#334155', true: '#22d3ee40' }}
+                    thumbColor={showBeerDuty ? '#22d3ee' : '#64748b'}
                   />
                 </View>
 
@@ -2029,16 +2025,16 @@ export default function ScheduleScreen() {
                       <Pressable
                         onPress={() => setSelectedBeerDutyPlayer(null)}
                         className={cn(
-                          'px-4 py-2 rounded-xl mr-2 border items-center justify-center',
+                          'px-4 py-2 rounded-xl mr-2 items-center justify-center',
                           selectedBeerDutyPlayer === null
-                            ? 'bg-amber-500/20 border-amber-500/50'
-                            : 'bg-slate-800 border-slate-700'
+                            ? 'bg-cyan-500'
+                            : 'bg-slate-800 border border-slate-700'
                         )}
                         style={{ height: 40 }}
                       >
                         <Text className={cn(
                           'font-medium',
-                          selectedBeerDutyPlayer === null ? 'text-amber-400' : 'text-slate-400'
+                          selectedBeerDutyPlayer === null ? 'text-slate-900' : 'text-slate-400'
                         )}>
                           None
                         </Text>
@@ -2051,16 +2047,16 @@ export default function ScheduleScreen() {
                             setSelectedBeerDutyPlayer(player.id);
                           }}
                           className={cn(
-                            'flex-row items-center px-3 py-2 rounded-xl mr-2 border',
+                            'flex-row items-center px-3 py-2 rounded-xl mr-2',
                             selectedBeerDutyPlayer === player.id
-                              ? 'bg-amber-500/20 border-amber-500/50'
-                              : 'bg-slate-800 border-slate-700'
+                              ? 'bg-cyan-500'
+                              : 'bg-slate-800 border border-slate-700'
                           )}
                         >
                           <PlayerAvatar player={player} size={24} />
                           <Text className={cn(
                             'font-medium ml-2',
-                            selectedBeerDutyPlayer === player.id ? 'text-amber-400' : 'text-slate-400'
+                            selectedBeerDutyPlayer === player.id ? 'text-slate-900' : 'text-slate-400'
                           )}>
                             {player.firstName}
                           </Text>
@@ -2082,9 +2078,9 @@ export default function ScheduleScreen() {
                   placeholderTextColor="#64748b"
                   autoCapitalize="sentences"
                   multiline
-                  numberOfLines={3}
+                  numberOfLines={4}
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                  style={{ minHeight: 80, textAlignVertical: 'top' }}
+                  style={{ minHeight: 100, textAlignVertical: 'top' }}
                 />
               </View>
             </ScrollView>
