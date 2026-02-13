@@ -513,10 +513,10 @@ function SwipeablePaymentPeriodRow({
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     onEditAmount();
                   }}
-                  className="ml-3 bg-green-500/20 rounded-lg px-2.5 py-1.5 flex-row items-center"
+                  className="ml-3 rounded-lg px-2 py-1 flex-row items-center"
                 >
-                  <Edit3 size={14} color="#22c55e" />
-                  <Text className="text-green-400 text-xs font-medium ml-1">Edit</Text>
+                  <Edit3 size={12} color="#64748b" />
+                  <Text className="text-slate-400 text-xs ml-1">Edit</Text>
                 </Pressable>
               )}
             </View>
