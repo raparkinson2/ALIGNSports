@@ -181,12 +181,15 @@ interface PlayerPaymentRowProps {
   totalAmount: number;
   periodType: PaymentPeriodType;
   onPress: () => void;
+  isOverdue?: boolean;
+  daysOverdue?: number;
 }
 
-function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType, onPress }: PlayerPaymentRowProps) {
+function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType, onPress, isOverdue, daysOverdue }: PlayerPaymentRowProps) {
   const balance = totalAmount - (paidAmount ?? 0);
   const isDuesType = periodType === 'dues';
   const progressPercent = totalAmount > 0 ? Math.min(100, ((paidAmount ?? 0) / totalAmount) * 100) : 0;
+  const showOverdue = isOverdue && status !== 'paid';
 
   // For non-dues types, show amount paid instead of balance
   const getStatusText = () => {
@@ -194,7 +197,7 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
       // Dues: show balance remaining
       if (status === 'paid') return `Paid $${paidAmount ?? totalAmount}`;
       if (status === 'partial') return `$${paidAmount ?? 0} paid - $${balance} remaining`;
-      return `$${totalAmount} due`;
+      return `$${totalAmount} remaining`;
     } else {
       // Non-dues: show amount contributed
       if (paidAmount && paidAmount > 0) return `$${paidAmount} paid`;
@@ -205,7 +208,10 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
   // For non-dues types, different styling logic
   const getBackgroundClass = () => {
     if (isDuesType) {
-      return status === 'paid' ? 'bg-green-500/20' : status === 'partial' ? 'bg-amber-500/20' : 'bg-slate-800/60';
+      if (status === 'paid') return 'bg-green-500/20';
+      if (showOverdue) return 'bg-red-500/20';
+      if (status === 'partial') return 'bg-amber-500/20';
+      return 'bg-slate-800/60';
     } else {
       // For non-dues, highlight if they've paid anything
       return (paidAmount && paidAmount > 0) ? 'bg-green-500/20' : 'bg-slate-800/60';
@@ -214,7 +220,10 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
 
   const getTextClass = () => {
     if (isDuesType) {
-      return status === 'paid' ? 'text-green-400' : status === 'partial' ? 'text-amber-400' : 'text-slate-400';
+      if (status === 'paid') return 'text-green-400';
+      if (showOverdue) return 'text-red-400';
+      if (status === 'partial') return 'text-amber-400';
+      return 'text-slate-400';
     } else {
       return (paidAmount && paidAmount > 0) ? 'text-green-400' : 'text-slate-400';
     }
@@ -230,7 +239,16 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
     >
       <PlayerAvatar player={player} size={44} />
       <View className="flex-1 ml-3">
-        <Text className="text-white font-medium text-base">{getPlayerName(player)}</Text>
+        <View className="flex-row items-center">
+          <Text className="text-white font-medium text-base">{getPlayerName(player)}</Text>
+          {showOverdue && (
+            <View className="ml-2 bg-red-500 rounded px-1.5 py-0.5">
+              <Text className="text-white text-xs font-semibold">
+                {daysOverdue === 0 ? 'Due Today' : `${daysOverdue}d overdue`}
+              </Text>
+            </View>
+          )}
+        </View>
         <Text className={cn('text-sm mt-0.5', getTextClass())}>
           {getStatusText()}
         </Text>
@@ -238,7 +256,7 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
         {isDuesType && status === 'partial' && (
           <View className="w-full h-1.5 bg-slate-700 rounded-full mt-2 overflow-hidden">
             <View
-              className="h-full bg-amber-500 rounded-full"
+              className={cn("h-full rounded-full", showOverdue ? "bg-red-500" : "bg-amber-500")}
               style={{ width: `${progressPercent}%` }}
             />
           </View>
@@ -249,6 +267,8 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
         {isDuesType ? (
           status === 'paid' ? (
             <CheckCircle2 size={28} color="#22c55e" />
+          ) : showOverdue ? (
+            <AlertCircle size={28} color="#ef4444" />
           ) : status === 'partial' ? (
             <AlertCircle size={28} color="#f59e0b" />
           ) : (
@@ -1878,30 +1898,51 @@ export default function PaymentsScreen() {
                       )}
                     </View>
 
-                    {selectedPeriod.playerPayments.map((pp) => {
-                      const player = players.find((p) => p.id === pp.playerId);
-                      if (!player) return null;
+                    {(() => {
+                      // Calculate overdue info
+                      const isOverdue = selectedPeriod.dueDate ? differenceInDays(new Date(), parseISO(selectedPeriod.dueDate)) > 0 : false;
+                      const daysOverdue = selectedPeriod.dueDate ? Math.max(0, differenceInDays(new Date(), parseISO(selectedPeriod.dueDate))) : 0;
 
-                      // Only show players the current user can view
-                      if (!canViewPlayerDetails(pp.playerId)) return null;
+                      // Group players by status: partial/owing first, unpaid second, paid last
+                      const groupedPayments = [...selectedPeriod.playerPayments]
+                        .filter(pp => {
+                          const player = players.find(p => p.id === pp.playerId);
+                          return player && canViewPlayerDetails(pp.playerId);
+                        })
+                        .sort((a, b) => {
+                          // Sort order: partial (1), unpaid (2), paid (3)
+                          const getOrder = (status: string) => {
+                            if (status === 'partial') return 1;
+                            if (status === 'unpaid') return 2;
+                            return 3; // paid
+                          };
+                          return getOrder(a.status) - getOrder(b.status);
+                        });
 
-                      return (
-                        <SwipeablePlayerPaymentRow
-                          key={pp.playerId}
-                          player={player}
-                          status={pp.status}
-                          paidAmount={pp.amount}
-                          totalAmount={selectedPeriod.amount}
-                          periodType={selectedPeriod.type ?? 'dues'}
-                          onPress={() => {
-                            setSelectedPlayerId(pp.playerId);
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          }}
-                          canDelete={isAdmin()}
-                          onDelete={() => handleRemovePlayerFromPeriod(pp.playerId)}
-                        />
-                      );
-                    })}
+                      return groupedPayments.map((pp) => {
+                        const player = players.find((p) => p.id === pp.playerId);
+                        if (!player) return null;
+
+                        return (
+                          <SwipeablePlayerPaymentRow
+                            key={pp.playerId}
+                            player={player}
+                            status={pp.status}
+                            paidAmount={pp.amount}
+                            totalAmount={selectedPeriod.amount}
+                            periodType={selectedPeriod.type ?? 'dues'}
+                            isOverdue={isOverdue}
+                            daysOverdue={daysOverdue}
+                            onPress={() => {
+                              setSelectedPlayerId(pp.playerId);
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            }}
+                            canDelete={isAdmin()}
+                            onDelete={() => handleRemovePlayerFromPeriod(pp.playerId)}
+                          />
+                        );
+                      });
+                    })()}
                   </ScrollView>
                 )}
               </>
