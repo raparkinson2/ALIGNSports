@@ -658,25 +658,9 @@ export default function GameDetailScreen() {
           >
             <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
               <View className="p-5">
-                <Text className="text-white text-2xl font-bold mb-1">
+                <Text className="text-white text-2xl font-bold text-center">
                   vs {game.opponent}
                 </Text>
-                <Text className="text-cyan-400 text-lg">
-                  {format(parseISO(game.date), 'EEEE, MMMM d')}
-                </Text>
-
-                <View className="flex-row mt-4">
-                  <View className="flex-row items-center mr-6">
-                    <Clock size={16} color="#67e8f9" />
-                    <Text className="text-white ml-2 font-medium">{game.time}</Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <Users size={16} color="#22c55e" />
-                    <Text className="text-green-400 ml-2 font-medium">
-                      {checkedInCount}/{invitedPlayers.length} In
-                    </Text>
-                  </View>
-                </View>
               </View>
             </View>
           </Animated.View>
