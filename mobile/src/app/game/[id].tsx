@@ -245,8 +245,19 @@ export default function GameDetailScreen() {
   }
 
   const checkedInCount = game.checkedInPlayers?.length ?? 0;
+  const checkedOutCount = game.checkedOutPlayers?.length ?? 0;
+  const pendingCount = (game.invitedPlayers?.length ?? 0) - checkedInCount - checkedOutCount;
   const checkedInPlayers = players.filter((p) => game.checkedInPlayers?.includes(p.id));
   const invitedPlayers = players.filter((p) => game.invitedPlayers?.includes(p.id));
+
+  // Sort invited players: checked in first, then pending, then checked out
+  const sortedInvitedPlayers = [...invitedPlayers].sort((a, b) => {
+    const statusOrder = { in: 0, none: 1, out: 2 };
+    const aStatus = game.checkedInPlayers?.includes(a.id) ? 'in' : game.checkedOutPlayers?.includes(a.id) ? 'out' : 'none';
+    const bStatus = game.checkedInPlayers?.includes(b.id) ? 'in' : game.checkedOutPlayers?.includes(b.id) ? 'out' : 'none';
+    return statusOrder[aStatus] - statusOrder[bStatus];
+  });
+
   const uninvitedPlayers = players.filter((p) => !game.invitedPlayers?.includes(p.id));
   const uninvitedActive = uninvitedPlayers.filter((p) => p.status === 'active');
   const uninvitedReserve = uninvitedPlayers.filter((p) => p.status === 'reserve');
@@ -1703,6 +1714,22 @@ export default function GameDetailScreen() {
               )}
             </View>
 
+            {/* RSVP Stats */}
+            <View className="flex-row mb-4">
+              <View className="flex-1 bg-green-500/20 rounded-xl p-3 mr-2 items-center">
+                <Text className="text-green-400 text-2xl font-bold">{checkedInCount}</Text>
+                <Text className="text-green-400/70 text-xs">Confirmed</Text>
+              </View>
+              <View className="flex-1 bg-slate-700/50 rounded-xl p-3 mx-1 items-center">
+                <Text className="text-slate-300 text-2xl font-bold">{pendingCount}</Text>
+                <Text className="text-slate-400 text-xs">Pending</Text>
+              </View>
+              <View className="flex-1 bg-red-500/20 rounded-xl p-3 ml-2 items-center">
+                <Text className="text-red-400 text-2xl font-bold">{checkedOutCount}</Text>
+                <Text className="text-red-400/70 text-xs">Declined</Text>
+              </View>
+            </View>
+
             {/* Instruction note */}
             <View className="bg-slate-700/30 rounded-xl px-3 py-2.5 mb-3 border border-slate-600/30">
               <Text className="text-slate-400 text-xs text-center">
@@ -1711,7 +1738,7 @@ export default function GameDetailScreen() {
             </View>
 
             <View className="bg-slate-800/50 rounded-2xl p-3 border border-slate-700/50">
-              {invitedPlayers.map((player, index) => {
+              {sortedInvitedPlayers.map((player, index) => {
                 const isSelf = player.id === currentPlayerId;
                 // Admins and captains can toggle anyone, regular players can only toggle themselves
                 const canToggle = canManageTeam() || isSelf;
@@ -1728,7 +1755,7 @@ export default function GameDetailScreen() {
                   />
                 );
               })}
-              {invitedPlayers.length === 0 && (
+              {sortedInvitedPlayers.length === 0 && (
                 <Text className="text-slate-400 text-center py-4">
                   No players invited yet
                 </Text>

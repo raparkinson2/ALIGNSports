@@ -149,6 +149,14 @@ export default function EventDetailScreen() {
   const confirmedPlayers = event.confirmedPlayers || [];
   const declinedPlayers = event.declinedPlayers || [];
 
+  // Sort invited players: confirmed first, then pending, then declined
+  const sortedInvitedPlayers = [...invitedPlayers].sort((a, b) => {
+    const statusOrder = { confirmed: 0, none: 1, declined: 2 };
+    const aStatus = confirmedPlayers.includes(a.id) ? 'confirmed' : declinedPlayers.includes(a.id) ? 'declined' : 'none';
+    const bStatus = confirmedPlayers.includes(b.id) ? 'confirmed' : declinedPlayers.includes(b.id) ? 'declined' : 'none';
+    return statusOrder[aStatus] - statusOrder[bStatus];
+  });
+
   const getPlayerStatus = (playerId: string): 'confirmed' | 'declined' | 'none' => {
     if (confirmedPlayers.includes(playerId)) return 'confirmed';
     if (declinedPlayers.includes(playerId)) return 'declined';
@@ -490,10 +498,10 @@ export default function EventDetailScreen() {
 
               {/* Player List */}
               <View className="bg-slate-800/50 rounded-2xl p-4">
-                {invitedPlayers.length === 0 ? (
+                {sortedInvitedPlayers.length === 0 ? (
                   <Text className="text-slate-400 text-center py-4">No players invited</Text>
                 ) : (
-                  invitedPlayers.map((player, index) => {
+                  sortedInvitedPlayers.map((player, index) => {
                     const status = getPlayerStatus(player.id);
                     const isSelf = player.id === currentPlayerId;
                     // Players can toggle their own status, admins can toggle anyone
