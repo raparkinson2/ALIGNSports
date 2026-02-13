@@ -21,6 +21,7 @@ import {
   GripVertical,
   ChevronUp,
   ChevronDown,
+  Info,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, useAnimatedStyle, useSharedValue, withSpring, runOnJS } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -672,6 +673,9 @@ export default function PaymentsScreen() {
   // Add player to period modal
   const [isAddPlayerModalVisible, setIsAddPlayerModalVisible] = useState(false);
 
+  // Payment info modal
+  const [isPaymentInfoModalVisible, setIsPaymentInfoModalVisible] = useState(false);
+
   const paymentMethods = teamSettings.paymentMethods ?? [];
 
   const handleAddPaymentMethod = () => {
@@ -989,6 +993,16 @@ export default function PaymentsScreen() {
                 <View className="flex-row items-center">
                   <Users size={16} color="#a78bfa" />
                   <Text className="text-purple-400 font-semibold ml-2">Payment Tracking</Text>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setIsPaymentInfoModalVisible(true);
+                    }}
+                    className="ml-2 p-1.5"
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Info size={16} color="#94a3b8" />
+                  </Pressable>
                 </View>
                 <View className="flex-row items-center">
                   {isAdmin() && paymentPeriods.length > 1 && (
@@ -2183,6 +2197,65 @@ export default function PaymentsScreen() {
             </View>
           </SafeAreaView>
         </View>
+      </Modal>
+
+      {/* Payment Info Modal */}
+      <Modal
+        visible={isPaymentInfoModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsPaymentInfoModalVisible(false)}
+      >
+        <Pressable
+          className="flex-1 bg-black/70 justify-center items-center px-6"
+          onPress={() => setIsPaymentInfoModalVisible(false)}
+        >
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm"
+          >
+            <View className="flex-row items-center mb-4">
+              <Info size={20} color="#a78bfa" />
+              <Text className="text-white font-bold text-lg ml-2">Payment Tracking Notice</Text>
+            </View>
+
+            <Text className="text-slate-300 text-sm mb-4">
+              ALIGN tracks team balances for record-keeping purposes only. Payments are not processed within the app.
+            </Text>
+
+            <Text className="text-slate-300 text-sm mb-4">
+              All payments are handled externally (for example, through Venmo or other payment platforms). Any payment links provided are for convenience only.
+            </Text>
+
+            <Text className="text-slate-400 text-sm font-medium mb-2">
+              ALIGN does not collect, process, or store:
+            </Text>
+            <View className="mb-4 ml-2">
+              <Text className="text-slate-400 text-sm">• Credit or debit card numbers</Text>
+              <Text className="text-slate-400 text-sm">• Bank account information</Text>
+              <Text className="text-slate-400 text-sm">• Payment login credentials</Text>
+              <Text className="text-slate-400 text-sm">• Payer financial details</Text>
+            </View>
+
+            <Text className="text-slate-300 text-sm mb-4">
+              If a payment method is added, only the payee's public username (e.g., Venmo handle) is stored. This can be removed at any time in the Payments section of the app.
+            </Text>
+
+            <Text className="text-slate-400 text-sm italic mb-4">
+              Payer details are never tracked or saved by ALIGN.
+            </Text>
+
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsPaymentInfoModalVisible(false);
+              }}
+              className="bg-purple-500 py-3 rounded-xl items-center active:bg-purple-600"
+            >
+              <Text className="text-white font-semibold">Got it</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
