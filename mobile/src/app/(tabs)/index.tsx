@@ -2025,10 +2025,10 @@ export default function ScheduleScreen() {
                       <Pressable
                         onPress={() => setSelectedBeerDutyPlayer(null)}
                         className={cn(
-                          'px-4 py-2 rounded-xl mr-2 items-center justify-center',
+                          'px-4 py-2 rounded-xl mr-2 items-center justify-center border',
                           selectedBeerDutyPlayer === null
-                            ? 'bg-cyan-500'
-                            : 'bg-slate-800 border border-slate-700'
+                            ? 'bg-cyan-500 border-cyan-500'
+                            : 'bg-slate-800 border-slate-700'
                         )}
                         style={{ height: 40 }}
                       >
@@ -2047,10 +2047,10 @@ export default function ScheduleScreen() {
                             setSelectedBeerDutyPlayer(player.id);
                           }}
                           className={cn(
-                            'flex-row items-center px-3 py-2 rounded-xl mr-2',
+                            'flex-row items-center px-3 py-2 rounded-xl mr-2 border',
                             selectedBeerDutyPlayer === player.id
-                              ? 'bg-cyan-500'
-                              : 'bg-slate-800 border border-slate-700'
+                              ? 'bg-cyan-500 border-cyan-500'
+                              : 'bg-slate-800 border-slate-700'
                           )}
                         >
                           <PlayerAvatar player={player} size={24} />
