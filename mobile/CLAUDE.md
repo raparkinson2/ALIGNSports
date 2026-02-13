@@ -69,15 +69,22 @@
   React Query for server/async state. Always use object API: `useQuery({ queryKey, queryFn })`.
   Never wrap RootLayoutNav directly.
   React Query provider must be outermost; nest other providers inside it.
-  
+
   Use `useMutation` for async operations — no manual `setIsLoading` patterns.
   Wrap third-party lib calls (RevenueCat, etc.) in useQuery/useMutation for consistent loading states.
   Reuse query keys across components to share cached data — don't create duplicate providers.
-  
+
   For local state, use Zustand. However, most state is server state, so use React Query for that.
   Always use a selector with Zustand to subscribe only to the specific slice of state you need (e.g., useStore(s => s.foo)) rather than the whole store to prevent unnecessary re-renders. Make sure that the value returned by the selector is a primitive. Do not execute store methods in selectors; select data/functions, then compute outside the selector.
   For persistence: use AsyncStorage inside context hook providers. Only persist necessary data.
   Split ephemeral from persisted state to avoid hydration bugs.
+
+  <data_preservation>
+    CRITICAL: When using Zustand persist middleware with a version number, ALWAYS include a migrate function.
+    Without migrate, bumping the version will WIPE ALL USER DATA!
+    The migrate function in src/lib/store.ts preserves user accounts, teams, and all data during app updates.
+    NEVER remove the migrate function or bump versions without ensuring data migration is handled.
+  </data_preservation>
 </state>
 
 <safearea>

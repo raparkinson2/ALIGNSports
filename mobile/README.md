@@ -313,6 +313,12 @@ When players tap a payment method:
 - React Native Reanimated for animations
 - Lucide icons
 
+## Data Persistence & Updates
+- All user data (accounts, teams, players, games, etc.) is stored locally using AsyncStorage
+- **Data Migration**: The app includes a migration system that preserves all user data during app updates
+- When the app is updated, your accounts, teams, and all data are automatically preserved
+- The Zustand store uses versioned persistence with a migrate function to handle schema changes safely
+
 ## Design
 - Dark theme with ice blue (#67e8f9) accents
 - Green accents (#22c55e) for payments

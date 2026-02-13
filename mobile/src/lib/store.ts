@@ -2245,6 +2245,19 @@ export const useTeamStore = create<TeamStore>()(
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
       version: 11, // Bumped version for multi-team support
+      // Migration function to preserve user data during app updates
+      // CRITICAL: Without this, version changes would reset all user data!
+      migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as Record<string, unknown>;
+
+        // Always preserve existing data - just add any new fields with defaults
+        // This ensures users never lose their data during updates
+        console.log(`Migrating store from version ${version} to version 11`);
+
+        // Return the existing state - Zustand will merge with defaults
+        // Any new fields not in persisted state will use initial values
+        return state;
+      },
       // Persist login state so users stay logged in
       // Also sync active team data back to teams array
       partialize: (state) => {
@@ -2405,6 +2418,12 @@ export const useCreateTeamFormStore = create<CreateTeamFormState>()(
       name: 'create-team-form-storage',
       storage: createJSONStorage(() => AsyncStorage),
       version: 1,
+      // Migration function to preserve form data during app updates
+      migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as Record<string, unknown>;
+        console.log(`Migrating create-team-form from version ${version} to version 1`);
+        return state;
+      },
     }
   )
 );
