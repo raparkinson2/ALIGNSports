@@ -1703,22 +1703,22 @@ export default function GameDetailScreen() {
               entering={FadeInUp.delay(155).springify()}
               className="mx-4 mb-3"
             >
-              <View className="flex-row items-center justify-center py-2 px-3 bg-slate-800/40 rounded-xl">
-                <Calendar size={14} color="#64748b" />
-                <Text className="text-slate-500 text-xs ml-1.5">Invite Release:</Text>
+              <View className="flex-row items-center justify-center py-2.5 px-3 bg-slate-800/40 rounded-xl">
+                <Calendar size={14} color="#67e8f9" />
+                <Text className="text-cyan-400 text-sm ml-1.5">Invite Release:</Text>
                 {game.invitesSent ? (
                   <View className="flex-row items-center ml-1.5">
-                    <Check size={12} color="#22c55e" />
-                    <Text className="text-green-400 text-xs ml-1">Invites sent</Text>
+                    <Check size={14} color="#22c55e" />
+                    <Text className="text-green-400 text-sm ml-1">Invites sent</Text>
                   </View>
                 ) : game.inviteReleaseOption === 'scheduled' && game.inviteReleaseDate ? (
-                  <Text className="text-amber-400 text-xs ml-1.5">
+                  <Text className="text-amber-400 text-sm ml-1.5">
                     Scheduled {format(parseISO(game.inviteReleaseDate), 'MMM d, h:mm a')}
                   </Text>
                 ) : game.inviteReleaseOption === 'none' ? (
-                  <Text className="text-slate-400 text-xs ml-1.5">Not scheduled</Text>
+                  <Text className="text-slate-400 text-sm ml-1.5">Not scheduled</Text>
                 ) : (
-                  <Text className="text-green-400 text-xs ml-1.5">Ready to send</Text>
+                  <Text className="text-green-400 text-sm ml-1.5">Ready to send</Text>
                 )}
               </View>
             </Animated.View>
