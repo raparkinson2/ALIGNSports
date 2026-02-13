@@ -663,7 +663,12 @@ export default function GameDetailScreen() {
           >
             <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
               <View className="p-5">
-                <Text className="text-white text-2xl font-bold text-center">
+                <Text
+                  className="text-white text-2xl font-bold text-center"
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                >
                   {teamName} vs {game.opponent}
                 </Text>
               </View>
