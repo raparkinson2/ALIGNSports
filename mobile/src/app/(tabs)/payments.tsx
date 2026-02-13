@@ -1309,7 +1309,7 @@ export default function PaymentsScreen() {
               {/* Payment Type Selector */}
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Payment Type</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
+                <View className="flex-row flex-wrap gap-2">
                   {([
                     { value: 'league_dues', label: 'League Dues' },
                     { value: 'substitute', label: 'Substitute' },
@@ -1326,7 +1326,7 @@ export default function PaymentsScreen() {
                         setPeriodType(option.value);
                       }}
                       className={cn(
-                        'px-4 py-2.5 rounded-xl mr-2 border',
+                        'px-4 py-2.5 rounded-xl border',
                         periodType === option.value
                           ? 'bg-cyan-500/20 border-cyan-500/50'
                           : 'bg-slate-800 border-slate-700'
@@ -1342,7 +1342,7 @@ export default function PaymentsScreen() {
                       </Text>
                     </Pressable>
                   ))}
-                </ScrollView>
+                </View>
                 <Text className="text-slate-500 text-xs mt-2">
                   {periodType === 'league_dues'
                     ? 'Dues track balance remaining until fully paid'
