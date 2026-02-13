@@ -194,9 +194,9 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
   // For non-dues types, show amount paid instead of balance
   const getStatusText = () => {
     if (isDuesType) {
-      // Dues: show balance remaining
+      // Dues: show balance remaining (emphasis on remaining)
       if (status === 'paid') return `Paid $${paidAmount ?? totalAmount}`;
-      if (status === 'partial') return `$${paidAmount ?? 0} paid - $${balance} remaining`;
+      if (status === 'partial') return `$${balance} remaining · $${paidAmount ?? 0} paid`;
       return `$${totalAmount} remaining`;
     } else {
       // Non-dues: show amount contributed
@@ -1880,7 +1880,7 @@ export default function PaymentsScreen() {
                       </View>
                     )}
 
-                    <View className="flex-row items-center justify-between mb-3">
+                    <View className="flex-row items-center justify-between mb-3 mt-4">
                       <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
                         Players ({selectedPeriod.playerPayments.length})
                       </Text>
