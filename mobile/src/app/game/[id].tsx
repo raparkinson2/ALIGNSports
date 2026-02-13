@@ -690,7 +690,13 @@ export default function GameDetailScreen() {
                   <Clock size={16} color="#67e8f9" />
                   <Text className="text-slate-400 text-xs ml-2">Time</Text>
                 </View>
-                <Text className="text-white font-semibold">{game.time}</Text>
+                <View className="flex-row items-center">
+                  <Text className="text-white font-semibold">{game.time}</Text>
+                  <View className="flex-row items-center ml-3">
+                    <JerseyIcon size={16} color={jerseyColorHex} />
+                    <Text className="text-slate-300 text-sm ml-1">{jerseyColorName}</Text>
+                  </View>
+                </View>
               </View>
             </View>
           </Animated.View>
