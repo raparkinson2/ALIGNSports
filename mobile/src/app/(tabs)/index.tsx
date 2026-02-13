@@ -149,9 +149,10 @@ interface GameCardProps {
   onPress: () => void;
   onViewLines: () => void;
   skipAnimation?: boolean;
+  hideDateBadge?: boolean;
 }
 
-function GameCard({ game, index, onPress, onViewLines, skipAnimation = false }: GameCardProps) {
+function GameCard({ game, index, onPress, onViewLines, skipAnimation = false, hideDateBadge = false }: GameCardProps) {
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const players = useTeamStore((s) => s.players);
   const checkedInCount = game.checkedInPlayers?.length ?? 0;
@@ -195,11 +196,13 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false }: 
           {/* Date Badge & Opponent */}
           <View className="flex-row items-center justify-between mb-2">
             <View className="flex-row items-center">
-              <View className="bg-cyan-500/20 px-2.5 py-0.5 rounded-full mr-2">
-                <Text className="text-cyan-400 text-xs font-semibold">
-                  {getDateLabel(game.date)}
-                </Text>
-              </View>
+              {!hideDateBadge && (
+                <View className="bg-cyan-500/20 px-2.5 py-0.5 rounded-full mr-2">
+                  <Text className="text-cyan-400 text-xs font-semibold">
+                    {getDateLabel(game.date)}
+                  </Text>
+                </View>
+              )}
               <Text className="text-white text-lg font-bold">vs {game.opponent}</Text>
             </View>
             <ChevronRight size={18} color="#64748b" />
@@ -414,9 +417,10 @@ interface EventCardProps {
   index: number;
   onPress: () => void;
   skipAnimation?: boolean;
+  hideDateBadge?: boolean;
 }
 
-function EventCard({ event, index, onPress, skipAnimation = false }: EventCardProps) {
+function EventCard({ event, index, onPress, skipAnimation = false, hideDateBadge = false }: EventCardProps) {
   const confirmedCount = event.confirmedPlayers?.length ?? 0;
   const declinedCount = event.declinedPlayers?.length ?? 0;
   const invitedCount = event.invitedPlayers?.length ?? 0;
@@ -445,11 +449,13 @@ function EventCard({ event, index, onPress, skipAnimation = false }: EventCardPr
           {/* Date Badge & Event Title */}
           <View className="flex-row items-center justify-between mb-2">
             <View className="flex-row items-center flex-1">
-              <View className={cn(badgeBgClass, 'px-2.5 py-0.5 rounded-full mr-2')}>
-                <Text className={cn(badgeTextClass, 'text-xs font-semibold')}>
-                  {getDateLabel(event.date)}
-                </Text>
-              </View>
+              {!hideDateBadge && (
+                <View className={cn(badgeBgClass, 'px-2.5 py-0.5 rounded-full mr-2')}>
+                  <Text className={cn(badgeTextClass, 'text-xs font-semibold')}>
+                    {getDateLabel(event.date)}
+                  </Text>
+                </View>
+              )}
               <Text className="text-white text-lg font-bold flex-1" numberOfLines={1}>
                 {event.title}
               </Text>
@@ -832,6 +838,7 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
                 onPress={() => onSelectGame(game)}
                 onViewLines={() => onViewLines(game)}
                 skipAnimation
+                hideDateBadge
               />
             ))}
             {/* Practices */}
@@ -842,6 +849,7 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
                 index={index}
                 onPress={() => onSelectEvent(practice)}
                 skipAnimation
+                hideDateBadge
               />
             ))}
             {/* Events */}
@@ -852,6 +860,7 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
                 index={index}
                 onPress={() => onSelectEvent(event)}
                 skipAnimation
+                hideDateBadge
               />
             ))}
           </View>
