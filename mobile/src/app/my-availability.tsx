@@ -221,9 +221,9 @@ export default function MyAvailabilityScreen() {
           {/* Explanatory Text */}
           <Animated.View entering={FadeInDown.delay(80).springify()} className="mb-4">
             <Text className="text-slate-300 text-sm text-center leading-5">
-              You'll automatically be marked <Text className="text-red-400 font-semibold">Out</Text> for events on these dates.
+              You'll automatically be marked <Text className="text-red-400 font-bold">Out</Text> for events on these dates.
             </Text>
-            <Text className="text-slate-500 text-xs text-center mt-1">
+            <Text className="text-slate-400 text-xs text-center mt-1">
               You can manually change your RSVP for any event.
             </Text>
           </Animated.View>
