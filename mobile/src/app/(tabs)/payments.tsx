@@ -509,6 +509,11 @@ function SwipeablePaymentPeriodRow({
                 </Pressable>
               )}
             </View>
+            {period.dueDate && (
+              <Text className="text-slate-500 text-xs mt-1">
+                Due {format(parseISO(period.dueDate), 'MMM d, yyyy')}
+              </Text>
+            )}
           </View>
           <View className="items-end">
             <View className="flex-row items-center">
@@ -596,6 +601,8 @@ export default function PaymentsScreen() {
   const [periodAmount, setPeriodAmount] = useState('');
   const [periodType, setPeriodType] = useState<PaymentPeriodType>('dues');
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [periodDueDate, setPeriodDueDate] = useState<Date | null>(null);
+  const [showPeriodDueDatePicker, setShowPeriodDueDatePicker] = useState(false);
 
   // Edit period amount
   const [isEditAmountModalVisible, setIsEditAmountModalVisible] = useState(false);
@@ -661,6 +668,7 @@ export default function PaymentsScreen() {
       title: periodTitle.trim(),
       amount: parseFloat(periodAmount),
       type: periodType,
+      dueDate: periodDueDate ? periodDueDate.toISOString() : undefined,
       playerPayments: selectedPlayerIds.map((playerId) => ({
         playerId,
         status: 'unpaid' as const,
@@ -675,6 +683,8 @@ export default function PaymentsScreen() {
     setPeriodAmount('');
     setPeriodType('dues');
     setSelectedPlayerIds([]);
+    setPeriodDueDate(null);
+    setShowPeriodDueDatePicker(false);
     setIsNewPeriodModalVisible(false);
   };
 
@@ -1153,6 +1163,8 @@ export default function PaymentsScreen() {
         onRequestClose={() => {
           setIsNewPeriodModalVisible(false);
           setSelectedPlayerIds([]);
+          setPeriodDueDate(null);
+          setShowPeriodDueDatePicker(false);
         }}
       >
         <View className="flex-1 bg-slate-900">
@@ -1161,6 +1173,8 @@ export default function PaymentsScreen() {
               <Pressable onPress={() => {
                 setIsNewPeriodModalVisible(false);
                 setSelectedPlayerIds([]);
+                setPeriodDueDate(null);
+                setShowPeriodDueDatePicker(false);
               }}>
                 <X size={24} color="#64748b" />
               </Pressable>
@@ -1233,6 +1247,53 @@ export default function PaymentsScreen() {
                   keyboardType="decimal-pad"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                 />
+              </View>
+
+              <View className="mb-5">
+                <Text className="text-slate-400 text-sm mb-2">Due Date (optional)</Text>
+                <Pressable
+                  onPress={() => {
+                    if (!periodDueDate) {
+                      setPeriodDueDate(new Date());
+                    }
+                    setShowPeriodDueDatePicker(!showPeriodDueDatePicker);
+                  }}
+                  className="flex-row items-center justify-between bg-slate-800 rounded-xl px-4 py-3"
+                >
+                  <View className="flex-row items-center">
+                    <Calendar size={20} color="#64748b" />
+                    <Text className={periodDueDate ? "text-white ml-3" : "text-slate-500 ml-3"}>
+                      {periodDueDate ? format(periodDueDate, 'MMM d, yyyy') : 'No due date'}
+                    </Text>
+                  </View>
+                  {periodDueDate && (
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        setPeriodDueDate(null);
+                        setShowPeriodDueDatePicker(false);
+                      }}
+                      className="p-1"
+                    >
+                      <X size={18} color="#64748b" />
+                    </Pressable>
+                  )}
+                </Pressable>
+                {showPeriodDueDatePicker && periodDueDate && (
+                  <View className="bg-slate-800 rounded-xl mt-2 overflow-hidden items-center">
+                    <DateTimePicker
+                      value={periodDueDate}
+                      mode="date"
+                      display="inline"
+                      onChange={(event, date) => {
+                        if (date) setPeriodDueDate(date);
+                        if (Platform.OS === 'android') setShowPeriodDueDatePicker(false);
+                      }}
+                      themeVariant="dark"
+                      accentColor="#22c55e"
+                    />
+                  </View>
+                )}
               </View>
 
               {/* Player Selection */}
