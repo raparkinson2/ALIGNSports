@@ -91,7 +91,7 @@ function QuestionEditor({
   };
 
   return (
-    <View className="mb-4 bg-slate-800/40 rounded-2xl border border-slate-700/50 overflow-hidden">
+    <View className="mb-5 bg-slate-800/40 rounded-2xl border border-slate-700/50 overflow-hidden">
       <Pressable
         onPress={() => setIsExpanded(!isExpanded)}
         className="flex-row items-center justify-between px-4 py-3 bg-slate-800/60"
@@ -165,10 +165,10 @@ function QuestionEditor({
             {question.options.length < 6 && (
               <Pressable
                 onPress={handleAddOption}
-                className="flex-row items-center py-2.5 px-4 bg-slate-900/40 rounded-xl border border-dashed border-slate-600"
+                className="flex-row items-center py-2.5 px-4 bg-emerald-500/10 rounded-xl border border-emerald-500/30"
               >
                 <Plus size={16} color="#10b981" />
-                <Text className="text-emerald-400 ml-2 text-sm">Add Option</Text>
+                <Text className="text-emerald-400 ml-2 text-sm font-medium">Add Option</Text>
               </Pressable>
             )}
           </View>
@@ -350,18 +350,32 @@ function CreatePollModal({
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setHasEndDate(!hasEndDate);
                   }}
-                  className="flex-row items-center justify-between py-3 px-4 bg-slate-800/40 rounded-xl border border-slate-700/50"
+                  className={`flex-row items-center justify-between py-3 px-4 rounded-xl border ${
+                    hasEndDate
+                      ? 'bg-emerald-500/15 border-emerald-500/40'
+                      : 'bg-slate-800/40 border-slate-700/50'
+                  }`}
                 >
                   <View className="flex-row items-center">
-                    <Clock size={18} color={hasEndDate ? '#10b981' : '#64748b'} />
-                    <Text className="text-slate-300 text-sm ml-2">Set poll end date (optional)</Text>
+                    <View className={`w-8 h-8 rounded-lg items-center justify-center mr-3 ${
+                      hasEndDate ? 'bg-emerald-500/20' : 'bg-slate-700/50'
+                    }`}>
+                      <Clock size={18} color={hasEndDate ? '#10b981' : '#64748b'} />
+                    </View>
+                    <Text className={hasEndDate ? 'text-emerald-300 text-sm font-medium' : 'text-slate-300 text-sm'}>
+                      Set poll end date
+                    </Text>
                   </View>
                   <View
-                    className={`w-5 h-5 rounded-md items-center justify-center ${
+                    className={`w-12 h-7 rounded-full p-0.5 ${
                       hasEndDate ? 'bg-emerald-500' : 'bg-slate-600'
                     }`}
                   >
-                    {hasEndDate && <Check size={14} color="white" />}
+                    <View
+                      className={`w-6 h-6 rounded-full bg-white ${
+                        hasEndDate ? 'ml-auto' : ''
+                      }`}
+                    />
                   </View>
                 </Pressable>
 
@@ -745,7 +759,7 @@ function PollListItem({
   const containerStyle = useAnimatedStyle(() => ({
     height: itemHeight.value === 100 ? 'auto' : itemHeight.value,
     opacity: opacity.value,
-    marginBottom: opacity.value === 1 ? 12 : withTiming(0, { duration: 200 }),
+    marginBottom: opacity.value === 1 ? 16 : withTiming(0, { duration: 200 }),
     overflow: 'hidden' as const,
   }));
 
@@ -789,9 +803,9 @@ function PollListItem({
                   </View>
                   <View className="flex-row items-center mr-3">
                     <MessageSquare size={12} color="#94a3b8" />
-                    <Text className="text-slate-400 text-xs ml-1">{questionCount} question{questionCount !== 1 ? 's' : ''}</Text>
+                    <Text className="text-slate-500 text-xs ml-1">{questionCount} question{questionCount !== 1 ? 's' : ''}</Text>
                   </View>
-                  <Text className="text-emerald-400 text-xs">{voterCount} voter{voterCount !== 1 ? 's' : ''}</Text>
+                  <Text className={voterCount === 0 ? 'text-slate-500 text-xs' : 'text-emerald-400 text-xs font-medium'}>{voterCount} voter{voterCount !== 1 ? 's' : ''}</Text>
                 </View>
                 <View className="flex-row items-center mt-1">
                   <Calendar size={12} color="#64748b" />
@@ -799,7 +813,7 @@ function PollListItem({
                 </View>
               </View>
 
-              <ChevronRight size={20} color="#64748b" />
+              <ChevronRight size={20} color="#94a3b8" />
             </Pressable>
           </Animated.View>
         </GestureDetector>
@@ -986,9 +1000,16 @@ export default function PollsScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 setCreateModalVisible(true);
               }}
-              className="w-10 h-10 rounded-full bg-emerald-500 items-center justify-center"
+              className="w-12 h-12 rounded-full bg-emerald-500 items-center justify-center"
+              style={{
+                shadowColor: '#10b981',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.4,
+                shadowRadius: 6,
+                elevation: 4,
+              }}
             >
-              <Plus size={24} color="white" />
+              <Plus size={26} color="white" />
             </Pressable>
           </View>
         </Animated.View>
@@ -1011,8 +1032,8 @@ export default function PollsScreen() {
           ) : (
             <>
               {/* Swipe hint */}
-              <Animated.View entering={FadeIn.delay(100)} className="mb-3">
-                <Text className="text-slate-500 text-xs text-center">
+              <Animated.View entering={FadeIn.delay(100)} className="mb-4">
+                <Text className="text-slate-400 text-xs text-center">
                   Swipe left to delete
                 </Text>
               </Animated.View>
