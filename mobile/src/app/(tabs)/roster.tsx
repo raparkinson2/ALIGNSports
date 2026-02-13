@@ -26,7 +26,7 @@ import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, parseISO } from 'date-fns';
-import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, PlayerStats, getPlayerPositions, getPrimaryPosition, getPlayerName, StatusDuration, DurationUnit } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, PlayerStats, getPlayerPositions, getPrimaryPosition, getPlayerName, StatusDuration, DurationUnit } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
@@ -77,11 +77,14 @@ function getStatHeaders(sport: Sport): string[] {
     case 'hockey':
       return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
     case 'baseball':
+    case 'softball':
       return ['GP', 'AB', 'H', 'HR', 'RBI', 'K', 'BA'];
     case 'basketball':
       return ['GP', 'PTS', 'PPG', 'REB', 'AST', 'STL', 'BLK'];
     case 'soccer':
       return ['GP', 'G', 'A', 'YC'];
+    case 'lacrosse':
+      return ['GP', 'G', 'A', 'P', 'GB', 'CT'];
     default:
       return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
   }
@@ -90,6 +93,9 @@ function getStatHeaders(sport: Sport): string[] {
 // Get goalie stat headers (includes GAA for both hockey and soccer)
 function getGoalieHeaders(sport: Sport): string[] {
   // Soccer uses W-L-D (Draws), hockey uses W-L-T (Ties)
+  if (sport === 'lacrosse') {
+    return ['GP', 'W-L', 'GAA', 'SA', 'SV', 'SV%', 'GB'];
+  }
   const recordHeader = sport === 'soccer' ? 'W-L-D' : 'W-L-T';
   return ['GP', recordHeader, 'MP', 'GAA', 'SA', 'SV', 'SV%'];
 }
@@ -107,17 +113,34 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
   const forceBatterStats = position === 'batter'; // Special case for pitcher/position players
 
   if (!stats) {
+    if (playerIsGoalie && sport === 'lacrosse') {
+      return [0, '0-0', '0.00', 0, 0, '.000', 0];
+    }
     if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
       return [0, '0-0-0', 0, '0.00', 0, 0, '.000'];
     }
-    if (playerIsPitcher && sport === 'baseball') {
+    if (playerIsPitcher && (sport === 'baseball' || sport === 'softball')) {
       return [0, '0-0', 0, 0, 0, 0, 0, 0, '0.00'];
     }
     if (sport === 'hockey') return [0, 0, 0, 0, 0, 0];
-    if (sport === 'baseball') return [0, 0, 0, 0, 0, 0, '.000'];
+    if (sport === 'baseball' || sport === 'softball') return [0, 0, 0, 0, 0, 0, '.000'];
     if (sport === 'basketball') return [0, 0, '0.0', 0, 0, 0, 0];
     if (sport === 'soccer') return [0, 0, 0, 0];
+    if (sport === 'lacrosse') return [0, 0, 0, 0, 0, 0];
     return [0, 0, 0];
+  }
+
+  // Handle lacrosse goalie stats
+  if (playerIsGoalie && sport === 'lacrosse') {
+    const s = stats as LacrosseGoalieStats;
+    const record = `${s.wins ?? 0}-${s.losses ?? 0}`;
+    const savePercentage = s.shotsAgainst > 0
+      ? (s.saves / s.shotsAgainst).toFixed(3)
+      : '.000';
+    const mp = s.minutesPlayed ?? 0;
+    // Lacrosse GAA = (Goals Against / Minutes Played) x 60
+    const gaa = mp > 0 ? ((s.goalsAgainst ?? 0) / mp * 60).toFixed(2) : '0.00';
+    return [s.games ?? 0, record, gaa, s.shotsAgainst ?? 0, s.saves ?? 0, savePercentage, s.groundBalls ?? 0];
   }
 
   // Handle goalie stats for hockey/soccer
@@ -141,8 +164,8 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
     return [s.games ?? 0, record, mp, gaa, s.shotsAgainst ?? 0, s.saves ?? 0, savePercentage];
   }
 
-  // Handle pitcher stats for baseball (but not if we're forcing batter stats)
-  if (playerIsPitcher && sport === 'baseball' && !forceBatterStats) {
+  // Handle pitcher stats for baseball/softball (but not if we're forcing batter stats)
+  if (playerIsPitcher && (sport === 'baseball' || sport === 'softball') && !forceBatterStats) {
     const s = stats as BaseballPitcherStats;
     const record = `${s.wins ?? 0}-${s.losses ?? 0}`;
     const ip = s.innings ?? 0;
@@ -159,7 +182,8 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
       const plusMinusStr = plusMinus > 0 ? `+${plusMinus}` : `${plusMinus}`;
       return [s.gamesPlayed ?? 0, s.goals ?? 0, s.assists ?? 0, points, s.pim ?? 0, plusMinusStr];
     }
-    case 'baseball': {
+    case 'baseball':
+    case 'softball': {
       // For pitcher/position players, stats object may be BaseballPitcherStats
       // but we need to read the batting fields which are stored separately
       const s = stats as BaseballStats;
@@ -177,6 +201,11 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
     case 'soccer': {
       const s = stats as SoccerStats;
       return [s.gamesPlayed ?? 0, s.goals ?? 0, s.assists ?? 0, s.yellowCards ?? 0];
+    }
+    case 'lacrosse': {
+      const s = stats as LacrosseStats;
+      const points = (s.goals ?? 0) + (s.assists ?? 0);
+      return [s.gamesPlayed ?? 0, s.goals ?? 0, s.assists ?? 0, points, s.groundBalls ?? 0, s.causedTurnovers ?? 0];
     }
     default:
       return [0, 0, 0];

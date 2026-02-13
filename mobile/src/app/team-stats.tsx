@@ -16,7 +16,7 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTeamStore, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, Player, PlayerStats, getPlayerPositions, GameLogEntry, getPlayerName } from '@/lib/store';
+import { useTeamStore, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, Player, PlayerStats, getPlayerPositions, GameLogEntry, getPlayerName } from '@/lib/store';
 
 // Edit mode type - determines which stats to show/edit
 type EditMode = 'batter' | 'pitcher' | 'skater' | 'goalie';
@@ -108,11 +108,14 @@ function getStatHeaders(sport: Sport): string[] {
     case 'hockey':
       return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
     case 'baseball':
+    case 'softball':
       return ['GP', 'AB', 'H', 'HR', 'RBI', 'K', 'BA'];
     case 'basketball':
       return ['GP', 'PTS', 'PPG', 'REB', 'AST', 'STL', 'BLK'];
     case 'soccer':
       return ['GP', 'G', 'A', 'YC'];
+    case 'lacrosse':
+      return ['GP', 'G', 'A', 'P', 'GB', 'CT'];
     default:
       return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
   }
@@ -129,17 +132,33 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
   const playerIsPitcher = isPitcher(position);
 
   if (!stats) {
+    if (playerIsGoalie && sport === 'lacrosse') {
+      return [0, '0-0', '0.00', 0, 0, '.000', 0];
+    }
     if (playerIsGoalie && (sport === 'hockey' || sport === 'soccer')) {
       return [0, '0-0-0', 0, '0.00', 0, 0, '.000'];
     }
-    if (playerIsPitcher && sport === 'baseball') {
+    if (playerIsPitcher && (sport === 'baseball' || sport === 'softball')) {
       return [0, '0-0', 0, 0, 0, 0, 0, 0, '0.00'];
     }
     if (sport === 'hockey') return [0, 0, 0, 0, 0, 0];
-    if (sport === 'baseball') return [0, 0, 0, 0, 0, 0, '.000'];
+    if (sport === 'baseball' || sport === 'softball') return [0, 0, 0, 0, 0, 0, '.000'];
     if (sport === 'basketball') return [0, 0, '0.0', 0, 0, 0, 0];
     if (sport === 'soccer') return [0, 0, 0, 0];
+    if (sport === 'lacrosse') return [0, 0, 0, 0, 0, 0];
     return [0, 0, 0];
+  }
+
+  // Handle lacrosse goalie stats
+  if (playerIsGoalie && sport === 'lacrosse') {
+    const s = stats as LacrosseGoalieStats;
+    const record = `${s.wins ?? 0}-${s.losses ?? 0}`;
+    const savePercentage = s.shotsAgainst > 0
+      ? (s.saves / s.shotsAgainst).toFixed(3)
+      : '.000';
+    const mp = s.minutesPlayed ?? 0;
+    const gaa = mp > 0 ? ((s.goalsAgainst ?? 0) / mp * 60).toFixed(2) : '0.00';
+    return [s.games ?? 0, record, gaa, s.shotsAgainst ?? 0, s.saves ?? 0, savePercentage, s.groundBalls ?? 0];
   }
 
   // Handle goalie stats for hockey/soccer
@@ -163,8 +182,8 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
     return [s.games ?? 0, record, mp, gaa, s.shotsAgainst ?? 0, s.saves ?? 0, savePercentage];
   }
 
-  // Handle pitcher stats for baseball
-  if (playerIsPitcher && sport === 'baseball') {
+  // Handle pitcher stats for baseball/softball
+  if (playerIsPitcher && (sport === 'baseball' || sport === 'softball')) {
     const s = stats as BaseballPitcherStats;
     const record = `${s.wins ?? 0}-${s.losses ?? 0}`;
     const ip = s.innings ?? 0;
@@ -181,7 +200,8 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
       const plusMinusStr = plusMinus > 0 ? `+${plusMinus}` : `${plusMinus}`;
       return [s.gamesPlayed ?? 0, s.goals ?? 0, s.assists ?? 0, points, s.pim ?? 0, plusMinusStr];
     }
-    case 'baseball': {
+    case 'baseball':
+    case 'softball': {
       const s = stats as BaseballStats;
       const atBats = s.atBats ?? 0;
       const hits = s.hits ?? 0;
@@ -197,6 +217,11 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
     case 'soccer': {
       const s = stats as SoccerStats;
       return [s.gamesPlayed ?? 0, s.goals ?? 0, s.assists ?? 0, s.yellowCards ?? 0];
+    }
+    case 'lacrosse': {
+      const s = stats as LacrosseStats;
+      const points = (s.goals ?? 0) + (s.assists ?? 0);
+      return [s.gamesPlayed ?? 0, s.goals ?? 0, s.assists ?? 0, points, s.groundBalls ?? 0, s.causedTurnovers ?? 0];
     }
     default:
       return [0, 0, 0];
@@ -296,6 +321,28 @@ function calculateTeamTotals(players: Player[], sport: Sport): { label: string; 
         { label: 'Yellow Cards', value: totalYC },
       ];
     }
+    case 'lacrosse': {
+      let totalGoals = 0;
+      let totalAssists = 0;
+      let totalGB = 0;
+      let totalCT = 0;
+      players.forEach((p) => {
+        if (p.stats && !isGoalie(p.position)) {
+          const s = p.stats as LacrosseStats;
+          totalGoals += s.goals ?? 0;
+          totalAssists += s.assists ?? 0;
+          totalGB += s.groundBalls ?? 0;
+          totalCT += s.causedTurnovers ?? 0;
+        }
+      });
+      const totalPoints = totalGoals + totalAssists;
+      return [
+        { label: 'Goals', value: totalGoals },
+        { label: 'Assists', value: totalAssists },
+        { label: 'Points', value: totalPoints },
+        { label: 'Ground Balls', value: totalGB },
+      ];
+    }
     default:
       return [];
   }
@@ -330,8 +377,21 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
     ];
   }
 
-  // Pitcher stats for baseball (starts field stays since it's different from GP)
-  if (playerIsPitcher && sport === 'baseball') {
+  // Lacrosse goalie stats
+  if (playerIsGoalie && sport === 'lacrosse') {
+    return [
+      { key: 'wins', label: 'Wins' },
+      { key: 'losses', label: 'Losses' },
+      { key: 'minutesPlayed', label: 'Minutes Played' },
+      { key: 'shotsAgainst', label: 'Shots Against' },
+      { key: 'saves', label: 'Saves' },
+      { key: 'goalsAgainst', label: 'Goals Against' },
+      { key: 'groundBalls', label: 'Ground Balls' },
+    ];
+  }
+
+  // Pitcher stats for baseball/softball (starts field stays since it's different from GP)
+  if (playerIsPitcher && (sport === 'baseball' || sport === 'softball')) {
     return [
       { key: 'starts', label: 'Starts' },
       { key: 'wins', label: 'Wins' },
@@ -357,6 +417,7 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
         { key: 'plusMinus', label: '+/-' },
       ];
     case 'baseball':
+    case 'softball':
       return [
         { key: 'atBats', label: 'At Bats' },
         { key: 'hits', label: 'Hits' },
@@ -378,6 +439,15 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
         { key: 'assists', label: 'Assists' },
         { key: 'yellowCards', label: 'Yellow Cards' },
       ];
+    case 'lacrosse':
+      return [
+        { key: 'goals', label: 'Goals' },
+        { key: 'assists', label: 'Assists' },
+        { key: 'groundBalls', label: 'Ground Balls' },
+        { key: 'causedTurnovers', label: 'Caused Turnovers' },
+        { key: 'shots', label: 'Shots' },
+        { key: 'shotsOnGoal', label: 'Shots on Goal' },
+      ];
     default:
       return [];
   }
@@ -395,7 +465,11 @@ function getDefaultStats(sport: Sport, position: string): PlayerStats {
     return { games: 0, wins: 0, losses: 0, ties: 0, minutesPlayed: 0, shotsAgainst: 0, saves: 0, goalsAgainst: 0 };
   }
 
-  if (playerIsPitcher && sport === 'baseball') {
+  if (playerIsGoalie && sport === 'lacrosse') {
+    return { games: 0, wins: 0, losses: 0, minutesPlayed: 0, shotsAgainst: 0, saves: 0, goalsAgainst: 0, groundBalls: 0 };
+  }
+
+  if (playerIsPitcher && (sport === 'baseball' || sport === 'softball')) {
     return { starts: 0, wins: 0, losses: 0, innings: 0, completeGames: 0, strikeouts: 0, walks: 0, hits: 0, homeRuns: 0, shutouts: 0, earnedRuns: 0 };
   }
 
@@ -403,11 +477,14 @@ function getDefaultStats(sport: Sport, position: string): PlayerStats {
     case 'hockey':
       return { gamesPlayed: 0, goals: 0, assists: 0, pim: 0, plusMinus: 0 };
     case 'baseball':
+    case 'softball':
       return { gamesPlayed: 0, atBats: 0, hits: 0, homeRuns: 0, rbi: 0, strikeouts: 0 };
     case 'basketball':
       return { gamesPlayed: 0, points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0 };
     case 'soccer':
       return { gamesPlayed: 0, goals: 0, assists: 0, yellowCards: 0 };
+    case 'lacrosse':
+      return { gamesPlayed: 0, goals: 0, assists: 0, groundBalls: 0, causedTurnovers: 0, shots: 0, shotsOnGoal: 0 };
     default:
       return { gamesPlayed: 0, goals: 0, assists: 0, pim: 0, plusMinus: 0 };
   }
@@ -415,6 +492,9 @@ function getDefaultStats(sport: Sport, position: string): PlayerStats {
 
 // Get goalie stat headers (includes GAA for both hockey and soccer)
 function getGoalieHeaders(sport: Sport): string[] {
+  if (sport === 'lacrosse') {
+    return ['GP', 'W-L', 'GAA', 'SA', 'SV', 'SV%', 'GB'];
+  }
   // Soccer uses W-L-D (Draws), hockey uses W-L-T (Ties)
   const recordHeader = sport === 'soccer' ? 'W-L-D' : 'W-L-T';
   return ['GP', recordHeader, 'MP', 'GAA', 'SA', 'SV', 'SV%'];
@@ -665,7 +745,8 @@ export default function TeamStatsScreen() {
         const bTotal = (bStats as HockeyStats).goals + (bStats as HockeyStats).assists;
         return bTotal - aTotal;
       }
-      case 'baseball': {
+      case 'baseball':
+      case 'softball': {
         return (bStats as BaseballStats).hits - (aStats as BaseballStats).hits;
       }
       case 'basketball': {
@@ -674,6 +755,11 @@ export default function TeamStatsScreen() {
       case 'soccer': {
         const aTotal = (aStats as SoccerStats).goals + (aStats as SoccerStats).assists;
         const bTotal = (bStats as SoccerStats).goals + (bStats as SoccerStats).assists;
+        return bTotal - aTotal;
+      }
+      case 'lacrosse': {
+        const aTotal = (aStats as LacrosseStats).goals + (aStats as LacrosseStats).assists;
+        const bTotal = (bStats as LacrosseStats).goals + (bStats as LacrosseStats).assists;
         return bTotal - aTotal;
       }
       default:

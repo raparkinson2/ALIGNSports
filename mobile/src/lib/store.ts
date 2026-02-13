@@ -247,14 +247,41 @@ export interface SoccerGoalieStats {
   goalsAgainst: number;
 }
 
-export type PlayerStats = HockeyStats | HockeyGoalieStats | BaseballStats | BaseballPitcherStats | BasketballStats | SoccerStats | SoccerGoalieStats;
+// Lacrosse field player stats
+export interface LacrosseStats {
+  gamesPlayed: number;
+  goals: number;
+  assists: number;
+  groundBalls: number; // GB - securing loose balls
+  causedTurnovers: number; // CT - forcing turnovers defensively
+  shots: number;
+  shotsOnGoal: number; // SOG
+  faceOffWins?: number; // For face-off specialists (men's)
+  faceOffAttempts?: number;
+  drawControls?: number; // DC - for women's lacrosse
+  drawAttempts?: number;
+}
+
+// Lacrosse goalie stats
+export interface LacrosseGoalieStats {
+  games: number;
+  wins: number;
+  losses: number;
+  minutesPlayed: number;
+  shotsAgainst: number;
+  saves: number;
+  goalsAgainst: number;
+  groundBalls: number; // Goalies also track ground balls
+}
+
+export type PlayerStats = HockeyStats | HockeyGoalieStats | BaseballStats | BaseballPitcherStats | BasketballStats | SoccerStats | SoccerGoalieStats | LacrosseStats | LacrosseGoalieStats;
 
 // Game log entry for tracking individual game stats
 export interface GameLogEntry {
   id: string;
   date: string; // ISO string
   stats: PlayerStats;
-  statType: 'skater' | 'goalie' | 'batter' | 'pitcher'; // Which type of stats this log is for
+  statType: 'skater' | 'goalie' | 'batter' | 'pitcher' | 'lacrosse' | 'lacrosse_goalie'; // Which type of stats this log is for
 }
 
 // Types
