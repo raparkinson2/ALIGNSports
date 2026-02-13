@@ -197,15 +197,15 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false, hi
           <View className="flex-row items-center justify-between mb-2">
             <View className="flex-row items-center">
               {!hideDateBadge && (
-                <View className="bg-cyan-500/20 px-2.5 py-0.5 rounded-full mr-2">
-                  <Text className="text-cyan-400 text-xs font-semibold">
+                <View className="bg-cyan-500/20 px-2 py-px rounded-full mr-2">
+                  <Text className="text-cyan-400 text-xs font-medium">
                     {getDateLabel(game.date)}
                   </Text>
                 </View>
               )}
               <Text className="text-white text-lg font-bold">vs {game.opponent}</Text>
             </View>
-            <ChevronRight size={18} color="#64748b" />
+            <ChevronRight size={18} color="#94a3b8" strokeWidth={2.5} />
           </View>
 
           {/* Info Grid */}
@@ -289,21 +289,24 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false, hi
           )}
 
           {/* Footer */}
-          <View className="flex-row items-center pt-3 border-t border-slate-700/50">
+          <View className="flex-row items-center pt-2 border-t border-slate-700/50">
             <View className="flex-row items-center">
-              <Users size={14} color="#94a3b8" />
-              <Text className="text-slate-400 text-sm ml-2">In:</Text>
-              <Text className="text-green-400 text-sm font-medium ml-1">
-                {checkedInCount}
-              </Text>
-              <Text className="text-slate-400 text-sm ml-2">Out:</Text>
-              <Text className="text-red-400 text-sm font-medium ml-1">
-                {checkedOutCount}
-              </Text>
-              <Text className="text-slate-400 text-sm ml-2">Pending:</Text>
-              <Text className="text-slate-500 text-sm font-medium ml-1">
-                {pendingCount}
-              </Text>
+              <Users size={14} color="#94a3b8" strokeWidth={2} />
+              <View className="flex-row items-center ml-3">
+                <View className="w-2 h-2 rounded-full bg-green-500 mr-1" />
+                <Text className="text-slate-400 text-sm">In:</Text>
+                <Text className="text-green-400 text-sm font-medium ml-1">{checkedInCount}</Text>
+              </View>
+              <View className="flex-row items-center ml-4">
+                <View className="w-2 h-2 rounded-full bg-red-500 mr-1" />
+                <Text className="text-slate-400 text-sm">Out:</Text>
+                <Text className="text-red-400 text-sm font-medium ml-1">{checkedOutCount}</Text>
+              </View>
+              <View className="flex-row items-center ml-4">
+                <View className="w-2 h-2 rounded-full bg-slate-500 mr-1" />
+                <Text className="text-slate-400 text-sm">Pending:</Text>
+                <Text className="text-slate-500 text-sm font-medium ml-1">{pendingCount}</Text>
+              </View>
             </View>
             {beerDutyPlayer && (
               <View className="flex-row items-center ml-4">
@@ -450,8 +453,8 @@ function EventCard({ event, index, onPress, skipAnimation = false, hideDateBadge
           <View className="flex-row items-center justify-between mb-2">
             <View className="flex-row items-center flex-1">
               {!hideDateBadge && (
-                <View className={cn(badgeBgClass, 'px-2.5 py-0.5 rounded-full mr-2')}>
-                  <Text className={cn(badgeTextClass, 'text-xs font-semibold')}>
+                <View className={cn(badgeBgClass, 'px-2 py-px rounded-full mr-2')}>
+                  <Text className={cn(badgeTextClass, 'text-xs font-medium')}>
                     {getDateLabel(event.date)}
                   </Text>
                 </View>
@@ -460,7 +463,7 @@ function EventCard({ event, index, onPress, skipAnimation = false, hideDateBadge
                 {event.title}
               </Text>
             </View>
-            <ChevronRight size={18} color="#64748b" />
+            <ChevronRight size={18} color="#94a3b8" strokeWidth={2.5} />
           </View>
 
           {/* Info Grid */}
@@ -484,19 +487,22 @@ function EventCard({ event, index, onPress, skipAnimation = false, hideDateBadge
           {/* Footer */}
           <View className="flex-row items-center pt-2 border-t border-slate-700/50">
             <View className="flex-row items-center">
-              <Users size={14} color="#94a3b8" />
-              <Text className="text-slate-400 text-sm ml-2">In:</Text>
-              <Text className="text-green-400 text-sm font-medium ml-1">
-                {confirmedCount}
-              </Text>
-              <Text className="text-slate-400 text-sm ml-2">Out:</Text>
-              <Text className="text-red-400 text-sm font-medium ml-1">
-                {declinedCount}
-              </Text>
-              <Text className="text-slate-400 text-sm ml-2">Pending:</Text>
-              <Text className="text-slate-500 text-sm font-medium ml-1">
-                {pendingCount}
-              </Text>
+              <Users size={14} color="#94a3b8" strokeWidth={2} />
+              <View className="flex-row items-center ml-3">
+                <View className="w-2 h-2 rounded-full bg-green-500 mr-1" />
+                <Text className="text-slate-400 text-sm">In:</Text>
+                <Text className="text-green-400 text-sm font-medium ml-1">{confirmedCount}</Text>
+              </View>
+              <View className="flex-row items-center ml-4">
+                <View className="w-2 h-2 rounded-full bg-red-500 mr-1" />
+                <Text className="text-slate-400 text-sm">Out:</Text>
+                <Text className="text-red-400 text-sm font-medium ml-1">{declinedCount}</Text>
+              </View>
+              <View className="flex-row items-center ml-4">
+                <View className="w-2 h-2 rounded-full bg-slate-500 mr-1" />
+                <Text className="text-slate-400 text-sm">Pending:</Text>
+                <Text className="text-slate-500 text-sm font-medium ml-1">{pendingCount}</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -763,11 +769,10 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
               <View
                 className={cn(
                   'flex-1 rounded-xl items-center justify-center',
-                  isSelected && 'bg-cyan-500/40 border-2 border-cyan-300',
+                  isSelected && 'bg-cyan-500/50 border-2 border-cyan-400',
                   !isSelected && !hasItems && isTodayDate && 'border border-cyan-500/50',
                   isPast && !hasItems && 'opacity-40'
                 )}
-                style={isSelected ? { shadowColor: '#67e8f9', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 8 } : undefined}
               >
                 <Text
                   className={cn(
@@ -775,7 +780,7 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
                     isSelected && 'text-white',
                     !isSelected && hasItems && 'text-white',
                     !isSelected && !hasItems && isTodayDate && 'text-cyan-400',
-                    !isSelected && !hasItems && !isTodayDate && 'text-slate-500'
+                    !isSelected && !hasItems && !isTodayDate && 'text-slate-400'
                   )}
                 >
                   {format(date, 'd')}
