@@ -704,7 +704,7 @@ export default function RosterScreen() {
         { title: 'Defense', players: players.filter((p) => ['LD', 'RD'].includes(p.position)) },
         { title: 'Goalies', players: players.filter((p) => p.position === 'G') },
       ];
-    } else if (sport === 'baseball') {
+    } else if (sport === 'baseball' || sport === 'softball') {
       return [
         { title: 'Battery', players: players.filter((p) => ['P', 'C'].includes(p.position)) },
         { title: 'Infield', players: players.filter((p) => ['1B', '2B', '3B', 'SS'].includes(p.position)) },
@@ -716,12 +716,24 @@ export default function RosterScreen() {
         { title: 'Forwards', players: players.filter((p) => ['SF', 'PF'].includes(p.position)) },
         { title: 'Centers', players: players.filter((p) => p.position === 'C') },
       ];
-    } else {
+    } else if (sport === 'lacrosse') {
+      return [
+        { title: 'Attack', players: players.filter((p) => p.position === 'A') },
+        { title: 'Midfield', players: players.filter((p) => p.position === 'M') },
+        { title: 'Defense', players: players.filter((p) => p.position === 'D') },
+        { title: 'Goalies', players: players.filter((p) => p.position === 'G') },
+      ];
+    } else if (sport === 'soccer') {
       return [
         { title: 'Goalkeepers', players: players.filter((p) => p.position === 'GK') },
         { title: 'Defenders', players: players.filter((p) => p.position === 'DEF') },
         { title: 'Midfielders', players: players.filter((p) => p.position === 'MID') },
         { title: 'Forwards', players: players.filter((p) => p.position === 'FWD') },
+      ];
+    } else {
+      // Fallback - group all players together
+      return [
+        { title: 'Players', players: players },
       ];
     }
   };
