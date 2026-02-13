@@ -701,6 +701,7 @@ interface TeamStore {
   notifications: AppNotification[];
   addNotification: (notification: AppNotification) => void;
   markNotificationRead: (id: string) => void;
+  removeNotification: (id: string) => void;
   clearNotifications: () => void;
   getUnreadCount: () => number;
 
@@ -1329,6 +1330,9 @@ export const useTeamStore = create<TeamStore>()(
         notifications: state.notifications.map((n) =>
           n.id === id ? { ...n, read: true } : n
         ),
+      })),
+      removeNotification: (id) => set((state) => ({
+        notifications: state.notifications.filter((n) => n.id !== id),
       })),
       clearNotifications: () => set({ notifications: [] }),
       getUnreadCount: () => {

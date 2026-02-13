@@ -10,20 +10,35 @@ import {
   CheckCircle2,
   Trash2,
 } from 'lucide-react-native';
-import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  runOnJS,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, AppNotification } from '@/lib/store';
 import { cn } from '@/lib/cn';
-import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, parseISO } from 'date-fns';
+
+const SWIPE_THRESHOLD = -80;
 
 interface NotificationCardProps {
   notification: AppNotification;
   index: number;
   onPress: () => void;
+  onDelete: () => void;
 }
 
-function NotificationCard({ notification, index, onPress }: NotificationCardProps) {
+function NotificationCard({ notification, index, onPress, onDelete }: NotificationCardProps) {
   const timeAgo = formatDistanceToNow(parseISO(notification.createdAt), { addSuffix: true });
+  const translateX = useSharedValue(0);
+  const itemHeight = useSharedValue(76);
+  const opacity = useSharedValue(1);
 
   const getIcon = () => {
     switch (notification.type) {
@@ -48,45 +63,102 @@ function NotificationCard({ notification, index, onPress }: NotificationCardProp
     }
   };
 
+  const handleDelete = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onDelete();
+  };
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .onUpdate((event) => {
+      // Only allow left swipe
+      if (event.translationX < 0) {
+        translateX.value = Math.max(event.translationX, -120);
+      }
+    })
+    .onEnd((event) => {
+      if (event.translationX < SWIPE_THRESHOLD) {
+        // Delete the notification
+        translateX.value = withTiming(-400, { duration: 200 });
+        itemHeight.value = withTiming(0, { duration: 200 });
+        opacity.value = withTiming(0, { duration: 200 }, () => {
+          runOnJS(handleDelete)();
+        });
+      } else {
+        // Snap back
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const containerStyle = useAnimatedStyle(() => ({
+    height: itemHeight.value === 76 ? 'auto' : itemHeight.value,
+    opacity: opacity.value,
+    marginBottom: opacity.value === 1 ? 12 : withTiming(0, { duration: 200 }),
+    overflow: 'hidden' as const,
+  }));
+
+  const deleteButtonStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, Math.abs(translateX.value) / 60),
+  }));
+
   return (
-    <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
-      <Pressable
-        onPress={onPress}
-        className={cn(
-          'p-4 rounded-xl mb-3 border',
-          getBgColor(),
-          notification.read ? 'border-slate-700/30' : 'border-slate-700/50'
-        )}
-      >
-        <View className="flex-row items-start">
-          <View className={cn(
-            'p-2 rounded-full mr-3',
-            notification.read ? 'bg-slate-700/50' : 'bg-slate-800/80'
-          )}>
-            {getIcon()}
-          </View>
-          <View className="flex-1">
-            <View className="flex-row items-center justify-between mb-1">
-              <Text className={cn(
-                'font-semibold',
-                notification.read ? 'text-slate-400' : 'text-white'
-              )}>
-                {notification.title}
-              </Text>
-              {!notification.read && (
-                <View className="w-2 h-2 rounded-full bg-cyan-400" />
+    <Animated.View entering={FadeInDown.delay(index * 50).springify()} style={containerStyle}>
+      <View className="relative">
+        {/* Delete background */}
+        <Animated.View
+          style={deleteButtonStyle}
+          className="absolute right-0 top-0 bottom-0 bg-red-500/20 rounded-xl flex-row items-center justify-end px-6"
+        >
+          <Trash2 size={24} color="#ef4444" />
+        </Animated.View>
+
+        {/* Card content */}
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={animatedStyle}>
+            <Pressable
+              onPress={onPress}
+              className={cn(
+                'p-4 rounded-xl border',
+                getBgColor(),
+                notification.read ? 'border-slate-700/30' : 'border-slate-700/50'
               )}
-            </View>
-            <Text className={cn(
-              'text-sm mb-2',
-              notification.read ? 'text-slate-500' : 'text-slate-300'
-            )}>
-              {notification.message}
-            </Text>
-            <Text className="text-slate-500 text-xs">{timeAgo}</Text>
-          </View>
-        </View>
-      </Pressable>
+            >
+              <View className="flex-row items-start">
+                <View className={cn(
+                  'p-2 rounded-full mr-3',
+                  notification.read ? 'bg-slate-700/50' : 'bg-slate-800/80'
+                )}>
+                  {getIcon()}
+                </View>
+                <View className="flex-1">
+                  <View className="flex-row items-center justify-between mb-1">
+                    <Text className={cn(
+                      'font-semibold',
+                      notification.read ? 'text-slate-400' : 'text-white'
+                    )}>
+                      {notification.title}
+                    </Text>
+                    {!notification.read && (
+                      <View className="w-2 h-2 rounded-full bg-cyan-400" />
+                    )}
+                  </View>
+                  <Text className={cn(
+                    'text-sm mb-2',
+                    notification.read ? 'text-slate-500' : 'text-slate-300'
+                  )}>
+                    {notification.message}
+                  </Text>
+                  <Text className="text-slate-500 text-xs">{timeAgo}</Text>
+                </View>
+              </View>
+            </Pressable>
+          </Animated.View>
+        </GestureDetector>
+      </View>
     </Animated.View>
   );
 }
@@ -95,7 +167,7 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const notifications = useTeamStore((s) => s.notifications);
   const markNotificationRead = useTeamStore((s) => s.markNotificationRead);
-  const clearNotifications = useTeamStore((s) => s.clearNotifications);
+  const removeNotification = useTeamStore((s) => s.removeNotification);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
 
   // Filter notifications for current player
@@ -110,6 +182,10 @@ export default function NotificationsScreen() {
     if (notification.gameId) {
       router.push(`/game/${notification.gameId}`);
     }
+  };
+
+  const handleDeleteNotification = (notificationId: string) => {
+    removeNotification(notificationId);
   };
 
   const handleMarkAllRead = () => {
@@ -184,12 +260,20 @@ export default function NotificationsScreen() {
                 </Animated.View>
               )}
 
+              {/* Swipe hint */}
+              <Animated.View entering={FadeIn.delay(100)} className="mb-3">
+                <Text className="text-slate-500 text-xs text-center">
+                  Swipe left to delete
+                </Text>
+              </Animated.View>
+
               {myNotifications.map((notification, index) => (
                 <NotificationCard
                   key={notification.id}
                   notification={notification}
                   index={index}
                   onPress={() => handleNotificationPress(notification)}
+                  onDelete={() => handleDeleteNotification(notification.id)}
                 />
               ))}
             </>
