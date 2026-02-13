@@ -184,45 +184,45 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false }: 
   const cardContent = (
     <Pressable
       onPress={onPress}
-      className={cn('active:scale-[0.98]', !skipAnimation && 'mb-4')}
+      className={cn('active:scale-[0.98]', !skipAnimation && 'mb-3')}
       style={{ transform: [{ scale: 1 }] }}
     >
       <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
         {/* Jersey Color Bar */}
-        <View style={{ backgroundColor: jerseyColorHex, height: 6 }} />
+        <View style={{ backgroundColor: jerseyColorHex, height: 5 }} />
 
-        <View className="p-4">
+        <View className="p-3">
           {/* Date Badge & Opponent */}
-          <View className="flex-row items-center justify-between mb-3">
+          <View className="flex-row items-center justify-between mb-2">
             <View className="flex-row items-center">
-              <View className="bg-cyan-500/20 px-3 py-1 rounded-full mr-3">
+              <View className="bg-cyan-500/20 px-2.5 py-0.5 rounded-full mr-2">
                 <Text className="text-cyan-400 text-xs font-semibold">
                   {getDateLabel(game.date)}
                 </Text>
               </View>
-              <Text className="text-white text-xl font-bold">vs {game.opponent}</Text>
+              <Text className="text-white text-lg font-bold">vs {game.opponent}</Text>
             </View>
-            <ChevronRight size={20} color="#64748b" />
+            <ChevronRight size={18} color="#64748b" />
           </View>
 
           {/* Info Grid */}
-          <View className="flex-row items-center mb-3">
+          <View className="flex-row items-center mb-2">
             <View className="flex-row items-center">
-              <Clock size={14} color="#67e8f9" />
-              <Text className="text-slate-300 text-sm ml-2">{game.time}</Text>
+              <Clock size={14} color="#67e8f9" strokeWidth={2} />
+              <Text className="text-slate-300 text-sm ml-1.5">{game.time}</Text>
             </View>
-            <View className="flex-row items-center ml-5">
-              <JerseyIcon size={16} color={jerseyColorHex} />
-              <Text className="text-slate-300 text-sm ml-2">
-                {jerseyColorName} Jersey
+            <View className="flex-row items-center ml-4">
+              <JerseyIcon size={14} color={jerseyColorHex} />
+              <Text className="text-slate-300 text-sm ml-1.5">
+                {jerseyColorName}
               </Text>
             </View>
           </View>
 
           {/* Location */}
-          <View className="flex-row items-center mb-3">
-            <MapPin size={14} color="#67e8f9" />
-            <Text className="text-slate-400 text-sm ml-2">{game.location}</Text>
+          <View className="flex-row items-center mb-2">
+            <MapPin size={14} color="#67e8f9" strokeWidth={2} />
+            <Text className="text-slate-400 text-sm ml-1.5" numberOfLines={1}>{game.location}</Text>
           </View>
 
           {/* Game Lines Button */}
@@ -434,49 +434,49 @@ function EventCard({ event, index, onPress, skipAnimation = false }: EventCardPr
   const cardContent = (
     <Pressable
       onPress={onPress}
-      className={cn('active:scale-[0.98]', !skipAnimation && 'mb-4')}
+      className={cn('active:scale-[0.98]', !skipAnimation && 'mb-3')}
       style={{ transform: [{ scale: 1 }] }}
     >
       <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
         {/* Color Bar based on type */}
-        <View style={{ backgroundColor: accentColor, height: 6 }} />
+        <View style={{ backgroundColor: accentColor, height: 5 }} />
 
-        <View className="p-4">
+        <View className="p-3">
           {/* Date Badge & Event Title */}
-          <View className="flex-row items-center justify-between mb-3">
+          <View className="flex-row items-center justify-between mb-2">
             <View className="flex-row items-center flex-1">
-              <View className={cn(badgeBgClass, 'px-3 py-1 rounded-full mr-3')}>
+              <View className={cn(badgeBgClass, 'px-2.5 py-0.5 rounded-full mr-2')}>
                 <Text className={cn(badgeTextClass, 'text-xs font-semibold')}>
                   {getDateLabel(event.date)}
                 </Text>
               </View>
-              <Text className="text-white text-xl font-bold flex-1" numberOfLines={1}>
+              <Text className="text-white text-lg font-bold flex-1" numberOfLines={1}>
                 {event.title}
               </Text>
             </View>
-            <ChevronRight size={20} color="#64748b" />
+            <ChevronRight size={18} color="#64748b" />
           </View>
 
           {/* Info Grid */}
-          <View className="flex-row mb-3">
+          <View className="flex-row mb-2">
             <View className="flex-1 flex-row items-center">
-              <Clock size={14} color={iconColor} />
-              <Text className="text-slate-300 text-sm ml-2">{event.time}</Text>
+              <Clock size={14} color={iconColor} strokeWidth={2} />
+              <Text className="text-slate-300 text-sm ml-1.5">{event.time}</Text>
             </View>
             <View className="flex-1 flex-row items-center">
-              <Calendar size={14} color={iconColor} />
-              <Text className="text-slate-300 text-sm ml-2">{isPractice ? 'Practice' : 'Event'}</Text>
+              <Calendar size={14} color={iconColor} strokeWidth={2} />
+              <Text className="text-slate-300 text-sm ml-1.5">{isPractice ? 'Practice' : 'Event'}</Text>
             </View>
           </View>
 
           {/* Location */}
-          <View className="flex-row items-center mb-3">
-            <MapPin size={14} color={iconColor} />
-            <Text className="text-slate-400 text-sm ml-2">{event.location}</Text>
+          <View className="flex-row items-center mb-2">
+            <MapPin size={14} color={iconColor} strokeWidth={2} />
+            <Text className="text-slate-400 text-sm ml-1.5" numberOfLines={1}>{event.location}</Text>
           </View>
 
           {/* Footer */}
-          <View className="flex-row items-center pt-3 border-t border-slate-700/50">
+          <View className="flex-row items-center pt-2 border-t border-slate-700/50">
             <View className="flex-row items-center">
               <Users size={14} color="#94a3b8" />
               <Text className="text-slate-400 text-sm ml-2">In:</Text>
@@ -757,15 +757,16 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
               <View
                 className={cn(
                   'flex-1 rounded-xl items-center justify-center',
-                  isSelected && 'bg-cyan-500/30 border-2 border-cyan-400',
+                  isSelected && 'bg-cyan-500/40 border-2 border-cyan-300',
                   !isSelected && !hasItems && isTodayDate && 'border border-cyan-500/50',
                   isPast && !hasItems && 'opacity-40'
                 )}
+                style={isSelected ? { shadowColor: '#67e8f9', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 8 } : undefined}
               >
                 <Text
                   className={cn(
                     'text-base font-semibold',
-                    isSelected && 'text-cyan-300',
+                    isSelected && 'text-white',
                     !isSelected && hasItems && 'text-white',
                     !isSelected && !hasItems && isTodayDate && 'text-cyan-400',
                     !isSelected && !hasItems && !isTodayDate && 'text-slate-500'
@@ -813,9 +814,13 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
 
       {/* Selected Date Items */}
       {selectedDate && (selectedDateGames.length > 0 || selectedDateEvents.length > 0 || selectedDatePractices.length > 0) && (
-        <Animated.View entering={FadeInDown.springify()} className="mt-4">
-          <View className="bg-slate-800/50 rounded-2xl p-4">
-            <Text className="text-cyan-400 font-semibold mb-3">
+        <Animated.View entering={FadeInDown.springify()} className="mt-3">
+          {/* Connecting divider */}
+          <View className="items-center mb-2">
+            <View className="w-0.5 h-3 bg-cyan-500/40 rounded-full" />
+          </View>
+          <View className="bg-slate-800/50 rounded-2xl p-3 border border-cyan-500/20">
+            <Text className="text-cyan-300 font-semibold mb-2 text-sm">
               {format(selectedDate, 'EEEE, MMMM d')}
             </Text>
             {/* Games */}
@@ -1272,26 +1277,24 @@ export default function ScheduleScreen() {
                 setIsRecordModalVisible(true);
               }
             }}
-            className="mt-1"
+            className="mt-0.5"
           >
             {teamSettings.record ? (
               <View className="flex-row items-center">
-                <View className="bg-slate-800/80 rounded-lg px-3 py-1.5 flex-row items-center">
-                  <Text className="text-cyan-400 text-lg font-bold">
-                    {formatTeamRecord(teamSettings.record, sport)}
-                  </Text>
-                  {canManageTeam() && (
-                    <Edit3 size={14} color="#67e8f9" style={{ marginLeft: 8 }} />
-                  )}
-                </View>
-                <Text className="text-slate-500 text-xs ml-2">
+                <Text className="text-cyan-400 text-base font-semibold">
+                  {formatTeamRecord(teamSettings.record, sport)}
+                </Text>
+                <Text className="text-slate-600 text-xs ml-2">
                   {getRecordLabel(sport)}
                 </Text>
+                {canManageTeam() && (
+                  <Edit3 size={12} color="#475569" style={{ marginLeft: 6 }} />
+                )}
               </View>
             ) : canManageTeam() ? (
-              <View className="flex-row items-center bg-slate-800/60 rounded-lg px-3 py-1.5">
-                <Plus size={14} color="#67e8f9" />
-                <Text className="text-slate-400 text-sm ml-1">Add Record</Text>
+              <View className="flex-row items-center">
+                <Plus size={12} color="#475569" />
+                <Text className="text-slate-600 text-xs ml-1">Add Record</Text>
               </View>
             ) : null}
           </Pressable>
@@ -1324,7 +1327,8 @@ export default function ScheduleScreen() {
                   viewMode === 'list' && 'bg-cyan-500/30'
                 )}
               >
-                <List size={16} color={viewMode === 'list' ? '#67e8f9' : '#64748b'} />
+                <List size={16} color={viewMode === 'list' ? '#67e8f9' : '#64748b'} strokeWidth={viewMode === 'list' ? 2.5 : 2} />
+                <Text className={cn('text-xs font-medium ml-1.5', viewMode === 'list' ? 'text-cyan-300' : 'text-slate-500')}>List</Text>
               </Pressable>
               <Pressable
                 onPress={() => {
@@ -1337,7 +1341,8 @@ export default function ScheduleScreen() {
                   viewMode === 'calendar' && 'bg-cyan-500/30'
                 )}
               >
-                <CalendarDays size={16} color={viewMode === 'calendar' ? '#67e8f9' : '#64748b'} />
+                <CalendarDays size={16} color={viewMode === 'calendar' ? '#67e8f9' : '#64748b'} strokeWidth={viewMode === 'calendar' ? 2.5 : 2} />
+                <Text className={cn('text-xs font-medium ml-1.5', viewMode === 'calendar' ? 'text-cyan-300' : 'text-slate-500')}>Month</Text>
               </Pressable>
             </View>
           </View>
