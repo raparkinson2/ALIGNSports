@@ -1309,12 +1309,41 @@ export default function PaymentsScreen() {
               {/* Payment Type Selector */}
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Payment Type</Text>
-                <View className="flex-row flex-wrap gap-2">
+                {/* First row - 4 items */}
+                <View className="flex-row gap-2 mb-2">
                   {([
                     { value: 'league_dues', label: 'League Dues' },
                     { value: 'substitute', label: 'Substitute' },
                     { value: 'facility_rental', label: 'Facility Rental' },
                     { value: 'equipment', label: 'Equipment' },
+                  ] as { value: PaymentPeriodType; label: string }[]).map((option) => (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setPeriodType(option.value);
+                      }}
+                      className={cn(
+                        'flex-1 py-2.5 rounded-xl border items-center',
+                        periodType === option.value
+                          ? 'bg-cyan-500/20 border-cyan-500/50'
+                          : 'bg-slate-800 border-slate-700'
+                      )}
+                    >
+                      <Text
+                        className={cn(
+                          'font-medium text-xs',
+                          periodType === option.value ? 'text-cyan-400' : 'text-slate-400'
+                        )}
+                      >
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                {/* Second row - 3 items */}
+                <View className="flex-row gap-2">
+                  {([
                     { value: 'event', label: 'Event' },
                     { value: 'referee', label: 'Referee' },
                     { value: 'misc', label: 'Misc.' },
@@ -1326,7 +1355,7 @@ export default function PaymentsScreen() {
                         setPeriodType(option.value);
                       }}
                       className={cn(
-                        'px-4 py-2.5 rounded-xl border',
+                        'flex-1 py-2.5 rounded-xl border items-center',
                         periodType === option.value
                           ? 'bg-cyan-500/20 border-cyan-500/50'
                           : 'bg-slate-800 border-slate-700'
@@ -1334,7 +1363,7 @@ export default function PaymentsScreen() {
                     >
                       <Text
                         className={cn(
-                          'font-medium',
+                          'font-medium text-xs',
                           periodType === option.value ? 'text-cyan-400' : 'text-slate-400'
                         )}
                       >
