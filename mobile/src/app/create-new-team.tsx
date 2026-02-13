@@ -162,8 +162,8 @@ export default function CreateNewTeamScreen() {
         email: currentPlayer.email || userEmail || undefined,
         password: currentPlayer.password,
         phone: currentPlayer.phone || userPhone || undefined,
-        number: isCoach ? '' : (jerseyNumber.trim() || '1'),
-        position: isCoach ? 'Coach' : SPORT_POSITIONS[sport][0],
+        number: (isCoach || isParent) ? '' : (jerseyNumber.trim() || '1'),
+        position: (isCoach || isParent) ? (isCoach ? 'Coach' : 'Parent') : SPORT_POSITIONS[sport][0],
         roles,
         status: memberRole === 'reserve' ? 'reserve' : 'active',
         avatar: currentPlayer.avatar,
@@ -366,7 +366,6 @@ export default function CreateNewTeamScreen() {
                   </View>
                 </View>
 
-                {/* Role Selector - 2x2 Grid */}
                 <View className="mb-4">
                   <Text className="text-slate-400 text-sm mb-2">Your Role on this team</Text>
                   {/* Row 1: Player & Reserve */}
@@ -460,14 +459,14 @@ export default function CreateNewTeamScreen() {
                     </Pressable>
                   </View>
                   <Text className="text-slate-500 text-xs mt-2">
-                    {isCoach
-                      ? 'Coaches don\'t need jersey numbers or positions'
+                    {(isCoach || isParent)
+                      ? 'Coaches and parents don\'t need jersey numbers'
                       : 'Select your role on the team'}
                   </Text>
                 </View>
 
-                {/* Jersey Number - Only shown for players */}
-                {!isCoach && (
+                {/* Jersey Number - Only shown for players/reserves */}
+                {!isCoach && !isParent && (
                   <View className="mb-4">
                     <Text className="text-slate-400 text-sm mb-2">Jersey Number</Text>
                     <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
