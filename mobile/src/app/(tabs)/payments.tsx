@@ -384,8 +384,12 @@ function SwipeablePaymentPeriodRow({
 
   // Calculate total collected from all player payments
   const totalCollected = period.playerPayments.reduce((sum, pp) => sum + (pp.amount ?? 0), 0);
-  const teamTotalOwed = period.teamTotalOwed;
-  const remainingBalance = teamTotalOwed !== undefined ? teamTotalOwed - totalCollected : undefined;
+
+  // Auto-calculate team total based on players × amount per player
+  // Use manual teamTotalOwed if set, otherwise calculate automatically
+  const calculatedTeamTotal = totalCount * period.amount;
+  const teamTotalOwed = period.teamTotalOwed ?? calculatedTeamTotal;
+  const remainingBalance = teamTotalOwed - totalCollected;
 
   const handleDelete = () => {
     translateX.value = withSpring(0);
@@ -455,7 +459,7 @@ function SwipeablePaymentPeriodRow({
         )}
       >
         {/* Team Total Owed - Admin Only */}
-        {isAdmin && teamTotalOwed !== undefined && !isReorderMode && (
+        {isAdmin && !isReorderMode && (
           <Pressable
             onPress={(e) => {
               e.stopPropagation();
@@ -464,7 +468,7 @@ function SwipeablePaymentPeriodRow({
             }}
             className={cn(
               "rounded-lg p-2.5 mb-3 border active:opacity-80",
-              remainingBalance !== undefined && remainingBalance <= 0
+              remainingBalance <= 0
                 ? "bg-green-500/10 border-green-500/20"
                 : "bg-amber-500/10 border-amber-500/20"
             )}
@@ -473,11 +477,11 @@ function SwipeablePaymentPeriodRow({
               <View>
                 <Text className={cn(
                   "text-xs",
-                  remainingBalance !== undefined && remainingBalance <= 0 ? "text-green-400/70" : "text-amber-400/70"
+                  remainingBalance <= 0 ? "text-green-400/70" : "text-amber-400/70"
                 )}>Team Total</Text>
                 <Text className={cn(
                   "text-base font-semibold",
-                  remainingBalance !== undefined && remainingBalance <= 0 ? "text-green-400" : "text-amber-400"
+                  remainingBalance <= 0 ? "text-green-400" : "text-amber-400"
                 )}>${teamTotalOwed.toLocaleString()}</Text>
               </View>
               <View>
@@ -488,28 +492,11 @@ function SwipeablePaymentPeriodRow({
                 <Text className="text-slate-500 text-xs">Remaining</Text>
                 <Text className={cn(
                   'text-base font-semibold',
-                  remainingBalance !== undefined && remainingBalance <= 0 ? 'text-green-400' : 'text-red-400/90'
+                  remainingBalance <= 0 ? 'text-green-400' : 'text-red-400/90'
                 )}>
-                  ${Math.max(0, remainingBalance ?? 0).toLocaleString()}
+                  ${Math.max(0, remainingBalance).toLocaleString()}
                 </Text>
               </View>
-            </View>
-          </Pressable>
-        )}
-
-        {/* Add Team Total button if not set - Admin Only */}
-        {isAdmin && teamTotalOwed === undefined && !isReorderMode && (
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onEditTeamTotal();
-            }}
-            className="bg-amber-500/10 rounded-lg p-2 mb-3 border border-dashed border-amber-500/30 active:bg-amber-500/20"
-          >
-            <View className="flex-row items-center justify-center">
-              <Plus size={14} color="#f59e0b" />
-              <Text className="text-amber-400 text-xs font-medium ml-1">Add Team Total</Text>
             </View>
           </Pressable>
         )}
