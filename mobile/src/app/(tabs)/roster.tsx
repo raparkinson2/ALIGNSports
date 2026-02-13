@@ -949,45 +949,62 @@ export default function RosterScreen() {
                 <View className="mb-5">
                   <Text className="text-slate-300 text-sm mb-1">Positions<Text className="text-red-400 font-bold">*</Text></Text>
                   <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
-                  <View className="flex-row flex-wrap">
-                    {positions.map((pos) => {
-                      const isSelected = selectedPositions.includes(pos);
-                      return (
-                        <Pressable
-                          key={pos}
-                          onPress={() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            if (isSelected) {
-                              // Allow deselecting - validation will catch empty on save
-                              setSelectedPositions(selectedPositions.filter(p => p !== pos));
-                            } else {
-                              setSelectedPositions([...selectedPositions, pos]);
-                            }
-                          }}
-                          className={cn(
-                            'py-2.5 px-4 rounded-xl mr-1.5 mb-1.5 items-center border',
-                            isSelected ? 'bg-cyan-500 border-cyan-400' : 'bg-slate-800/80 border-slate-700'
-                          )}
-                          style={isSelected ? {
-                            shadowColor: '#22d3ee',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 4,
-                            elevation: 3,
-                          } : undefined}
-                        >
-                          <Text
-                            className={cn(
-                              'font-semibold',
-                              isSelected ? 'text-white' : 'text-slate-500'
-                            )}
-                          >
-                            {pos}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
+                  {/* Split positions into rows for better layout */}
+                  {(() => {
+                    const posCount = positions.length;
+                    // For 10+ positions, split into two rows
+                    const splitAt = posCount <= 6 ? posCount : Math.ceil(posCount / 2);
+                    const row1 = positions.slice(0, splitAt);
+                    const row2 = positions.slice(splitAt);
+
+                    const renderRow = (rowPositions: string[], isLastRow: boolean) => (
+                      <View className={cn("flex-row", !isLastRow && "mb-2")} style={{ gap: 6 }}>
+                        {rowPositions.map((pos) => {
+                          const isSelected = selectedPositions.includes(pos);
+                          return (
+                            <Pressable
+                              key={pos}
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                if (isSelected) {
+                                  setSelectedPositions(selectedPositions.filter(p => p !== pos));
+                                } else {
+                                  setSelectedPositions([...selectedPositions, pos]);
+                                }
+                              }}
+                              className={cn(
+                                'flex-1 py-2.5 rounded-xl items-center border',
+                                isSelected ? 'bg-cyan-500 border-cyan-400' : 'bg-slate-800/80 border-slate-700'
+                              )}
+                              style={isSelected ? {
+                                shadowColor: '#22d3ee',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 4,
+                                elevation: 3,
+                              } : undefined}
+                            >
+                              <Text
+                                className={cn(
+                                  'font-semibold',
+                                  isSelected ? 'text-white' : 'text-slate-500'
+                                )}
+                              >
+                                {pos}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    );
+
+                    return (
+                      <>
+                        {renderRow(row1, row2.length === 0)}
+                        {row2.length > 0 && renderRow(row2, true)}
+                      </>
+                    );
+                  })()}
                   {selectedPositions.length === 0 && (
                     <Text className="text-red-400 text-xs mt-1">Please select at least one position</Text>
                   )}

@@ -1631,43 +1631,59 @@ export default function AdminScreen() {
                   <View className="mb-5">
                     <Text className="text-slate-400 text-sm mb-1">Positions<Text className="text-red-400">*</Text></Text>
                     <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
-                    <View className="flex-row flex-wrap">
-                      {positions.map((pos) => {
-                        const isSelected = editPlayerPositions.includes(pos);
-                        return (
-                          <Pressable
-                            key={pos}
-                            onPress={() => {
-                              if (isSelected) {
-                                // Allow deselecting but only save if at least one position remains
-                                const newPositions = editPlayerPositions.filter(p => p !== pos);
-                                setEditPlayerPositions(newPositions);
-                                if (newPositions.length > 0) {
-                                  handleSavePlayerPositions(newPositions);
-                                }
-                              } else {
-                                const newPositions = [...editPlayerPositions, pos];
-                                setEditPlayerPositions(newPositions);
-                                handleSavePlayerPositions(newPositions);
-                              }
-                            }}
-                            className={cn(
-                              'py-3 px-4 rounded-xl mr-2 mb-2 items-center',
-                              isSelected ? 'bg-cyan-500' : 'bg-slate-800'
-                            )}
-                          >
-                            <Text
-                              className={cn(
-                                'font-semibold',
-                                isSelected ? 'text-white' : 'text-slate-400'
-                              )}
-                            >
-                              {pos}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
+                    {/* Split positions into rows for better layout */}
+                    {(() => {
+                      const posCount = positions.length;
+                      const splitAt = posCount <= 6 ? posCount : Math.ceil(posCount / 2);
+                      const row1 = positions.slice(0, splitAt);
+                      const row2 = positions.slice(splitAt);
+
+                      const renderRow = (rowPositions: string[], isLastRow: boolean) => (
+                        <View className={cn("flex-row", !isLastRow && "mb-2")} style={{ gap: 6 }}>
+                          {rowPositions.map((pos) => {
+                            const isSelected = editPlayerPositions.includes(pos);
+                            return (
+                              <Pressable
+                                key={pos}
+                                onPress={() => {
+                                  if (isSelected) {
+                                    const newPositions = editPlayerPositions.filter(p => p !== pos);
+                                    setEditPlayerPositions(newPositions);
+                                    if (newPositions.length > 0) {
+                                      handleSavePlayerPositions(newPositions);
+                                    }
+                                  } else {
+                                    const newPositions = [...editPlayerPositions, pos];
+                                    setEditPlayerPositions(newPositions);
+                                    handleSavePlayerPositions(newPositions);
+                                  }
+                                }}
+                                className={cn(
+                                  'flex-1 py-3 rounded-xl items-center',
+                                  isSelected ? 'bg-cyan-500' : 'bg-slate-800'
+                                )}
+                              >
+                                <Text
+                                  className={cn(
+                                    'font-semibold',
+                                    isSelected ? 'text-white' : 'text-slate-400'
+                                  )}
+                                >
+                                  {pos}
+                                </Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      );
+
+                      return (
+                        <>
+                          {renderRow(row1, row2.length === 0)}
+                          {row2.length > 0 && renderRow(row2, true)}
+                        </>
+                      );
+                    })()}
                     {editPlayerPositions.length === 0 && (
                       <Text className="text-red-400 text-xs mt-1">Please select at least one position</Text>
                     )}
@@ -2243,9 +2259,9 @@ export default function AdminScreen() {
 
               {/* Jersey Number and Position Row - Hidden for coaches and parents */}
               {newPlayerMemberRole !== 'coach' && newPlayerMemberRole !== 'parent' && (
-                <View className="flex-row mb-5">
+                <View className="mb-5">
                   {/* Jersey Number */}
-                  <View style={{ width: 100 }} className="mr-3">
+                  <View className="mb-4">
                     <Text className="text-slate-400 text-sm mb-2">Number<Text className="text-red-400">*</Text></Text>
                     <TextInput
                       value={newPlayerNumber}
@@ -2254,44 +2270,62 @@ export default function AdminScreen() {
                       placeholderTextColor="#64748b"
                       keyboardType="number-pad"
                       maxLength={2}
+                      style={{ width: 100 }}
                       className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
                     />
                   </View>
 
                   {/* Position Selection */}
-                  <View className="flex-1">
+                  <View>
                     <Text className="text-slate-400 text-sm mb-2">Position<Text className="text-red-400">*</Text></Text>
-                    <View className="flex-row flex-wrap">
-                      {positions.map((pos) => {
-                        const isSelected = newPlayerPositions.includes(pos);
-                        return (
-                          <Pressable
-                            key={pos}
-                            onPress={() => {
-                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                              if (isSelected) {
-                                setNewPlayerPositions(newPlayerPositions.filter(p => p !== pos));
-                              } else {
-                                setNewPlayerPositions([...newPlayerPositions, pos]);
-                              }
-                            }}
-                            className={cn(
-                              'py-2 px-3 rounded-lg mr-1.5 mb-1.5 items-center',
-                              isSelected ? 'bg-cyan-500' : 'bg-slate-800'
-                            )}
-                          >
-                            <Text
-                              className={cn(
-                                'font-semibold text-sm',
-                                isSelected ? 'text-white' : 'text-slate-400'
-                              )}
-                            >
-                              {pos}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
+                    {/* Split positions into rows for better layout */}
+                    {(() => {
+                      const posCount = positions.length;
+                      const splitAt = posCount <= 6 ? posCount : Math.ceil(posCount / 2);
+                      const row1 = positions.slice(0, splitAt);
+                      const row2 = positions.slice(splitAt);
+
+                      const renderRow = (rowPositions: string[], isLastRow: boolean) => (
+                        <View className={cn("flex-row", !isLastRow && "mb-2")} style={{ gap: 6 }}>
+                          {rowPositions.map((pos) => {
+                            const isSelected = newPlayerPositions.includes(pos);
+                            return (
+                              <Pressable
+                                key={pos}
+                                onPress={() => {
+                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                  if (isSelected) {
+                                    setNewPlayerPositions(newPlayerPositions.filter(p => p !== pos));
+                                  } else {
+                                    setNewPlayerPositions([...newPlayerPositions, pos]);
+                                  }
+                                }}
+                                className={cn(
+                                  'flex-1 py-2 rounded-lg items-center',
+                                  isSelected ? 'bg-cyan-500' : 'bg-slate-800'
+                                )}
+                              >
+                                <Text
+                                  className={cn(
+                                    'font-semibold text-sm',
+                                    isSelected ? 'text-white' : 'text-slate-400'
+                                  )}
+                                >
+                                  {pos}
+                                </Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      );
+
+                      return (
+                        <>
+                          {renderRow(row1, row2.length === 0)}
+                          {row2.length > 0 && renderRow(row2, true)}
+                        </>
+                      );
+                    })()}
                   </View>
                 </View>
               )}

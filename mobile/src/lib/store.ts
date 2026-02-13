@@ -7,12 +7,12 @@ import { useState, useEffect } from 'react';
 export type Sport = 'baseball' | 'basketball' | 'hockey' | 'lacrosse' | 'soccer' | 'softball';
 
 export const SPORT_POSITIONS: Record<Sport, string[]> = {
-  baseball: ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'RF', 'CF'],
+  baseball: ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH'],
   basketball: ['PG', 'SG', 'SF', 'PF', 'C'],
   hockey: ['C', 'LW', 'RW', 'LD', 'RD', 'G'],
   lacrosse: ['G', 'A', 'M', 'D'],
   soccer: ['GK', 'DEF', 'MID', 'FWD'],
-  softball: ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'RF', 'CF'],
+  softball: ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH', 'EF'],
 };
 
 export const SPORT_POSITION_NAMES: Record<Sport, Record<string, string>> = {
@@ -24,8 +24,9 @@ export const SPORT_POSITION_NAMES: Record<Sport, Record<string, string>> = {
     '3B': 'Third Base',
     SS: 'Shortstop',
     LF: 'Left Field',
-    RF: 'Right Field',
     CF: 'Center Field',
+    RF: 'Right Field',
+    DH: 'Designated Hitter',
   },
   basketball: {
     PG: 'Point Guard',
@@ -62,8 +63,10 @@ export const SPORT_POSITION_NAMES: Record<Sport, Record<string, string>> = {
     '3B': 'Third Base',
     SS: 'Shortstop',
     LF: 'Left Field',
-    RF: 'Right Field',
     CF: 'Center Field',
+    RF: 'Right Field',
+    DH: 'Designated Hitter',
+    EF: 'Extra Fielder',
   },
 };
 
@@ -77,8 +80,9 @@ export const POSITION_MAPPING: Record<Sport, Record<string, Record<Sport, string
     '3B': { baseball: '3B', basketball: 'PF', hockey: 'LD', lacrosse: 'D', soccer: 'DEF', softball: '3B' },
     SS: { baseball: 'SS', basketball: 'PG', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: 'SS' },
     LF: { baseball: 'LF', basketball: 'SG', hockey: 'LW', lacrosse: 'A', soccer: 'FWD', softball: 'LF' },
-    RF: { baseball: 'RF', basketball: 'SF', hockey: 'RW', lacrosse: 'A', soccer: 'FWD', softball: 'RF' },
     CF: { baseball: 'CF', basketball: 'SF', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: 'CF' },
+    RF: { baseball: 'RF', basketball: 'SF', hockey: 'RW', lacrosse: 'A', soccer: 'FWD', softball: 'RF' },
+    DH: { baseball: 'DH', basketball: 'PF', hockey: 'LW', lacrosse: 'A', soccer: 'FWD', softball: 'DH' },
   },
   basketball: {
     PG: { baseball: 'SS', basketball: 'PG', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: 'SS' },
@@ -115,8 +119,10 @@ export const POSITION_MAPPING: Record<Sport, Record<string, Record<Sport, string
     '3B': { baseball: '3B', basketball: 'PF', hockey: 'LD', lacrosse: 'D', soccer: 'DEF', softball: '3B' },
     SS: { baseball: 'SS', basketball: 'PG', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: 'SS' },
     LF: { baseball: 'LF', basketball: 'SG', hockey: 'LW', lacrosse: 'A', soccer: 'FWD', softball: 'LF' },
-    RF: { baseball: 'RF', basketball: 'SF', hockey: 'RW', lacrosse: 'A', soccer: 'FWD', softball: 'RF' },
     CF: { baseball: 'CF', basketball: 'SF', hockey: 'C', lacrosse: 'M', soccer: 'MID', softball: 'CF' },
+    RF: { baseball: 'RF', basketball: 'SF', hockey: 'RW', lacrosse: 'A', soccer: 'FWD', softball: 'RF' },
+    DH: { baseball: 'DH', basketball: 'PF', hockey: 'LW', lacrosse: 'A', soccer: 'FWD', softball: 'DH' },
+    EF: { baseball: 'CF', basketball: 'SF', hockey: 'RW', lacrosse: 'A', soccer: 'FWD', softball: 'EF' },
   },
 };
 
