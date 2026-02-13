@@ -862,7 +862,7 @@ export default function AdminScreen() {
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.6}
-          >Control Panel – {teamName}</Text>
+          >Control Panel</Text>
         </Animated.View>
 
         <ScrollView
