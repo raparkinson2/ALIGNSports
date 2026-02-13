@@ -515,8 +515,8 @@ function SwipeablePaymentPeriodRow({
                   }}
                   className="ml-3 rounded-lg px-2 py-1 flex-row items-center"
                 >
-                  <Edit3 size={12} color="#64748b" />
-                  <Text className="text-slate-400 text-xs ml-1">Edit</Text>
+                  <Edit3 size={12} color="#22c55e" />
+                  <Text className="text-green-500 text-xs ml-1">Edit</Text>
                 </Pressable>
               )}
             </View>
