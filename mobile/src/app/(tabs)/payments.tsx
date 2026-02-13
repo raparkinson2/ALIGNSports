@@ -1108,6 +1108,18 @@ export default function PaymentsScreen() {
                       <View className="flex-1">
                         <Text className="text-white font-semibold text-lg">{period.title}</Text>
                         <Text className="text-slate-400 text-sm">Amount Due: ${period.amount}</Text>
+                        {period.dueDate && (() => {
+                          const allPaid = payment?.status === 'paid';
+                          const dueDateColor = getDueDateColor(period.dueDate, allPaid);
+                          return (
+                            <View className="flex-row items-center mt-1">
+                              <Calendar size={14} color={dueDateColor.hex} />
+                              <Text className={cn('text-sm font-medium ml-1.5', dueDateColor.text)}>
+                                Due {format(parseISO(period.dueDate), 'MMMM d, yyyy')}
+                              </Text>
+                            </View>
+                          );
+                        })()}
                       </View>
                       <View className="items-end">
                         {payment?.status === 'paid' ? (
