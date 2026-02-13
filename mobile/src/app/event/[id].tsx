@@ -116,6 +116,7 @@ export default function EventDetailScreen() {
 
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
+  const [isReleaseInvitesModalVisible, setIsReleaseInvitesModalVisible] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [editDate, setEditDate] = useState(new Date());
@@ -239,6 +240,37 @@ export default function EventDetailScreen() {
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsEditModalVisible(false);
+  };
+
+  const handleSaveReleaseInvites = () => {
+    updateEvent(event.id, {
+      inviteReleaseOption: editInviteReleaseOption,
+      inviteReleaseDate: editInviteReleaseOption === 'scheduled' ? editInviteReleaseDate.toISOString() : undefined,
+      invitesSent: editInviteReleaseOption === 'now' ? true : event.invitesSent,
+    });
+
+    // If releasing now, send notifications
+    if (editInviteReleaseOption === 'now' && !event.invitesSent) {
+      const dateStr = format(eventDate, 'EEE, MMM d');
+      invitedPlayers.forEach((player) => {
+        const notification: AppNotification = {
+          id: `event-invite-${event.id}-${player.id}-${Date.now()}`,
+          type: 'game_invite',
+          title: event.type === 'practice' ? 'Practice Scheduled!' : 'Event Invite!',
+          message: event.type === 'practice'
+            ? `Practice on ${dateStr} at ${event.time}`
+            : `You're invited to "${event.title}" on ${dateStr} at ${event.time}`,
+          gameId: event.id,
+          toPlayerId: player.id,
+          read: false,
+          createdAt: new Date().toISOString(),
+        };
+        addNotification(notification);
+      });
+    }
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsReleaseInvitesModalVisible(false);
   };
 
   const deleteEvent = () => {
@@ -458,7 +490,20 @@ export default function EventDetailScreen() {
             {/* Release Invites Status - Visible to admins/captains */}
             {canManageTeam() && (
               <Animated.View entering={FadeInDown.delay(350).springify()} className="mt-4">
-                <View className="flex-row items-center justify-center py-2.5 px-3 bg-slate-800/40 rounded-xl">
+                <Pressable
+                  onPress={() => {
+                    if (!event.invitesSent) {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      // Initialize edit state with current values
+                      setEditInviteReleaseOption(event.inviteReleaseOption || 'now');
+                      setEditInviteReleaseDate(event.inviteReleaseDate ? parseISO(event.inviteReleaseDate) : new Date());
+                      setShowEditInviteReleaseDatePicker(false);
+                      setIsReleaseInvitesModalVisible(true);
+                    }
+                  }}
+                  disabled={event.invitesSent}
+                  className="flex-row items-center justify-center py-2.5 px-3 bg-slate-800/40 rounded-xl active:bg-slate-700/40"
+                >
                   <Calendar size={14} color="#67e8f9" />
                   <Text className="text-cyan-400 text-sm ml-1.5">Release Invites:</Text>
                   {event.invitesSent ? (
@@ -475,7 +520,7 @@ export default function EventDetailScreen() {
                   ) : (
                     <Text className="text-green-400 text-sm ml-1.5">Ready to send</Text>
                   )}
-                </View>
+                </Pressable>
               </Animated.View>
             )}
 
@@ -821,6 +866,149 @@ export default function EventDetailScreen() {
                     {editInviteReleaseOption === 'none' && <Check size={18} color="#94a3b8" />}
                   </Pressable>
                 </View>
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Release Invites Modal */}
+      <Modal
+        visible={isReleaseInvitesModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsReleaseInvitesModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsReleaseInvitesModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Release Invites</Text>
+              <Pressable onPress={handleSaveReleaseInvites}>
+                <Check size={24} color="#22c55e" />
+              </Pressable>
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-6">
+              <View className="bg-slate-800/50 rounded-xl p-3">
+                {/* Release Now Option */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setEditInviteReleaseOption('now');
+                    setShowEditInviteReleaseDatePicker(false);
+                  }}
+                  className={cn(
+                    'flex-row items-center p-3 rounded-xl mb-2 border',
+                    editInviteReleaseOption === 'now'
+                      ? 'bg-green-500/20 border-green-500/50'
+                      : 'bg-slate-700/50 border-slate-600'
+                  )}
+                >
+                  <Send size={18} color={editInviteReleaseOption === 'now' ? '#22c55e' : '#64748b'} />
+                  <View className="ml-3 flex-1">
+                    <Text className={cn(
+                      'font-medium',
+                      editInviteReleaseOption === 'now' ? 'text-green-400' : 'text-slate-400'
+                    )}>
+                      Release invites now
+                    </Text>
+                    <Text className="text-slate-500 text-xs mt-0.5">
+                      Players will be notified immediately
+                    </Text>
+                  </View>
+                  {editInviteReleaseOption === 'now' && <Check size={18} color="#22c55e" />}
+                </Pressable>
+
+                {/* Schedule Release Option */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setEditInviteReleaseOption('scheduled');
+                    setShowEditInviteReleaseDatePicker(true);
+                  }}
+                  className={cn(
+                    'flex-row items-center p-3 rounded-xl mb-2 border',
+                    editInviteReleaseOption === 'scheduled'
+                      ? 'bg-cyan-500/20 border-cyan-500/50'
+                      : 'bg-slate-700/50 border-slate-600'
+                  )}
+                >
+                  <Bell size={18} color={editInviteReleaseOption === 'scheduled' ? '#22d3ee' : '#64748b'} />
+                  <View className="ml-3 flex-1">
+                    <Text className={cn(
+                      'font-medium',
+                      editInviteReleaseOption === 'scheduled' ? 'text-cyan-400' : 'text-slate-400'
+                    )}>
+                      Schedule release
+                    </Text>
+                    <Text className="text-slate-500 text-xs mt-0.5">
+                      Choose when to notify players
+                    </Text>
+                  </View>
+                  {editInviteReleaseOption === 'scheduled' && <Check size={18} color="#22d3ee" />}
+                </Pressable>
+
+                {/* Schedule Date/Time Picker */}
+                {editInviteReleaseOption === 'scheduled' && (
+                  <View className="mt-2 mb-2">
+                    <Pressable
+                      onPress={() => setShowEditInviteReleaseDatePicker(!showEditInviteReleaseDatePicker)}
+                      className="bg-slate-700/80 rounded-xl px-4 py-3"
+                    >
+                      <Text className="text-cyan-400 text-base">
+                        {format(editInviteReleaseDate, 'EEE, MMM d, yyyy h:mm a')}
+                      </Text>
+                    </Pressable>
+                    {showEditInviteReleaseDatePicker && (
+                      <View className="bg-slate-700/80 rounded-xl mt-2 overflow-hidden items-center">
+                        <DateTimePicker
+                          value={editInviteReleaseDate}
+                          mode="datetime"
+                          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                          onChange={(evt, date) => {
+                            if (date) setEditInviteReleaseDate(date);
+                            if (Platform.OS === 'android') setShowEditInviteReleaseDatePicker(false);
+                          }}
+                          minimumDate={new Date()}
+                          themeVariant="dark"
+                          accentColor="#22d3ee"
+                        />
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {/* Don't Send Option */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setEditInviteReleaseOption('none');
+                    setShowEditInviteReleaseDatePicker(false);
+                  }}
+                  className={cn(
+                    'flex-row items-center p-3 rounded-xl border',
+                    editInviteReleaseOption === 'none'
+                      ? 'bg-slate-600/50 border-slate-500'
+                      : 'bg-slate-700/50 border-slate-600'
+                  )}
+                >
+                  <BellOff size={18} color={editInviteReleaseOption === 'none' ? '#94a3b8' : '#64748b'} />
+                  <View className="ml-3 flex-1">
+                    <Text className={cn(
+                      'font-medium',
+                      editInviteReleaseOption === 'none' ? 'text-slate-300' : 'text-slate-400'
+                    )}>
+                      Don't send invites
+                    </Text>
+                    <Text className="text-slate-500 text-xs mt-0.5">
+                      Send manually later
+                    </Text>
+                  </View>
+                  {editInviteReleaseOption === 'none' && <Check size={18} color="#94a3b8" />}
+                </Pressable>
               </View>
             </ScrollView>
           </SafeAreaView>
