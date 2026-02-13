@@ -447,10 +447,17 @@ export default function EventDetailScreen() {
               </Animated.View>
             )}
 
-            {/* RSVP Summary */}
+            {/* RSVP / Check In Summary */}
             <Animated.View entering={FadeInDown.delay(400).springify()} className="mt-6">
               <View className="flex-row items-center justify-between mb-4">
-                <Text className="text-white text-lg font-semibold">RSVPs</Text>
+                <View className="flex-row items-center">
+                  {event.type === 'practice' && (
+                    <CheckCircle2 size={18} color="#22c55e" />
+                  )}
+                  <Text className={`text-lg font-semibold ${event.type === 'practice' ? 'text-green-400 ml-2' : 'text-white'}`}>
+                    {event.type === 'practice' ? 'Check In' : 'RSVPs'}
+                  </Text>
+                </View>
                 <View className="flex-row items-center">
                   {canManageTeam() && (
                     <Pressable
