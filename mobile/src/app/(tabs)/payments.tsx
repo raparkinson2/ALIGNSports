@@ -2220,15 +2220,15 @@ export default function PaymentsScreen() {
             </View>
 
             <Text className="text-slate-300 text-sm mb-4">
-              ALIGN tracks team balances for record-keeping purposes only. Payments are not processed within the app.
+              ALIGN Sports tracks team balances for record-keeping only. Payments are not processed in-app.
             </Text>
 
             <Text className="text-slate-300 text-sm mb-4">
-              All payments are handled externally (for example, through Venmo or other payment platforms). Any payment links provided are for convenience only.
+              All payments are handled externally (for example, through Venmo or other payment platforms). Payment links are provided for convenience only.
             </Text>
 
             <Text className="text-slate-400 text-sm font-medium mb-2">
-              ALIGN does not collect, process, or store:
+              ALIGN Sports does not collect, process, or store:
             </Text>
             <View className="mb-4 ml-2">
               <Text className="text-slate-400 text-sm">• Credit or debit card numbers</Text>
@@ -2238,11 +2238,11 @@ export default function PaymentsScreen() {
             </View>
 
             <Text className="text-slate-300 text-sm mb-4">
-              If a payment method is added, only the payee's public username (e.g., Venmo handle) is stored. This can be removed at any time in the Payments section of the app.
+              If a payment method is added, only the payee's public username (such as a Venmo handle) is stored. This can be removed at any time in the Payments section of the app.
             </Text>
 
             <Text className="text-slate-400 text-sm italic mb-4">
-              Payer details are never tracked or saved by ALIGN.
+              Payer details are never stored by ALIGN Sports.
             </Text>
 
             <Pressable
