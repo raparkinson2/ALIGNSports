@@ -67,13 +67,13 @@ const createEmptyLineup = (): BasketballLineup => ({
   starters: {
     pg: undefined,
     guards: [undefined, undefined],
-    forwards: [undefined, undefined],
+    forwards: [undefined],
     centers: [undefined],
   },
   bench: Array(10).fill(undefined),
   numGuards: 2,
-  numForwards: 2,
-  numCenters: 0,
+  numForwards: 1,
+  numCenters: 1,
   hasPG: true,
   numBenchSpots: 10,
 });
@@ -425,58 +425,8 @@ export function BasketballLineupEditor({
               )}
             </Animated.View>
 
-            {/* Forwards Section */}
-            <Animated.View entering={FadeIn.delay(200)} className="px-5 pt-4">
-              <View className="flex-row items-center justify-between mb-4">
-                <Text className="text-white text-lg font-semibold">Forwards (F)</Text>
-                <View className="flex-row items-center bg-slate-800 rounded-lg">
-                  <Pressable
-                    onPress={() => handleConfigChange('forwards', -1)}
-                    className="p-2"
-                    disabled={lineup.numForwards <= 0}
-                  >
-                    <Minus
-                      size={20}
-                      color={lineup.numForwards <= 0 ? '#475569' : '#10b981'}
-                    />
-                  </Pressable>
-                  <Text className="text-white font-bold px-3">{lineup.numForwards}</Text>
-                  <Pressable
-                    onPress={() => handleConfigChange('forwards', 1)}
-                    className="p-2"
-                    disabled={lineup.numForwards >= 2 || currentStarterCount >= 5}
-                  >
-                    <Plus
-                      size={20}
-                      color={lineup.numForwards >= 2 || currentStarterCount >= 5 ? '#475569' : '#10b981'}
-                    />
-                  </Pressable>
-                </View>
-              </View>
-
-              {lineup.numForwards > 0 && (
-                <Animated.View
-                  entering={FadeInDown.delay(50)}
-                  className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/50"
-                >
-                  <View className="flex-row justify-around">
-                    {lineup.starters.forwards.slice(0, lineup.numForwards).map((playerId, index) => (
-                      <PositionSlot
-                        key={`forward-${index}`}
-                        position="f"
-                        playerId={playerId}
-                        players={availablePlayers}
-                        onSelect={() => handleSelectPosition('forward', index)}
-                        label={`F${index + 1}`}
-                      />
-                    ))}
-                  </View>
-                </Animated.View>
-              )}
-            </Animated.View>
-
             {/* Centers Section */}
-            <Animated.View entering={FadeIn.delay(250)} className="px-5 pt-4">
+            <Animated.View entering={FadeIn.delay(200)} className="px-5 pt-4">
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-white text-lg font-semibold">Centers (C)</Text>
                 <View className="flex-row items-center bg-slate-800 rounded-lg">
@@ -518,6 +468,56 @@ export function BasketballLineupEditor({
                         players={availablePlayers}
                         onSelect={() => handleSelectPosition('center', index)}
                         label={`C${index + 1}`}
+                      />
+                    ))}
+                  </View>
+                </Animated.View>
+              )}
+            </Animated.View>
+
+            {/* Forwards Section */}
+            <Animated.View entering={FadeIn.delay(250)} className="px-5 pt-4">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-white text-lg font-semibold">Forwards (F)</Text>
+                <View className="flex-row items-center bg-slate-800 rounded-lg">
+                  <Pressable
+                    onPress={() => handleConfigChange('forwards', -1)}
+                    className="p-2"
+                    disabled={lineup.numForwards <= 0}
+                  >
+                    <Minus
+                      size={20}
+                      color={lineup.numForwards <= 0 ? '#475569' : '#10b981'}
+                    />
+                  </Pressable>
+                  <Text className="text-white font-bold px-3">{lineup.numForwards}</Text>
+                  <Pressable
+                    onPress={() => handleConfigChange('forwards', 1)}
+                    className="p-2"
+                    disabled={lineup.numForwards >= 2 || currentStarterCount >= 5}
+                  >
+                    <Plus
+                      size={20}
+                      color={lineup.numForwards >= 2 || currentStarterCount >= 5 ? '#475569' : '#10b981'}
+                    />
+                  </Pressable>
+                </View>
+              </View>
+
+              {lineup.numForwards > 0 && (
+                <Animated.View
+                  entering={FadeInDown.delay(50)}
+                  className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/50"
+                >
+                  <View className="flex-row justify-around">
+                    {lineup.starters.forwards.slice(0, lineup.numForwards).map((playerId, index) => (
+                      <PositionSlot
+                        key={`forward-${index}`}
+                        position="f"
+                        playerId={playerId}
+                        players={availablePlayers}
+                        onSelect={() => handleSelectPosition('forward', index)}
+                        label={`F${index + 1}`}
                       />
                     ))}
                   </View>

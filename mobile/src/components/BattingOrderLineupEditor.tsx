@@ -68,7 +68,7 @@ export function BattingOrderLineupEditor({
 
   const positions = getPositionsForSport(sport);
   const minHitters = sport === 'baseball' ? 9 : 10;
-  const maxHitters = 20; // Allow up to 20 hitters for any league that needs extra hitters
+  const maxHitters = minHitters + 10; // Allow up to +10 extra hitters (designated hitters)
 
   // Get all currently assigned player IDs
   const assignedPlayerIds = useMemo(() => {
