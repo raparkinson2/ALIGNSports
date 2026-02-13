@@ -4,7 +4,7 @@ import { X, Plus, Minus, User, Trash2, GripVertical } from 'lucide-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import Sortable, { type OrderChangeParams } from 'react-native-sortables';
+import Sortable from 'react-native-sortables';
 import { cn } from '@/lib/cn';
 import {
   Player,
@@ -154,24 +154,6 @@ export function BattingOrderLineupEditor({
     });
   };
 
-  const handleOrderChange = useCallback((params: OrderChangeParams) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const { indexToKey } = params;
-    setLineup((prev) => {
-      // Build new order from indexToKey mapping
-      const newBattingOrder: BattingOrderEntry[] = [];
-      for (let i = 0; i < indexToKey.length; i++) {
-        const key = indexToKey[i];
-        if (key) {
-          // Extract original index from key (e.g., "slot-3" -> 3)
-          const originalIndex = parseInt(key.replace('slot-', ''), 10);
-          newBattingOrder[i] = prev.battingOrder[originalIndex];
-        }
-      }
-      return { ...prev, battingOrder: newBattingOrder };
-    });
-  }, []);
-
   const handleClearAll = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setLineup((prev) => ({
@@ -268,83 +250,91 @@ export function BattingOrderLineupEditor({
               <Text className="text-white text-lg font-semibold mb-4">Lineup Card</Text>
 
               <View className="bg-slate-800/60 rounded-2xl border border-slate-700/50 overflow-hidden">
-                <Sortable.Flex
-                  onOrderChange={handleOrderChange}
-                  flexDirection="column"
+                <Sortable.Grid
+                  data={lineup.battingOrder.slice(0, lineup.numHitters).map((entry, index) => ({
+                    id: `slot-${index}`,
+                    entry,
+                    originalIndex: index,
+                  }))}
+                  columns={1}
+                  renderItem={({ item, index }) => {
+                    const player = item.entry?.playerId ? getPlayer(item.entry.playerId) : null;
+
+                    return (
+                      <View
+                        className={cn(
+                          'flex-row items-center p-3 bg-slate-800/60',
+                          index < lineup.numHitters - 1 && 'border-b border-slate-700/50'
+                        )}
+                      >
+                        {/* Drag Handle */}
+                        {player ? (
+                          <Sortable.Handle>
+                            <View className="p-2 mr-1">
+                              <GripVertical size={18} color="#64748b" />
+                            </View>
+                          </Sortable.Handle>
+                        ) : (
+                          <View className="w-[34px]" />
+                        )}
+
+                        {/* Order Number */}
+                        <View className="w-8 h-8 rounded-full bg-emerald-500/20 items-center justify-center mr-3">
+                          <Text className="text-emerald-400 font-bold">{index + 1}</Text>
+                        </View>
+
+                        {/* Player Info / Empty Slot */}
+                        <Pressable
+                          onPress={() => setSelectingSlot(index)}
+                          className="flex-1 flex-row items-center"
+                        >
+                          {player ? (
+                            <>
+                              <PlayerAvatar player={player} size={40} />
+                              <View className="ml-3 flex-1">
+                                <Text className="text-white font-medium">{getPlayerName(player)}</Text>
+                                <Text className="text-slate-400 text-xs">#{player.number}</Text>
+                              </View>
+                              <View className="bg-emerald-500/20 px-2 py-1 rounded">
+                                <Text className="text-emerald-400 font-semibold text-sm">{item.entry?.position}</Text>
+                              </View>
+                            </>
+                          ) : (
+                            <View className="flex-row items-center flex-1">
+                              <View className="w-10 h-10 rounded-full bg-slate-700/50 items-center justify-center border-2 border-dashed border-slate-600">
+                                <User size={18} color="#64748b" />
+                              </View>
+                              <Text className="text-slate-500 ml-3">Tap to add player</Text>
+                            </View>
+                          )}
+                        </Pressable>
+
+                        {/* Clear Button */}
+                        {player && (
+                          <Pressable
+                            onPress={() => handleClearSlot(index)}
+                            className="p-2 ml-2"
+                          >
+                            <X size={18} color="#ef4444" />
+                          </Pressable>
+                        )}
+                      </View>
+                    );
+                  }}
+                  keyExtractor={(item) => item.id}
+                  onDragEnd={({ data }) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setLineup((prev) => ({
+                      ...prev,
+                      battingOrder: data.map((item) => item.entry),
+                    }));
+                  }}
                   customHandle
                   dragActivationDelay={150}
                   activeItemScale={1.02}
                   activeItemOpacity={0.9}
                   activeItemShadowOpacity={0.3}
-                  width="fill"
-                >
-                  {lineup.battingOrder.slice(0, lineup.numHitters).map((entry, index) => {
-                    const player = entry?.playerId ? getPlayer(entry.playerId) : null;
-
-                    return (
-                      <Sortable.Touchable key={`slot-${index}`} style={{ width: '100%' }}>
-                        <View
-                          className={cn(
-                            'flex-row items-center p-3 bg-slate-800/60 w-full',
-                            index < lineup.numHitters - 1 && 'border-b border-slate-700/50'
-                          )}
-                        >
-                          {/* Drag Handle */}
-                          {player ? (
-                            <Sortable.Handle>
-                              <View className="p-2 mr-1">
-                                <GripVertical size={18} color="#64748b" />
-                              </View>
-                            </Sortable.Handle>
-                          ) : (
-                            <View className="w-[34px]" />
-                          )}
-
-                          {/* Order Number */}
-                          <View className="w-8 h-8 rounded-full bg-emerald-500/20 items-center justify-center mr-3">
-                            <Text className="text-emerald-400 font-bold">{index + 1}</Text>
-                          </View>
-
-                          {/* Player Info / Empty Slot */}
-                          <Pressable
-                            onPress={() => setSelectingSlot(index)}
-                            className="flex-1 flex-row items-center"
-                          >
-                            {player ? (
-                              <>
-                                <PlayerAvatar player={player} size={40} />
-                                <View className="ml-3 flex-1">
-                                  <Text className="text-white font-medium">{getPlayerName(player)}</Text>
-                                  <Text className="text-slate-400 text-xs">#{player.number}</Text>
-                                </View>
-                                <View className="bg-emerald-500/20 px-2 py-1 rounded">
-                                  <Text className="text-emerald-400 font-semibold text-sm">{entry?.position}</Text>
-                                </View>
-                              </>
-                            ) : (
-                              <View className="flex-row items-center flex-1">
-                                <View className="w-10 h-10 rounded-full bg-slate-700/50 items-center justify-center border-2 border-dashed border-slate-600">
-                                  <User size={18} color="#64748b" />
-                                </View>
-                                <Text className="text-slate-500 ml-3">Tap to add player</Text>
-                              </View>
-                            )}
-                          </Pressable>
-
-                          {/* Clear Button */}
-                          {player && (
-                            <Pressable
-                              onPress={() => handleClearSlot(index)}
-                              className="p-2 ml-2"
-                            >
-                              <X size={18} color="#ef4444" />
-                            </Pressable>
-                          )}
-                        </View>
-                      </Sortable.Touchable>
-                    );
-                  })}
-                </Sortable.Flex>
+                />
               </View>
             </Animated.View>
 
