@@ -497,10 +497,11 @@ export interface Game {
 // In-app notification types
 export interface AppNotification {
   id: string;
-  type: 'game_invite' | 'game_reminder' | 'payment_reminder' | 'chat_message';
+  type: 'game_invite' | 'game_reminder' | 'payment_reminder' | 'chat_message' | 'event_invite' | 'practice_invite';
   title: string;
   message: string;
   gameId?: string;
+  eventId?: string; // For practice/event notifications
   fromPlayerId?: string;
   toPlayerId: string;
   createdAt: string;

@@ -133,8 +133,12 @@ function AuthNavigator() {
       if (response) {
         console.log('App opened from notification:', response);
         const data = response.notification.request.content.data;
-        if (data?.gameId && isReady) {
-          router.push(`/game/${data.gameId}`);
+        if (isReady) {
+          if (data?.eventId) {
+            router.push(`/event/${data.eventId}`);
+          } else if (data?.gameId) {
+            router.push(`/game/${data.gameId}`);
+          }
         }
       }
     });
@@ -158,6 +162,19 @@ function AuthNavigator() {
           read: false,
         });
       }
+      // Add to in-app notifications for event/practice notifications
+      else if ((notificationType === 'event_invite' || notificationType === 'practice_invite') && data?.eventId) {
+        addNotification({
+          id: `notif-${Date.now()}`,
+          type: notificationType as 'event_invite' | 'practice_invite',
+          title: notification.request.content.title || (notificationType === 'practice_invite' ? 'Practice Scheduled!' : 'New Event Added!'),
+          message: notification.request.content.body || '',
+          eventId: data.eventId as string,
+          toPlayerId: currentPlayerId,
+          createdAt: new Date().toISOString(),
+          read: false,
+        });
+      }
     });
 
     // Listen for notification taps (when app is in background or foreground)
@@ -167,8 +184,12 @@ function AuthNavigator() {
       // Small delay to ensure navigation is ready
       setTimeout(() => {
         if (isReady) {
+          // Navigate to event if it's an event/practice notification
+          if (data?.eventId) {
+            router.push(`/event/${data.eventId}`);
+          }
           // Navigate to game if it's a game notification
-          if (data?.gameId) {
+          else if (data?.gameId) {
             router.push(`/game/${data.gameId}`);
           }
           // Navigate to polls if it's a poll notification

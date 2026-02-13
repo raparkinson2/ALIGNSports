@@ -1103,10 +1103,10 @@ export default function ScheduleScreen() {
       invitedPlayerIds.forEach((playerId) => {
         const notification: AppNotification = {
           id: `event-invite-${newEvent.id}-${playerId}-${Date.now()}`,
-          type: 'game_invite',
+          type: 'event_invite',
           title: 'New Event Added!',
           message: `You've been invited to "${eventName.trim()}" on ${formattedDate} at ${fullEventTime}`,
-          gameId: newEvent.id,
+          eventId: newEvent.id,
           toPlayerId: playerId,
           read: false,
           createdAt: new Date().toISOString(),
@@ -1169,10 +1169,10 @@ export default function ScheduleScreen() {
       invitedPlayerIds.forEach((playerId) => {
         const notification: AppNotification = {
           id: `practice-invite-${newPractice.id}-${playerId}-${Date.now()}`,
-          type: 'game_invite',
+          type: 'practice_invite',
           title: 'Practice Scheduled!',
           message: `Practice on ${formattedDate} at ${fullPracticeTime}`,
-          gameId: newPractice.id,
+          eventId: newPractice.id,
           toPlayerId: playerId,
           read: false,
           createdAt: new Date().toISOString(),

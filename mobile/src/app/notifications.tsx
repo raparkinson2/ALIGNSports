@@ -178,8 +178,12 @@ export default function NotificationsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     markNotificationRead(notification.id);
 
+    // Navigate to event if it's an event/practice notification
+    if (notification.eventId) {
+      router.push(`/event/${notification.eventId}`);
+    }
     // Navigate to game if it's a game notification
-    if (notification.gameId) {
+    else if (notification.gameId) {
       router.push(`/game/${notification.gameId}`);
     }
   };
