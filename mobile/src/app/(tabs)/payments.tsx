@@ -867,9 +867,55 @@ export default function PaymentsScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {/* Payment Tracking Section - Moved above Payment Methods */}
+          {/* Payment Methods Section */}
+          <Animated.View entering={FadeInDown.delay(100).springify()}>
+            <View className="flex-row items-center justify-between mb-3">
+              <View className="flex-row items-center">
+                <CreditCard size={16} color="#67e8f9" />
+                <Text className="text-cyan-400 font-semibold ml-2">Payment Methods</Text>
+              </View>
+              {isAdmin() && (
+                <Pressable
+                  onPress={() => setIsPaymentMethodModalVisible(true)}
+                  className="bg-green-500 w-10 h-10 rounded-full items-center justify-center active:bg-green-600"
+                >
+                  <Plus size={20} color="white" />
+                </Pressable>
+              )}
+            </View>
+
+            {paymentMethods.length === 0 ? (
+              <View className="bg-slate-800/50 rounded-xl p-6 items-center mb-6">
+                <CreditCard size={32} color="#64748b" />
+                <Text className="text-slate-400 text-center mt-2">
+                  {isAdmin() ? 'Add payment methods for your team' : 'No payment methods configured'}
+                </Text>
+              </View>
+            ) : (
+              <View className="bg-slate-800/50 rounded-xl p-4 mb-6">
+                <Text className="text-slate-400 text-sm mb-3">Tap to pay:</Text>
+                <View className="flex-row" style={{ gap: 8 }}>
+                  {paymentMethods.map((method, index) => (
+                    <View key={index} className="relative flex-1" style={{ marginTop: 4 }}>
+                      <PaymentMethodButton method={method} />
+                      {isAdmin() && (
+                        <Pressable
+                          onPress={() => handleRemovePaymentMethod(index)}
+                          className="absolute -top-2 -right-1 bg-red-500 rounded-full p-1"
+                        >
+                          <X size={8} color="white" />
+                        </Pressable>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </Animated.View>
+
+          {/* Payment Tracking Section */}
           {(isAdmin() || canManageTeam()) && (
-            <Animated.View entering={FadeInDown.delay(100).springify()}>
+            <Animated.View entering={FadeInDown.delay(150).springify()}>
               <View className="flex-row items-center justify-between mb-2">
                 <View className="flex-row items-center">
                   <Users size={16} color="#a78bfa" />
@@ -916,7 +962,7 @@ export default function PaymentsScreen() {
                   {paymentPeriods.map((period, index) => (
                     <Animated.View
                       key={period.id}
-                      entering={FadeInDown.delay(150 + index * 50).springify()}
+                      entering={FadeInDown.delay(200 + index * 50).springify()}
                     >
                       <SwipeablePaymentPeriodRow
                         period={period}
@@ -956,52 +1002,6 @@ export default function PaymentsScreen() {
               )}
             </Animated.View>
           )}
-
-          {/* Payment Methods Section */}
-          <Animated.View entering={FadeInDown.delay(200).springify()}>
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center">
-                <CreditCard size={16} color="#67e8f9" />
-                <Text className="text-cyan-400 font-semibold ml-2">Payment Methods</Text>
-              </View>
-              {isAdmin() && (
-                <Pressable
-                  onPress={() => setIsPaymentMethodModalVisible(true)}
-                  className="bg-green-500 w-10 h-10 rounded-full items-center justify-center active:bg-green-600"
-                >
-                  <Plus size={20} color="white" />
-                </Pressable>
-              )}
-            </View>
-
-            {paymentMethods.length === 0 ? (
-              <View className="bg-slate-800/50 rounded-xl p-6 items-center mb-6">
-                <CreditCard size={32} color="#64748b" />
-                <Text className="text-slate-400 text-center mt-2">
-                  {isAdmin() ? 'Add payment methods for your team' : 'No payment methods configured'}
-                </Text>
-              </View>
-            ) : (
-              <View className="bg-slate-800/50 rounded-xl p-4 mb-6">
-                <Text className="text-slate-400 text-sm mb-3">Tap to pay:</Text>
-                <View className="flex-row" style={{ gap: 8 }}>
-                  {paymentMethods.map((method, index) => (
-                    <View key={index} className="relative flex-1" style={{ marginTop: 4 }}>
-                      <PaymentMethodButton method={method} />
-                      {isAdmin() && (
-                        <Pressable
-                          onPress={() => handleRemovePaymentMethod(index)}
-                          className="absolute -top-2 -right-1 bg-red-500 rounded-full p-1"
-                        >
-                          <X size={8} color="white" />
-                        </Pressable>
-                      )}
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-          </Animated.View>
 
           {/* My Payment Status - For regular players */}
           {!isAdmin() && !canManageTeam() && myPaymentStatus.length > 0 && (
