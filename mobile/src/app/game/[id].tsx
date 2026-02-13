@@ -770,9 +770,6 @@ export default function GameDetailScreen() {
                   <ListOrdered size={24} color="#10b981" />
                   <View className="flex-1 ml-3">
                     <Text className="text-emerald-400 font-semibold">Set Lines</Text>
-                    <Text className="text-slate-400 text-sm">
-                      {hasAssignedPlayers(game.lineup) ? 'Edit line combinations' : 'Configure forward, defense, and goalie lines'}
-                    </Text>
                   </View>
                   <ChevronDown size={20} color="#10b981" />
                 </View>
@@ -794,9 +791,6 @@ export default function GameDetailScreen() {
                   <ListOrdered size={24} color="#10b981" />
                   <View className="flex-1 ml-3">
                     <Text className="text-emerald-400 font-semibold">Starting 5</Text>
-                    <Text className="text-slate-400 text-sm">
-                      {hasAssignedBasketballPlayers(game.basketballLineup) ? 'Edit starting 5 and bench' : 'Configure starting 5 and bench players'}
-                    </Text>
                   </View>
                   <ChevronDown size={20} color="#10b981" />
                 </View>
@@ -818,9 +812,6 @@ export default function GameDetailScreen() {
                   <ListOrdered size={24} color="#10b981" />
                   <View className="flex-1 ml-3">
                     <Text className="text-emerald-400 font-semibold">Set Batting Order</Text>
-                    <Text className="text-slate-400 text-sm">
-                      {hasAssignedBattingOrder(game.battingOrderLineup) ? 'Edit batting order' : 'Configure lineup card'}
-                    </Text>
                   </View>
                   <ChevronDown size={20} color="#10b981" />
                 </View>
@@ -842,9 +833,6 @@ export default function GameDetailScreen() {
                   <ListOrdered size={24} color="#10b981" />
                   <View className="flex-1 ml-3">
                     <Text className="text-emerald-400 font-semibold">Set Batting Order</Text>
-                    <Text className="text-slate-400 text-sm">
-                      {hasAssignedBattingOrder(game.battingOrderLineup) ? 'Edit batting order' : 'Configure lineup card with extra hitters'}
-                    </Text>
                   </View>
                   <ChevronDown size={20} color="#10b981" />
                 </View>
@@ -866,9 +854,6 @@ export default function GameDetailScreen() {
                   <ListOrdered size={24} color="#10b981" />
                   <View className="flex-1 ml-3">
                     <Text className="text-emerald-400 font-semibold">Set Lineup</Text>
-                    <Text className="text-slate-400 text-sm">
-                      {(hasAssignedSoccerPlayers(game.soccerLineup) || hasAssignedSoccerDiamondPlayers(game.soccerDiamondLineup)) ? 'Edit starting XI' : 'Configure starting XI'}
-                    </Text>
                   </View>
                   <ChevronDown size={20} color="#10b981" />
                 </View>
@@ -890,9 +875,6 @@ export default function GameDetailScreen() {
                   <ListOrdered size={24} color="#10b981" />
                   <View className="flex-1 ml-3">
                     <Text className="text-emerald-400 font-semibold">Set Lineup</Text>
-                    <Text className="text-slate-400 text-sm">
-                      {hasAssignedLacrossePlayers(game.lacrosseLineup) ? 'Edit field positions' : 'Configure attackers, midfielders, defenders'}
-                    </Text>
                   </View>
                   <ChevronDown size={20} color="#10b981" />
                 </View>
