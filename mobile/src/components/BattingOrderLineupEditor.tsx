@@ -1,6 +1,6 @@
 import { View, Text, Pressable, ScrollView, Modal } from 'react-native';
 import { useState, useMemo } from 'react';
-import { X, Plus, Minus, User, Trash2, ChevronUp, ChevronDown, GripVertical } from 'lucide-react-native';
+import { X, Plus, Minus, User, Trash2, ChevronUp, ChevronDown } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -8,10 +8,6 @@ import { cn } from '@/lib/cn';
 import {
   Player,
   BattingOrderLineup,
-  BattingOrderEntry,
-  Sport,
-  SPORT_POSITIONS,
-  SPORT_POSITION_NAMES,
   getPlayerName,
 } from '@/lib/store';
 import { PlayerAvatar } from './PlayerAvatar';
@@ -473,6 +469,6 @@ export function BattingOrderLineupEditor({
 
 // Helper function to check if a lineup has any assigned players
 export function hasAssignedBattingOrder(lineup: BattingOrderLineup | undefined): boolean {
-  if (!lineup) return false;
+  if (!lineup || !lineup.battingOrder) return false;
   return lineup.battingOrder.some((entry) => entry?.playerId);
 }

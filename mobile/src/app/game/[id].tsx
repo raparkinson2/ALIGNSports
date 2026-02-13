@@ -1140,8 +1140,8 @@ export default function GameDetailScreen() {
                 </View>
 
                 {/* Batting Order Preview */}
-                <View className="space-y-1">
-                  {game.battingOrderLineup.battingOrder.slice(0, game.battingOrderLineup.numHitters).map((entry, index) => {
+                <View className="gap-1">
+                  {(game.battingOrderLineup?.battingOrder ?? []).slice(0, game.battingOrderLineup?.numHitters ?? 9).map((entry, index) => {
                     const player = entry?.playerId ? players.find((p) => p.id === entry.playerId) : null;
                     return (
                       <View key={index} className="flex-row items-center py-1">
@@ -1175,7 +1175,7 @@ export default function GameDetailScreen() {
                 <View className="flex-row items-center justify-between mb-3">
                   <View className="flex-row items-center">
                     <ListOrdered size={20} color="#10b981" />
-                    <Text className="text-emerald-400 font-semibold ml-2">Batting Order ({game.battingOrderLineup.numHitters} hitters)</Text>
+                    <Text className="text-emerald-400 font-semibold ml-2">Batting Order ({game.battingOrderLineup?.numHitters ?? 10} hitters)</Text>
                   </View>
                   {canManageTeam() && (
                     <ChevronDown size={20} color="#10b981" />
@@ -1183,8 +1183,8 @@ export default function GameDetailScreen() {
                 </View>
 
                 {/* Batting Order Preview */}
-                <View className="space-y-1">
-                  {game.battingOrderLineup.battingOrder.slice(0, game.battingOrderLineup.numHitters).map((entry, index) => {
+                <View className="gap-1">
+                  {(game.battingOrderLineup?.battingOrder ?? []).slice(0, game.battingOrderLineup?.numHitters ?? 10).map((entry, index) => {
                     const player = entry?.playerId ? players.find((p) => p.id === entry.playerId) : null;
                     return (
                       <View key={index} className="flex-row items-center py-1">
