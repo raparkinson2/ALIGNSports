@@ -188,7 +188,7 @@ interface PlayerPaymentRowProps {
 
 function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType, onPress, isOverdue, daysOverdue }: PlayerPaymentRowProps) {
   const balance = totalAmount - (paidAmount ?? 0);
-  const isDuesType = periodType === 'dues';
+  const isDuesType = periodType === 'league_dues';
   const progressPercent = totalAmount > 0 ? Math.min(100, ((paidAmount ?? 0) / totalAmount) * 100) : 0;
   const showOverdue = isOverdue && status !== 'paid';
 
@@ -676,7 +676,7 @@ export default function PaymentsScreen() {
   // New period form
   const [periodTitle, setPeriodTitle] = useState('');
   const [periodAmount, setPeriodAmount] = useState('');
-  const [periodType, setPeriodType] = useState<PaymentPeriodType>('dues');
+  const [periodType, setPeriodType] = useState<PaymentPeriodType>('league_dues');
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [periodDueDate, setPeriodDueDate] = useState<Date | null>(null);
   const [showPeriodDueDatePicker, setShowPeriodDueDatePicker] = useState(false);
@@ -769,7 +769,7 @@ export default function PaymentsScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setPeriodTitle('');
     setPeriodAmount('');
-    setPeriodType('dues');
+    setPeriodType('league_dues');
     setSelectedPlayerIds([]);
     setPeriodDueDate(null);
     setShowPeriodDueDatePicker(false);
@@ -1311,9 +1311,12 @@ export default function PaymentsScreen() {
                 <Text className="text-slate-400 text-sm mb-2">Payment Type</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
                   {([
-                    { value: 'dues', label: 'Dues' },
-                    { value: 'reserve_fee', label: 'Reserve' },
-                    { value: 'facility_rental', label: 'Facility' },
+                    { value: 'league_dues', label: 'League Dues' },
+                    { value: 'substitute', label: 'Substitute' },
+                    { value: 'facility_rental', label: 'Facility Rental' },
+                    { value: 'equipment', label: 'Equipment' },
+                    { value: 'event', label: 'Event' },
+                    { value: 'referee', label: 'Referee' },
                     { value: 'misc', label: 'Misc.' },
                   ] as { value: PaymentPeriodType; label: string }[]).map((option) => (
                     <Pressable
@@ -1341,7 +1344,7 @@ export default function PaymentsScreen() {
                   ))}
                 </ScrollView>
                 <Text className="text-slate-500 text-xs mt-2">
-                  {periodType === 'dues'
+                  {periodType === 'league_dues'
                     ? 'Dues track balance remaining until fully paid'
                     : 'This type shows total collected without a balance'}
                 </Text>

@@ -547,7 +547,7 @@ export interface PlayerPayment {
   entries: PaymentEntry[]; // Individual payment entries
 }
 
-export type PaymentPeriodType = 'dues' | 'reserve_fee' | 'facility_rental' | 'misc';
+export type PaymentPeriodType = 'league_dues' | 'substitute' | 'facility_rental' | 'equipment' | 'event' | 'referee' | 'misc';
 
 export interface PaymentPeriod {
   id: string;
