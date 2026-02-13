@@ -666,54 +666,64 @@ export default function GameDetailScreen() {
                 </Text>
 
                 <View className="flex-row mt-4">
-                  <View className="flex-1">
-                    <View className="flex-row items-center mb-2">
-                      <Clock size={16} color="#67e8f9" />
-                      <Text className="text-white ml-2 font-medium">{game.time}</Text>
-                    </View>
-                    <View className="flex-row items-center">
-                      <JerseyIcon size={18} color={jerseyColorHex} strokeColor="rgba(255,255,255,0.4)" />
-                      <Text className="text-white font-medium ml-2">
-                        {jerseyColorName}
-                      </Text>
-                    </View>
+                  <View className="flex-row items-center mr-6">
+                    <Clock size={16} color="#67e8f9" />
+                    <Text className="text-white ml-2 font-medium">{game.time}</Text>
                   </View>
-                  <View className="flex-1">
-                    <View className="flex-row items-center mb-2">
-                      <Users size={16} color="#22c55e" />
-                      <Text className="text-green-400 ml-2 font-medium">
-                        {checkedInCount}/{invitedPlayers.length} In
-                      </Text>
-                    </View>
+                  <View className="flex-row items-center">
+                    <Users size={16} color="#22c55e" />
+                    <Text className="text-green-400 ml-2 font-medium">
+                      {checkedInCount}/{invitedPlayers.length} In
+                    </Text>
                   </View>
                 </View>
               </View>
             </View>
           </Animated.View>
 
+          {/* Date and Time Cards */}
+          <Animated.View entering={FadeInUp.delay(105).springify()} className="mx-4 mb-4">
+            <View className="flex-row">
+              <View className="flex-1 bg-slate-800/80 rounded-2xl p-4 mr-2">
+                <View className="flex-row items-center mb-1">
+                  <Calendar size={16} color="#67e8f9" />
+                  <Text className="text-slate-400 text-xs ml-2">Date</Text>
+                </View>
+                <Text className="text-white font-semibold">{format(parseISO(game.date), 'EEEE, MMMM d, yyyy')}</Text>
+              </View>
+              <View className="flex-1 bg-slate-800/80 rounded-2xl p-4 ml-2">
+                <View className="flex-row items-center mb-1">
+                  <Clock size={16} color="#67e8f9" />
+                  <Text className="text-slate-400 text-xs ml-2">Time</Text>
+                </View>
+                <Text className="text-white font-semibold">{game.time}</Text>
+              </View>
+            </View>
+          </Animated.View>
+
           {/* Location Card */}
           <Animated.View
-            entering={FadeInUp.delay(112).springify()}
+            entering={FadeInUp.delay(110).springify()}
             className="mx-4 mb-4"
           >
             <Pressable
               onPress={handleOpenMaps}
-              className="bg-slate-800/80 rounded-2xl p-4 border border-slate-700/50 active:bg-slate-700/80"
+              className="bg-slate-800/80 rounded-2xl p-4 flex-row items-center justify-between"
             >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-1">
-                  <View className="flex-row items-center mb-1">
-                    <MapPin size={18} color="#67e8f9" />
-                    <Text className="text-cyan-400 font-semibold ml-2">Location</Text>
-                  </View>
-                  <Text className="text-white font-medium text-lg">{game.location}</Text>
-                  {game.address ? (
-                    <Text className="text-slate-400">{game.address}</Text>
-                  ) : null}
+              <View className="flex-row items-center flex-1">
+                <View className="w-10 h-10 rounded-full bg-cyan-500/20 items-center justify-center">
+                  <MapPin size={20} color="#67e8f9" />
                 </View>
-                <View className="bg-cyan-500/20 p-3 rounded-full">
-                  <Navigation size={20} color="#67e8f9" />
+                <View className="ml-3 flex-1">
+                  <Text className="text-slate-400 text-xs">Location</Text>
+                  <Text className="text-white font-semibold">{game.location}</Text>
+                  {game.address && (
+                    <Text className="text-slate-400 text-sm">{game.address}</Text>
+                  )}
                 </View>
+              </View>
+              <View className="bg-cyan-500/20 rounded-full p-2">
+                <Navigation size={18} color="#67e8f9" />
               </View>
             </Pressable>
           </Animated.View>
