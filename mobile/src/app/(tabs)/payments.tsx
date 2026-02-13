@@ -162,6 +162,7 @@ interface PlayerPaymentRowProps {
 function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType, onPress }: PlayerPaymentRowProps) {
   const balance = totalAmount - (paidAmount ?? 0);
   const isDuesType = periodType === 'dues';
+  const progressPercent = totalAmount > 0 ? Math.min(100, ((paidAmount ?? 0) / totalAmount) * 100) : 0;
 
   // For non-dues types, show amount paid instead of balance
   const getStatusText = () => {
@@ -209,6 +210,15 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
         <Text className={cn('text-sm mt-0.5', getTextClass())}>
           {getStatusText()}
         </Text>
+        {/* Progress bar for partial payments */}
+        {isDuesType && status === 'partial' && (
+          <View className="w-full h-1.5 bg-slate-700 rounded-full mt-2 overflow-hidden">
+            <View
+              className="h-full bg-amber-500 rounded-full"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </View>
+        )}
       </View>
 
       <View className="items-end">
@@ -428,32 +438,32 @@ function SwipeablePaymentPeriodRow({
               onEditTeamTotal();
             }}
             className={cn(
-              "rounded-lg p-3 mb-3 border active:opacity-80",
+              "rounded-lg p-2.5 mb-3 border active:opacity-80",
               remainingBalance !== undefined && remainingBalance <= 0
-                ? "bg-green-500/20 border-green-500/30"
-                : "bg-amber-500/20 border-amber-500/30"
+                ? "bg-green-500/10 border-green-500/20"
+                : "bg-amber-500/10 border-amber-500/20"
             )}
           >
             <View className="flex-row items-center justify-between">
               <View>
                 <Text className={cn(
-                  "text-xs font-medium",
-                  remainingBalance !== undefined && remainingBalance <= 0 ? "text-green-300" : "text-amber-300"
-                )}>Team Total Owed</Text>
+                  "text-xs",
+                  remainingBalance !== undefined && remainingBalance <= 0 ? "text-green-400/70" : "text-amber-400/70"
+                )}>Team Total</Text>
                 <Text className={cn(
-                  "text-lg font-bold",
+                  "text-base font-semibold",
                   remainingBalance !== undefined && remainingBalance <= 0 ? "text-green-400" : "text-amber-400"
                 )}>${teamTotalOwed.toLocaleString()}</Text>
               </View>
               <View>
-                <Text className="text-slate-400 text-xs">Collected</Text>
-                <Text className="text-green-400 text-lg font-bold">${totalCollected.toLocaleString()}</Text>
+                <Text className="text-slate-500 text-xs">Collected</Text>
+                <Text className="text-green-400/90 text-base font-semibold">${totalCollected.toLocaleString()}</Text>
               </View>
               <View>
-                <Text className="text-slate-400 text-xs">Remaining</Text>
+                <Text className="text-slate-500 text-xs">Remaining</Text>
                 <Text className={cn(
-                  'text-lg font-bold',
-                  remainingBalance !== undefined && remainingBalance <= 0 ? 'text-green-400' : 'text-red-400'
+                  'text-base font-semibold',
+                  remainingBalance !== undefined && remainingBalance <= 0 ? 'text-green-400' : 'text-red-400/90'
                 )}>
                   ${Math.max(0, remainingBalance ?? 0).toLocaleString()}
                 </Text>
@@ -857,8 +867,98 @@ export default function PaymentsScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
+          {/* Payment Tracking Section - Moved above Payment Methods */}
+          {(isAdmin() || canManageTeam()) && (
+            <Animated.View entering={FadeInDown.delay(100).springify()}>
+              <View className="flex-row items-center justify-between mb-2">
+                <View className="flex-row items-center">
+                  <Users size={16} color="#a78bfa" />
+                  <Text className="text-purple-400 font-semibold ml-2">Payment Tracking</Text>
+                </View>
+                <View className="flex-row items-center">
+                  {isAdmin() && paymentPeriods.length > 1 && (
+                    <Pressable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setIsReorderMode(!isReorderMode);
+                      }}
+                      className={cn(
+                        'rounded-full p-2 mr-2',
+                        isReorderMode ? 'bg-purple-500' : 'bg-purple-500/20'
+                      )}
+                    >
+                      <GripVertical size={16} color={isReorderMode ? 'white' : '#a78bfa'} />
+                    </Pressable>
+                  )}
+                  {isAdmin() && (
+                    <Pressable
+                      onPress={() => setIsNewPeriodModalVisible(true)}
+                      className="bg-green-500 w-10 h-10 rounded-full items-center justify-center active:bg-green-600"
+                    >
+                      <Plus size={20} color="white" />
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+
+              {/* Microcopy clarifying manual tracking */}
+              <Text className="text-slate-500 text-xs mb-3">Payments are recorded manually — not processed in-app</Text>
+
+              {paymentPeriods.length === 0 ? (
+                <View className="bg-slate-800/50 rounded-xl p-6 items-center mb-6">
+                  <DollarSign size={32} color="#64748b" />
+                  <Text className="text-slate-400 text-center mt-2">
+                    {isAdmin() ? 'Create a payment period to track dues' : 'No payment periods'}
+                  </Text>
+                </View>
+              ) : (
+                <View className="mb-6">
+                  {paymentPeriods.map((period, index) => (
+                    <Animated.View
+                      key={period.id}
+                      entering={FadeInDown.delay(150 + index * 50).springify()}
+                    >
+                      <SwipeablePaymentPeriodRow
+                        period={period}
+                        index={index}
+                        isReorderMode={isReorderMode}
+                        onPress={() => setSelectedPeriodId(period.id)}
+                        onDelete={() => {
+                          Alert.alert('Delete Period', 'Are you sure you want to delete this payment period?', [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Delete',
+                              style: 'destructive',
+                              onPress: () => {
+                                removePaymentPeriod(period.id);
+                              },
+                            },
+                          ]);
+                        }}
+                        onMoveUp={() => movePeriodUp(index)}
+                        onMoveDown={() => movePeriodDown(index)}
+                        onEditAmount={() => {
+                          setEditingPeriodId(period.id);
+                          setEditPeriodAmount(period.amount.toString());
+                          setIsEditAmountModalVisible(true);
+                        }}
+                        onEditTeamTotal={() => {
+                          setEditingTeamTotalPeriodId(period.id);
+                          setEditTeamTotalAmount(period.teamTotalOwed?.toString() || '');
+                          setIsEditTeamTotalModalVisible(true);
+                        }}
+                        totalPeriods={paymentPeriods.length}
+                        isAdmin={isAdmin()}
+                      />
+                    </Animated.View>
+                  ))}
+                </View>
+              )}
+            </Animated.View>
+          )}
+
           {/* Payment Methods Section */}
-          <Animated.View entering={FadeInDown.delay(100).springify()}>
+          <Animated.View entering={FadeInDown.delay(200).springify()}>
             <View className="flex-row items-center justify-between mb-3">
               <View className="flex-row items-center">
                 <CreditCard size={16} color="#67e8f9" />
@@ -902,91 +1002,6 @@ export default function PaymentsScreen() {
               </View>
             )}
           </Animated.View>
-
-          {/* Payment Periods - Admin Only */}
-          {(isAdmin() || canManageTeam()) && (
-            <Animated.View entering={FadeInDown.delay(150).springify()}>
-              <View className="flex-row items-center justify-between mb-3">
-                <View className="flex-row items-center">
-                  <Users size={16} color="#a78bfa" />
-                  <Text className="text-purple-400 font-semibold ml-2">Payment Tracking</Text>
-                </View>
-                <View className="flex-row items-center">
-                  {isAdmin() && paymentPeriods.length > 1 && (
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setIsReorderMode(!isReorderMode);
-                      }}
-                      className={cn(
-                        'rounded-full p-2 mr-2',
-                        isReorderMode ? 'bg-purple-500' : 'bg-purple-500/20'
-                      )}
-                    >
-                      <GripVertical size={16} color={isReorderMode ? 'white' : '#a78bfa'} />
-                    </Pressable>
-                  )}
-                  {isAdmin() && (
-                    <Pressable
-                      onPress={() => setIsNewPeriodModalVisible(true)}
-                      className="bg-green-500 w-10 h-10 rounded-full items-center justify-center active:bg-green-600"
-                    >
-                      <Plus size={20} color="white" />
-                    </Pressable>
-                  )}
-                </View>
-              </View>
-
-              {paymentPeriods.length === 0 ? (
-                <View className="bg-slate-800/50 rounded-xl p-6 items-center">
-                  <DollarSign size={32} color="#64748b" />
-                  <Text className="text-slate-400 text-center mt-2">
-                    {isAdmin() ? 'Create a payment period to track dues' : 'No payment periods'}
-                  </Text>
-                </View>
-              ) : (
-                paymentPeriods.map((period, index) => (
-                  <Animated.View
-                    key={period.id}
-                    entering={FadeInDown.delay(200 + index * 50).springify()}
-                  >
-                    <SwipeablePaymentPeriodRow
-                      period={period}
-                      index={index}
-                      isReorderMode={isReorderMode}
-                      onPress={() => setSelectedPeriodId(period.id)}
-                      onDelete={() => {
-                        Alert.alert('Delete Period', 'Are you sure you want to delete this payment period?', [
-                          { text: 'Cancel', style: 'cancel' },
-                          {
-                            text: 'Delete',
-                            style: 'destructive',
-                            onPress: () => {
-                              removePaymentPeriod(period.id);
-                            },
-                          },
-                        ]);
-                      }}
-                      onMoveUp={() => movePeriodUp(index)}
-                      onMoveDown={() => movePeriodDown(index)}
-                      onEditAmount={() => {
-                        setEditingPeriodId(period.id);
-                        setEditPeriodAmount(period.amount.toString());
-                        setIsEditAmountModalVisible(true);
-                      }}
-                      onEditTeamTotal={() => {
-                        setEditingTeamTotalPeriodId(period.id);
-                        setEditTeamTotalAmount(period.teamTotalOwed?.toString() || '');
-                        setIsEditTeamTotalModalVisible(true);
-                      }}
-                      totalPeriods={paymentPeriods.length}
-                      isAdmin={isAdmin()}
-                    />
-                  </Animated.View>
-                ))
-              )}
-            </Animated.View>
-          )}
 
           {/* My Payment Status - For regular players */}
           {!isAdmin() && !canManageTeam() && myPaymentStatus.length > 0 && (
@@ -1370,6 +1385,29 @@ export default function PaymentsScreen() {
                       <Text className="text-slate-400">Paid</Text>
                       <Text className="text-green-400 text-xl font-bold">${selectedPlayerPayment?.amount ?? 0}</Text>
                     </View>
+
+                    {/* Progress Bar */}
+                    <View className="mb-3">
+                      <View className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                        <View
+                          className={cn(
+                            'h-full rounded-full',
+                            selectedPlayerPayment?.status === 'paid' ? 'bg-green-500' : 'bg-amber-500'
+                          )}
+                          style={{
+                            width: `${selectedPeriod.amount > 0
+                              ? Math.min(100, ((selectedPlayerPayment?.amount ?? 0) / selectedPeriod.amount) * 100)
+                              : 0}%`
+                          }}
+                        />
+                      </View>
+                      <Text className="text-slate-500 text-xs text-center mt-1">
+                        {selectedPeriod.amount > 0
+                          ? Math.round(((selectedPlayerPayment?.amount ?? 0) / selectedPeriod.amount) * 100)
+                          : 0}% paid
+                      </Text>
+                    </View>
+
                     <View className="h-px bg-slate-700 my-2" />
                     <View className="flex-row justify-between items-center">
                       <Text className="text-slate-400">Balance</Text>
