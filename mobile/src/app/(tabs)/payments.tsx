@@ -532,13 +532,12 @@ function SwipeablePaymentPeriodRow({
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       onEditDueDate();
                     }}
-                    className="flex-row items-center mt-1.5 active:opacity-70"
+                    className="flex-row items-center mt-1.5 py-1 active:opacity-70"
                   >
                     <Calendar size={14} color={dueDateColor.hex} />
                     <Text className={cn('text-sm font-medium ml-1.5', dueDateColor.text)}>
-                      Due {format(parseISO(period.dueDate), 'MMM d, yyyy')}
+                      Due {format(parseISO(period.dueDate), 'MMMM d, yyyy')}
                     </Text>
-                    <Edit3 size={12} color="#64748b" style={{ marginLeft: 6 }} />
                   </Pressable>
                 );
               })() : (
@@ -548,7 +547,7 @@ function SwipeablePaymentPeriodRow({
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     onEditDueDate();
                   }}
-                  className="flex-row items-center mt-1.5 active:opacity-70"
+                  className="flex-row items-center mt-1.5 py-1 active:opacity-70"
                 >
                   <Calendar size={14} color="#64748b" />
                   <Text className="text-slate-500 text-sm ml-1.5">Add due date</Text>
@@ -562,7 +561,7 @@ function SwipeablePaymentPeriodRow({
                 <View className="flex-row items-center mt-1.5">
                   <Calendar size={14} color={dueDateColor.hex} />
                   <Text className={cn('text-sm font-medium ml-1.5', dueDateColor.text)}>
-                    Due {format(parseISO(period.dueDate), 'MMM d, yyyy')}
+                    Due {format(parseISO(period.dueDate), 'MMMM d, yyyy')}
                   </Text>
                 </View>
               );
@@ -1765,11 +1764,11 @@ export default function PaymentsScreen() {
                                   <Calendar size={20} color={dueDateColor.hex} />
                                   <Text className={cn('text-base font-medium ml-3', selectedPeriod.dueDate ? dueDateColor.text : 'text-slate-500')}>
                                     {selectedPeriod.dueDate
-                                      ? `Due ${format(parseISO(selectedPeriod.dueDate), 'MMM d, yyyy')}`
+                                      ? `Due ${format(parseISO(selectedPeriod.dueDate), 'MMMM d, yyyy')}`
                                       : 'No due date set'}
                                   </Text>
                                 </View>
-                                <Edit3 size={16} color="#64748b" />
+                                <Edit3 size={18} color="#64748b" />
                               </Pressable>
                             );
                           })()
