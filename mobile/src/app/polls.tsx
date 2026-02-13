@@ -19,11 +19,24 @@ import {
   ChevronRight,
   Calendar,
   MessageSquare,
+  Clock,
 } from 'lucide-react-native';
-import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  runOnJS,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { useTeamStore, Poll, getPlayerName, Player } from '@/lib/store';
+
+const SWIPE_THRESHOLD = -80;
 
 interface PollQuestion {
   id: string;
@@ -206,13 +219,18 @@ function CreatePollModal({
 }: {
   visible: boolean;
   onClose: () => void;
-  onSave: (pollName: string, questions: { question: string; options: string[]; allowMultiple: boolean; isRequired: boolean }[], sendNotification: boolean) => void;
+  onSave: (pollName: string, questions: { question: string; options: string[]; allowMultiple: boolean; isRequired: boolean }[], sendNotification: boolean, endsAt?: string) => void;
 }) {
   const [pollName, setPollName] = useState('');
   const [questions, setQuestions] = useState<PollQuestion[]>([
     { id: '1', question: '', options: ['', ''], allowMultiple: false, isRequired: false },
   ]);
   const [sendNotification, setSendNotification] = useState(true);
+  const [hasEndDate, setHasEndDate] = useState(false);
+  const [endDate, setEndDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // Default 1 week from now
+  const [endTimeValue, setEndTimeValue] = useState('11:59');
+  const [endTimePeriod, setEndTimePeriod] = useState<'AM' | 'PM'>('PM');
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleAddQuestion = () => {
     if (questions.length < 5) {
@@ -258,10 +276,27 @@ function CreatePollModal({
       return;
     }
 
-    onSave(pollName.trim(), validQuestions, sendNotification);
+    // Calculate end date/time if enabled
+    let endsAt: string | undefined;
+    if (hasEndDate) {
+      const [hours, minutes] = endTimeValue.split(':').map(Number);
+      let hour24 = hours;
+      if (endTimePeriod === 'PM' && hours !== 12) hour24 += 12;
+      if (endTimePeriod === 'AM' && hours === 12) hour24 = 0;
+
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(hour24, minutes, 0, 0);
+      endsAt = endDateTime.toISOString();
+    }
+
+    onSave(pollName.trim(), validQuestions, sendNotification, endsAt);
     setPollName('');
     setQuestions([{ id: '1', question: '', options: ['', ''], allowMultiple: false, isRequired: false }]);
     setSendNotification(true);
+    setHasEndDate(false);
+    setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    setEndTimeValue('11:59');
+    setEndTimePeriod('PM');
     onClose();
   };
 
@@ -269,6 +304,10 @@ function CreatePollModal({
     setPollName('');
     setQuestions([{ id: '1', question: '', options: ['', ''], allowMultiple: false, isRequired: false }]);
     setSendNotification(true);
+    setHasEndDate(false);
+    setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    setEndTimeValue('11:59');
+    setEndTimePeriod('PM');
     onClose();
   };
 
@@ -302,6 +341,102 @@ function CreatePollModal({
                   autoCapitalize="words"
                   className="bg-slate-800/60 rounded-xl px-4 py-3 text-white text-base border border-slate-700/50"
                 />
+              </View>
+
+              {/* Poll Ends (Optional) */}
+              <View className="mb-5">
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setHasEndDate(!hasEndDate);
+                  }}
+                  className="flex-row items-center justify-between py-3 px-4 bg-slate-800/40 rounded-xl border border-slate-700/50"
+                >
+                  <View className="flex-row items-center">
+                    <Clock size={18} color={hasEndDate ? '#10b981' : '#64748b'} />
+                    <Text className="text-slate-300 text-sm ml-2">Set poll end date (optional)</Text>
+                  </View>
+                  <View
+                    className={`w-5 h-5 rounded-md items-center justify-center ${
+                      hasEndDate ? 'bg-emerald-500' : 'bg-slate-600'
+                    }`}
+                  >
+                    {hasEndDate && <Check size={14} color="white" />}
+                  </View>
+                </Pressable>
+
+                {hasEndDate && (
+                  <View className="mt-3 bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+                    {/* Date */}
+                    <View className="mb-3">
+                      <Text className="text-slate-400 text-xs mb-1.5 uppercase tracking-wide">End Date</Text>
+                      <Pressable
+                        onPress={() => setShowDatePicker(!showDatePicker)}
+                        className="bg-slate-900/60 rounded-xl px-4 py-3 border border-slate-700/50"
+                      >
+                        <Text className="text-white text-base">
+                          {format(endDate, 'EEEE, MMMM d, yyyy')}
+                        </Text>
+                      </Pressable>
+                      {showDatePicker && (
+                        <View className="bg-slate-800 rounded-xl mt-2 overflow-hidden items-center">
+                          <DateTimePicker
+                            value={endDate}
+                            mode="date"
+                            display="inline"
+                            minimumDate={new Date()}
+                            onChange={(evt, date) => {
+                              if (date) setEndDate(date);
+                            }}
+                            themeVariant="dark"
+                            accentColor="#10b981"
+                          />
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Time */}
+                    <View>
+                      <Text className="text-slate-400 text-xs mb-1.5 uppercase tracking-wide">End Time</Text>
+                      <View className="flex-row items-center">
+                        <TextInput
+                          value={endTimeValue}
+                          onChangeText={setEndTimeValue}
+                          placeholder="11:59"
+                          placeholderTextColor="#64748b"
+                          className="bg-slate-900/60 rounded-xl px-4 py-3 text-white text-base flex-1 border border-slate-700/50"
+                          keyboardType="numbers-and-punctuation"
+                        />
+                        <View className="flex-row ml-3">
+                          <Pressable
+                            onPress={() => setEndTimePeriod('AM')}
+                            className={`px-4 py-3 rounded-l-xl ${
+                              endTimePeriod === 'AM'
+                                ? 'bg-emerald-500/30 border border-emerald-500/50'
+                                : 'bg-slate-800 border border-slate-700'
+                            }`}
+                          >
+                            <Text className={`font-semibold ${endTimePeriod === 'AM' ? 'text-emerald-400' : 'text-slate-400'}`}>
+                              AM
+                            </Text>
+                          </Pressable>
+                          <Pressable
+                            onPress={() => setEndTimePeriod('PM')}
+                            className={`px-4 py-3 rounded-r-xl ${
+                              endTimePeriod === 'PM'
+                                ? 'bg-emerald-500/30 border border-emerald-500/50'
+                                : 'bg-slate-800 border border-slate-700'
+                            }`}
+                          >
+                            <Text className={`font-semibold ${endTimePeriod === 'PM' ? 'text-emerald-400' : 'text-slate-400'}`}>
+                              PM
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                )}
               </View>
 
               {/* Questions */}
@@ -553,11 +688,19 @@ function PollListItem({
   pollGroup,
   players,
   onPress,
+  onDelete,
+  index,
 }: {
   pollGroup: PollGroup;
   players: Player[];
   onPress: () => void;
+  onDelete: () => void;
+  index: number;
 }) {
+  const translateX = useSharedValue(0);
+  const itemHeight = useSharedValue(100);
+  const opacity = useSharedValue(1);
+
   const creatorPlayer = players.find((p) => p.id === pollGroup.createdBy);
   const creatorName = creatorPlayer ? getPlayerName(creatorPlayer) : 'Unknown';
 
@@ -571,41 +714,97 @@ function PollListItem({
   const voterCount = uniqueVoters.size;
   const questionCount = pollGroup.polls.length;
 
+  const handleDelete = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onDelete();
+  };
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .onUpdate((event) => {
+      if (event.translationX < 0) {
+        translateX.value = Math.max(event.translationX, -120);
+      }
+    })
+    .onEnd((event) => {
+      if (event.translationX < SWIPE_THRESHOLD) {
+        translateX.value = withTiming(-400, { duration: 200 });
+        itemHeight.value = withTiming(0, { duration: 200 });
+        opacity.value = withTiming(0, { duration: 200 }, () => {
+          runOnJS(handleDelete)();
+        });
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const containerStyle = useAnimatedStyle(() => ({
+    height: itemHeight.value === 100 ? 'auto' : itemHeight.value,
+    opacity: opacity.value,
+    marginBottom: opacity.value === 1 ? 12 : withTiming(0, { duration: 200 }),
+    overflow: 'hidden' as const,
+  }));
+
+  const deleteButtonStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, Math.abs(translateX.value) / 60),
+  }));
+
   return (
-    <Pressable
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onPress();
-      }}
-      className="bg-slate-800/70 rounded-2xl p-4 mb-3 border border-slate-700/50 flex-row items-center"
-    >
-      <View className="w-12 h-12 rounded-xl bg-emerald-500/20 items-center justify-center mr-4">
-        <BarChart3 size={24} color="#10b981" />
-      </View>
+    <Animated.View entering={FadeInDown.delay(index * 50).springify()} style={containerStyle}>
+      <View className="relative">
+        {/* Delete background */}
+        <Animated.View
+          style={deleteButtonStyle}
+          className="absolute right-0 top-0 bottom-0 bg-red-500/20 rounded-2xl flex-row items-center justify-end px-6"
+        >
+          <Trash2 size={24} color="#ef4444" />
+        </Animated.View>
 
-      <View className="flex-1">
-        <Text className="text-white text-base font-semibold mb-1" numberOfLines={1}>
-          {pollGroup.groupName}
-        </Text>
-        <View className="flex-row items-center flex-wrap">
-          <View className="flex-row items-center mr-3">
-            <User size={12} color="#94a3b8" />
-            <Text className="text-slate-400 text-xs ml-1">{creatorName}</Text>
-          </View>
-          <View className="flex-row items-center mr-3">
-            <MessageSquare size={12} color="#94a3b8" />
-            <Text className="text-slate-400 text-xs ml-1">{questionCount} question{questionCount !== 1 ? 's' : ''}</Text>
-          </View>
-          <Text className="text-emerald-400 text-xs">{voterCount} voter{voterCount !== 1 ? 's' : ''}</Text>
-        </View>
-        <View className="flex-row items-center mt-1">
-          <Calendar size={12} color="#64748b" />
-          <Text className="text-slate-500 text-xs ml-1">{format(parseISO(pollGroup.createdAt), 'MMM d, yyyy')}</Text>
-        </View>
-      </View>
+        {/* Card content */}
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={animatedStyle}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onPress();
+              }}
+              className="bg-slate-800/70 rounded-2xl p-4 border border-slate-700/50 flex-row items-center"
+            >
+              <View className="w-12 h-12 rounded-xl bg-emerald-500/20 items-center justify-center mr-4">
+                <BarChart3 size={24} color="#10b981" />
+              </View>
 
-      <ChevronRight size={20} color="#64748b" />
-    </Pressable>
+              <View className="flex-1">
+                <Text className="text-white text-base font-semibold mb-1" numberOfLines={1}>
+                  {pollGroup.groupName}
+                </Text>
+                <View className="flex-row items-center flex-wrap">
+                  <View className="flex-row items-center mr-3">
+                    <User size={12} color="#94a3b8" />
+                    <Text className="text-slate-400 text-xs ml-1">{creatorName}</Text>
+                  </View>
+                  <View className="flex-row items-center mr-3">
+                    <MessageSquare size={12} color="#94a3b8" />
+                    <Text className="text-slate-400 text-xs ml-1">{questionCount} question{questionCount !== 1 ? 's' : ''}</Text>
+                  </View>
+                  <Text className="text-emerald-400 text-xs">{voterCount} voter{voterCount !== 1 ? 's' : ''}</Text>
+                </View>
+                <View className="flex-row items-center mt-1">
+                  <Calendar size={12} color="#64748b" />
+                  <Text className="text-slate-500 text-xs ml-1">{format(parseISO(pollGroup.createdAt), 'MMM d, yyyy')}</Text>
+                </View>
+              </View>
+
+              <ChevronRight size={20} color="#64748b" />
+            </Pressable>
+          </Animated.View>
+        </GestureDetector>
+      </View>
+    </Animated.View>
   );
 }
 
@@ -653,7 +852,8 @@ export default function PollsScreen() {
   const handleCreatePoll = async (
     pollName: string,
     questions: { question: string; options: string[]; allowMultiple: boolean; isRequired: boolean }[],
-    sendNotification: boolean
+    sendNotification: boolean,
+    endsAt?: string
   ) => {
     const timestamp = Date.now();
     const groupId = `group-${timestamp}`;
@@ -674,6 +874,7 @@ export default function PollsScreen() {
         groupId,
         groupName: pollName,
         isRequired: q.isRequired,
+        expiresAt: endsAt,
       };
       addPoll(newPoll);
     });
@@ -808,15 +1009,25 @@ export default function PollsScreen() {
               </Text>
             </View>
           ) : (
-            sortedGroups.map((group, index) => (
-              <Animated.View key={group.groupId} entering={FadeInDown.delay(index * 50).springify()}>
+            <>
+              {/* Swipe hint */}
+              <Animated.View entering={FadeIn.delay(100)} className="mb-3">
+                <Text className="text-slate-500 text-xs text-center">
+                  Swipe left to delete
+                </Text>
+              </Animated.View>
+
+              {sortedGroups.map((group, index) => (
                 <PollListItem
+                  key={group.groupId}
                   pollGroup={group}
                   players={players}
                   onPress={() => setSelectedGroupId(group.groupId)}
+                  onDelete={() => handleDeletePollGroup(group.polls.map((p) => p.id))}
+                  index={index}
                 />
-              </Animated.View>
-            ))
+              ))}
+            </>
           )}
         </ScrollView>
       </SafeAreaView>
