@@ -26,7 +26,14 @@ function TeamCard({ team, userRole, index, onSelect }: TeamCardProps) {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           onSelect();
         }}
-        className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/80"
+        className="bg-slate-800/90 rounded-2xl p-4 mb-4 border border-slate-600/60 active:bg-slate-700/80"
+        style={{
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2,
+          shadowRadius: 8,
+          elevation: 4,
+        }}
       >
         <View className="flex-row items-center">
           {/* Team Logo */}
@@ -48,24 +55,24 @@ function TeamCard({ team, userRole, index, onSelect }: TeamCardProps) {
               {team.teamName}
             </Text>
             <View className="flex-row items-center mt-1">
-              <Text className="text-slate-400 text-sm">{sportName}</Text>
-              <Text className="text-slate-600 mx-2">•</Text>
-              <Text className="text-slate-400 text-sm">{playerCount} players</Text>
+              <Text className="text-slate-300 text-sm">{sportName}</Text>
+              <Text className="text-slate-500 mx-2">•</Text>
+              <Text className="text-slate-300 text-sm">{playerCount} player{playerCount !== 1 ? 's' : ''}</Text>
             </View>
             {/* User's role */}
             <View className="flex-row items-center mt-2">
               {userRole === 'admin' ? (
-                <View className="flex-row items-center bg-amber-500/20 px-2 py-1 rounded-full">
-                  <Shield size={12} color="#f59e0b" />
+                <View className="flex-row items-center bg-amber-500/20 px-2 py-0.5 rounded-full">
+                  <Shield size={11} color="#f59e0b" />
                   <Text className="text-amber-400 text-xs font-medium ml-1">Admin</Text>
                 </View>
               ) : userRole === 'captain' ? (
-                <View className="flex-row items-center bg-cyan-500/20 px-2 py-1 rounded-full">
-                  <Star size={12} color="#67e8f9" />
+                <View className="flex-row items-center bg-cyan-500/20 px-2 py-0.5 rounded-full">
+                  <Star size={11} color="#67e8f9" />
                   <Text className="text-cyan-400 text-xs font-medium ml-1">Captain</Text>
                 </View>
               ) : (
-                <View className="flex-row items-center bg-slate-700/50 px-2 py-1 rounded-full">
+                <View className="flex-row items-center bg-slate-700/50 px-2 py-0.5 rounded-full">
                   <Text className="text-slate-400 text-xs font-medium">Player</Text>
                 </View>
               )}
@@ -73,7 +80,7 @@ function TeamCard({ team, userRole, index, onSelect }: TeamCardProps) {
           </View>
 
           {/* Arrow */}
-          <ChevronRight size={24} color="#67e8f9" />
+          <ChevronRight size={24} color="#94a3b8" />
         </View>
       </Pressable>
     </Animated.View>
@@ -165,7 +172,7 @@ export default function SelectTeamScreen() {
           <Animated.View entering={FadeInDown.delay(100 + userTeams.length * 80).springify()}>
             <Pressable
               onPress={handleCreateNewTeam}
-              className="bg-slate-800/40 rounded-2xl p-4 border border-dashed border-slate-600 active:bg-slate-700/40"
+              className="bg-cyan-500/10 rounded-2xl p-4 border-2 border-dashed border-cyan-500/40 active:bg-cyan-500/20"
             >
               <View className="flex-row items-center justify-center">
                 <View className="w-10 h-10 rounded-full bg-cyan-500/20 items-center justify-center mr-3">
