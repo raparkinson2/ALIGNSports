@@ -409,6 +409,18 @@ export interface BaseballLineup {
   shortFielder?: string; // SF - 10th fielder for softball
 }
 
+// Batting Order Entry (player + position they'll play)
+export interface BattingOrderEntry {
+  playerId: string;
+  position: string; // P, C, 1B, 2B, 3B, SS, LF, CF, RF, SF (softball only), EH (extra hitter)
+}
+
+// Batting Order Lineup (for baseball and softball)
+export interface BattingOrderLineup {
+  battingOrder: (BattingOrderEntry | undefined)[]; // Array of batting order entries
+  numHitters: number; // 9 for baseball, 10+ for softball (with extra hitter option)
+}
+
 // Soccer Lineup Types (11 starters)
 export interface SoccerLineup {
   gk?: string;  // Goalkeeper
@@ -471,7 +483,8 @@ export interface Game {
   beerDutyPlayerId?: string; // Player responsible for bringing beverages
   lineup?: HockeyLineup; // Hockey line combinations
   basketballLineup?: BasketballLineup; // Basketball lineup
-  baseballLineup?: BaseballLineup; // Baseball lineup
+  baseballLineup?: BaseballLineup; // Baseball lineup (legacy field positions)
+  battingOrderLineup?: BattingOrderLineup; // Baseball/Softball batting order lineup
   soccerLineup?: SoccerLineup; // Soccer lineup (4-4-2)
   soccerDiamondLineup?: SoccerDiamondLineup; // Soccer diamond midfield lineup (4-1-2-1-2)
   lacrosseLineup?: LacrosseLineup; // Lacrosse lineup (configurable)

@@ -36,7 +36,7 @@ import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, SoccerLineup, SoccerDiamondLineup, LacrosseLineup, getPlayerName, InviteReleaseOption } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, BattingOrderLineup, SoccerLineup, SoccerDiamondLineup, LacrosseLineup, getPlayerName, InviteReleaseOption } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
@@ -48,6 +48,8 @@ import { BasketballLineupEditor, hasAssignedBasketballPlayers } from '@/componen
 import { BasketballLineupViewer } from '@/components/BasketballLineupViewer';
 import { BaseballLineupEditor, hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
 import { BaseballLineupViewer } from '@/components/BaseballLineupViewer';
+import { BattingOrderLineupEditor, hasAssignedBattingOrder } from '@/components/BattingOrderLineupEditor';
+import { BattingOrderLineupViewer } from '@/components/BattingOrderLineupViewer';
 import { SoccerLineupEditor, hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
 import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
 import { SoccerDiamondLineupEditor, hasAssignedSoccerDiamondPlayers } from '@/components/SoccerDiamondLineupEditor';
@@ -215,6 +217,7 @@ export default function GameDetailScreen() {
   const [isSoccerDiamondLineupModalVisible, setIsSoccerDiamondLineupModalVisible] = useState(false);
   const [isSoccerFormationModalVisible, setIsSoccerFormationModalVisible] = useState(false);
   const [isLacrosseLineupModalVisible, setIsLacrosseLineupModalVisible] = useState(false);
+  const [isBattingOrderModalVisible, setIsBattingOrderModalVisible] = useState(false);
   const [isLinesExpanded, setIsLinesExpanded] = useState(false);
 
   // Edit form state
@@ -578,6 +581,11 @@ export default function GameDetailScreen() {
     setIsLacrosseLineupModalVisible(false);
   };
 
+  const handleSaveBattingOrderLineup = (battingOrderLineup: BattingOrderLineup) => {
+    updateGame(game.id, { battingOrderLineup });
+    setIsBattingOrderModalVisible(false);
+  };
+
   const handleSelectSoccerFormation = (formation: '442' | 'diamond') => {
     setIsSoccerFormationModalVisible(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -786,22 +794,46 @@ export default function GameDetailScreen() {
             </Animated.View>
           )}
 
-          {/* Set Lineup Button - Only for baseball and captains/admins */}
+          {/* Set Batting Order Button - Only for baseball and captains/admins */}
           {teamSettings.sport === 'baseball' && teamSettings.showLineups !== false && canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(115).springify()}
               className="mx-4 mb-4"
             >
               <Pressable
-                onPress={() => setIsBaseballLineupModalVisible(true)}
+                onPress={() => setIsBattingOrderModalVisible(true)}
                 className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30 active:bg-emerald-500/30"
               >
                 <View className="flex-row items-center">
                   <ListOrdered size={24} color="#10b981" />
                   <View className="flex-1 ml-3">
-                    <Text className="text-emerald-400 font-semibold">Set Lineup</Text>
+                    <Text className="text-emerald-400 font-semibold">Set Batting Order</Text>
                     <Text className="text-slate-400 text-sm">
-                      {hasAssignedBaseballPlayers(game.baseballLineup) ? 'Edit field positions' : 'Configure field positions'}
+                      {hasAssignedBattingOrder(game.battingOrderLineup) ? 'Edit batting order' : 'Configure lineup card'}
+                    </Text>
+                  </View>
+                  <ChevronDown size={20} color="#10b981" />
+                </View>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* Set Batting Order Button - Only for softball and captains/admins */}
+          {teamSettings.sport === 'softball' && teamSettings.showLineups !== false && canManageTeam() && (
+            <Animated.View
+              entering={FadeInUp.delay(115).springify()}
+              className="mx-4 mb-4"
+            >
+              <Pressable
+                onPress={() => setIsBattingOrderModalVisible(true)}
+                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30 active:bg-emerald-500/30"
+              >
+                <View className="flex-row items-center">
+                  <ListOrdered size={24} color="#10b981" />
+                  <View className="flex-1 ml-3">
+                    <Text className="text-emerald-400 font-semibold">Set Batting Order</Text>
+                    <Text className="text-slate-400 text-sm">
+                      {hasAssignedBattingOrder(game.battingOrderLineup) ? 'Edit batting order' : 'Configure lineup card with extra hitters'}
                     </Text>
                   </View>
                   <ChevronDown size={20} color="#10b981" />
@@ -1087,97 +1119,83 @@ export default function GameDetailScreen() {
             </Animated.View>
           )}
 
-          {/* Baseball Lineup Display - Only when lineup is set and has players */}
-          {teamSettings.sport === 'baseball' && teamSettings.showLineups !== false && game.baseballLineup && hasAssignedBaseballPlayers(game.baseballLineup) && (
+          {/* Batting Order Display - For baseball when lineup is set */}
+          {teamSettings.sport === 'baseball' && teamSettings.showLineups !== false && game.battingOrderLineup && hasAssignedBattingOrder(game.battingOrderLineup) && (
             <Animated.View
               entering={FadeInUp.delay(125).springify()}
               className="mx-4 mb-4"
             >
               <Pressable
-                onPress={canManageTeam() ? () => setIsBaseballLineupModalVisible(true) : undefined}
+                onPress={canManageTeam() ? () => setIsBattingOrderModalVisible(true) : undefined}
                 className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30"
               >
                 <View className="flex-row items-center justify-between mb-3">
                   <View className="flex-row items-center">
                     <ListOrdered size={20} color="#10b981" />
-                    <Text className="text-emerald-400 font-semibold ml-2">Lineup</Text>
+                    <Text className="text-emerald-400 font-semibold ml-2">Batting Order</Text>
                   </View>
                   {canManageTeam() && (
                     <ChevronDown size={20} color="#10b981" />
                   )}
                 </View>
 
-                {/* Outfield Preview */}
-                <Text className="text-slate-400 text-xs mb-2">Outfield</Text>
-                <View className="flex-row justify-around mb-3">
-                  {['lf', 'cf', 'rf'].map((pos) => {
-                    const playerId = game.baseballLineup![pos as keyof BaseballLineup];
-                    const player = playerId ? players.find((p) => p.id === playerId) : null;
+                {/* Batting Order Preview */}
+                <View className="space-y-1">
+                  {game.battingOrderLineup.battingOrder.slice(0, game.battingOrderLineup.numHitters).map((entry, index) => {
+                    const player = entry?.playerId ? players.find((p) => p.id === entry.playerId) : null;
                     return (
-                      <View key={pos} className="items-center">
+                      <View key={index} className="flex-row items-center py-1">
+                        <Text className="text-emerald-400 font-bold w-6">{index + 1}.</Text>
                         {player ? (
                           <>
-                            <PlayerAvatar player={player} size={32} />
-                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                            <Text className="text-white flex-1">{getPlayerName(player)}</Text>
+                            <Text className="text-emerald-400 font-semibold">{entry?.position}</Text>
                           </>
                         ) : (
-                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                            <Text className="text-slate-500 text-[10px]">{pos.toUpperCase()}</Text>
-                          </View>
+                          <Text className="text-slate-500 flex-1">-</Text>
                         )}
                       </View>
                     );
                   })}
                 </View>
+              </Pressable>
+            </Animated.View>
+          )}
 
-                {/* Infield Preview */}
-                <Text className="text-slate-400 text-xs mb-2">Infield</Text>
-                <View className="flex-row justify-around mb-3">
-                  {[
-                    { key: 'thirdBase', label: '3B' },
-                    { key: 'shortstop', label: 'SS' },
-                    { key: 'secondBase', label: '2B' },
-                    { key: 'firstBase', label: '1B' },
-                  ].map(({ key, label }) => {
-                    const playerId = game.baseballLineup![key as keyof BaseballLineup];
-                    const player = playerId ? players.find((p) => p.id === playerId) : null;
-                    return (
-                      <View key={key} className="items-center">
-                        {player ? (
-                          <>
-                            <PlayerAvatar player={player} size={32} />
-                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
-                          </>
-                        ) : (
-                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                            <Text className="text-slate-500 text-[10px]">{label}</Text>
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })}
+          {/* Batting Order Display - For softball when lineup is set */}
+          {teamSettings.sport === 'softball' && teamSettings.showLineups !== false && game.battingOrderLineup && hasAssignedBattingOrder(game.battingOrderLineup) && (
+            <Animated.View
+              entering={FadeInUp.delay(125).springify()}
+              className="mx-4 mb-4"
+            >
+              <Pressable
+                onPress={canManageTeam() ? () => setIsBattingOrderModalVisible(true) : undefined}
+                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30"
+              >
+                <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center">
+                    <ListOrdered size={20} color="#10b981" />
+                    <Text className="text-emerald-400 font-semibold ml-2">Batting Order ({game.battingOrderLineup.numHitters} hitters)</Text>
+                  </View>
+                  {canManageTeam() && (
+                    <ChevronDown size={20} color="#10b981" />
+                  )}
                 </View>
 
-                {/* Battery Preview */}
-                <Text className="text-slate-400 text-xs mb-2">Battery</Text>
-                <View className="flex-row justify-around">
-                  {[
-                    { key: 'pitcher', label: 'P' },
-                    { key: 'catcher', label: 'C' },
-                  ].map(({ key, label }) => {
-                    const playerId = game.baseballLineup![key as keyof BaseballLineup];
-                    const player = playerId ? players.find((p) => p.id === playerId) : null;
+                {/* Batting Order Preview */}
+                <View className="space-y-1">
+                  {game.battingOrderLineup.battingOrder.slice(0, game.battingOrderLineup.numHitters).map((entry, index) => {
+                    const player = entry?.playerId ? players.find((p) => p.id === entry.playerId) : null;
                     return (
-                      <View key={key} className="items-center">
+                      <View key={index} className="flex-row items-center py-1">
+                        <Text className="text-emerald-400 font-bold w-6">{index + 1}.</Text>
                         {player ? (
                           <>
-                            <PlayerAvatar player={player} size={32} />
-                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                            <Text className="text-white flex-1">{getPlayerName(player)}</Text>
+                            <Text className="text-emerald-400 font-semibold">{entry?.position}</Text>
                           </>
                         ) : (
-                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                            <Text className="text-slate-500 text-[10px]">{label}</Text>
-                          </View>
+                          <Text className="text-slate-500 flex-1">-</Text>
                         )}
                       </View>
                     );
@@ -2305,6 +2323,18 @@ export default function GameDetailScreen() {
         initialLineup={game.lacrosseLineup}
         availablePlayers={checkedInPlayers}
       />
+
+      {/* Batting Order Lineup Editor Modal */}
+      {(teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') && (
+        <BattingOrderLineupEditor
+          visible={isBattingOrderModalVisible}
+          onClose={() => setIsBattingOrderModalVisible(false)}
+          onSave={handleSaveBattingOrderLineup}
+          initialLineup={game.battingOrderLineup}
+          availablePlayers={checkedInPlayers}
+          sport={teamSettings.sport}
+        />
+      )}
 
       {/* Soccer Formation Selector Modal */}
       <Modal
