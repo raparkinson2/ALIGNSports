@@ -38,8 +38,31 @@ import {
   getPlayerName,
 } from '@/lib/store';
 import { cn } from '@/lib/cn';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+
+// Helper to get due date color based on urgency
+const getDueDateColor = (dueDate: string, allPaid: boolean): { text: string; hex: string } => {
+  if (allPaid) {
+    return { text: 'text-green-400', hex: '#4ade80' };
+  }
+
+  const now = new Date();
+  const due = parseISO(dueDate);
+  const daysUntilDue = differenceInDays(due, now);
+
+  if (daysUntilDue <= 0) {
+    // Past due or due today
+    return { text: 'text-red-500', hex: '#ef4444' };
+  } else if (daysUntilDue < 15) {
+    return { text: 'text-red-500', hex: '#ef4444' };
+  } else if (daysUntilDue < 30) {
+    return { text: 'text-orange-500', hex: '#f97316' };
+  } else if (daysUntilDue < 45) {
+    return { text: 'text-yellow-500', hex: '#eab308' };
+  }
+  return { text: 'text-slate-400', hex: '#94a3b8' };
+};
 
 const PAYMENT_APP_INFO: Record<PaymentApp, {
   name: string;
@@ -509,11 +532,18 @@ function SwipeablePaymentPeriodRow({
                 </Pressable>
               )}
             </View>
-            {period.dueDate && (
-              <Text className="text-slate-500 text-xs mt-1">
-                Due {format(parseISO(period.dueDate), 'MMM d, yyyy')}
-              </Text>
-            )}
+            {period.dueDate && (() => {
+              const allPaid = paidCount === totalCount;
+              const dueDateColor = getDueDateColor(period.dueDate, allPaid);
+              return (
+                <View className="flex-row items-center mt-1.5">
+                  <Calendar size={14} color={dueDateColor.hex} />
+                  <Text className={cn('text-sm font-medium ml-1.5', dueDateColor.text)}>
+                    Due {format(parseISO(period.dueDate), 'MMM d, yyyy')}
+                  </Text>
+                </View>
+              );
+            })()}
           </View>
           <View className="items-end">
             <View className="flex-row items-center">
@@ -1686,24 +1716,35 @@ export default function PaymentsScreen() {
                     {isAdmin() && (
                       <View className="mb-6">
                         {!isEditDueDateVisible ? (
-                          <Pressable
-                            onPress={() => {
-                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                              setEditDueDate(selectedPeriod.dueDate ? parseISO(selectedPeriod.dueDate) : new Date());
-                              setIsEditDueDateVisible(true);
-                            }}
-                            className="bg-slate-800/60 rounded-xl p-3 flex-row items-center justify-between active:bg-slate-700/60 border border-slate-700/50"
-                          >
-                            <View className="flex-row items-center">
-                              <Calendar size={18} color="#64748b" />
-                              <Text className={selectedPeriod.dueDate ? "text-white ml-3" : "text-slate-500 ml-3"}>
-                                {selectedPeriod.dueDate
-                                  ? `Due ${format(parseISO(selectedPeriod.dueDate), 'MMM d, yyyy')}`
-                                  : 'No due date set'}
-                              </Text>
-                            </View>
-                            <Edit3 size={16} color="#64748b" />
-                          </Pressable>
+                          (() => {
+                            const paidCount = selectedPeriod.playerPayments.filter((pp) => pp.status === 'paid').length;
+                            const totalCount = selectedPeriod.playerPayments.length;
+                            const allPaid = paidCount === totalCount;
+                            const dueDateColor = selectedPeriod.dueDate
+                              ? getDueDateColor(selectedPeriod.dueDate, allPaid)
+                              : { text: 'text-slate-500', hex: '#64748b' };
+
+                            return (
+                              <Pressable
+                                onPress={() => {
+                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                  setEditDueDate(selectedPeriod.dueDate ? parseISO(selectedPeriod.dueDate) : new Date());
+                                  setIsEditDueDateVisible(true);
+                                }}
+                                className="bg-slate-800/60 rounded-xl p-4 flex-row items-center justify-between active:bg-slate-700/60 border border-slate-700/50"
+                              >
+                                <View className="flex-row items-center">
+                                  <Calendar size={20} color={dueDateColor.hex} />
+                                  <Text className={cn('text-base font-medium ml-3', selectedPeriod.dueDate ? dueDateColor.text : 'text-slate-500')}>
+                                    {selectedPeriod.dueDate
+                                      ? `Due ${format(parseISO(selectedPeriod.dueDate), 'MMM d, yyyy')}`
+                                      : 'No due date set'}
+                                  </Text>
+                                </View>
+                                <Edit3 size={16} color="#64748b" />
+                              </Pressable>
+                            );
+                          })()
                         ) : (
                           <View className="bg-slate-800/60 rounded-xl p-3 border border-cyan-500/50">
                             <View className="flex-row items-center justify-between mb-3">
