@@ -675,7 +675,7 @@ export default function GameDetailScreen() {
             </View>
           </Animated.View>
 
-          {/* Date and Time Cards */}
+          {/* Date, Time, and Jersey Cards */}
           <Animated.View entering={FadeInUp.delay(105).springify()} className="mx-4 mb-4">
             <View className="flex-row">
               <View className="flex-1 bg-slate-800/80 rounded-2xl p-4 mr-2">
@@ -685,18 +685,19 @@ export default function GameDetailScreen() {
                 </View>
                 <Text className="text-white font-semibold">{format(parseISO(game.date), 'EEEE, MMMM d, yyyy')}</Text>
               </View>
-              <View className="flex-1 bg-slate-800/80 rounded-2xl p-4 ml-2">
+              <View className="bg-slate-800/80 rounded-2xl p-4 mx-1">
                 <View className="flex-row items-center mb-1">
                   <Clock size={16} color="#67e8f9" />
                   <Text className="text-slate-400 text-xs ml-2">Time</Text>
                 </View>
-                <View className="flex-row items-center">
-                  <Text className="text-white font-semibold">{game.time}</Text>
-                  <View className="flex-row items-center ml-3">
-                    <JerseyIcon size={16} color={jerseyColorHex} />
-                    <Text className="text-slate-300 text-sm ml-1">{jerseyColorName}</Text>
-                  </View>
+                <Text className="text-white font-semibold">{game.time}</Text>
+              </View>
+              <View className="bg-slate-800/80 rounded-2xl p-4 ml-2">
+                <View className="flex-row items-center mb-1">
+                  <JerseyIcon size={16} color={jerseyColorHex} />
+                  <Text className="text-slate-400 text-xs ml-2">Jersey</Text>
                 </View>
+                <Text className="text-white font-semibold">{jerseyColorName}</Text>
               </View>
             </View>
           </Animated.View>
