@@ -24,9 +24,9 @@ interface BattingOrderLineupEditorProps {
 // Get positions for batting order based on sport
 const getPositionsForSport = (sport: 'baseball' | 'softball'): string[] => {
   if (sport === 'softball') {
-    return ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'SF', 'EH'];
+    return ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'SF', 'DH'];
   }
-  return ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'EH'];
+  return ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH'];
 };
 
 const getPositionName = (position: string): string => {
@@ -41,7 +41,7 @@ const getPositionName = (position: string): string => {
     CF: 'Center Field',
     RF: 'Right Field',
     SF: 'Short Fielder',
-    EH: 'Extra Hitter',
+    DH: 'Designated Hitter',
   };
   return names[position] || position;
 };
@@ -83,7 +83,7 @@ export function BattingOrderLineupEditor({
   const assignedPositions = useMemo(() => {
     const positions = new Set<string>();
     lineup.battingOrder.forEach((entry) => {
-      if (entry?.position && entry.position !== 'EH') {
+      if (entry?.position && entry.position !== 'DH') {
         positions.add(entry.position);
       }
     });
@@ -428,7 +428,7 @@ export function BattingOrderLineupEditor({
             <ScrollView className="flex-1 px-5 pt-4">
               <View className="flex-row flex-wrap justify-center gap-3">
                 {positions.map((position) => {
-                  const isAssigned = assignedPositions.has(position) && position !== 'EH';
+                  const isAssigned = assignedPositions.has(position) && position !== 'DH';
                   return (
                     <Pressable
                       key={position}
