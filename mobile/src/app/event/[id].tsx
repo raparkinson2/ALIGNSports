@@ -19,12 +19,14 @@ import {
   Trash2,
   Send,
   UserPlus,
+  Bell,
+  BellOff,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTeamStore, Player, getPlayerName, AppNotification } from '@/lib/store';
+import { useTeamStore, Player, getPlayerName, AppNotification, InviteReleaseOption } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -438,6 +440,30 @@ export default function EventDetailScreen() {
                 <View className="bg-slate-800/80 rounded-2xl p-4">
                   <Text className="text-slate-400 text-xs mb-2">Notes</Text>
                   <Text className="text-white">{event.notes}</Text>
+                </View>
+              </Animated.View>
+            )}
+
+            {/* Release Invites Status - Visible to admins/captains */}
+            {canManageTeam() && (
+              <Animated.View entering={FadeInDown.delay(350).springify()} className="mt-4">
+                <View className="flex-row items-center justify-center py-2.5 px-3 bg-slate-800/40 rounded-xl">
+                  <Calendar size={14} color="#67e8f9" />
+                  <Text className="text-cyan-400 text-sm ml-1.5">Release Invites:</Text>
+                  {event.invitesSent ? (
+                    <View className="flex-row items-center ml-1.5">
+                      <Check size={14} color="#22c55e" />
+                      <Text className="text-green-400 text-sm ml-1">Invites sent</Text>
+                    </View>
+                  ) : event.inviteReleaseOption === 'scheduled' && event.inviteReleaseDate ? (
+                    <Text className="text-amber-400 text-sm ml-1.5">
+                      Scheduled {format(parseISO(event.inviteReleaseDate), 'MMM d, h:mm a')}
+                    </Text>
+                  ) : event.inviteReleaseOption === 'none' ? (
+                    <Text className="text-slate-400 text-sm ml-1.5">Not scheduled</Text>
+                  ) : (
+                    <Text className="text-green-400 text-sm ml-1.5">Ready to send</Text>
+                  )}
                 </View>
               </Animated.View>
             )}

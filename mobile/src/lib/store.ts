@@ -573,6 +573,10 @@ export interface Event {
   confirmedPlayers: string[];
   declinedPlayers?: string[];
   declinedNotes?: Record<string, string>; // playerId -> reason for declining
+  // Invite release options
+  inviteReleaseOption?: InviteReleaseOption;
+  inviteReleaseDate?: string; // ISO date string for scheduled release
+  invitesSent?: boolean;
 }
 
 export interface Photo {
