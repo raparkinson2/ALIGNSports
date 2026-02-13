@@ -1701,38 +1701,24 @@ export default function GameDetailScreen() {
           {canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(155).springify()}
-              className="mx-4 mb-4"
+              className="mx-4 mb-3"
             >
-              <View className="bg-slate-800/60 rounded-2xl p-4 border border-slate-700/50">
-                <View className="flex-row items-center mb-2">
-                  <Calendar size={16} color="#67e8f9" />
-                  <Text className="text-cyan-400 font-semibold ml-2">Invite Release</Text>
-                </View>
+              <View className="flex-row items-center justify-center py-2 px-3 bg-slate-800/40 rounded-xl">
+                <Calendar size={14} color="#64748b" />
+                <Text className="text-slate-500 text-xs ml-1.5">Invite Release:</Text>
                 {game.invitesSent ? (
-                  <View className="flex-row items-center">
-                    <Check size={16} color="#22c55e" />
-                    <Text className="text-green-400 ml-2">Invites sent</Text>
+                  <View className="flex-row items-center ml-1.5">
+                    <Check size={12} color="#22c55e" />
+                    <Text className="text-green-400 text-xs ml-1">Invites sent</Text>
                   </View>
                 ) : game.inviteReleaseOption === 'scheduled' && game.inviteReleaseDate ? (
-                  <View>
-                    <View className="flex-row items-center">
-                      <Bell size={16} color="#f59e0b" />
-                      <Text className="text-amber-400 ml-2">Scheduled for:</Text>
-                    </View>
-                    <Text className="text-white mt-1 ml-6">
-                      {format(parseISO(game.inviteReleaseDate), 'EEE, MMM d, yyyy h:mm a')}
-                    </Text>
-                  </View>
+                  <Text className="text-amber-400 text-xs ml-1.5">
+                    Scheduled {format(parseISO(game.inviteReleaseDate), 'MMM d, h:mm a')}
+                  </Text>
                 ) : game.inviteReleaseOption === 'none' ? (
-                  <View className="flex-row items-center">
-                    <BellOff size={16} color="#64748b" />
-                    <Text className="text-slate-400 ml-2">Not scheduled - send manually</Text>
-                  </View>
+                  <Text className="text-slate-400 text-xs ml-1.5">Not scheduled</Text>
                 ) : (
-                  <View className="flex-row items-center">
-                    <Send size={16} color="#22c55e" />
-                    <Text className="text-green-400 ml-2">Ready to send</Text>
-                  </View>
+                  <Text className="text-green-400 text-xs ml-1.5">Ready to send</Text>
                 )}
               </View>
             </Animated.View>
