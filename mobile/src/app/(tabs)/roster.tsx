@@ -526,8 +526,9 @@ export default function RosterScreen() {
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    // Store raw phone digits
+    // Store raw phone digits and email before any state changes
     const rawPhone = unformatPhone(phone);
+    const rawEmail = email.trim();
 
     // Build roles array based on memberRole
     const roles: PlayerRole[] = playerRoles.filter(r => r !== 'coach' && r !== 'parent');
@@ -549,7 +550,7 @@ export default function RosterScreen() {
         position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : selectedPositions[0]),
         positions: isCoachRole ? ['Coach'] : (isParentRole ? ['Parent'] : selectedPositions),
         phone: rawPhone || undefined,
-        email: email.trim() || undefined,
+        email: rawEmail || undefined,
       };
 
       // Only admins can change roles and status
@@ -577,7 +578,7 @@ export default function RosterScreen() {
         position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : selectedPositions[0]),
         positions: isCoachRole ? ['Coach'] : (isParentRole ? ['Parent'] : selectedPositions),
         phone: rawPhone || undefined,
-        email: email.trim() || undefined,
+        email: rawEmail || undefined,
         roles: isAdmin() ? roles : [],
         status: isAdmin() ? effectiveStatus : 'active',
         isInjured: isAdmin() ? isInjured : false,
@@ -589,8 +590,9 @@ export default function RosterScreen() {
       resetForm();
 
       // Show invite modal if player has phone or email
-      if (rawPhone || email.trim()) {
-        setNewlyCreatedPlayer({ ...newPlayer, phone: rawPhone || undefined, email: email.trim() || undefined });
+      console.log('Player created - rawPhone:', rawPhone, 'rawEmail:', rawEmail);
+      if (rawPhone || rawEmail) {
+        setNewlyCreatedPlayer({ ...newPlayer, phone: rawPhone || undefined, email: rawEmail || undefined });
         setIsInviteModalVisible(true);
       }
     }
