@@ -319,6 +319,12 @@ When players tap a payment method:
 - When the app is updated, your accounts, teams, and all data are automatically preserved
 - The Zustand store uses versioned persistence with a migrate function to handle schema changes safely
 
+## Security
+- **Password Hashing**: All passwords are hashed using SHA-256 with a device-specific salt before storage
+- **Secure Salt Storage**: The encryption salt is stored in the device's secure keychain (expo-secure-store)
+- **Security Answers**: Security question answers are also hashed for protection
+- **Automatic Migration**: Existing plain-text passwords are automatically migrated to hashed format on next login
+
 ## Design
 - Dark theme with ice blue (#67e8f9) accents
 - Green accents (#22c55e) for payments

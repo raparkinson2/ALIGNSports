@@ -14,6 +14,7 @@ import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg';
 import { signUpWithEmail, checkEmailExists, checkPhoneExists } from '@/lib/supabase-auth';
 import { ParentChildIcon } from '@/components/ParentChildIcon';
+import { hashPassword } from '@/lib/crypto';
 
 // Preset jersey colors for quick selection
 const PRESET_COLORS = [
@@ -608,13 +609,16 @@ export default function CreateTeamScreen() {
       if (isCoach) roles.push('coach');
       if (isParent) roles.push('parent');
 
-      // Create the admin player object
+      // Hash the password before storing
+      const hashedPassword = await hashPassword(password);
+
+      // Create the admin player object with hashed password
       const adminPlayer: Player = {
         id: Date.now().toString(),
         firstName,
         lastName,
         email: email.trim().toLowerCase(),
-        password,
+        password: hashedPassword,
         phone: phone ? unformatPhone(phone) : undefined,
         number: isCoach ? '' : (jerseyNumber.trim() || '1'),
         position: isCoach ? 'Coach' : SPORT_POSITIONS[sport][0],

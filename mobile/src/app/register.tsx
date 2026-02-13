@@ -12,6 +12,7 @@ import { useTeamStore } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import { signUpWithEmail } from '@/lib/supabase-auth';
+import { secureRegisterInvitedPlayer, secureRegisterInvitedPlayerByPhone } from '@/lib/secure-auth';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -200,10 +201,10 @@ export default function RegisterScreen() {
         }
       }
 
-      // Register locally
+      // Register locally with hashed password
       const result = isPhoneNumber(trimmedIdentifier)
-        ? registerInvitedPlayerByPhone(unformatPhone(trimmedIdentifier), password)
-        : registerInvitedPlayer(trimmedIdentifier, password);
+        ? await secureRegisterInvitedPlayerByPhone(unformatPhone(trimmedIdentifier), password)
+        : await secureRegisterInvitedPlayer(trimmedIdentifier, password);
 
       if (result.success && result.playerId) {
         // Save optional avatar

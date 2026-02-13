@@ -10,6 +10,7 @@ import * as Haptics from 'expo-haptics';
 import { useTeamStore, Player, getPlayerName } from '@/lib/store';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import { signInWithEmail, sendPasswordResetSMS, resendConfirmationEmail, verifySMSOtpAndResetPassword } from '@/lib/supabase-auth';
+import { secureLoginWithEmail, secureLoginWithPhone, secureResetPassword, verifyPlayerSecurityAnswer } from '@/lib/secure-auth';
 
 interface PlayerLoginCardProps {
   player: Player;
@@ -241,13 +242,14 @@ export default function LoginScreen() {
     }
   };
 
-  const handleVerifySecurityAnswer = () => {
+  const handleVerifySecurityAnswer = async () => {
     if (!securityAnswer.trim()) {
       Alert.alert('Answer Required', 'Please enter your answer to the security question.');
       return;
     }
     if (foundPlayer && foundPlayer.securityAnswer) {
-      if (securityAnswer.trim().toLowerCase() === foundPlayer.securityAnswer.toLowerCase()) {
+      const isValid = await verifyPlayerSecurityAnswer(foundPlayer.id, securityAnswer.trim());
+      if (isValid) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setResetStep('password');
       } else {
@@ -257,7 +259,7 @@ export default function LoginScreen() {
     }
   };
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     if (newPassword.length < 6) {
       Alert.alert('Invalid Password', 'Password must be at least 6 characters long.');
       return;
@@ -267,7 +269,7 @@ export default function LoginScreen() {
       return;
     }
     if (foundPlayer) {
-      updatePlayer(foundPlayer.id, { password: newPassword });
+      await secureResetPassword(foundPlayer.id, newPassword);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Password Reset', 'Your password has been reset. You can now sign in with your new password.');
       setShowForgotPassword(false);
@@ -313,8 +315,8 @@ export default function LoginScreen() {
 
         if (supabaseResult.success) {
           console.log('LOGIN: Supabase auth successful, trying local login');
-          // Also update local store for offline capability
-          const localResult = loginWithEmail(trimmedIdentifier, password);
+          // Also update local store for offline capability (using secure hashed comparison)
+          const localResult = await secureLoginWithEmail(trimmedIdentifier, password);
           console.log('LOGIN: Local result:', JSON.stringify(localResult));
           if (localResult.success) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -350,8 +352,8 @@ export default function LoginScreen() {
 
       // Fallback to local authentication (for phone or if Supabase fails)
       const result = isPhoneNumber(trimmedIdentifier)
-        ? loginWithPhone(unformatPhone(trimmedIdentifier), password)
-        : loginWithEmail(trimmedIdentifier, password);
+        ? await secureLoginWithPhone(unformatPhone(trimmedIdentifier), password)
+        : await secureLoginWithEmail(trimmedIdentifier, password);
 
       if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
