@@ -175,7 +175,7 @@ export function BasketballLineupEditor({
           }
         }
       } else if (type === 'forwards') {
-        const newNum = Math.max(0, Math.min(2, prev.numForwards + delta));
+        const newNum = Math.max(0, Math.min(3, prev.numForwards + delta));
         if (delta > 0 && currentStarterCount >= 5) return prev;
         newLineup.numForwards = newNum;
         if (newNum < prev.numForwards) {
@@ -494,11 +494,11 @@ export function BasketballLineupEditor({
                   <Pressable
                     onPress={() => handleConfigChange('forwards', 1)}
                     className="p-2"
-                    disabled={lineup.numForwards >= 2 || currentStarterCount >= 5}
+                    disabled={lineup.numForwards >= 3 || currentStarterCount >= 5}
                   >
                     <Plus
                       size={20}
-                      color={lineup.numForwards >= 2 || currentStarterCount >= 5 ? '#475569' : '#10b981'}
+                      color={lineup.numForwards >= 3 || currentStarterCount >= 5 ? '#475569' : '#10b981'}
                     />
                   </Pressable>
                 </View>
