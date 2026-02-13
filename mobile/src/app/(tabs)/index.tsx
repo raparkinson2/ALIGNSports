@@ -206,12 +206,12 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false }: 
           </View>
 
           {/* Info Grid */}
-          <View className="flex-row mb-3">
-            <View className="flex-1 flex-row items-center">
+          <View className="flex-row items-center mb-3">
+            <View className="flex-row items-center">
               <Clock size={14} color="#67e8f9" />
               <Text className="text-slate-300 text-sm ml-2">{game.time}</Text>
             </View>
-            <View className="flex-1 flex-row items-center">
+            <View className="flex-row items-center ml-5">
               <JerseyIcon size={16} color={jerseyColorHex} />
               <Text className="text-slate-300 text-sm ml-2">
                 {jerseyColorName} Jersey
