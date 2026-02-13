@@ -222,32 +222,32 @@ export default function FeatureRequestScreen() {
             {/* Title Input */}
             <Animated.View
               entering={FadeInDown.delay(150).springify()}
-              className="mb-4"
+              className="mb-3"
             >
-              <Text className="text-slate-400 text-sm font-medium mb-2">Feature Title</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-2">Feature Title</Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
                 placeholder="e.g., Add team stats dashboard"
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 autoCapitalize="sentences"
                 className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
                 maxLength={100}
               />
-              <Text className="text-slate-500 text-xs mt-1 text-right">{title.length}/100</Text>
+              <Text className="text-slate-600 text-[10px] mt-1 text-right">{title.length}/100</Text>
             </Animated.View>
 
             {/* Description Input */}
             <Animated.View
               entering={FadeInDown.delay(200).springify()}
-              className="mb-4"
+              className="mb-3"
             >
-              <Text className="text-slate-400 text-sm font-medium mb-2">Description</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-2">Description</Text>
               <TextInput
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Describe the feature you'd like to see. Include any specific details that would help us understand your request..."
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 autoCapitalize="sentences"
                 className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
                 multiline
@@ -256,20 +256,20 @@ export default function FeatureRequestScreen() {
                 style={{ minHeight: 150 }}
                 maxLength={1000}
               />
-              <Text className="text-slate-500 text-xs mt-1 text-right">{description.length}/1000</Text>
+              <Text className="text-slate-600 text-[10px] mt-1 text-right">{description.length}/1000</Text>
             </Animated.View>
 
             {/* Reason for Request Input */}
             <Animated.View
               entering={FadeInDown.delay(250).springify()}
-              className="mb-4"
+              className="mb-3"
             >
-              <Text className="text-slate-400 text-sm font-medium mb-2">Reason for request (optional)</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-2">Reason for request (optional)</Text>
               <TextInput
                 value={reasonForRequest}
                 onChangeText={setReasonForRequest}
                 placeholder="How will this feature help users and improve the app?"
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 autoCapitalize="sentences"
                 className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
                 multiline
@@ -278,20 +278,20 @@ export default function FeatureRequestScreen() {
                 style={{ minHeight: 100 }}
                 maxLength={500}
               />
-              <Text className="text-slate-500 text-xs mt-1 text-right">{reasonForRequest.length}/500</Text>
+              <Text className="text-slate-600 text-[10px] mt-1 text-right">{reasonForRequest.length}/500</Text>
             </Animated.View>
 
             {/* Contact Email Input */}
             <Animated.View
               entering={FadeInDown.delay(300).springify()}
-              className="mb-6"
+              className="mb-5"
             >
-              <Text className="text-slate-400 text-sm font-medium mb-2">Your email (optional)</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-2">Your email (optional)</Text>
               <TextInput
                 value={contactEmail}
                 onChangeText={setContactEmail}
                 placeholder="email@example.com"
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoComplete="email"
@@ -304,13 +304,20 @@ export default function FeatureRequestScreen() {
             <Animated.View entering={FadeInDown.delay(350).springify()}>
               <Pressable
                 onPress={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !title.trim() || !description.trim()}
                 className={`rounded-xl py-4 items-center flex-row justify-center ${
-                  isSubmitting ? 'bg-cyan-600/50' : 'bg-cyan-500 active:bg-cyan-600'
+                  isSubmitting || !title.trim() || !description.trim() ? 'bg-cyan-600/40' : 'bg-cyan-500 active:bg-cyan-600'
                 }`}
+                style={(!isSubmitting && title.trim() && description.trim()) ? {
+                  shadowColor: '#22d3ee',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 8,
+                  elevation: 6,
+                } : undefined}
               >
                 <Send size={20} color="white" />
-                <Text className="text-white font-semibold text-base ml-2">
+                <Text className="text-white font-bold text-base ml-2">
                   {isSubmitting ? 'Sending...' : 'Submit Request'}
                 </Text>
               </Pressable>
@@ -319,9 +326,9 @@ export default function FeatureRequestScreen() {
             {/* Note */}
             <Animated.View
               entering={FadeInDown.delay(400).springify()}
-              className="mt-6"
+              className="mt-5"
             >
-              <Text className="text-slate-500 text-sm text-center">
+              <Text className="text-slate-400 text-sm text-center">
                 Your feature request will be sent directly to our development team.
               </Text>
             </Animated.View>
