@@ -357,6 +357,7 @@ interface SwipeablePaymentPeriodRowProps {
   onMoveDown: () => void;
   onEditAmount: () => void;
   onEditTeamTotal: () => void;
+  onEditDueDate: () => void;
   totalPeriods: number;
   isAdmin: boolean;
 }
@@ -371,6 +372,7 @@ function SwipeablePaymentPeriodRow({
   onMoveDown,
   onEditAmount,
   onEditTeamTotal,
+  onEditDueDate,
   totalPeriods,
   isAdmin,
 }: SwipeablePaymentPeriodRowProps) {
@@ -532,7 +534,41 @@ function SwipeablePaymentPeriodRow({
                 </Pressable>
               )}
             </View>
-            {period.dueDate && (() => {
+            {isAdmin && !isReorderMode && (
+              period.dueDate ? (() => {
+                const allPaid = paidCount === totalCount;
+                const dueDateColor = getDueDateColor(period.dueDate, allPaid);
+                return (
+                  <Pressable
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      onEditDueDate();
+                    }}
+                    className="flex-row items-center mt-1.5 active:opacity-70"
+                  >
+                    <Calendar size={14} color={dueDateColor.hex} />
+                    <Text className={cn('text-sm font-medium ml-1.5', dueDateColor.text)}>
+                      Due {format(parseISO(period.dueDate), 'MMM d, yyyy')}
+                    </Text>
+                    <Edit3 size={12} color="#64748b" style={{ marginLeft: 6 }} />
+                  </Pressable>
+                );
+              })() : (
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    onEditDueDate();
+                  }}
+                  className="flex-row items-center mt-1.5 active:opacity-70"
+                >
+                  <Calendar size={14} color="#64748b" />
+                  <Text className="text-slate-500 text-sm ml-1.5">Add due date</Text>
+                </Pressable>
+              )
+            )}
+            {!isAdmin && period.dueDate && (() => {
               const allPaid = paidCount === totalCount;
               const dueDateColor = getDueDateColor(period.dueDate, allPaid);
               return (
@@ -1036,6 +1072,11 @@ export default function PaymentsScreen() {
                           setEditingTeamTotalPeriodId(period.id);
                           setEditTeamTotalAmount(period.teamTotalOwed?.toString() || '');
                           setIsEditTeamTotalModalVisible(true);
+                        }}
+                        onEditDueDate={() => {
+                          setSelectedPeriodId(period.id);
+                          setEditDueDate(period.dueDate ? parseISO(period.dueDate) : new Date());
+                          setIsEditDueDateVisible(true);
                         }}
                         totalPeriods={paymentPeriods.length}
                         isAdmin={isAdmin()}
@@ -2006,6 +2047,83 @@ export default function PaymentsScreen() {
               <Text className="text-slate-500 text-sm mt-3">
                 Enter the total amount owed by the team for this payment period. Player payments will automatically subtract from this total. Leave empty to clear.
               </Text>
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Edit Due Date Modal */}
+      <Modal
+        visible={isEditDueDateVisible && !selectedPlayerId}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => {
+          setIsEditDueDateVisible(false);
+          setEditDueDate(null);
+        }}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => {
+                setIsEditDueDateVisible(false);
+                setEditDueDate(null);
+              }}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Due Date</Text>
+              <Pressable onPress={() => {
+                if (selectedPeriodId) {
+                  updatePaymentPeriod(selectedPeriodId, {
+                    dueDate: editDueDate ? editDueDate.toISOString() : undefined
+                  });
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                }
+                setIsEditDueDateVisible(false);
+                setEditDueDate(null);
+                setSelectedPeriodId(null);
+              }}>
+                <Text className="text-cyan-400 font-semibold">Save</Text>
+              </Pressable>
+            </View>
+
+            <View className="px-5 pt-6">
+              {editDueDate ? (
+                <>
+                  <View className="flex-row items-center justify-between mb-3">
+                    <Text className="text-slate-400 text-sm">Select Due Date</Text>
+                    <Pressable
+                      onPress={() => setEditDueDate(null)}
+                      className="px-3 py-1.5 bg-slate-800 rounded-lg"
+                    >
+                      <Text className="text-slate-400 text-sm">Clear</Text>
+                    </Pressable>
+                  </View>
+                  <View className="bg-slate-800 rounded-xl overflow-hidden items-center">
+                    <DateTimePicker
+                      value={editDueDate}
+                      mode="date"
+                      display="inline"
+                      onChange={(event, date) => {
+                        if (date) setEditDueDate(date);
+                      }}
+                      themeVariant="dark"
+                      accentColor="#22c55e"
+                    />
+                  </View>
+                </>
+              ) : (
+                <View className="items-center py-12">
+                  <Calendar size={48} color="#64748b" />
+                  <Text className="text-slate-400 text-center mt-4">No due date set</Text>
+                  <Pressable
+                    onPress={() => setEditDueDate(new Date())}
+                    className="mt-4 bg-cyan-500 rounded-xl px-6 py-3"
+                  >
+                    <Text className="text-white font-semibold">Set Due Date</Text>
+                  </Pressable>
+                </View>
+              )}
             </View>
           </SafeAreaView>
         </View>
