@@ -1660,37 +1660,6 @@ export default function GameDetailScreen() {
             </Animated.View>
           )}
 
-          {/* In-App Notifications Section */}
-          {canManageTeam() && (
-            <Animated.View
-              entering={FadeInUp.delay(160).springify()}
-              className="mx-4 mb-4"
-            >
-              <View className="flex-row items-center mb-3">
-                <Bell size={18} color="#22c55e" />
-                <Text className="text-green-400 text-lg font-semibold ml-2">
-                  Send Notifications
-                </Text>
-              </View>
-              <View className="flex-row">
-                <Pressable
-                  onPress={() => handleSendInAppNotification('invite')}
-                  className="flex-1 bg-green-500/20 rounded-xl p-4 mr-2 border border-green-500/30 active:bg-green-500/30 flex-row items-center justify-center"
-                >
-                  <Bell size={18} color="#22c55e" />
-                  <Text className="text-green-400 font-semibold ml-2">Send Invite</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => handleSendInAppNotification('reminder')}
-                  className="flex-1 bg-green-500/20 rounded-xl p-4 ml-2 border border-green-500/30 active:bg-green-500/30 flex-row items-center justify-center"
-                >
-                  <BellRing size={18} color="#22c55e" />
-                  <Text className="text-green-400 font-semibold ml-2">Reminder</Text>
-                </Pressable>
-              </View>
-            </Animated.View>
-          )}
-
           {/* Check-In Section */}
           <Animated.View
             entering={FadeInUp.delay(200).springify()}
@@ -1703,15 +1672,26 @@ export default function GameDetailScreen() {
                   Check In for Game
                 </Text>
               </View>
-              {canManageTeam() && uninvitedPlayers.length > 0 && (
-                <Pressable
-                  onPress={() => setIsInviteModalVisible(true)}
-                  className="flex-row items-center bg-cyan-500/20 rounded-lg px-3 py-1.5"
-                >
-                  <UserPlus size={14} color="#67e8f9" />
-                  <Text className="text-cyan-400 text-sm font-medium ml-1">Invite More</Text>
-                </Pressable>
-              )}
+              <View className="flex-row items-center">
+                {canManageTeam() && (
+                  <Pressable
+                    onPress={() => setIsInviteModalVisible(true)}
+                    className="flex-row items-center bg-cyan-500/20 rounded-lg px-3 py-1.5 mr-2"
+                  >
+                    <UserPlus size={14} color="#67e8f9" />
+                    <Text className="text-cyan-400 text-sm font-medium ml-1">Invite More</Text>
+                  </Pressable>
+                )}
+                {canManageTeam() && (
+                  <Pressable
+                    onPress={() => handleSendInAppNotification('reminder')}
+                    className="flex-row items-center bg-green-500/20 rounded-lg px-3 py-1.5"
+                  >
+                    <Send size={14} color="#22c55e" />
+                    <Text className="text-green-400 text-sm font-medium ml-1">Send Reminder</Text>
+                  </Pressable>
+                )}
+              </View>
             </View>
 
             {/* RSVP Stats */}
