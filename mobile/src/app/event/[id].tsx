@@ -512,9 +512,17 @@ export default function EventDetailScreen() {
                       <Text className="text-green-400 text-sm ml-1">Invites sent</Text>
                     </View>
                   ) : event.inviteReleaseOption === 'scheduled' && event.inviteReleaseDate ? (
-                    <Text className="text-amber-400 text-sm ml-1.5">
-                      Scheduled {format(parseISO(event.inviteReleaseDate), 'MMM d, h:mm a')}
-                    </Text>
+                    // Check if scheduled time has passed
+                    new Date() >= parseISO(event.inviteReleaseDate) ? (
+                      <View className="flex-row items-center ml-1.5">
+                        <Check size={14} color="#22c55e" />
+                        <Text className="text-green-400 text-sm ml-1">Invites sent</Text>
+                      </View>
+                    ) : (
+                      <Text className="text-amber-400 text-sm ml-1.5">
+                        Scheduled {format(parseISO(event.inviteReleaseDate), 'MMM d, h:mm a')}
+                      </Text>
+                    )
                   ) : event.inviteReleaseOption === 'none' ? (
                     <Text className="text-slate-400 text-sm ml-1.5">Not scheduled</Text>
                   ) : (
