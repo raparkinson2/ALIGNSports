@@ -452,7 +452,7 @@ export default function EventDetailScreen() {
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-white text-lg font-semibold">RSVPs</Text>
                 <View className="flex-row items-center">
-                  {canManageTeam() && uninvitedPlayers.length > 0 && (
+                  {canManageTeam() && (
                     <Pressable
                       onPress={() => setIsInviteModalVisible(true)}
                       className="flex-row items-center bg-cyan-500/20 rounded-full px-3 py-1.5 mr-2"
