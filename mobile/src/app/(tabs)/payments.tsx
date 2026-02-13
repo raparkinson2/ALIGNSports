@@ -1030,9 +1030,6 @@ export default function PaymentsScreen() {
                 </View>
               </View>
 
-              {/* Microcopy clarifying manual tracking */}
-              <Text className="text-slate-500 text-xs mb-3">Payments are recorded manually — not processed in-app</Text>
-
               {paymentPeriods.length === 0 ? (
                 <View className="bg-slate-800/50 rounded-xl p-6 items-center mb-6">
                   <DollarSign size={32} color="#64748b" />
