@@ -801,7 +801,7 @@ export default function RosterScreen() {
                 {editingPlayer ? 'Edit Player' : 'Add Player'}
               </Text>
               <Pressable onPress={handleSave}>
-                <Text className="text-cyan-400 font-semibold">Save</Text>
+                <Text className="text-cyan-400 font-bold text-base">Save</Text>
               </Pressable>
             </View>
 
@@ -810,7 +810,7 @@ export default function RosterScreen() {
               <View className="flex-row mb-5">
                 {/* First Name Input */}
                 <View className="flex-1 mr-2">
-                  <Text className="text-slate-400 text-sm mb-2">First Name<Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-300 text-sm mb-2">First Name<Text className="text-red-400 font-bold">*</Text></Text>
                   <TextInput
                     value={firstName}
                     onChangeText={setFirstName}
@@ -823,7 +823,7 @@ export default function RosterScreen() {
 
                 {/* Last Name Input */}
                 <View className="flex-1 ml-2">
-                  <Text className="text-slate-400 text-sm mb-2">Last Name<Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-300 text-sm mb-2">Last Name<Text className="text-red-400 font-bold">*</Text></Text>
                   <TextInput
                     value={lastName}
                     onChangeText={setLastName}
@@ -837,7 +837,7 @@ export default function RosterScreen() {
 
               {/* Jersey Number Row */}
               <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Jersey Number<Text className="text-red-400">*</Text></Text>
+                <Text className="text-slate-300 text-sm mb-2">Jersey Number<Text className="text-red-400 font-bold">*</Text></Text>
                 <TextInput
                   value={number}
                   onChangeText={setNumber}
@@ -890,7 +890,7 @@ export default function RosterScreen() {
               {/* Position Selector - Multiple Selection - Hidden for coaches and parents */}
               {memberRole !== 'coach' && memberRole !== 'parent' && (
                 <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-1">Positions<Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-300 text-sm mb-1">Positions<Text className="text-red-400 font-bold">*</Text></Text>
                   <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
                   <View className="flex-row flex-wrap">
                     {positions.map((pos) => {
@@ -908,14 +908,21 @@ export default function RosterScreen() {
                             }
                           }}
                           className={cn(
-                            'py-3 px-4 rounded-xl mr-2 mb-2 items-center',
-                            isSelected ? 'bg-cyan-500' : 'bg-slate-800'
+                            'py-2.5 px-4 rounded-xl mr-1.5 mb-1.5 items-center border',
+                            isSelected ? 'bg-cyan-500 border-cyan-400' : 'bg-slate-800/80 border-slate-700'
                           )}
+                          style={isSelected ? {
+                            shadowColor: '#22d3ee',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 4,
+                            elevation: 3,
+                          } : undefined}
                         >
                           <Text
                             className={cn(
                               'font-semibold',
-                              isSelected ? 'text-white' : 'text-slate-400'
+                              isSelected ? 'text-white' : 'text-slate-500'
                             )}
                           >
                             {pos}
@@ -933,72 +940,78 @@ export default function RosterScreen() {
               {/* Status Selector - Admin Only (Injured/Suspended) */}
               {isAdmin() && (
                 <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Status</Text>
-                  <View className="flex-row">
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setIsInjured(!isInjured);
-                        if (isInjured) {
-                          setInjuryDuration(undefined);
-                        }
-                      }}
-                      className={cn(
-                        'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
-                        isInjured ? 'bg-red-500' : 'bg-slate-800'
-                      )}
-                    >
-                      <Text className={cn(
-                        'text-lg font-black mr-1',
-                        isInjured ? 'text-white' : 'text-red-500'
-                      )}>+</Text>
-                      <Text
+                  <Text className="text-slate-300 text-sm mb-2">Status</Text>
+
+                  {/* Status container - groups Status, Duration, and End Date */}
+                  <View className={cn(
+                    'rounded-2xl',
+                    (isInjured || isSuspended) && 'bg-slate-800/30 p-3 border border-slate-700/50'
+                  )}>
+                    <View className="flex-row">
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setIsInjured(!isInjured);
+                          if (isInjured) {
+                            setInjuryDuration(undefined);
+                          }
+                        }}
                         className={cn(
-                          'font-semibold',
-                          isInjured ? 'text-white' : 'text-slate-400'
+                          'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center border',
+                          isInjured ? 'bg-red-500/90 border-red-400' : 'bg-slate-800 border-slate-700'
                         )}
                       >
-                        Injured
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setIsSuspended(!isSuspended);
-                        if (isSuspended) {
-                          setSuspensionDuration(undefined);
-                        }
-                      }}
-                      className={cn(
-                        'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
-                        isSuspended ? 'bg-red-600' : 'bg-slate-800'
-                      )}
-                    >
-                      <Text
+                        <Text className={cn(
+                          'text-lg font-black mr-1',
+                          isInjured ? 'text-white' : 'text-red-400'
+                        )}>+</Text>
+                        <Text
+                          className={cn(
+                            'font-semibold',
+                            isInjured ? 'text-white' : 'text-slate-500'
+                          )}
+                        >
+                          Injured
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setIsSuspended(!isSuspended);
+                          if (isSuspended) {
+                            setSuspensionDuration(undefined);
+                          }
+                        }}
                         className={cn(
-                          'font-bold mr-1',
-                          isSuspended ? 'text-white' : 'text-red-500'
-                        )}
-                        style={{ fontSize: 12 }}
-                      >
-                        SUS
-                      </Text>
-                      <Text
-                        className={cn(
-                          'font-semibold',
-                          isSuspended ? 'text-white' : 'text-slate-400'
+                          'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center border',
+                          isSuspended ? 'bg-red-500/90 border-red-400' : 'bg-slate-800 border-slate-700'
                         )}
                       >
-                        Suspended
-                      </Text>
-                    </Pressable>
-                  </View>
+                        <Text
+                          className={cn(
+                            'font-bold mr-1',
+                            isSuspended ? 'text-white' : 'text-red-400'
+                          )}
+                          style={{ fontSize: 12 }}
+                        >
+                          SUS
+                        </Text>
+                        <Text
+                          className={cn(
+                            'font-semibold',
+                            isSuspended ? 'text-white' : 'text-slate-500'
+                          )}
+                        >
+                          Suspended
+                        </Text>
+                      </Pressable>
+                    </View>
 
                   {/* Injury Duration - shown when injured is selected */}
                   {isInjured && (
-                    <View className="mt-3 bg-red-500/10 rounded-xl p-3 border border-red-500/20">
+                    <View className="mt-3 bg-red-500/10 rounded-xl p-2.5 border border-red-500/20">
                       <Text className="text-red-400 text-sm font-medium mb-2">Injury Duration</Text>
-                      <View className="flex-row items-center">
+                      <View className="flex-row items-center bg-slate-800/50 rounded-xl p-1">
                         {injuryDuration?.unit !== 'remainder_of_season' && (
                           <TextInput
                             value={injuryDuration?.value?.toString() || ''}
@@ -1011,68 +1024,66 @@ export default function RosterScreen() {
                               }));
                             }}
                             placeholder="0"
-                            placeholderTextColor="#64748b"
+                            placeholderTextColor="#94a3b8"
                             keyboardType="number-pad"
                             maxLength={3}
-                            className="bg-slate-800 rounded-xl px-4 py-2.5 text-white text-base w-16 mr-2"
+                            className="bg-slate-700 rounded-lg px-3 py-2 text-white text-base w-14 mr-1 text-center"
                           />
                         )}
-                        <View className="flex-row flex-1">
-                          <Pressable
-                            onPress={() => {
-                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                              setInjuryDuration(prev => ({ ...prev, value: prev?.value, unit: 'days' }));
-                            }}
-                            className={cn(
-                              'flex-1 py-2.5 px-3 rounded-xl mr-1',
-                              injuryDuration?.unit === 'days' ? 'bg-red-500' : 'bg-slate-800'
-                            )}
-                          >
-                            <Text className={cn(
-                              'text-center text-sm font-medium',
-                              injuryDuration?.unit === 'days' ? 'text-white' : 'text-slate-400'
-                            )}>Days</Text>
-                          </Pressable>
-                          <Pressable
-                            onPress={() => {
-                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                              setInjuryDuration(prev => ({ ...prev, value: prev?.value, unit: 'weeks' }));
-                            }}
-                            className={cn(
-                              'flex-1 py-2.5 px-3 rounded-xl mr-1',
-                              injuryDuration?.unit === 'weeks' ? 'bg-red-500' : 'bg-slate-800'
-                            )}
-                          >
-                            <Text className={cn(
-                              'text-center text-sm font-medium',
-                              injuryDuration?.unit === 'weeks' ? 'text-white' : 'text-slate-400'
-                            )}>Weeks</Text>
-                          </Pressable>
-                          <Pressable
-                            onPress={() => {
-                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                              setInjuryDuration({ unit: 'remainder_of_season', value: undefined });
-                            }}
-                            className={cn(
-                              'flex-1 py-2.5 px-2 rounded-xl',
-                              injuryDuration?.unit === 'remainder_of_season' ? 'bg-red-500' : 'bg-slate-800'
-                            )}
-                          >
-                            <Text className={cn(
-                              'text-center text-xs font-medium',
-                              injuryDuration?.unit === 'remainder_of_season' ? 'text-white' : 'text-slate-400'
-                            )}>Season</Text>
-                          </Pressable>
-                        </View>
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setInjuryDuration(prev => ({ ...prev, value: prev?.value, unit: 'days' }));
+                          }}
+                          className={cn(
+                            'flex-1 py-2.5 px-2 rounded-lg',
+                            injuryDuration?.unit === 'days' ? 'bg-red-500/80' : 'bg-transparent'
+                          )}
+                        >
+                          <Text className={cn(
+                            'text-center text-sm font-medium',
+                            injuryDuration?.unit === 'days' ? 'text-white' : 'text-slate-400'
+                          )}>Days</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setInjuryDuration(prev => ({ ...prev, value: prev?.value, unit: 'weeks' }));
+                          }}
+                          className={cn(
+                            'flex-1 py-2.5 px-2 rounded-lg',
+                            injuryDuration?.unit === 'weeks' ? 'bg-red-500/80' : 'bg-transparent'
+                          )}
+                        >
+                          <Text className={cn(
+                            'text-center text-sm font-medium',
+                            injuryDuration?.unit === 'weeks' ? 'text-white' : 'text-slate-400'
+                          )}>Weeks</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setInjuryDuration({ unit: 'remainder_of_season', value: undefined });
+                          }}
+                          className={cn(
+                            'flex-1 py-2.5 px-1 rounded-lg',
+                            injuryDuration?.unit === 'remainder_of_season' ? 'bg-red-500/80' : 'bg-transparent'
+                          )}
+                        >
+                          <Text className={cn(
+                            'text-center text-xs font-medium',
+                            injuryDuration?.unit === 'remainder_of_season' ? 'text-white' : 'text-slate-400'
+                          )}>Season</Text>
+                        </Pressable>
                       </View>
                     </View>
                   )}
 
                   {/* Suspension Duration - shown when suspended is selected */}
                   {isSuspended && (
-                    <View className="mt-3 bg-red-600/10 rounded-xl p-3 border border-red-600/20">
+                    <View className="mt-3 bg-red-500/10 rounded-xl p-2.5 border border-red-500/20">
                       <Text className="text-red-400 text-sm font-medium mb-2">Suspension Duration</Text>
-                      <View className="flex-row items-center">
+                      <View className="flex-row items-center bg-slate-800/50 rounded-xl p-1">
                         {suspensionDuration?.unit !== 'remainder_of_season' && (
                           <TextInput
                             value={suspensionDuration?.value?.toString() || ''}
@@ -1085,51 +1096,49 @@ export default function RosterScreen() {
                               }));
                             }}
                             placeholder="0"
-                            placeholderTextColor="#64748b"
+                            placeholderTextColor="#94a3b8"
                             keyboardType="number-pad"
                             maxLength={3}
-                            className="bg-slate-800 rounded-xl px-4 py-2.5 text-white text-base w-16 mr-2"
+                            className="bg-slate-700 rounded-lg px-3 py-2 text-white text-base w-14 mr-1 text-center"
                           />
                         )}
-                        <View className="flex-row flex-1">
-                          <Pressable
-                            onPress={() => {
-                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                              setSuspensionDuration(prev => ({ ...prev, value: prev?.value, unit: 'games' }));
-                            }}
-                            className={cn(
-                              'flex-1 py-2.5 px-3 rounded-xl mr-1',
-                              suspensionDuration?.unit === 'games' ? 'bg-red-600' : 'bg-slate-800'
-                            )}
-                          >
-                            <Text className={cn(
-                              'text-center text-sm font-medium',
-                              suspensionDuration?.unit === 'games' ? 'text-white' : 'text-slate-400'
-                            )}>Games</Text>
-                          </Pressable>
-                          <Pressable
-                            onPress={() => {
-                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                              setSuspensionDuration({ unit: 'remainder_of_season', value: undefined });
-                            }}
-                            className={cn(
-                              'flex-1 py-2.5 px-2 rounded-xl',
-                              suspensionDuration?.unit === 'remainder_of_season' ? 'bg-red-600' : 'bg-slate-800'
-                            )}
-                          >
-                            <Text className={cn(
-                              'text-center text-sm font-medium',
-                              suspensionDuration?.unit === 'remainder_of_season' ? 'text-white' : 'text-slate-400'
-                            )}>Season</Text>
-                          </Pressable>
-                        </View>
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setSuspensionDuration(prev => ({ ...prev, value: prev?.value, unit: 'games' }));
+                          }}
+                          className={cn(
+                            'flex-1 py-2.5 px-2 rounded-lg',
+                            suspensionDuration?.unit === 'games' ? 'bg-red-500/80' : 'bg-transparent'
+                          )}
+                        >
+                          <Text className={cn(
+                            'text-center text-sm font-medium',
+                            suspensionDuration?.unit === 'games' ? 'text-white' : 'text-slate-400'
+                          )}>Games</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setSuspensionDuration({ unit: 'remainder_of_season', value: undefined });
+                          }}
+                          className={cn(
+                            'flex-1 py-2.5 px-2 rounded-lg',
+                            suspensionDuration?.unit === 'remainder_of_season' ? 'bg-red-500/80' : 'bg-transparent'
+                          )}
+                        >
+                          <Text className={cn(
+                            'text-center text-sm font-medium',
+                            suspensionDuration?.unit === 'remainder_of_season' ? 'text-white' : 'text-slate-400'
+                          )}>Season</Text>
+                        </Pressable>
                       </View>
                     </View>
                   )}
 
                   {/* End Date Picker - shown when injured or suspended */}
                   {(isInjured || isSuspended) && (
-                    <View className="mt-3 bg-amber-500/10 rounded-xl p-3 border border-amber-500/20">
+                    <View className="mt-3 bg-amber-500/10 rounded-xl p-2.5 border border-amber-500/30">
                       <Text className="text-amber-400 text-sm font-medium mb-2">
                         End Date (Auto-mark OUT for games)
                       </Text>
@@ -1154,11 +1163,11 @@ export default function RosterScreen() {
                             }}
                             hitSlop={8}
                           >
-                            <X size={16} color="#94a3b8" />
+                            <X size={20} color="#94a3b8" />
                           </Pressable>
                         )}
                       </Pressable>
-                      <Text className="text-slate-500 text-xs mt-2">
+                      <Text className="text-slate-400 text-xs mt-2">
                         Games on or before this date will have this player auto-marked as OUT
                       </Text>
                       {showEndDatePicker && (
@@ -1214,13 +1223,14 @@ export default function RosterScreen() {
                       )}
                     </View>
                   )}
+                  </View>
                 </View>
               )}
 
               {/* Role Selector - Admin Only - Single Select */}
               {isAdmin() && (
                 <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Role</Text>
+                  <Text className="text-slate-300 text-sm mb-2">Role</Text>
                   {(() => {
                     const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
                     const showPlayer = enabledRoles.includes('player');
@@ -1243,16 +1253,16 @@ export default function RosterScreen() {
                                   setMemberRole('player');
                                 }}
                                 className={cn(
-                                  'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                                  'flex-1 py-3 px-2 rounded-xl items-center justify-center border',
                                   showReserve && 'mr-2',
-                                  memberRole === 'player' ? 'bg-green-500' : 'bg-slate-800'
+                                  memberRole === 'player' ? 'bg-green-500 border-green-400' : 'bg-slate-800/80 border-slate-700'
                                 )}
                               >
-                                <User size={16} color={memberRole === 'player' ? 'white' : '#22c55e'} />
+                                <User size={16} color={memberRole === 'player' ? 'white' : '#475569'} strokeWidth={2} />
                                 <Text
                                   className={cn(
                                     'font-semibold text-sm mt-1',
-                                    memberRole === 'player' ? 'text-white' : 'text-slate-400'
+                                    memberRole === 'player' ? 'text-white' : 'text-slate-500'
                                   )}
                                 >
                                   Player
@@ -1267,15 +1277,15 @@ export default function RosterScreen() {
                                   setMemberRole('reserve');
                                 }}
                                 className={cn(
-                                  'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                                  memberRole === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
+                                  'flex-1 py-3 px-2 rounded-xl items-center justify-center border',
+                                  memberRole === 'reserve' ? 'bg-slate-600 border-slate-500' : 'bg-slate-800/80 border-slate-700'
                                 )}
                               >
-                                <UserMinus size={16} color={memberRole === 'reserve' ? 'white' : '#94a3b8'} />
+                                <UserMinus size={16} color={memberRole === 'reserve' ? 'white' : '#475569'} strokeWidth={2} />
                                 <Text
                                   className={cn(
                                     'font-semibold text-sm mt-1',
-                                    memberRole === 'reserve' ? 'text-white' : 'text-slate-400'
+                                    memberRole === 'reserve' ? 'text-white' : 'text-slate-500'
                                   )}
                                 >
                                   Reserve
@@ -1295,16 +1305,16 @@ export default function RosterScreen() {
                                   setMemberRole('coach');
                                 }}
                                 className={cn(
-                                  'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                                  'flex-1 py-3 px-2 rounded-xl items-center justify-center border',
                                   showParent && 'mr-2',
-                                  memberRole === 'coach' ? 'bg-cyan-500' : 'bg-slate-800'
+                                  memberRole === 'coach' ? 'bg-cyan-500 border-cyan-400' : 'bg-slate-800/80 border-slate-700'
                                 )}
                               >
-                                <UserCog size={16} color={memberRole === 'coach' ? 'white' : '#67e8f9'} />
+                                <UserCog size={16} color={memberRole === 'coach' ? 'white' : '#475569'} strokeWidth={2} />
                                 <Text
                                   className={cn(
                                     'font-semibold text-sm mt-1',
-                                    memberRole === 'coach' ? 'text-white' : 'text-slate-400'
+                                    memberRole === 'coach' ? 'text-white' : 'text-slate-500'
                                   )}
                                 >
                                   Coach
@@ -1319,15 +1329,15 @@ export default function RosterScreen() {
                                   setMemberRole('parent');
                                 }}
                                 className={cn(
-                                  'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                                  memberRole === 'parent' ? 'bg-pink-500' : 'bg-slate-800'
+                                  'flex-1 py-3 px-2 rounded-xl items-center justify-center border',
+                                  memberRole === 'parent' ? 'bg-pink-500 border-pink-400' : 'bg-slate-800/80 border-slate-700'
                                 )}
                               >
-                                <ParentChildIcon size={16} color={memberRole === 'parent' ? 'white' : '#ec4899'} />
+                                <ParentChildIcon size={16} color={memberRole === 'parent' ? 'white' : '#475569'} />
                                 <Text
                                   className={cn(
                                     'font-semibold text-sm mt-1',
-                                    memberRole === 'parent' ? 'text-white' : 'text-slate-400'
+                                    memberRole === 'parent' ? 'text-white' : 'text-slate-500'
                                   )}
                                 >
                                   Parent
@@ -1346,7 +1356,7 @@ export default function RosterScreen() {
                   </Text>
 
                   {/* Admin Roles: Captain & Admin */}
-                  <Text className="text-slate-400 text-sm mb-2 mt-4">Admin Roles</Text>
+                  <Text className="text-slate-300 text-sm mb-2 mt-4">Admin Roles</Text>
                   <View className="flex-row">
                     {/* Captain */}
                     <Pressable
@@ -1359,20 +1369,23 @@ export default function RosterScreen() {
                         }
                       }}
                       className={cn(
-                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                        playerRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
+                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center border',
+                        playerRoles.includes('captain') ? 'bg-amber-500/90 border-amber-400' : 'bg-slate-800/80 border-slate-700'
                       )}
                     >
-                      <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center mb-1">
+                      <View className={cn(
+                        'w-5 h-5 rounded-full items-center justify-center mb-1',
+                        playerRoles.includes('captain') ? 'bg-amber-400/30' : 'bg-slate-700'
+                      )}>
                         <Text className={cn(
                           'text-xs font-black',
-                          playerRoles.includes('captain') ? 'text-white' : 'text-amber-500'
+                          playerRoles.includes('captain') ? 'text-white' : 'text-slate-500'
                         )}>C</Text>
                       </View>
                       <Text
                         className={cn(
                           'font-semibold text-sm',
-                          playerRoles.includes('captain') ? 'text-white' : 'text-slate-400'
+                          playerRoles.includes('captain') ? 'text-white' : 'text-slate-500'
                         )}
                       >
                         Captain
@@ -1389,15 +1402,15 @@ export default function RosterScreen() {
                         }
                       }}
                       className={cn(
-                        'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                        playerRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
+                        'flex-1 py-3 px-2 rounded-xl items-center justify-center border',
+                        playerRoles.includes('admin') ? 'bg-purple-500/90 border-purple-400' : 'bg-slate-800/80 border-slate-700'
                       )}
                     >
-                      <Shield size={16} color={playerRoles.includes('admin') ? 'white' : '#a78bfa'} />
+                      <Shield size={16} color={playerRoles.includes('admin') ? 'white' : '#475569'} strokeWidth={2} />
                       <Text
                         className={cn(
                           'font-semibold text-sm mt-1',
-                          playerRoles.includes('admin') ? 'text-white' : 'text-slate-400'
+                          playerRoles.includes('admin') ? 'text-white' : 'text-slate-500'
                         )}
                       >
                         Admin
