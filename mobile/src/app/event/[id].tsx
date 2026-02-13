@@ -492,7 +492,7 @@ export default function EventDetailScreen() {
               {/* Instruction note */}
               <View className="bg-slate-700/30 rounded-xl px-3 py-2.5 mb-3 border border-slate-600/30">
                 <Text className="text-slate-400 text-xs text-center">
-                  Tap your name to cycle: <Text className="text-green-400 font-medium">IN</Text> → <Text className="text-red-400 font-medium">OUT</Text> → <Text className="text-slate-500 font-medium">No Response</Text>
+                  Tap to cycle: <Text className="text-green-400 font-medium">IN</Text> → <Text className="text-red-400 font-medium">OUT</Text> → <Text className="text-slate-500 font-medium">No Response</Text>
                 </Text>
               </View>
 
