@@ -1424,70 +1424,71 @@ export default function PaymentsScreen() {
 
                   {/* Add Payment Section - Only for Admins/Captains */}
                   {canManageTeam() && (
-                    <View className="bg-slate-800/60 rounded-2xl p-4 mb-6 border border-slate-700/50">
-                      <Text className="text-cyan-400 font-semibold mb-4">Add Payment</Text>
+                    <View className="bg-slate-800/60 rounded-xl p-4 mb-6 border border-slate-700/50">
+                      <Text className="text-cyan-400 font-semibold mb-3">Add Payment</Text>
 
-                      {/* Amount Input */}
-                      <View className="mb-4">
-                        <Text className="text-slate-400 text-sm mb-2">Amount</Text>
-                        <View className="flex-row items-center bg-slate-700 rounded-xl px-4 py-3">
-                          <Text className="text-white text-xl font-bold mr-1">$</Text>
-                          <TextInput
-                            value={newPaymentAmount}
-                            onChangeText={setNewPaymentAmount}
-                            placeholder="0.00"
-                            placeholderTextColor="#64748b"
-                            keyboardType="decimal-pad"
-                            className="flex-1 text-white text-xl font-bold"
-                          />
+                      {/* Amount and Date on one line */}
+                      <View className="flex-row mb-3" style={{ gap: 10 }}>
+                        <View className="flex-1">
+                          <Text className="text-slate-500 text-xs mb-1.5">Amount</Text>
+                          <View className="flex-row items-center bg-slate-700 rounded-lg px-3 py-2.5">
+                            <Text className="text-white text-base font-semibold mr-1">$</Text>
+                            <TextInput
+                              value={newPaymentAmount}
+                              onChangeText={setNewPaymentAmount}
+                              placeholder="0.00"
+                              placeholderTextColor="#64748b"
+                              keyboardType="decimal-pad"
+                              className="flex-1 text-white text-base font-semibold"
+                            />
+                          </View>
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-slate-500 text-xs mb-1.5">Date</Text>
+                          <Pressable
+                            onPress={() => setShowDatePicker(!showDatePicker)}
+                            className="flex-row items-center bg-slate-700 rounded-lg px-3 py-2.5"
+                          >
+                            <Calendar size={16} color="#64748b" />
+                            <Text className="text-white text-sm ml-2">{format(newPaymentDate, 'MMM d, yyyy')}</Text>
+                          </Pressable>
                         </View>
                       </View>
 
-                      {/* Date Input */}
-                      <View className="mb-4">
-                        <Text className="text-slate-400 text-sm mb-2">Date</Text>
-                        <Pressable
-                          onPress={() => setShowDatePicker(!showDatePicker)}
-                          className="flex-row items-center bg-slate-700 rounded-xl px-4 py-3"
-                        >
-                          <Calendar size={20} color="#64748b" />
-                          <Text className="text-white ml-3">{format(newPaymentDate, 'MMM d, yyyy')}</Text>
-                        </Pressable>
-                        {showDatePicker && (
-                          <View className="bg-slate-800 rounded-xl mt-2 overflow-hidden items-center">
-                            <DateTimePicker
-                              value={newPaymentDate}
-                              mode="date"
-                              display="inline"
-                              onChange={(event, date) => {
-                                if (date) setNewPaymentDate(date);
-                                if (Platform.OS === 'android') setShowDatePicker(false);
-                              }}
-                              themeVariant="dark"
-                              accentColor="#22c55e"
-                            />
-                          </View>
-                        )}
-                      </View>
+                      {showDatePicker && (
+                        <View className="bg-slate-800 rounded-xl mb-3 overflow-hidden items-center">
+                          <DateTimePicker
+                            value={newPaymentDate}
+                            mode="date"
+                            display="inline"
+                            onChange={(event, date) => {
+                              if (date) setNewPaymentDate(date);
+                              if (Platform.OS === 'android') setShowDatePicker(false);
+                            }}
+                            themeVariant="dark"
+                            accentColor="#22c55e"
+                          />
+                        </View>
+                      )}
 
                       {/* Note Input */}
-                      <View className="mb-4">
-                        <Text className="text-slate-400 text-sm mb-2">Note (optional)</Text>
+                      <View className="mb-3">
+                        <Text className="text-slate-500 text-xs mb-1.5">Note (optional)</Text>
                         <TextInput
                           value={newPaymentNote}
                           onChangeText={setNewPaymentNote}
                           placeholder="e.g., Venmo payment"
                           placeholderTextColor="#64748b"
-                          className="bg-slate-700 rounded-xl px-4 py-3 text-white"
+                          className="bg-slate-700 rounded-lg px-3 py-2.5 text-white text-sm"
                         />
                       </View>
 
                       {/* Add Button */}
                       <Pressable
                         onPress={handleAddPaymentEntry}
-                        className="bg-green-500 rounded-xl py-3 active:bg-green-600"
+                        className="bg-green-500 rounded-lg py-2.5 active:bg-green-600"
                       >
-                        <Text className="text-white text-center font-semibold">Add Payment</Text>
+                        <Text className="text-white text-center font-semibold text-sm">Add Payment</Text>
                       </Pressable>
                     </View>
                   )}
