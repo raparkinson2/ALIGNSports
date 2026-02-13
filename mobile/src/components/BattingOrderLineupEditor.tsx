@@ -271,7 +271,7 @@ export function BattingOrderLineupEditor({
                 <Sortable.Flex
                   onOrderChange={handleOrderChange}
                   flexDirection="column"
-                  hapticsEnabled
+                  customHandle
                   dragActivationDelay={150}
                   activeItemScale={1.02}
                   activeItemOpacity={0.9}
