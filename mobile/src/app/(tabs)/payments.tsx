@@ -1554,14 +1554,14 @@ export default function PaymentsScreen() {
 
                     return (
                       <View className={cn(
-                        'rounded-xl p-4 mb-6 border',
+                        'rounded-xl p-4 mb-6',
                         selectedPlayerPayment?.status === 'paid'
-                          ? 'bg-green-500/10 border-green-500/20'
+                          ? 'bg-green-500/10 border border-green-500/20'
                           : isOverdue
-                            ? 'bg-slate-800/50 border-l-4 border-l-red-500 border-slate-700/50'
+                            ? 'bg-slate-800/50 border-l-4 border-l-red-500'
                             : selectedPlayerPayment?.status === 'partial'
-                              ? 'bg-amber-500/10 border-amber-500/20'
-                              : 'bg-slate-800/50 border-slate-700/50'
+                              ? 'bg-amber-500/10 border border-amber-500/20'
+                              : 'bg-slate-800/50 border border-slate-700/50'
                       )}>
                         {/* Overdue Badge */}
                         {isOverdue && (
@@ -1580,8 +1580,8 @@ export default function PaymentsScreen() {
                         )}
 
                         <View className="flex-row justify-between items-center mb-2">
-                          <Text className="text-slate-500 text-sm">Total Due</Text>
-                          <Text className="text-white text-lg font-semibold">${selectedPeriod.amount}</Text>
+                          <Text className={cn("text-sm", isOverdue ? "text-red-400/70" : "text-slate-500")}>Total Due</Text>
+                          <Text className={cn("text-lg font-semibold", isOverdue ? "text-red-400" : "text-white")}>${selectedPeriod.amount}</Text>
                         </View>
                         <View className="flex-row justify-between items-center mb-2">
                           <Text className="text-slate-500 text-sm">Paid</Text>
