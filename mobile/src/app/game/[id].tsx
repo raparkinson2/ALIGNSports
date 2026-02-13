@@ -770,7 +770,7 @@ export default function GameDetailScreen() {
             </Animated.View>
           )}
 
-          {/* Set Lineup Button - Only for basketball and captains/admins */}
+          {/* Starting 5 Button - Only for basketball and captains/admins */}
           {teamSettings.sport === 'basketball' && teamSettings.showLineups !== false && canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(115).springify()}
@@ -783,7 +783,7 @@ export default function GameDetailScreen() {
                 <View className="flex-row items-center">
                   <ListOrdered size={24} color="#10b981" />
                   <View className="flex-1 ml-3">
-                    <Text className="text-emerald-400 font-semibold">Set Lineup</Text>
+                    <Text className="text-emerald-400 font-semibold">Starting 5</Text>
                     <Text className="text-slate-400 text-sm">
                       {hasAssignedBasketballPlayers(game.basketballLineup) ? 'Edit starting 5 and bench' : 'Configure starting 5 and bench players'}
                     </Text>
