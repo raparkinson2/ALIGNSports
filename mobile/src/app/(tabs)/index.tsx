@@ -164,7 +164,7 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false, hi
   // Get refreshment duty player if assigned and feature is enabled
   const showRefreshmentDuty = teamSettings.showRefreshmentDuty !== false;
   const is21Plus = teamSettings.refreshmentDutyIs21Plus !== false;
-  const beerDutyPlayer = showRefreshmentDuty && game.showBeerDuty && game.beerDutyPlayerId
+  const beerDutyPlayer = showRefreshmentDuty && (game.showBeerDuty !== false) && game.beerDutyPlayerId
     ? players.find((p) => p.id === game.beerDutyPlayerId)
     : null;
 
@@ -933,7 +933,7 @@ export default function ScheduleScreen() {
   const [selectedJersey, setSelectedJersey] = useState(teamSettings.jerseyColors[0]?.name || '');
   const [notes, setNotes] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showBeerDuty, setShowBeerDuty] = useState(false);
+  const [showBeerDuty, setShowBeerDuty] = useState(teamSettings.showRefreshmentDuty !== false);
   const [selectedBeerDutyPlayer, setSelectedBeerDutyPlayer] = useState<string | null>(null);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [showPlayerSelection, setShowPlayerSelection] = useState(false);
@@ -2031,14 +2031,14 @@ export default function ScheduleScreen() {
               <View className="mb-5">
                 <View className="flex-row items-center justify-between bg-slate-800 rounded-xl p-4">
                   <View className="flex-row items-center">
-                    <Beer size={20} color="#22d3ee" />
+                    <Beer size={20} color="#f59e0b" />
                     <Text className="text-white font-medium ml-3">Refreshment Duty</Text>
                   </View>
                   <Switch
                     value={showBeerDuty}
                     onValueChange={setShowBeerDuty}
-                    trackColor={{ false: '#334155', true: '#22d3ee40' }}
-                    thumbColor={showBeerDuty ? '#22d3ee' : '#64748b'}
+                    trackColor={{ false: '#334155', true: '#f59e0b40' }}
+                    thumbColor={showBeerDuty ? '#f59e0b' : '#64748b'}
                   />
                 </View>
 
@@ -2051,7 +2051,7 @@ export default function ScheduleScreen() {
                         className={cn(
                           'px-4 py-2 rounded-xl mr-2 items-center justify-center border',
                           selectedBeerDutyPlayer === null
-                            ? 'bg-cyan-500 border-cyan-500'
+                            ? 'bg-amber-500 border-amber-500'
                             : 'bg-slate-800 border-slate-700'
                         )}
                         style={{ height: 40 }}
@@ -2073,7 +2073,7 @@ export default function ScheduleScreen() {
                           className={cn(
                             'flex-row items-center px-3 py-2 rounded-xl mr-2 border',
                             selectedBeerDutyPlayer === player.id
-                              ? 'bg-cyan-500 border-cyan-500'
+                              ? 'bg-amber-500 border-amber-500'
                               : 'bg-slate-800 border-slate-700'
                           )}
                         >

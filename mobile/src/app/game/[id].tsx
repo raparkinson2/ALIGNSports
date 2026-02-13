@@ -759,8 +759,8 @@ export default function GameDetailScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Beer/Refreshment Duty - Only show if enabled */}
-          {game.showBeerDuty && teamSettings.showRefreshmentDuty !== false && (
+          {/* Beer/Refreshment Duty - Show if team setting enabled (game.showBeerDuty defaults to true for new games) */}
+          {(game.showBeerDuty !== false) && teamSettings.showRefreshmentDuty !== false && (
             <Animated.View
               entering={FadeInUp.delay(113).springify()}
               className="mx-4 mb-4"
