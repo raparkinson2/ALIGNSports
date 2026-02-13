@@ -276,15 +276,16 @@ export function BattingOrderLineupEditor({
                   activeItemScale={1.02}
                   activeItemOpacity={0.9}
                   activeItemShadowOpacity={0.3}
+                  width="fill"
                 >
                   {lineup.battingOrder.slice(0, lineup.numHitters).map((entry, index) => {
                     const player = entry?.playerId ? getPlayer(entry.playerId) : null;
 
                     return (
-                      <Sortable.Touchable key={`slot-${index}`}>
+                      <Sortable.Touchable key={`slot-${index}`} style={{ width: '100%' }}>
                         <View
                           className={cn(
-                            'flex-row items-center p-3 bg-slate-800/60',
+                            'flex-row items-center p-3 bg-slate-800/60 w-full',
                             index < lineup.numHitters - 1 && 'border-b border-slate-700/50'
                           )}
                         >
