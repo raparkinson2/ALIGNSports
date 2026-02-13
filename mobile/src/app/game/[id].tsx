@@ -219,6 +219,11 @@ export default function GameDetailScreen() {
   const [isLacrosseLineupModalVisible, setIsLacrosseLineupModalVisible] = useState(false);
   const [isBattingOrderModalVisible, setIsBattingOrderModalVisible] = useState(false);
   const [isLinesExpanded, setIsLinesExpanded] = useState(false);
+  const [isBasketballLineupExpanded, setIsBasketballLineupExpanded] = useState(false);
+  const [isBattingOrderExpanded, setIsBattingOrderExpanded] = useState(false);
+  const [isSoccerLineupExpanded, setIsSoccerLineupExpanded] = useState(false);
+  const [isSoccerDiamondLineupExpanded, setIsSoccerDiamondLineupExpanded] = useState(false);
+  const [isLacrosseLineupExpanded, setIsLacrosseLineupExpanded] = useState(false);
 
   // Edit form state
   const [editOpponent, setEditOpponent] = useState('');
@@ -1026,101 +1031,117 @@ export default function GameDetailScreen() {
               entering={FadeInUp.delay(125).springify()}
               className="mx-4 mb-4"
             >
-              <Pressable
-                onPress={canManageTeam() ? () => setIsBasketballLineupModalVisible(true) : undefined}
-                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30"
-              >
-                <View className="flex-row items-center justify-between mb-3">
-                  <View className="flex-row items-center">
-                    <ListOrdered size={20} color="#10b981" />
-                    <Text className="text-emerald-400 font-semibold ml-2">Lineup</Text>
+              <View className="bg-emerald-500/20 rounded-2xl border border-emerald-500/30 overflow-hidden">
+                {/* Collapsible Header */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setIsBasketballLineupExpanded(!isBasketballLineupExpanded);
+                  }}
+                  className="p-4 active:bg-emerald-500/30"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <ListOrdered size={20} color="#10b981" />
+                      <Text className="text-emerald-400 font-semibold ml-2">Starting 5</Text>
+                    </View>
+                    {isBasketballLineupExpanded ? (
+                      <ChevronUp size={20} color="#10b981" />
+                    ) : (
+                      <ChevronDown size={20} color="#10b981" />
+                    )}
                   </View>
-                  {canManageTeam() && (
-                    <ChevronDown size={20} color="#10b981" />
-                  )}
-                </View>
+                </Pressable>
 
-                {/* Starting 5 Preview */}
-                <Text className="text-slate-400 text-xs mb-2">Starting 5</Text>
-                <View className="flex-row justify-around mb-2">
-                  {/* PG */}
-                  {game.basketballLineup.hasPG && (
-                    <View className="items-center">
-                      {game.basketballLineup.starters.pg ? (
-                        <>
-                          <PlayerAvatar player={players.find((p) => p.id === game.basketballLineup!.starters.pg)} size={32} />
-                          <Text className="text-white text-xs mt-0.5">#{players.find((p) => p.id === game.basketballLineup!.starters.pg)?.number}</Text>
-                        </>
-                      ) : (
-                        <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                          <Text className="text-slate-500 text-xs">PG</Text>
+                {/* Expandable Content */}
+                {isBasketballLineupExpanded && (
+                  <Pressable
+                    onPress={canManageTeam() ? () => setIsBasketballLineupModalVisible(true) : undefined}
+                    className="px-4 pb-4 active:bg-emerald-500/30"
+                  >
+                    {/* Starting 5 Preview */}
+                    <Text className="text-slate-400 text-xs mb-2">Starting 5</Text>
+                    <View className="flex-row justify-around mb-2">
+                      {/* PG */}
+                      {game.basketballLineup.hasPG && (
+                        <View className="items-center">
+                          {game.basketballLineup.starters.pg ? (
+                            <>
+                              <PlayerAvatar player={players.find((p) => p.id === game.basketballLineup!.starters.pg)} size={32} />
+                              <Text className="text-white text-xs mt-0.5">#{players.find((p) => p.id === game.basketballLineup!.starters.pg)?.number}</Text>
+                            </>
+                          ) : (
+                            <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                              <Text className="text-slate-500 text-xs">PG</Text>
+                            </View>
+                          )}
                         </View>
                       )}
+                      {/* Guards */}
+                      {game.basketballLineup.starters.guards.slice(0, game.basketballLineup.numGuards).map((playerId, i) => {
+                        const player = playerId ? players.find((p) => p.id === playerId) : null;
+                        return (
+                          <View key={`g-${i}`} className="items-center">
+                            {player ? (
+                              <>
+                                <PlayerAvatar player={player} size={32} />
+                                <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                              </>
+                            ) : (
+                              <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                                <Text className="text-slate-500 text-xs">G</Text>
+                              </View>
+                            )}
+                          </View>
+                        );
+                      })}
+                      {/* Forwards */}
+                      {game.basketballLineup.starters.forwards.slice(0, game.basketballLineup.numForwards).map((playerId, i) => {
+                        const player = playerId ? players.find((p) => p.id === playerId) : null;
+                        return (
+                          <View key={`f-${i}`} className="items-center">
+                            {player ? (
+                              <>
+                                <PlayerAvatar player={player} size={32} />
+                                <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                              </>
+                            ) : (
+                              <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                                <Text className="text-slate-500 text-xs">F</Text>
+                              </View>
+                            )}
+                          </View>
+                        );
+                      })}
+                      {/* Centers */}
+                      {game.basketballLineup.starters.centers.slice(0, game.basketballLineup.numCenters).map((playerId, i) => {
+                        const player = playerId ? players.find((p) => p.id === playerId) : null;
+                        return (
+                          <View key={`c-${i}`} className="items-center">
+                            {player ? (
+                              <>
+                                <PlayerAvatar player={player} size={32} />
+                                <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                              </>
+                            ) : (
+                              <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                                <Text className="text-slate-500 text-xs">C</Text>
+                              </View>
+                            )}
+                          </View>
+                        );
+                      })}
                     </View>
-                  )}
-                  {/* Guards */}
-                  {game.basketballLineup.starters.guards.slice(0, game.basketballLineup.numGuards).map((playerId, i) => {
-                    const player = playerId ? players.find((p) => p.id === playerId) : null;
-                    return (
-                      <View key={`g-${i}`} className="items-center">
-                        {player ? (
-                          <>
-                            <PlayerAvatar player={player} size={32} />
-                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
-                          </>
-                        ) : (
-                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                            <Text className="text-slate-500 text-xs">G</Text>
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })}
-                  {/* Forwards */}
-                  {game.basketballLineup.starters.forwards.slice(0, game.basketballLineup.numForwards).map((playerId, i) => {
-                    const player = playerId ? players.find((p) => p.id === playerId) : null;
-                    return (
-                      <View key={`f-${i}`} className="items-center">
-                        {player ? (
-                          <>
-                            <PlayerAvatar player={player} size={32} />
-                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
-                          </>
-                        ) : (
-                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                            <Text className="text-slate-500 text-xs">F</Text>
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })}
-                  {/* Centers */}
-                  {game.basketballLineup.starters.centers.slice(0, game.basketballLineup.numCenters).map((playerId, i) => {
-                    const player = playerId ? players.find((p) => p.id === playerId) : null;
-                    return (
-                      <View key={`c-${i}`} className="items-center">
-                        {player ? (
-                          <>
-                            <PlayerAvatar player={player} size={32} />
-                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
-                          </>
-                        ) : (
-                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                            <Text className="text-slate-500 text-xs">C</Text>
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
 
-                {/* Bench count */}
-                {game.basketballLineup.bench.filter(Boolean).length > 0 && (
-                  <Text className="text-slate-400 text-xs text-center">
-                    + {game.basketballLineup.bench.filter(Boolean).length} on bench
-                  </Text>
+                    {/* Bench count */}
+                    {game.basketballLineup.bench.filter(Boolean).length > 0 && (
+                      <Text className="text-slate-400 text-xs text-center">
+                        + {game.basketballLineup.bench.filter(Boolean).length} on bench
+                      </Text>
+                    )}
+                  </Pressable>
                 )}
-              </Pressable>
+              </View>
             </Animated.View>
           )}
 
@@ -1130,42 +1151,58 @@ export default function GameDetailScreen() {
               entering={FadeInUp.delay(125).springify()}
               className="mx-4 mb-4"
             >
-              <Pressable
-                onPress={canManageTeam() ? () => setIsBattingOrderModalVisible(true) : undefined}
-                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30"
-              >
-                <View className="flex-row items-center justify-between mb-3">
-                  <View className="flex-row items-center">
-                    <ListOrdered size={20} color="#10b981" />
-                    <Text className="text-emerald-400 font-semibold ml-2">
-                      Batting Order{(game.battingOrderLineup?.numHitters ?? 9) > 9 ? ` (${game.battingOrderLineup?.numHitters} hitters)` : ''}
-                    </Text>
+              <View className="bg-emerald-500/20 rounded-2xl border border-emerald-500/30 overflow-hidden">
+                {/* Collapsible Header */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setIsBattingOrderExpanded(!isBattingOrderExpanded);
+                  }}
+                  className="p-4 active:bg-emerald-500/30"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <ListOrdered size={20} color="#10b981" />
+                      <Text className="text-emerald-400 font-semibold ml-2">
+                        Batting Order{(game.battingOrderLineup?.numHitters ?? 9) > 9 ? ` (${game.battingOrderLineup?.numHitters} hitters)` : ''}
+                      </Text>
+                    </View>
+                    {isBattingOrderExpanded ? (
+                      <ChevronUp size={20} color="#10b981" />
+                    ) : (
+                      <ChevronDown size={20} color="#10b981" />
+                    )}
                   </View>
-                  {canManageTeam() && (
-                    <ChevronDown size={20} color="#10b981" />
-                  )}
-                </View>
+                </Pressable>
 
-                {/* Batting Order Preview */}
-                <View className="gap-1">
-                  {(game.battingOrderLineup?.battingOrder ?? []).slice(0, game.battingOrderLineup?.numHitters ?? 9).map((entry, index) => {
-                    const player = entry?.playerId ? players.find((p) => p.id === entry.playerId) : null;
-                    return (
-                      <View key={index} className="flex-row items-center py-1">
-                        <Text className="text-emerald-400 font-bold w-6">{index + 1}.</Text>
-                        {player ? (
-                          <>
-                            <Text className="text-white flex-1">{getPlayerName(player)}</Text>
-                            <Text className="text-emerald-400 font-semibold">{entry?.position}</Text>
-                          </>
-                        ) : (
-                          <Text className="text-slate-500 flex-1">-</Text>
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
-              </Pressable>
+                {/* Expandable Content */}
+                {isBattingOrderExpanded && (
+                  <Pressable
+                    onPress={canManageTeam() ? () => setIsBattingOrderModalVisible(true) : undefined}
+                    className="px-4 pb-4 active:bg-emerald-500/30"
+                  >
+                    {/* Batting Order Preview */}
+                    <View className="gap-1">
+                      {(game.battingOrderLineup?.battingOrder ?? []).slice(0, game.battingOrderLineup?.numHitters ?? 9).map((entry, index) => {
+                        const player = entry?.playerId ? players.find((p) => p.id === entry.playerId) : null;
+                        return (
+                          <View key={index} className="flex-row items-center py-1">
+                            <Text className="text-emerald-400 font-bold w-6">{index + 1}.</Text>
+                            {player ? (
+                              <>
+                                <Text className="text-white flex-1">{getPlayerName(player)}</Text>
+                                <Text className="text-emerald-400 font-semibold">{entry?.position}</Text>
+                              </>
+                            ) : (
+                              <Text className="text-slate-500 flex-1">-</Text>
+                            )}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </Pressable>
+                )}
+              </View>
             </Animated.View>
           )}
 
@@ -1175,40 +1212,56 @@ export default function GameDetailScreen() {
               entering={FadeInUp.delay(125).springify()}
               className="mx-4 mb-4"
             >
-              <Pressable
-                onPress={canManageTeam() ? () => setIsBattingOrderModalVisible(true) : undefined}
-                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30"
-              >
-                <View className="flex-row items-center justify-between mb-3">
-                  <View className="flex-row items-center">
-                    <ListOrdered size={20} color="#10b981" />
-                    <Text className="text-emerald-400 font-semibold ml-2">Batting Order ({game.battingOrderLineup?.numHitters ?? 10} hitters)</Text>
+              <View className="bg-emerald-500/20 rounded-2xl border border-emerald-500/30 overflow-hidden">
+                {/* Collapsible Header */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setIsBattingOrderExpanded(!isBattingOrderExpanded);
+                  }}
+                  className="p-4 active:bg-emerald-500/30"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <ListOrdered size={20} color="#10b981" />
+                      <Text className="text-emerald-400 font-semibold ml-2">Batting Order ({game.battingOrderLineup?.numHitters ?? 10} hitters)</Text>
+                    </View>
+                    {isBattingOrderExpanded ? (
+                      <ChevronUp size={20} color="#10b981" />
+                    ) : (
+                      <ChevronDown size={20} color="#10b981" />
+                    )}
                   </View>
-                  {canManageTeam() && (
-                    <ChevronDown size={20} color="#10b981" />
-                  )}
-                </View>
+                </Pressable>
 
-                {/* Batting Order Preview */}
-                <View className="gap-1">
-                  {(game.battingOrderLineup?.battingOrder ?? []).slice(0, game.battingOrderLineup?.numHitters ?? 10).map((entry, index) => {
-                    const player = entry?.playerId ? players.find((p) => p.id === entry.playerId) : null;
-                    return (
-                      <View key={index} className="flex-row items-center py-1">
-                        <Text className="text-emerald-400 font-bold w-6">{index + 1}.</Text>
-                        {player ? (
-                          <>
-                            <Text className="text-white flex-1">{getPlayerName(player)}</Text>
-                            <Text className="text-emerald-400 font-semibold">{entry?.position}</Text>
-                          </>
-                        ) : (
-                          <Text className="text-slate-500 flex-1">-</Text>
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
-              </Pressable>
+                {/* Expandable Content */}
+                {isBattingOrderExpanded && (
+                  <Pressable
+                    onPress={canManageTeam() ? () => setIsBattingOrderModalVisible(true) : undefined}
+                    className="px-4 pb-4 active:bg-emerald-500/30"
+                  >
+                    {/* Batting Order Preview */}
+                    <View className="gap-1">
+                      {(game.battingOrderLineup?.battingOrder ?? []).slice(0, game.battingOrderLineup?.numHitters ?? 10).map((entry, index) => {
+                        const player = entry?.playerId ? players.find((p) => p.id === entry.playerId) : null;
+                        return (
+                          <View key={index} className="flex-row items-center py-1">
+                            <Text className="text-emerald-400 font-bold w-6">{index + 1}.</Text>
+                            {player ? (
+                              <>
+                                <Text className="text-white flex-1">{getPlayerName(player)}</Text>
+                                <Text className="text-emerald-400 font-semibold">{entry?.position}</Text>
+                              </>
+                            ) : (
+                              <Text className="text-slate-500 flex-1">-</Text>
+                            )}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </Pressable>
+                )}
+              </View>
             </Animated.View>
           )}
 
@@ -1218,121 +1271,137 @@ export default function GameDetailScreen() {
               entering={FadeInUp.delay(125).springify()}
               className="mx-4 mb-4"
             >
-              <Pressable
-                onPress={canManageTeam() ? () => setIsSoccerLineupModalVisible(true) : undefined}
-                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30"
-              >
-                <View className="flex-row items-center justify-between mb-3">
-                  <View className="flex-row items-center">
-                    <ListOrdered size={20} color="#10b981" />
-                    <Text className="text-emerald-400 font-semibold ml-2">Lineup</Text>
+              <View className="bg-emerald-500/20 rounded-2xl border border-emerald-500/30 overflow-hidden">
+                {/* Collapsible Header */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setIsSoccerLineupExpanded(!isSoccerLineupExpanded);
+                  }}
+                  className="p-4 active:bg-emerald-500/30"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <ListOrdered size={20} color="#10b981" />
+                      <Text className="text-emerald-400 font-semibold ml-2">Lineup</Text>
+                    </View>
+                    {isSoccerLineupExpanded ? (
+                      <ChevronUp size={20} color="#10b981" />
+                    ) : (
+                      <ChevronDown size={20} color="#10b981" />
+                    )}
                   </View>
-                  {canManageTeam() && (
-                    <ChevronDown size={20} color="#10b981" />
-                  )}
-                </View>
+                </Pressable>
 
-                {/* Forwards Preview */}
-                <Text className="text-slate-400 text-xs mb-2">Forwards</Text>
-                <View className="flex-row justify-center gap-6 mb-3">
-                  {['st1', 'st2'].map((pos) => {
-                    const playerId = game.soccerLineup![pos as keyof SoccerLineup];
-                    const player = playerId ? players.find((p) => p.id === playerId) : null;
-                    return (
-                      <View key={pos} className="items-center">
-                        {player ? (
-                          <>
-                            <PlayerAvatar player={player} size={32} />
-                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
-                          </>
-                        ) : (
-                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                            <Text className="text-slate-500 text-[10px]">ST</Text>
+                {/* Expandable Content */}
+                {isSoccerLineupExpanded && (
+                  <Pressable
+                    onPress={canManageTeam() ? () => setIsSoccerLineupModalVisible(true) : undefined}
+                    className="px-4 pb-4 active:bg-emerald-500/30"
+                  >
+                    {/* Forwards Preview */}
+                    <Text className="text-slate-400 text-xs mb-2">Forwards</Text>
+                    <View className="flex-row justify-center gap-6 mb-3">
+                      {['st1', 'st2'].map((pos) => {
+                        const playerId = game.soccerLineup![pos as keyof SoccerLineup];
+                        const player = playerId ? players.find((p) => p.id === playerId) : null;
+                        return (
+                          <View key={pos} className="items-center">
+                            {player ? (
+                              <>
+                                <PlayerAvatar player={player} size={32} />
+                                <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                              </>
+                            ) : (
+                              <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                                <Text className="text-slate-500 text-[10px]">ST</Text>
+                              </View>
+                            )}
                           </View>
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
+                        );
+                      })}
+                    </View>
 
-                {/* Midfield Preview */}
-                <Text className="text-slate-400 text-xs mb-2">Midfield</Text>
-                <View className="flex-row justify-around mb-3">
-                  {[
-                    { key: 'lm', label: 'LM' },
-                    { key: 'cm1', label: 'CM' },
-                    { key: 'cm2', label: 'CM' },
-                    { key: 'rm', label: 'RM' },
-                  ].map(({ key, label }) => {
-                    const playerId = game.soccerLineup![key as keyof SoccerLineup];
-                    const player = playerId ? players.find((p) => p.id === playerId) : null;
-                    return (
-                      <View key={key} className="items-center">
-                        {player ? (
-                          <>
-                            <PlayerAvatar player={player} size={32} />
-                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
-                          </>
-                        ) : (
-                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                            <Text className="text-slate-500 text-[10px]">{label}</Text>
+                    {/* Midfield Preview */}
+                    <Text className="text-slate-400 text-xs mb-2">Midfield</Text>
+                    <View className="flex-row justify-around mb-3">
+                      {[
+                        { key: 'lm', label: 'LM' },
+                        { key: 'cm1', label: 'CM' },
+                        { key: 'cm2', label: 'CM' },
+                        { key: 'rm', label: 'RM' },
+                      ].map(({ key, label }) => {
+                        const playerId = game.soccerLineup![key as keyof SoccerLineup];
+                        const player = playerId ? players.find((p) => p.id === playerId) : null;
+                        return (
+                          <View key={key} className="items-center">
+                            {player ? (
+                              <>
+                                <PlayerAvatar player={player} size={32} />
+                                <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                              </>
+                            ) : (
+                              <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                                <Text className="text-slate-500 text-[10px]">{label}</Text>
+                              </View>
+                            )}
                           </View>
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
+                        );
+                      })}
+                    </View>
 
-                {/* Defense Preview */}
-                <Text className="text-slate-400 text-xs mb-2">Defense</Text>
-                <View className="flex-row justify-around mb-3">
-                  {[
-                    { key: 'lb', label: 'LB' },
-                    { key: 'cb1', label: 'CB' },
-                    { key: 'cb2', label: 'CB' },
-                    { key: 'rb', label: 'RB' },
-                  ].map(({ key, label }) => {
-                    const playerId = game.soccerLineup![key as keyof SoccerLineup];
-                    const player = playerId ? players.find((p) => p.id === playerId) : null;
-                    return (
-                      <View key={key} className="items-center">
-                        {player ? (
-                          <>
-                            <PlayerAvatar player={player} size={32} />
-                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
-                          </>
-                        ) : (
-                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                            <Text className="text-slate-500 text-[10px]">{label}</Text>
+                    {/* Defense Preview */}
+                    <Text className="text-slate-400 text-xs mb-2">Defense</Text>
+                    <View className="flex-row justify-around mb-3">
+                      {[
+                        { key: 'lb', label: 'LB' },
+                        { key: 'cb1', label: 'CB' },
+                        { key: 'cb2', label: 'CB' },
+                        { key: 'rb', label: 'RB' },
+                      ].map(({ key, label }) => {
+                        const playerId = game.soccerLineup![key as keyof SoccerLineup];
+                        const player = playerId ? players.find((p) => p.id === playerId) : null;
+                        return (
+                          <View key={key} className="items-center">
+                            {player ? (
+                              <>
+                                <PlayerAvatar player={player} size={32} />
+                                <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                              </>
+                            ) : (
+                              <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                                <Text className="text-slate-500 text-[10px]">{label}</Text>
+                              </View>
+                            )}
                           </View>
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
+                        );
+                      })}
+                    </View>
 
-                {/* Goalkeeper Preview */}
-                <Text className="text-slate-400 text-xs mb-2">Goalkeeper</Text>
-                <View className="flex-row justify-center">
-                  {(() => {
-                    const player = game.soccerLineup!.gk ? players.find((p) => p.id === game.soccerLineup!.gk) : null;
-                    return (
-                      <View className="items-center">
-                        {player ? (
-                          <>
-                            <PlayerAvatar player={player} size={32} />
-                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
-                          </>
-                        ) : (
-                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                            <Text className="text-slate-500 text-[10px]">GK</Text>
+                    {/* Goalkeeper Preview */}
+                    <Text className="text-slate-400 text-xs mb-2">Goalkeeper</Text>
+                    <View className="flex-row justify-center">
+                      {(() => {
+                        const player = game.soccerLineup!.gk ? players.find((p) => p.id === game.soccerLineup!.gk) : null;
+                        return (
+                          <View className="items-center">
+                            {player ? (
+                              <>
+                                <PlayerAvatar player={player} size={32} />
+                                <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                              </>
+                            ) : (
+                              <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                                <Text className="text-slate-500 text-[10px]">GK</Text>
+                              </View>
+                            )}
                           </View>
-                        )}
-                      </View>
-                    );
-                  })()}
-                </View>
-              </Pressable>
+                        );
+                      })()}
+                    </View>
+                  </Pressable>
+                )}
+              </View>
             </Animated.View>
           )}
 
@@ -1342,27 +1411,41 @@ export default function GameDetailScreen() {
               entering={FadeInUp.delay(125).springify()}
               className="mx-4 mb-4"
             >
-              <Pressable
-                onPress={canManageTeam() ? () => setIsSoccerDiamondLineupModalVisible(true) : undefined}
-                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30"
-              >
-                <View className="flex-row items-center justify-between mb-3">
-                  <View className="flex-row items-center">
-                    <ListOrdered size={20} color="#10b981" />
-                    <Text className="text-emerald-400 font-semibold ml-2">Lineup (Diamond)</Text>
+              <View className="bg-emerald-500/20 rounded-2xl border border-emerald-500/30 overflow-hidden">
+                {/* Collapsible Header */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setIsSoccerDiamondLineupExpanded(!isSoccerDiamondLineupExpanded);
+                  }}
+                  className="p-4 active:bg-emerald-500/30"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <ListOrdered size={20} color="#10b981" />
+                      <Text className="text-emerald-400 font-semibold ml-2">Lineup (Diamond)</Text>
+                    </View>
+                    {isSoccerDiamondLineupExpanded ? (
+                      <ChevronUp size={20} color="#10b981" />
+                    ) : (
+                      <ChevronDown size={20} color="#10b981" />
+                    )}
                   </View>
-                  {canManageTeam() && (
-                    <ChevronDown size={20} color="#10b981" />
-                  )}
-                </View>
+                </Pressable>
 
-                {/* Forwards Preview */}
-                <Text className="text-slate-400 text-xs mb-2">Forwards</Text>
-                <View className="flex-row justify-center gap-6 mb-3">
-                  {['st1', 'st2'].map((pos) => {
-                    const playerId = game.soccerDiamondLineup![pos as keyof SoccerDiamondLineup];
-                    const player = playerId ? players.find((p) => p.id === playerId) : null;
-                    return (
+                {/* Expandable Content */}
+                {isSoccerDiamondLineupExpanded && (
+                  <Pressable
+                    onPress={canManageTeam() ? () => setIsSoccerDiamondLineupModalVisible(true) : undefined}
+                    className="px-4 pb-4 active:bg-emerald-500/30"
+                  >
+                    {/* Forwards Preview */}
+                    <Text className="text-slate-400 text-xs mb-2">Forwards</Text>
+                    <View className="flex-row justify-center gap-6 mb-3">
+                      {['st1', 'st2'].map((pos) => {
+                        const playerId = game.soccerDiamondLineup![pos as keyof SoccerDiamondLineup];
+                        const player = playerId ? players.find((p) => p.id === playerId) : null;
+                        return (
                       <View key={pos} className="items-center">
                         {player ? (
                           <>
@@ -1498,7 +1581,9 @@ export default function GameDetailScreen() {
                     );
                   })()}
                 </View>
-              </Pressable>
+                  </Pressable>
+                )}
+              </View>
             </Animated.View>
           )}
 
@@ -1508,19 +1593,34 @@ export default function GameDetailScreen() {
               entering={FadeInUp.delay(125).springify()}
               className="mx-4 mb-4"
             >
-              <Pressable
-                onPress={canManageTeam() ? () => setIsLacrosseLineupModalVisible(true) : undefined}
-                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30"
-              >
-                <View className="flex-row items-center justify-between mb-3">
-                  <View className="flex-row items-center">
-                    <ListOrdered size={20} color="#10b981" />
-                    <Text className="text-emerald-400 font-semibold ml-2">Lineup ({game.lacrosseLineup.numAttackers}A-{game.lacrosseLineup.numMidfielders}M-{game.lacrosseLineup.numDefenders}D)</Text>
+              <View className="bg-emerald-500/20 rounded-2xl border border-emerald-500/30 overflow-hidden">
+                {/* Collapsible Header */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setIsLacrosseLineupExpanded(!isLacrosseLineupExpanded);
+                  }}
+                  className="p-4 active:bg-emerald-500/30"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <ListOrdered size={20} color="#10b981" />
+                      <Text className="text-emerald-400 font-semibold ml-2">Lineup ({game.lacrosseLineup.numAttackers}A-{game.lacrosseLineup.numMidfielders}M-{game.lacrosseLineup.numDefenders}D)</Text>
+                    </View>
+                    {isLacrosseLineupExpanded ? (
+                      <ChevronUp size={20} color="#10b981" />
+                    ) : (
+                      <ChevronDown size={20} color="#10b981" />
+                    )}
                   </View>
-                  {canManageTeam() && (
-                    <ChevronDown size={20} color="#10b981" />
-                  )}
-                </View>
+                </Pressable>
+
+                {/* Expandable Content */}
+                {isLacrosseLineupExpanded && (
+                  <Pressable
+                    onPress={canManageTeam() ? () => setIsLacrosseLineupModalVisible(true) : undefined}
+                    className="px-4 pb-4 active:bg-emerald-500/30"
+                  >
 
                 {/* Attackers Preview */}
                 <Text className="text-slate-400 text-xs mb-2">Attackers</Text>
@@ -1609,7 +1709,9 @@ export default function GameDetailScreen() {
                     );
                   })()}
                 </View>
-              </Pressable>
+                  </Pressable>
+                )}
+              </View>
             </Animated.View>
           )}
 
