@@ -1765,7 +1765,7 @@ export default function GameDetailScreen() {
               <View className="flex-row items-center">
                 <CheckCircle2 size={18} color="#22c55e" />
                 <Text className="text-green-400 text-lg font-semibold ml-2">
-                  Check In for Game
+                  Check In
                 </Text>
               </View>
               <View className="flex-row items-center">
