@@ -554,7 +554,7 @@ export default function EventDetailScreen() {
               const invitesAreSent = Boolean(event.invitesSent || scheduledTimePassed);
 
               return (
-                <Animated.View entering={FadeInDown.delay(350).springify()} className="mb-2">
+                <Animated.View entering={FadeInDown.delay(350).springify()} className="mb-1">
                   <Pressable
                     onPress={() => {
                       if (!invitesAreSent) {
