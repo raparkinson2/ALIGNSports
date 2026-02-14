@@ -1585,12 +1585,12 @@ export default function AdminScreen() {
             </View>
 
             {selectedPlayer && (
-              <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
+              <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false}>
                 {/* First Name and Last Name Row */}
-                <View className="flex-row mb-5">
+                <View className="flex-row mb-3">
                   {/* First Name Input */}
                   <View className="flex-1 mr-2">
-                    <Text className="text-slate-400 text-sm mb-2">First Name<Text className="text-red-400">*</Text></Text>
+                    <Text className="text-slate-400 text-sm mb-1">First Name<Text className="text-red-400">*</Text></Text>
                     <TextInput
                       value={editPlayerFirstName}
                       onChangeText={setEditPlayerFirstName}
@@ -1606,7 +1606,7 @@ export default function AdminScreen() {
 
                   {/* Last Name Input */}
                   <View className="flex-1 ml-2">
-                    <Text className="text-slate-400 text-sm mb-2">Last Name<Text className="text-red-400">*</Text></Text>
+                    <Text className="text-slate-400 text-sm mb-1">Last Name<Text className="text-red-400">*</Text></Text>
                     <TextInput
                       value={editPlayerLastName}
                       onChangeText={setEditPlayerLastName}
@@ -1623,8 +1623,8 @@ export default function AdminScreen() {
 
                 {/* Jersey Number Row - Hidden for coaches and parents */}
                 {!editPlayerIsCoach && !editPlayerIsParent && (
-                  <View className="mb-5">
-                    <Text className="text-slate-400 text-sm mb-2">Jersey Number<Text className="text-red-400">*</Text></Text>
+                  <View className="mb-3">
+                    <Text className="text-slate-400 text-sm mb-1">Jersey Number<Text className="text-red-400">*</Text></Text>
                     <TextInput
                       value={editPlayerNumber}
                       onChangeText={setEditPlayerNumber}
@@ -1642,8 +1642,8 @@ export default function AdminScreen() {
                 )}
 
                 {/* Phone */}
-                <View className="mb-5">
-                  <View className="flex-row items-center mb-2">
+                <View className="mb-3">
+                  <View className="flex-row items-center mb-1">
                     <Phone size={14} color="#a78bfa" />
                     <Text className="text-slate-400 text-sm ml-2">Phone<Text className="text-red-400">*</Text></Text>
                   </View>
@@ -1661,8 +1661,8 @@ export default function AdminScreen() {
                 </View>
 
                 {/* Email */}
-                <View className="mb-5">
-                  <View className="flex-row items-center mb-2">
+                <View className="mb-3">
+                  <View className="flex-row items-center mb-1">
                     <Mail size={14} color="#a78bfa" />
                     <Text className="text-slate-400 text-sm ml-2">Email<Text className="text-red-400">*</Text></Text>
                   </View>
@@ -1682,9 +1682,9 @@ export default function AdminScreen() {
 
                 {/* Position Selector - Hidden for coaches and parents */}
                 {!editPlayerIsCoach && !editPlayerIsParent && (
-                  <View className="mb-5">
-                    <Text className="text-slate-400 text-sm mb-1">Positions<Text className="text-red-400">*</Text></Text>
-                    <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
+                  <View className="mb-3">
+                    <Text className="text-slate-400 text-sm mb-0.5">Positions<Text className="text-red-400">*</Text></Text>
+                    <Text className="text-slate-500 text-xs mb-1.5">Tap to select multiple positions</Text>
                     {/* Split positions into rows for better layout */}
                     {(() => {
                       const posCount = positions.length;
@@ -1748,8 +1748,8 @@ export default function AdminScreen() {
                 <Text className="text-slate-500 text-xs mb-4"><Text className="text-red-400">*</Text> Required</Text>
 
                 {/* Player Status */}
-                <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Player Status</Text>
+                <View className="mb-3">
+                  <Text className="text-slate-400 text-sm mb-1.5">Player Status</Text>
                   <View className="flex-row mb-2">
                     <Pressable
                       onPress={() => handleUpdateStatus('active')}
@@ -1913,8 +1913,8 @@ export default function AdminScreen() {
                 </View>
 
                 {/* Roles */}
-                <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Roles</Text>
+                <View className="mb-3">
+                  <Text className="text-slate-400 text-sm mb-1.5">Roles</Text>
                   {(() => {
                     const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
                     const showCoach = enabledRoles.includes('coach');
@@ -2313,12 +2313,12 @@ export default function AdminScreen() {
               </Pressable>
             </View>
 
-            <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
+            <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false}>
               {/* First Name and Last Name Row */}
-              <View className="flex-row mb-5">
+              <View className="flex-row mb-3">
                 {/* First Name Input */}
                 <View className="flex-1 mr-2">
-                  <Text className="text-slate-400 text-sm mb-2">First Name<Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-400 text-sm mb-1">First Name<Text className="text-red-400">*</Text></Text>
                   <TextInput
                     value={newPlayerFirstName}
                     onChangeText={setNewPlayerFirstName}
@@ -2331,7 +2331,7 @@ export default function AdminScreen() {
 
                 {/* Last Name Input */}
                 <View className="flex-1 ml-2">
-                  <Text className="text-slate-400 text-sm mb-2">Last Name<Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-400 text-sm mb-1">Last Name<Text className="text-red-400">*</Text></Text>
                   <TextInput
                     value={newPlayerLastName}
                     onChangeText={setNewPlayerLastName}
@@ -2345,10 +2345,10 @@ export default function AdminScreen() {
 
               {/* Jersey Number and Position Row - Hidden for coaches and parents */}
               {newPlayerMemberRole !== 'coach' && newPlayerMemberRole !== 'parent' && (
-                <View className="mb-5">
+                <View className="mb-3">
                   {/* Jersey Number */}
-                  <View className="mb-4">
-                    <Text className="text-slate-400 text-sm mb-2">Number<Text className="text-red-400">*</Text></Text>
+                  <View className="mb-3">
+                    <Text className="text-slate-400 text-sm mb-1">Number<Text className="text-red-400">*</Text></Text>
                     <TextInput
                       value={newPlayerNumber}
                       onChangeText={setNewPlayerNumber}
@@ -2363,8 +2363,8 @@ export default function AdminScreen() {
 
                   {/* Position Selection */}
                   <View>
-                    <Text className="text-slate-400 text-sm mb-1">Position<Text className="text-red-400">*</Text></Text>
-                    <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
+                    <Text className="text-slate-400 text-sm mb-0.5">Position<Text className="text-red-400">*</Text></Text>
+                    <Text className="text-slate-500 text-xs mb-1.5">Tap to select multiple positions</Text>
                     {/* Split positions into rows for better layout */}
                     {(() => {
                       const posCount = positions.length;
@@ -2418,8 +2418,8 @@ export default function AdminScreen() {
               )}
 
               {/* Phone */}
-              <View className="mb-5">
-                <View className="flex-row items-center mb-2">
+              <View className="mb-3">
+                <View className="flex-row items-center mb-1">
                   <Phone size={14} color="#a78bfa" />
                   <Text className="text-slate-400 text-sm ml-2">Phone<Text className="text-red-400">*</Text></Text>
                 </View>
@@ -2434,8 +2434,8 @@ export default function AdminScreen() {
               </View>
 
               {/* Email */}
-              <View className="mb-5">
-                <View className="flex-row items-center mb-2">
+              <View className="mb-3">
+                <View className="flex-row items-center mb-1">
                   <Mail size={14} color="#a78bfa" />
                   <Text className="text-slate-400 text-sm ml-2">Email<Text className="text-red-400">*</Text></Text>
                 </View>
@@ -2451,8 +2451,8 @@ export default function AdminScreen() {
               </View>
 
               {/* Player Status */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Player Status</Text>
+              <View className="mb-3">
+                <Text className="text-slate-400 text-sm mb-1.5">Player Status</Text>
                 <View className="flex-row mb-2">
                   <Pressable
                     onPress={() => {
@@ -2615,8 +2615,8 @@ export default function AdminScreen() {
               </View>
 
               {/* Roles */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Roles</Text>
+              <View className="mb-3">
+                <Text className="text-slate-400 text-sm mb-1.5">Roles</Text>
                 {(() => {
                   const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
                   const showCoach = enabledRoles.includes('coach');
