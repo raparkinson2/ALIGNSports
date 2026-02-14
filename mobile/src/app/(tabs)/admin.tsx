@@ -236,6 +236,7 @@ export default function AdminScreen() {
   const [editPlayerEmail, setEditPlayerEmail] = useState('');
   const [editPlayerPositions, setEditPlayerPositions] = useState<string[]>([]);
   const [editPlayerIsCoach, setEditPlayerIsCoach] = useState(false);
+  const [editPlayerIsParent, setEditPlayerIsParent] = useState(false);
 
   // New player form
   const [isNewPlayerModalVisible, setIsNewPlayerModalVisible] = useState(false);
@@ -311,9 +312,10 @@ export default function AdminScreen() {
     setEditPlayerEmail(player.email || '');
     // Set positions from player data (keep empty if none - user must select)
     const playerPositions = player.positions || [player.position];
-    setEditPlayerPositions(playerPositions.filter(p => p && p !== 'Coach'));
-    // Set coach status
+    setEditPlayerPositions(playerPositions.filter(p => p && p !== 'Coach' && p !== 'Parent'));
+    // Set coach/parent status
     setEditPlayerIsCoach(player.roles?.includes('coach') || player.position === 'Coach' || false);
+    setEditPlayerIsParent(player.roles?.includes('parent') || player.position === 'Parent' || false);
     // Reset date picker state
     setShowSelectedPlayerEndDatePicker(false);
     // Close manage players modal first, then open player edit modal
@@ -372,14 +374,16 @@ export default function AdminScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newIsCoach = !editPlayerIsCoach;
     setEditPlayerIsCoach(newIsCoach);
+    if (newIsCoach) setEditPlayerIsParent(false); // Mutually exclusive
 
     // Update roles
     const currentRoles = selectedPlayer.roles ?? [];
     let newRoles: PlayerRole[];
 
     if (newIsCoach) {
-      // Add coach role
-      newRoles = currentRoles.includes('coach') ? currentRoles : [...currentRoles, 'coach'];
+      // Add coach role, remove parent
+      newRoles = currentRoles.filter((r) => r !== 'parent');
+      newRoles = newRoles.includes('coach') ? newRoles : [...newRoles, 'coach'];
       // Update position to Coach
       updatePlayer(selectedPlayer.id, {
         roles: newRoles,
@@ -399,6 +403,56 @@ export default function AdminScreen() {
     } else {
       // Remove coach role
       newRoles = currentRoles.filter((r) => r !== 'coach');
+      // Reset to empty positions - user must select
+      updatePlayer(selectedPlayer.id, {
+        roles: newRoles,
+        position: '',
+        positions: []
+      });
+      setSelectedPlayer({
+        ...selectedPlayer,
+        roles: newRoles,
+        position: '',
+        positions: []
+      });
+      setEditPlayerPositions([]);
+    }
+  };
+
+  const handleToggleEditParent = () => {
+    if (!selectedPlayer) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newIsParent = !editPlayerIsParent;
+    setEditPlayerIsParent(newIsParent);
+    if (newIsParent) setEditPlayerIsCoach(false); // Mutually exclusive
+
+    // Update roles
+    const currentRoles = selectedPlayer.roles ?? [];
+    let newRoles: PlayerRole[];
+
+    if (newIsParent) {
+      // Add parent role, remove coach
+      newRoles = currentRoles.filter((r) => r !== 'coach');
+      newRoles = newRoles.includes('parent') ? newRoles : [...newRoles, 'parent'];
+      // Update position to Parent
+      updatePlayer(selectedPlayer.id, {
+        roles: newRoles,
+        position: 'Parent',
+        positions: ['Parent'],
+        number: ''
+      });
+      setSelectedPlayer({
+        ...selectedPlayer,
+        roles: newRoles,
+        position: 'Parent',
+        positions: ['Parent'],
+        number: ''
+      });
+      setEditPlayerNumber('');
+      setEditPlayerPositions(['Parent']);
+    } else {
+      // Remove parent role
+      newRoles = currentRoles.filter((r) => r !== 'parent');
       // Reset to empty positions - user must select
       updatePlayer(selectedPlayer.id, {
         roles: newRoles,
@@ -1567,8 +1621,8 @@ export default function AdminScreen() {
                   </View>
                 </View>
 
-                {/* Jersey Number Row - Hidden for coaches */}
-                {!editPlayerIsCoach && (
+                {/* Jersey Number Row - Hidden for coaches and parents */}
+                {!editPlayerIsCoach && !editPlayerIsParent && (
                   <View className="mb-5">
                     <Text className="text-slate-400 text-sm mb-2">Jersey Number<Text className="text-red-400">*</Text></Text>
                     <TextInput
@@ -1626,8 +1680,8 @@ export default function AdminScreen() {
                   />
                 </View>
 
-                {/* Position Selector - Hidden for coaches */}
-                {!editPlayerIsCoach && (
+                {/* Position Selector - Hidden for coaches and parents */}
+                {!editPlayerIsCoach && !editPlayerIsParent && (
                   <View className="mb-5">
                     <Text className="text-slate-400 text-sm mb-1">Positions<Text className="text-red-400">*</Text></Text>
                     <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
@@ -1861,70 +1915,101 @@ export default function AdminScreen() {
                 {/* Roles */}
                 <View className="mb-5">
                   <Text className="text-slate-400 text-sm mb-2">Roles</Text>
-                  <View className="flex-row">
-                    {/* Captain */}
-                    <Pressable
-                      onPress={() => handleToggleRole('captain')}
-                      className={cn(
-                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                        selectedRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
-                      )}
-                    >
-                      <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center mb-1">
-                        <Text className={cn(
-                          'text-xs font-black',
-                          selectedRoles.includes('captain') ? 'text-white' : 'text-amber-500'
-                        )}>C</Text>
+                  {(() => {
+                    const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
+                    const showCoach = enabledRoles.includes('coach');
+                    const showParent = enabledRoles.includes('parent');
+
+                    return (
+                      <View className="flex-row flex-wrap">
+                        {/* Captain */}
+                        <Pressable
+                          onPress={() => handleToggleRole('captain')}
+                          className={cn(
+                            'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
+                            selectedRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
+                          )}
+                        >
+                          <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center mb-1">
+                            <Text className={cn(
+                              'text-xs font-black',
+                              selectedRoles.includes('captain') ? 'text-white' : 'text-amber-500'
+                            )}>C</Text>
+                          </View>
+                          <Text
+                            className={cn(
+                              'font-semibold text-sm',
+                              selectedRoles.includes('captain') ? 'text-white' : 'text-slate-400'
+                            )}
+                          >
+                            Captain
+                          </Text>
+                        </Pressable>
+                        {/* Admin */}
+                        <Pressable
+                          onPress={() => handleToggleRole('admin')}
+                          className={cn(
+                            'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
+                            selectedRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
+                          )}
+                        >
+                          <Shield size={16} color={selectedRoles.includes('admin') ? 'white' : '#a78bfa'} />
+                          <Text
+                            className={cn(
+                              'font-semibold text-sm mt-1',
+                              selectedRoles.includes('admin') ? 'text-white' : 'text-slate-400'
+                            )}
+                          >
+                            Admin
+                          </Text>
+                        </Pressable>
+                        {/* Coach */}
+                        {showCoach && (
+                          <Pressable
+                            onPress={handleToggleEditCoach}
+                            className={cn(
+                              'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                              showParent && 'mr-2',
+                              editPlayerIsCoach ? 'bg-cyan-500' : 'bg-slate-800'
+                            )}
+                          >
+                            <UserCog size={16} color={editPlayerIsCoach ? 'white' : '#67e8f9'} />
+                            <Text
+                              className={cn(
+                                'font-semibold text-sm mt-1',
+                                editPlayerIsCoach ? 'text-white' : 'text-slate-400'
+                              )}
+                            >
+                              Coach
+                            </Text>
+                          </Pressable>
+                        )}
+                        {/* Parent */}
+                        {showParent && (
+                          <Pressable
+                            onPress={handleToggleEditParent}
+                            className={cn(
+                              'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                              editPlayerIsParent ? 'bg-pink-500' : 'bg-slate-800'
+                            )}
+                          >
+                            <ParentChildIcon size={16} color={editPlayerIsParent ? 'white' : '#ec4899'} />
+                            <Text
+                              className={cn(
+                                'font-semibold text-sm mt-1',
+                                editPlayerIsParent ? 'text-white' : 'text-slate-400'
+                              )}
+                            >
+                              Parent
+                            </Text>
+                          </Pressable>
+                        )}
                       </View>
-                      <Text
-                        className={cn(
-                          'font-semibold text-sm',
-                          selectedRoles.includes('captain') ? 'text-white' : 'text-slate-400'
-                        )}
-                      >
-                        Captain
-                      </Text>
-                    </Pressable>
-                    {/* Admin */}
-                    <Pressable
-                      onPress={() => handleToggleRole('admin')}
-                      className={cn(
-                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                        selectedRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
-                      )}
-                    >
-                      <Shield size={16} color={selectedRoles.includes('admin') ? 'white' : '#a78bfa'} />
-                      <Text
-                        className={cn(
-                          'font-semibold text-sm mt-1',
-                          selectedRoles.includes('admin') ? 'text-white' : 'text-slate-400'
-                        )}
-                      >
-                        Admin
-                      </Text>
-                    </Pressable>
-                    {/* Coach */}
-                    <Pressable
-                      onPress={handleToggleEditCoach}
-                      className={cn(
-                        'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                        editPlayerIsCoach ? 'bg-cyan-500' : 'bg-slate-800'
-                      )}
-                    >
-                      <UserCog size={16} color={editPlayerIsCoach ? 'white' : '#67e8f9'} />
-                      <Text
-                        className={cn(
-                          'font-semibold text-sm mt-1',
-                          editPlayerIsCoach ? 'text-white' : 'text-slate-400'
-                        )}
-                      >
-                        Coach
-                      </Text>
-                    </Pressable>
-                  </View>
+                    );
+                  })()}
                   <Text className="text-slate-500 text-xs mt-2">
-                    {editPlayerIsCoach
-                      ? 'Coaches don\'t need jersey numbers or positions'
+                    {editPlayerIsCoach || editPlayerIsParent
+                      ? `${editPlayerIsCoach ? 'Coaches' : 'Parents'} don't need jersey numbers or positions`
                       : 'Tap to toggle roles. Members can have multiple roles.'}
                   </Text>
                 </View>
@@ -2532,91 +2617,129 @@ export default function AdminScreen() {
               {/* Roles */}
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Roles</Text>
-                <View className="flex-row">
-                  {/* Captain */}
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      if (newPlayerRoles.includes('captain')) {
-                        setNewPlayerRoles(newPlayerRoles.filter((r) => r !== 'captain'));
-                      } else {
-                        setNewPlayerRoles([...newPlayerRoles, 'captain']);
-                      }
-                    }}
-                    className={cn(
-                      'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                      newPlayerRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
-                    )}
-                  >
-                    <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center mb-1">
-                      <Text className={cn(
-                        'text-xs font-black',
-                        newPlayerRoles.includes('captain') ? 'text-white' : 'text-amber-500'
-                      )}>C</Text>
+                {(() => {
+                  const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
+                  const showCoach = enabledRoles.includes('coach');
+                  const showParent = enabledRoles.includes('parent');
+
+                  return (
+                    <View className="flex-row flex-wrap">
+                      {/* Captain */}
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          if (newPlayerRoles.includes('captain')) {
+                            setNewPlayerRoles(newPlayerRoles.filter((r) => r !== 'captain'));
+                          } else {
+                            setNewPlayerRoles([...newPlayerRoles, 'captain']);
+                          }
+                        }}
+                        className={cn(
+                          'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
+                          newPlayerRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
+                        )}
+                      >
+                        <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center mb-1">
+                          <Text className={cn(
+                            'text-xs font-black',
+                            newPlayerRoles.includes('captain') ? 'text-white' : 'text-amber-500'
+                          )}>C</Text>
+                        </View>
+                        <Text
+                          className={cn(
+                            'font-semibold text-sm',
+                            newPlayerRoles.includes('captain') ? 'text-white' : 'text-slate-400'
+                          )}
+                        >
+                          Captain
+                        </Text>
+                      </Pressable>
+                      {/* Admin */}
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          if (newPlayerRoles.includes('admin')) {
+                            setNewPlayerRoles(newPlayerRoles.filter((r) => r !== 'admin'));
+                          } else {
+                            setNewPlayerRoles([...newPlayerRoles, 'admin']);
+                          }
+                        }}
+                        className={cn(
+                          'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
+                          newPlayerRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
+                        )}
+                      >
+                        <Shield size={16} color={newPlayerRoles.includes('admin') ? 'white' : '#a78bfa'} />
+                        <Text
+                          className={cn(
+                            'font-semibold text-sm mt-1',
+                            newPlayerRoles.includes('admin') ? 'text-white' : 'text-slate-400'
+                          )}
+                        >
+                          Admin
+                        </Text>
+                      </Pressable>
+                      {/* Coach */}
+                      {showCoach && (
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            if (newPlayerMemberRole === 'coach') {
+                              setNewPlayerMemberRole('player');
+                            } else {
+                              setNewPlayerMemberRole('coach');
+                            }
+                          }}
+                          className={cn(
+                            'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                            showParent && 'mr-2',
+                            newPlayerMemberRole === 'coach' ? 'bg-cyan-500' : 'bg-slate-800'
+                          )}
+                        >
+                          <UserCog size={16} color={newPlayerMemberRole === 'coach' ? 'white' : '#67e8f9'} />
+                          <Text
+                            className={cn(
+                              'font-semibold text-sm mt-1',
+                              newPlayerMemberRole === 'coach' ? 'text-white' : 'text-slate-400'
+                            )}
+                          >
+                            Coach
+                          </Text>
+                        </Pressable>
+                      )}
+                      {/* Parent */}
+                      {showParent && (
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            if (newPlayerMemberRole === 'parent') {
+                              setNewPlayerMemberRole('player');
+                            } else {
+                              setNewPlayerMemberRole('parent');
+                            }
+                          }}
+                          className={cn(
+                            'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                            newPlayerMemberRole === 'parent' ? 'bg-pink-500' : 'bg-slate-800'
+                          )}
+                        >
+                          <ParentChildIcon size={16} color={newPlayerMemberRole === 'parent' ? 'white' : '#ec4899'} />
+                          <Text
+                            className={cn(
+                              'font-semibold text-sm mt-1',
+                              newPlayerMemberRole === 'parent' ? 'text-white' : 'text-slate-400'
+                            )}
+                          >
+                            Parent
+                          </Text>
+                        </Pressable>
+                      )}
                     </View>
-                    <Text
-                      className={cn(
-                        'font-semibold text-sm',
-                        newPlayerRoles.includes('captain') ? 'text-white' : 'text-slate-400'
-                      )}
-                    >
-                      Captain
-                    </Text>
-                  </Pressable>
-                  {/* Admin */}
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      if (newPlayerRoles.includes('admin')) {
-                        setNewPlayerRoles(newPlayerRoles.filter((r) => r !== 'admin'));
-                      } else {
-                        setNewPlayerRoles([...newPlayerRoles, 'admin']);
-                      }
-                    }}
-                    className={cn(
-                      'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                      newPlayerRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
-                    )}
-                  >
-                    <Shield size={16} color={newPlayerRoles.includes('admin') ? 'white' : '#a78bfa'} />
-                    <Text
-                      className={cn(
-                        'font-semibold text-sm mt-1',
-                        newPlayerRoles.includes('admin') ? 'text-white' : 'text-slate-400'
-                      )}
-                    >
-                      Admin
-                    </Text>
-                  </Pressable>
-                  {/* Coach */}
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      if (newPlayerMemberRole === 'coach') {
-                        setNewPlayerMemberRole('player');
-                      } else {
-                        setNewPlayerMemberRole('coach');
-                      }
-                    }}
-                    className={cn(
-                      'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                      newPlayerMemberRole === 'coach' ? 'bg-cyan-500' : 'bg-slate-800'
-                    )}
-                  >
-                    <UserCog size={16} color={newPlayerMemberRole === 'coach' ? 'white' : '#67e8f9'} />
-                    <Text
-                      className={cn(
-                        'font-semibold text-sm mt-1',
-                        newPlayerMemberRole === 'coach' ? 'text-white' : 'text-slate-400'
-                      )}
-                    >
-                      Coach
-                    </Text>
-                  </Pressable>
-                </View>
+                  );
+                })()}
                 <Text className="text-slate-500 text-xs mt-2">
-                  {newPlayerMemberRole === 'coach'
-                    ? "Coaches don't need jersey numbers or positions"
+                  {newPlayerMemberRole === 'coach' || newPlayerMemberRole === 'parent'
+                    ? `${newPlayerMemberRole === 'coach' ? 'Coaches' : 'Parents'} don't need jersey numbers or positions`
                     : 'Tap to toggle roles. Members can have multiple roles.'}
                 </Text>
               </View>

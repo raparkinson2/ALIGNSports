@@ -1182,91 +1182,129 @@ export default function RosterScreen() {
               {isAdmin() && (
                 <View className="mb-5">
                   <Text className="text-slate-400 text-sm mb-2">Roles</Text>
-                  <View className="flex-row">
-                    {/* Captain */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        if (playerRoles.includes('captain')) {
-                          setPlayerRoles(playerRoles.filter((r) => r !== 'captain'));
-                        } else {
-                          setPlayerRoles([...playerRoles, 'captain']);
-                        }
-                      }}
-                      className={cn(
-                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                        playerRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
-                      )}
-                    >
-                      <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center mb-1">
-                        <Text className={cn(
-                          'text-xs font-black',
-                          playerRoles.includes('captain') ? 'text-white' : 'text-amber-500'
-                        )}>C</Text>
+                  {(() => {
+                    const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
+                    const showCoach = enabledRoles.includes('coach');
+                    const showParent = enabledRoles.includes('parent');
+
+                    return (
+                      <View className="flex-row flex-wrap">
+                        {/* Captain */}
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            if (playerRoles.includes('captain')) {
+                              setPlayerRoles(playerRoles.filter((r) => r !== 'captain'));
+                            } else {
+                              setPlayerRoles([...playerRoles, 'captain']);
+                            }
+                          }}
+                          className={cn(
+                            'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
+                            playerRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
+                          )}
+                        >
+                          <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center mb-1">
+                            <Text className={cn(
+                              'text-xs font-black',
+                              playerRoles.includes('captain') ? 'text-white' : 'text-amber-500'
+                            )}>C</Text>
+                          </View>
+                          <Text
+                            className={cn(
+                              'font-semibold text-sm',
+                              playerRoles.includes('captain') ? 'text-white' : 'text-slate-400'
+                            )}
+                          >
+                            Captain
+                          </Text>
+                        </Pressable>
+                        {/* Admin */}
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            if (playerRoles.includes('admin')) {
+                              setPlayerRoles(playerRoles.filter((r) => r !== 'admin'));
+                            } else {
+                              setPlayerRoles([...playerRoles, 'admin']);
+                            }
+                          }}
+                          className={cn(
+                            'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
+                            playerRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
+                          )}
+                        >
+                          <Shield size={16} color={playerRoles.includes('admin') ? 'white' : '#a78bfa'} />
+                          <Text
+                            className={cn(
+                              'font-semibold text-sm mt-1',
+                              playerRoles.includes('admin') ? 'text-white' : 'text-slate-400'
+                            )}
+                          >
+                            Admin
+                          </Text>
+                        </Pressable>
+                        {/* Coach */}
+                        {showCoach && (
+                          <Pressable
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              if (memberRole === 'coach') {
+                                setMemberRole('player');
+                              } else {
+                                setMemberRole('coach');
+                              }
+                            }}
+                            className={cn(
+                              'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                              showParent && 'mr-2',
+                              memberRole === 'coach' ? 'bg-cyan-500' : 'bg-slate-800'
+                            )}
+                          >
+                            <UserCog size={16} color={memberRole === 'coach' ? 'white' : '#67e8f9'} />
+                            <Text
+                              className={cn(
+                                'font-semibold text-sm mt-1',
+                                memberRole === 'coach' ? 'text-white' : 'text-slate-400'
+                              )}
+                            >
+                              Coach
+                            </Text>
+                          </Pressable>
+                        )}
+                        {/* Parent */}
+                        {showParent && (
+                          <Pressable
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              if (memberRole === 'parent') {
+                                setMemberRole('player');
+                              } else {
+                                setMemberRole('parent');
+                              }
+                            }}
+                            className={cn(
+                              'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                              memberRole === 'parent' ? 'bg-pink-500' : 'bg-slate-800'
+                            )}
+                          >
+                            <ParentChildIcon size={16} color={memberRole === 'parent' ? 'white' : '#ec4899'} />
+                            <Text
+                              className={cn(
+                                'font-semibold text-sm mt-1',
+                                memberRole === 'parent' ? 'text-white' : 'text-slate-400'
+                              )}
+                            >
+                              Parent
+                            </Text>
+                          </Pressable>
+                        )}
                       </View>
-                      <Text
-                        className={cn(
-                          'font-semibold text-sm',
-                          playerRoles.includes('captain') ? 'text-white' : 'text-slate-400'
-                        )}
-                      >
-                        Captain
-                      </Text>
-                    </Pressable>
-                    {/* Admin */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        if (playerRoles.includes('admin')) {
-                          setPlayerRoles(playerRoles.filter((r) => r !== 'admin'));
-                        } else {
-                          setPlayerRoles([...playerRoles, 'admin']);
-                        }
-                      }}
-                      className={cn(
-                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                        playerRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
-                      )}
-                    >
-                      <Shield size={16} color={playerRoles.includes('admin') ? 'white' : '#a78bfa'} />
-                      <Text
-                        className={cn(
-                          'font-semibold text-sm mt-1',
-                          playerRoles.includes('admin') ? 'text-white' : 'text-slate-400'
-                        )}
-                      >
-                        Admin
-                      </Text>
-                    </Pressable>
-                    {/* Coach */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        if (memberRole === 'coach') {
-                          setMemberRole('player');
-                        } else {
-                          setMemberRole('coach');
-                        }
-                      }}
-                      className={cn(
-                        'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                        memberRole === 'coach' ? 'bg-cyan-500' : 'bg-slate-800'
-                      )}
-                    >
-                      <UserCog size={16} color={memberRole === 'coach' ? 'white' : '#67e8f9'} />
-                      <Text
-                        className={cn(
-                          'font-semibold text-sm mt-1',
-                          memberRole === 'coach' ? 'text-white' : 'text-slate-400'
-                        )}
-                      >
-                        Coach
-                      </Text>
-                    </Pressable>
-                  </View>
+                    );
+                  })()}
                   <Text className="text-slate-500 text-xs mt-2">
-                    {memberRole === 'coach'
-                      ? "Coaches don't need jersey numbers or positions"
+                    {memberRole === 'coach' || memberRole === 'parent'
+                      ? `${memberRole === 'coach' ? 'Coaches' : 'Parents'} don't need jersey numbers or positions`
                       : 'Tap to toggle roles. Members can have multiple roles.'}
                   </Text>
                 </View>
