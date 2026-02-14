@@ -30,6 +30,7 @@ import {
   Send,
   Calendar,
   StickyNote,
+  FileText,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -796,8 +797,7 @@ export default function GameDetailScreen() {
                 className="flex-1 bg-slate-800/80 rounded-2xl p-4 mr-2 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center mb-1">
-                  <Calendar size={16} color="#67e8f9" />
-                  <Text className="text-slate-400 text-xs ml-2">Date</Text>
+                  <Text className="text-slate-400 text-xs">Date</Text>
                 </View>
                 <Text className="text-white font-semibold">{format(parseISO(game.date), 'EEEE, MMMM d, yyyy')}</Text>
               </Pressable>
@@ -807,8 +807,7 @@ export default function GameDetailScreen() {
                 className="bg-slate-800/80 rounded-2xl p-4 mx-1 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center mb-1">
-                  <Clock size={16} color="#67e8f9" />
-                  <Text className="text-slate-400 text-xs ml-2">Time</Text>
+                  <Text className="text-slate-400 text-xs">Time</Text>
                 </View>
                 <Text className="text-white font-semibold">{game.time}</Text>
               </Pressable>
@@ -871,7 +870,8 @@ export default function GameDetailScreen() {
               disabled={!canManageTeam()}
             >
               <View className="flex-row items-center">
-                <View className="flex-1">
+                <FileText size={18} color="#ffffff" />
+                <View className="flex-1 ml-2.5">
                   <View className="flex-row items-center justify-between">
                     <Text className="text-white font-medium text-sm">Notes</Text>
                     <Text className="text-slate-500 text-[10px]">{(game.notes || '').length}/30</Text>
