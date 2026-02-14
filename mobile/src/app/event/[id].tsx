@@ -468,7 +468,7 @@ export default function EventDetailScreen() {
             </Animated.View>
 
             {/* Quick Stats */}
-            <Animated.View entering={FadeInDown.delay(200).springify()} className="mt-6">
+            <Animated.View entering={FadeInDown.delay(200).springify()} className="mt-4">
               <View className="flex-row">
                 <Pressable
                   onPress={canManageTeam() ? openEditDateModal : undefined}
@@ -624,7 +624,7 @@ export default function EventDetailScreen() {
               </View>
 
               {/* RSVP Stats */}
-              <View className="flex-row mb-4">
+              <View className="flex-row mb-3">
                 <View className="flex-1 bg-green-500/20 rounded-xl p-3 mr-2 items-center">
                   <Text className="text-green-400 text-2xl font-bold">{confirmedCount}</Text>
                   <Text className="text-green-400/70 text-xs">Confirmed</Text>
