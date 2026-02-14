@@ -541,7 +541,7 @@ export default function EventDetailScreen() {
             </Animated.View>
 
             {/* Divider */}
-            <View className="mt-3 mb-5">
+            <View className="mt-4 mb-4">
               <View className="h-px bg-slate-700/50" />
             </View>
 
@@ -554,7 +554,7 @@ export default function EventDetailScreen() {
               const invitesAreSent = Boolean(event.invitesSent || scheduledTimePassed);
 
               return (
-                <Animated.View entering={FadeInDown.delay(350).springify()} className="mb-4">
+                <Animated.View entering={FadeInDown.delay(350).springify()} className="mb-2">
                   <Pressable
                     onPress={() => {
                       if (!invitesAreSent) {
