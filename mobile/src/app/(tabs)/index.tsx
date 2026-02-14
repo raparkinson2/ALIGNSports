@@ -1505,7 +1505,7 @@ export default function ScheduleScreen() {
 
             <ScrollView className="flex-1 px-5 pt-6">
               {/* Game/Practice/Event Toggle */}
-              <View className="mb-5">
+              <View className="mb-3">
                 <View className="flex-row bg-slate-800/80 rounded-xl p-1">
                   <Pressable
                     onPress={() => {
@@ -1560,7 +1560,7 @@ export default function ScheduleScreen() {
 
               {/* Opponent (Game only) */}
               {recordType === 'game' && (
-                <View className="mb-5">
+                <View className="mb-3">
                   <Text className="text-slate-400 text-sm mb-2">Opponent <Text className="text-red-400">*</Text></Text>
                   <TextInput
                     value={opponent}
@@ -1575,7 +1575,7 @@ export default function ScheduleScreen() {
 
               {/* Event Name (Event only - not for Practice) */}
               {recordType === 'event' && (
-                <View className="mb-5">
+                <View className="mb-3">
                   <Text className="text-slate-400 text-sm mb-2">Event Name <Text className="text-red-400">*</Text></Text>
                   <TextInput
                     value={eventName}
@@ -1589,7 +1589,7 @@ export default function ScheduleScreen() {
               )}
 
               {/* Date */}
-              <View className="mb-5">
+              <View className="mb-3">
                 <Text className="text-slate-400 text-sm mb-2">Date <Text className="text-red-400">*</Text></Text>
                 <Pressable
                   onPress={() => setShowDatePicker(!showDatePicker)}
@@ -1618,7 +1618,7 @@ export default function ScheduleScreen() {
               </View>
 
               {/* Time */}
-              <View className="mb-5">
+              <View className="mb-3">
                 <Text className="text-slate-400 text-sm mb-2">Time <Text className="text-red-400">*</Text></Text>
                 <View className="flex-row items-center">
                   <TextInput
@@ -1673,7 +1673,7 @@ export default function ScheduleScreen() {
               </View>
 
               {/* Location */}
-              <View className="mb-5" style={{ zIndex: 50 }}>
+              <View className="mb-3" style={{ zIndex: 50 }}>
                 <Text className="text-slate-400 text-sm mb-2">Location <Text className="text-red-400">*</Text></Text>
                 <AddressSearch
                   value={location}
@@ -1684,7 +1684,7 @@ export default function ScheduleScreen() {
 
               {/* Jersey Color (Game only) */}
               {recordType === 'game' && (
-                <View className="mb-5">
+                <View className="mb-3">
                   <Text className="text-slate-400 text-sm mb-2">Jersey Color</Text>
                   <View className="flex-row bg-slate-800/80 rounded-xl p-1">
                     {teamSettings.jerseyColors.map((color, index) => (
@@ -1722,7 +1722,7 @@ export default function ScheduleScreen() {
               )}
 
               {/* Player Invitations */}
-              <View className="mb-5">
+              <View className="mb-3">
                 <Pressable
                   onPress={() => {
                     if (!showPlayerSelection && selectedPlayerIds.length === 0) {
@@ -1876,7 +1876,7 @@ export default function ScheduleScreen() {
               </View>
 
               {/* Invite Release Options */}
-              <View className="mb-5">
+              <View className="mb-3">
                 <Text className="text-slate-400 text-sm mb-2">Release Invites</Text>
                 <View className="bg-slate-800/50 rounded-xl p-3">
                   {/* Release Now Option */}
@@ -2031,7 +2031,7 @@ export default function ScheduleScreen() {
 
               {/* Refreshment Duty (Game only) */}
               {recordType === 'game' && teamSettings.showRefreshmentDuty !== false && (
-              <View className="mb-5">
+              <View className="mb-3">
                 <View className="flex-row items-center justify-between bg-slate-800 rounded-xl p-4">
                   <View className="flex-row items-center">
                     {teamSettings.refreshmentDutyIs21Plus !== false ? (
@@ -2104,7 +2104,7 @@ export default function ScheduleScreen() {
               )}
 
               {/* Notes */}
-              <View className="mb-5">
+              <View className="mb-3">
                 <Text className="text-slate-400 text-sm mb-2">Notes (Optional)</Text>
                 <TextInput
                   value={notes}
