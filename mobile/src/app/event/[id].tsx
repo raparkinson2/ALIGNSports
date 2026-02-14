@@ -591,7 +591,7 @@ export default function EventDetailScreen() {
             })()}
 
             {/* RSVP / Check In Summary */}
-            <Animated.View entering={FadeInDown.delay(400).springify()} className="mt-6">
+            <Animated.View entering={FadeInDown.delay(400).springify()} className="mt-4">
               <View className="flex-row items-center justify-between mb-4">
                 <View className="flex-row items-center">
                   {event.type === 'practice' && (
