@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Platform, Alert, Modal, TextInput } from 'react-native';
+import { View, Text, ScrollView, Pressable, Platform, Alert, Modal, TextInput, Switch } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -233,6 +233,7 @@ export default function GameDetailScreen() {
   const [editTime, setEditTime] = useState(new Date());
   const [editJersey, setEditJersey] = useState('');
   const [editNotes, setEditNotes] = useState('');
+  const [editShowBeerDuty, setEditShowBeerDuty] = useState(true);
   const [showEditDatePicker, setShowEditDatePicker] = useState(false);
   const [showEditTimePicker, setShowEditTimePicker] = useState(false);
   // Invite release edit state
@@ -517,6 +518,7 @@ export default function GameDetailScreen() {
     setEditTime(timeDate);
     setEditJersey(game.jerseyColor);
     setEditNotes(game.notes || '');
+    setEditShowBeerDuty(game.showBeerDuty !== false);
     // Set invite release state from game
     setEditInviteReleaseOption(game.inviteReleaseOption || 'now');
     setEditInviteReleaseDate(game.inviteReleaseDate ? parseISO(game.inviteReleaseDate) : new Date());
@@ -541,6 +543,7 @@ export default function GameDetailScreen() {
       time: timeString,
       jerseyColor: editJersey,
       notes: editNotes.trim() || undefined,
+      showBeerDuty: editShowBeerDuty,
       inviteReleaseOption: editInviteReleaseOption,
       inviteReleaseDate: editInviteReleaseOption === 'scheduled' ? editInviteReleaseDate.toISOString() : undefined,
     });
@@ -767,16 +770,21 @@ export default function GameDetailScreen() {
             >
               <Pressable
                 onPress={canManageTeam() ? () => setIsBeerDutyModalVisible(true) : undefined}
-                className="bg-amber-500/20 rounded-2xl p-4 border border-amber-500/30"
+                className={cn(
+                  "rounded-2xl p-4 border",
+                  teamSettings.refreshmentDutyIs21Plus !== false
+                    ? "bg-amber-500/20 border-amber-500/30"
+                    : "bg-purple-500/20 border-purple-500/30"
+                )}
               >
                 <View className="flex-row items-center">
                   {teamSettings.refreshmentDutyIs21Plus !== false ? (
                     <Beer size={24} color="#f59e0b" />
                   ) : (
-                    <JuiceBoxIcon size={38} color="#f59e0b" />
+                    <JuiceBoxIcon size={38} color="#a855f7" />
                   )}
                   <View className="flex-1 ml-3">
-                    <Text className="text-amber-400 font-semibold">
+                    <Text className={teamSettings.refreshmentDutyIs21Plus !== false ? "text-amber-400 font-semibold" : "text-purple-400 font-semibold"}>
                       {teamSettings.sport === 'hockey' && teamSettings.refreshmentDutyIs21Plus !== false
                         ? 'Post Game Beer Duty'
                         : 'Refreshment Duty'}
@@ -791,7 +799,7 @@ export default function GameDetailScreen() {
                     )}
                   </View>
                   {canManageTeam() && (
-                    <ChevronDown size={20} color="#f59e0b" />
+                    <ChevronDown size={20} color={teamSettings.refreshmentDutyIs21Plus !== false ? "#f59e0b" : "#a855f7"} />
                   )}
                 </View>
               </Pressable>
@@ -2158,6 +2166,32 @@ export default function GameDetailScreen() {
                   style={{ minHeight: 80, textAlignVertical: 'top' }}
                 />
               </View>
+
+              {/* Refreshment Duty Toggle - Only show if team setting is enabled */}
+              {teamSettings.showRefreshmentDuty !== false && (
+                <View className="mb-5">
+                  <View className="flex-row items-center justify-between bg-slate-800 rounded-xl p-4">
+                    <View className="flex-row items-center">
+                      {teamSettings.refreshmentDutyIs21Plus !== false ? (
+                        <Beer size={20} color="#f59e0b" />
+                      ) : (
+                        <JuiceBoxIcon size={20} color="#a855f7" />
+                      )}
+                      <Text className="text-white font-medium ml-3">
+                        {teamSettings.sport === 'hockey' && teamSettings.refreshmentDutyIs21Plus !== false
+                          ? 'Post Game Beer Duty'
+                          : 'Refreshment Duty'}
+                      </Text>
+                    </View>
+                    <Switch
+                      value={editShowBeerDuty}
+                      onValueChange={setEditShowBeerDuty}
+                      trackColor={{ false: '#334155', true: teamSettings.refreshmentDutyIs21Plus !== false ? '#f59e0b40' : '#a855f740' }}
+                      thumbColor={editShowBeerDuty ? (teamSettings.refreshmentDutyIs21Plus !== false ? '#f59e0b' : '#a855f7') : '#64748b'}
+                    />
+                  </View>
+                </View>
+              )}
 
               {/* Invite Release Options */}
               <View className="mb-5">

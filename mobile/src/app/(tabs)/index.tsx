@@ -314,9 +314,12 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false, hi
                 {is21Plus ? (
                   <Beer size={14} color="#f59e0b" />
                 ) : (
-                  <JuiceBoxIcon size={14} color="#f59e0b" />
+                  <JuiceBoxIcon size={14} color="#a855f7" />
                 )}
-                <Text className="text-amber-400 text-sm ml-1.5 font-medium">
+                <Text className={cn(
+                  "text-sm ml-1.5 font-medium",
+                  is21Plus ? "text-amber-400" : "text-purple-400"
+                )}>
                   {getPlayerName(beerDutyPlayer)}
                 </Text>
               </View>
@@ -2027,18 +2030,26 @@ export default function ScheduleScreen() {
               </View>
 
               {/* Refreshment Duty (Game only) */}
-              {recordType === 'game' && (
+              {recordType === 'game' && teamSettings.showRefreshmentDuty !== false && (
               <View className="mb-5">
                 <View className="flex-row items-center justify-between bg-slate-800 rounded-xl p-4">
                   <View className="flex-row items-center">
-                    <Beer size={20} color="#f59e0b" />
-                    <Text className="text-white font-medium ml-3">Refreshment Duty</Text>
+                    {teamSettings.refreshmentDutyIs21Plus !== false ? (
+                      <Beer size={20} color="#f59e0b" />
+                    ) : (
+                      <JuiceBoxIcon size={20} color="#a855f7" />
+                    )}
+                    <Text className="text-white font-medium ml-3">
+                      {teamSettings.sport === 'hockey' && teamSettings.refreshmentDutyIs21Plus !== false
+                        ? 'Post Game Beer Duty'
+                        : 'Refreshment Duty'}
+                    </Text>
                   </View>
                   <Switch
                     value={showBeerDuty}
                     onValueChange={setShowBeerDuty}
-                    trackColor={{ false: '#334155', true: '#f59e0b40' }}
-                    thumbColor={showBeerDuty ? '#f59e0b' : '#64748b'}
+                    trackColor={{ false: '#334155', true: teamSettings.refreshmentDutyIs21Plus !== false ? '#f59e0b40' : '#a855f740' }}
+                    thumbColor={showBeerDuty ? (teamSettings.refreshmentDutyIs21Plus !== false ? '#f59e0b' : '#a855f7') : '#64748b'}
                   />
                 </View>
 
