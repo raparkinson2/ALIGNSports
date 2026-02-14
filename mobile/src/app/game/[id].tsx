@@ -790,7 +790,7 @@ export default function GameDetailScreen() {
 
           {/* Date, Time, and Jersey Cards */}
           <Animated.View entering={FadeInUp.delay(105).springify()} className="mx-4 mb-4">
-            <View className="flex-row items-end">
+            <View className="flex-row">
               <Pressable
                 onPress={canManageTeam() ? openEditDateModal : undefined}
                 disabled={!canManageTeam()}
@@ -814,7 +814,7 @@ export default function GameDetailScreen() {
               <Pressable
                 onPress={canManageTeam() ? openEditJerseyModal : undefined}
                 disabled={!canManageTeam()}
-                className="bg-slate-800/80 rounded-2xl p-4 ml-2 active:bg-slate-700/80"
+                className="bg-slate-800/80 rounded-2xl p-4 ml-2 justify-end active:bg-slate-700/80"
               >
                 <View className="flex-row items-center">
                   <JerseyIcon size={16} color={jerseyColorHex} />
