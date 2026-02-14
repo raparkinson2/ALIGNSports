@@ -906,9 +906,9 @@ export default function GameDetailScreen() {
                         ? 'Refreshment Duty'
                         : 'Refreshment Duty'}
                     </Text>
-                    {beerDutyPlayer && (
-                      <Text className="text-slate-400 text-xs">{getPlayerName(beerDutyPlayer)}</Text>
-                    )}
+                    <Text className="text-slate-400 text-xs">
+                      {beerDutyPlayer ? getPlayerName(beerDutyPlayer) : 'Tap to assign'}
+                    </Text>
                   </View>
                   {canManageTeam() && (
                     <ChevronDown size={16} color={teamSettings.refreshmentDutyIs21Plus !== false ? "#d97706" : "#9333ea"} />
@@ -932,6 +932,7 @@ export default function GameDetailScreen() {
                   <ListOrdered size={18} color="#10b981" />
                   <View className="flex-1 ml-2.5">
                     <Text className="text-emerald-400 font-medium text-sm">Set Lines</Text>
+                    <Text className="text-slate-400 text-xs">Tap to edit lineup</Text>
                   </View>
                   <ChevronDown size={16} color="#10b981" />
                 </View>
