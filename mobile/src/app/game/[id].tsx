@@ -814,11 +814,14 @@ export default function GameDetailScreen() {
               <Pressable
                 onPress={canManageTeam() ? openEditJerseyModal : undefined}
                 disabled={!canManageTeam()}
-                className="bg-slate-800/80 rounded-2xl p-4 ml-2 justify-end active:bg-slate-700/80"
+                className="bg-slate-800/80 rounded-2xl p-4 ml-2 active:bg-slate-700/80"
               >
+                <View className="flex-row items-center mb-1">
+                  <Text className="text-slate-400 text-xs">Jersey</Text>
+                </View>
                 <View className="flex-row items-center">
                   <JerseyIcon size={16} color={jerseyColorHex} />
-                  <Text className="text-slate-400 text-xs ml-2">Jersey</Text>
+                  <Text className="text-white font-semibold ml-2">{jerseyColorName}</Text>
                 </View>
               </Pressable>
             </View>
