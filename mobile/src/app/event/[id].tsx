@@ -473,7 +473,7 @@ export default function EventDetailScreen() {
                 <Pressable
                   onPress={canManageTeam() ? openEditDateModal : undefined}
                   disabled={!canManageTeam()}
-                  className="flex-1 bg-slate-800/80 rounded-2xl p-4 mr-2 active:bg-slate-700/80"
+                  className="flex-[2] bg-slate-800/80 rounded-2xl p-4 mr-2 active:bg-slate-700/80"
                 >
                   <View className="flex-row items-center mb-1">
                     <Text className="text-slate-400 text-xs">Date</Text>
@@ -483,7 +483,7 @@ export default function EventDetailScreen() {
                 <Pressable
                   onPress={canManageTeam() ? openEditTimeModal : undefined}
                   disabled={!canManageTeam()}
-                  className="flex-1 bg-slate-800/80 rounded-2xl p-4 ml-2 active:bg-slate-700/80"
+                  className="bg-slate-800/80 rounded-2xl p-4 active:bg-slate-700/80"
                 >
                   <View className="flex-row items-center mb-1">
                     <Text className="text-slate-400 text-xs">Time</Text>
