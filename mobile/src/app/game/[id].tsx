@@ -1862,6 +1862,11 @@ export default function GameDetailScreen() {
             </Animated.View>
           )}
 
+          {/* Divider */}
+          <View className="mx-4 my-4">
+            <View className="h-px bg-slate-700/50" />
+          </View>
+
           {/* Release Invites Status - Visible to admins/captains */}
           {canManageTeam() && (
             <Animated.View
