@@ -2365,133 +2365,51 @@ export default function AdminScreen() {
                 />
               </View>
 
-              {/* Roles - 2x2 Grid - Single Select */}
+              {/* Player Status */}
               <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Role</Text>
-                {(() => {
-                  const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
-                  const showPlayer = enabledRoles.includes('player');
-                  const showReserve = enabledRoles.includes('reserve');
-                  const showCoach = enabledRoles.includes('coach');
-                  const showParent = enabledRoles.includes('parent');
-                  const row1Count = (showPlayer ? 1 : 0) + (showReserve ? 1 : 0);
-                  const row2Count = (showCoach ? 1 : 0) + (showParent ? 1 : 0);
-
-                  return (
-                    <>
-                      {/* Row 1: Player & Reserve */}
-                      {row1Count > 0 && (
-                        <View className="flex-row mb-2">
-                          {showPlayer && (
-                            <Pressable
-                              onPress={() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                setNewPlayerMemberRole('player');
-                              }}
-                              className={cn(
-                                'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                                showReserve && 'mr-2',
-                                newPlayerMemberRole === 'player' ? 'bg-green-500' : 'bg-slate-800'
-                              )}
-                            >
-                              <User size={16} color={newPlayerMemberRole === 'player' ? 'white' : '#22c55e'} />
-                              <Text
-                                className={cn(
-                                  'font-semibold text-sm mt-1',
-                                  newPlayerMemberRole === 'player' ? 'text-white' : 'text-slate-400'
-                                )}
-                              >
-                                Player
-                              </Text>
-                            </Pressable>
-                          )}
-                          {showReserve && (
-                            <Pressable
-                              onPress={() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                setNewPlayerMemberRole('reserve');
-                              }}
-                              className={cn(
-                                'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                                newPlayerMemberRole === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
-                              )}
-                            >
-                              <UserMinus size={16} color={newPlayerMemberRole === 'reserve' ? 'white' : '#94a3b8'} />
-                              <Text
-                                className={cn(
-                                  'font-semibold text-sm mt-1',
-                                  newPlayerMemberRole === 'reserve' ? 'text-white' : 'text-slate-400'
-                                )}
-                              >
-                                Reserve
-                              </Text>
-                            </Pressable>
-                          )}
-                        </View>
+                <Text className="text-slate-400 text-sm mb-2">Player Status</Text>
+                <View className="flex-row mb-2">
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setNewPlayerMemberRole('player');
+                    }}
+                    className={cn(
+                      'flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center',
+                      newPlayerMemberRole === 'player' ? 'bg-green-500' : 'bg-slate-800'
+                    )}
+                  >
+                    {newPlayerMemberRole === 'player' && <Check size={16} color="white" />}
+                    <Text
+                      className={cn(
+                        'font-semibold ml-1',
+                        newPlayerMemberRole === 'player' ? 'text-white' : 'text-slate-400'
                       )}
-                      {/* Row 2: Coach & Parent */}
-                      {row2Count > 0 && (
-                        <View className="flex-row">
-                          {showCoach && (
-                            <Pressable
-                              onPress={() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                setNewPlayerMemberRole('coach');
-                              }}
-                              className={cn(
-                                'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                                showParent && 'mr-2',
-                                newPlayerMemberRole === 'coach' ? 'bg-cyan-500' : 'bg-slate-800'
-                              )}
-                            >
-                              <UserCog size={16} color={newPlayerMemberRole === 'coach' ? 'white' : '#67e8f9'} />
-                              <Text
-                                className={cn(
-                                  'font-semibold text-sm mt-1',
-                                  newPlayerMemberRole === 'coach' ? 'text-white' : 'text-slate-400'
-                                )}
-                              >
-                                Coach
-                              </Text>
-                            </Pressable>
-                          )}
-                          {showParent && (
-                            <Pressable
-                              onPress={() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                setNewPlayerMemberRole('parent');
-                              }}
-                              className={cn(
-                                'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                                newPlayerMemberRole === 'parent' ? 'bg-pink-500' : 'bg-slate-800'
-                              )}
-                            >
-                              <ParentChildIcon size={16} color={newPlayerMemberRole === 'parent' ? 'white' : '#ec4899'} />
-                              <Text
-                                className={cn(
-                                  'font-semibold text-sm mt-1',
-                                  newPlayerMemberRole === 'parent' ? 'text-white' : 'text-slate-400'
-                                )}
-                              >
-                                Parent
-                              </Text>
-                            </Pressable>
-                          )}
-                        </View>
+                    >
+                      Active
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setNewPlayerMemberRole('reserve');
+                    }}
+                    className={cn(
+                      'flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center',
+                      newPlayerMemberRole === 'reserve' ? 'bg-slate-600' : 'bg-slate-800'
+                    )}
+                  >
+                    {newPlayerMemberRole === 'reserve' && <Check size={16} color="white" />}
+                    <Text
+                      className={cn(
+                        'font-semibold ml-1',
+                        newPlayerMemberRole === 'reserve' ? 'text-white' : 'text-slate-400'
                       )}
-                    </>
-                  );
-                })()}
-                <Text className="text-slate-500 text-xs mt-2">
-                  {newPlayerMemberRole === 'coach' || newPlayerMemberRole === 'parent'
-                    ? `${newPlayerMemberRole === 'coach' ? 'Coaches' : 'Parents'} don't need jersey numbers or positions`
-                    : 'Select one role for this member.'}
-                </Text>
-              </View>
-
-              {/* Status Modifiers */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Status</Text>
+                    >
+                      Reserve
+                    </Text>
+                  </Pressable>
+                </View>
                 <View className="flex-row">
                   <Pressable
                     onPress={() => {
@@ -2611,9 +2529,9 @@ export default function AdminScreen() {
                 )}
               </View>
 
-              {/* Admin Roles */}
+              {/* Roles */}
               <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Admin Roles</Text>
+                <Text className="text-slate-400 text-sm mb-2">Roles</Text>
                 <View className="flex-row">
                   {/* Captain */}
                   <Pressable
@@ -2656,7 +2574,7 @@ export default function AdminScreen() {
                       }
                     }}
                     className={cn(
-                      'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                      'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
                       newPlayerRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
                     )}
                   >
@@ -2670,7 +2588,37 @@ export default function AdminScreen() {
                       Admin
                     </Text>
                   </Pressable>
+                  {/* Coach */}
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      if (newPlayerMemberRole === 'coach') {
+                        setNewPlayerMemberRole('player');
+                      } else {
+                        setNewPlayerMemberRole('coach');
+                      }
+                    }}
+                    className={cn(
+                      'flex-1 py-3 px-2 rounded-xl items-center justify-center',
+                      newPlayerMemberRole === 'coach' ? 'bg-cyan-500' : 'bg-slate-800'
+                    )}
+                  >
+                    <UserCog size={16} color={newPlayerMemberRole === 'coach' ? 'white' : '#67e8f9'} />
+                    <Text
+                      className={cn(
+                        'font-semibold text-sm mt-1',
+                        newPlayerMemberRole === 'coach' ? 'text-white' : 'text-slate-400'
+                      )}
+                    >
+                      Coach
+                    </Text>
+                  </Pressable>
                 </View>
+                <Text className="text-slate-500 text-xs mt-2">
+                  {newPlayerMemberRole === 'coach'
+                    ? "Coaches don't need jersey numbers or positions"
+                    : 'Tap to toggle roles. Members can have multiple roles.'}
+                </Text>
               </View>
 
               <Text className="text-slate-500 text-xs mb-6"><Text className="text-red-400">*</Text> Required</Text>
