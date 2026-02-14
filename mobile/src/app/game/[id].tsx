@@ -790,7 +790,7 @@ export default function GameDetailScreen() {
 
           {/* Date, Time, and Jersey Cards */}
           <Animated.View entering={FadeInUp.delay(105).springify()} className="mx-4 mb-4">
-            <View className="flex-row">
+            <View className="flex-row items-end">
               <Pressable
                 onPress={canManageTeam() ? openEditDateModal : undefined}
                 disabled={!canManageTeam()}
