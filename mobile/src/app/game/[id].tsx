@@ -773,33 +773,28 @@ export default function GameDetailScreen() {
                 className={cn(
                   "rounded-2xl p-4 border",
                   teamSettings.refreshmentDutyIs21Plus !== false
-                    ? "bg-amber-500/20 border-amber-500/30"
-                    : "bg-purple-500/20 border-purple-500/30"
+                    ? "bg-amber-500/10 border-amber-500/20"
+                    : "bg-purple-500/10 border-purple-500/20"
                 )}
               >
                 <View className="flex-row items-center">
                   {teamSettings.refreshmentDutyIs21Plus !== false ? (
-                    <Beer size={24} color="#f59e0b" />
+                    <Beer size={22} color="#d97706" />
                   ) : (
-                    <JuiceBoxIcon size={38} color="#a855f7" />
+                    <JuiceBoxIcon size={22} color="#9333ea" />
                   )}
                   <View className="flex-1 ml-3">
-                    <Text className={teamSettings.refreshmentDutyIs21Plus !== false ? "text-amber-400 font-semibold" : "text-purple-400 font-semibold"}>
+                    <Text className={teamSettings.refreshmentDutyIs21Plus !== false ? "text-amber-500 font-medium" : "text-purple-500 font-medium"}>
                       {teamSettings.sport === 'hockey' && teamSettings.refreshmentDutyIs21Plus !== false
-                        ? 'Post Game Beer Duty'
+                        ? 'Refreshment Duty'
                         : 'Refreshment Duty'}
                     </Text>
-                    {beerDutyPlayer ? (
-                      <View className="flex-row items-center mt-1">
-                        <PlayerAvatar player={beerDutyPlayer} size={24} />
-                        <Text className="text-white ml-2">{getPlayerName(beerDutyPlayer)}</Text>
-                      </View>
-                    ) : (
-                      <Text className="text-slate-400 text-sm">Not assigned</Text>
+                    {beerDutyPlayer && (
+                      <Text className="text-slate-400 text-sm">{getPlayerName(beerDutyPlayer)}</Text>
                     )}
                   </View>
                   {canManageTeam() && (
-                    <ChevronDown size={20} color={teamSettings.refreshmentDutyIs21Plus !== false ? "#f59e0b" : "#a855f7"} />
+                    <ChevronDown size={20} color={teamSettings.refreshmentDutyIs21Plus !== false ? "#d97706" : "#9333ea"} />
                   )}
                 </View>
               </Pressable>
