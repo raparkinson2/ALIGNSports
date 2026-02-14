@@ -494,7 +494,7 @@ export default function EventDetailScreen() {
             </Animated.View>
 
             {/* Location */}
-            <Animated.View entering={FadeInDown.delay(300).springify()} className="mt-4">
+            <Animated.View entering={FadeInDown.delay(300).springify()} className="mt-3">
               <Pressable
                 onPress={canManageTeam() ? openEditLocationModal : openInMaps}
                 className="bg-slate-800/80 rounded-2xl p-4 flex-row items-center justify-between active:bg-slate-700/80"
