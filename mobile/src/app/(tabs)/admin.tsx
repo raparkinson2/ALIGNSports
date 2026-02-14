@@ -1306,7 +1306,7 @@ export default function AdminScreen() {
             </Text>
 
             {/* Media Subsection Label */}
-            <Text className="text-slate-500 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
+            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
               Media
             </Text>
 
@@ -1337,7 +1337,7 @@ export default function AdminScreen() {
             </View>
 
             {/* Financial Subsection Label */}
-            <Text className="text-slate-500 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
+            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
               Financial
             </Text>
 
@@ -1368,7 +1368,7 @@ export default function AdminScreen() {
             </View>
 
             {/* Performance Subsection Label */}
-            <Text className="text-slate-500 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
+            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
               Performance
             </Text>
 
@@ -1408,7 +1408,7 @@ export default function AdminScreen() {
                     </View>
                     <View className="ml-3 flex-1">
                       <Text className="text-slate-200 font-medium">Allow Player to Manage Own Stats</Text>
-                      <Text className="text-slate-500 text-sm">
+                      <Text className="text-slate-400 text-sm">
                         Players can update their game stats
                       </Text>
                     </View>
@@ -1453,7 +1453,7 @@ export default function AdminScreen() {
             )}
 
             {/* Culture Subsection Label */}
-            <Text className="text-slate-500 text-xs font-medium uppercase tracking-wide mb-2 ml-1 mt-2">
+            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
               Culture
             </Text>
 
@@ -1493,7 +1493,7 @@ export default function AdminScreen() {
                     </View>
                     <View className="ml-3 flex-1">
                       <Text className="text-slate-200 font-medium">21+ Beverages</Text>
-                      <Text className="text-slate-500 text-sm">
+                      <Text className="text-slate-400 text-sm">
                         Show beer mug icon instead
                       </Text>
                     </View>
