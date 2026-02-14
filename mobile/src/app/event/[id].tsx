@@ -532,10 +532,10 @@ export default function EventDetailScreen() {
                   </View>
                   <View className="ml-3 flex-1">
                     <View className="flex-row items-center justify-between">
-                      <Text className="text-slate-400 text-xs">Notes</Text>
+                      <Text className="text-white font-semibold">Notes</Text>
                       <Text className="text-slate-500 text-xs">{(event.notes || '').length}/30</Text>
                     </View>
-                    <Text className="text-white font-semibold">
+                    <Text className="text-slate-400 text-xs">
                       {event.notes || (canManageTeam() ? 'Tap to add notes' : 'No notes')}
                     </Text>
                   </View>
