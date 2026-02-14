@@ -572,7 +572,7 @@ export default function TeamStatsScreen() {
     if (mode === 'pitcher') {
       positionForStats = 'P';
     } else if (mode === 'goalie') {
-      positionForStats = sport === 'hockey' ? 'G' : 'GK';
+      positionForStats = (sport === 'hockey' || sport === 'lacrosse') ? 'G' : 'GK';
     } else {
       // For batter/skater, use a non-pitcher/non-goalie position
       positionForStats = 'batter';
@@ -611,7 +611,7 @@ export default function TeamStatsScreen() {
       positionForStats = 'P';
       statType = 'pitcher';
     } else if (editMode === 'goalie') {
-      positionForStats = sport === 'hockey' ? 'G' : 'GK';
+      positionForStats = (sport === 'hockey' || sport === 'lacrosse') ? 'G' : 'GK';
       statType = 'goalie';
     } else if (editMode === 'batter') {
       positionForStats = 'batter';
@@ -723,7 +723,7 @@ export default function TeamStatsScreen() {
     if (editMode === 'pitcher') {
       positionForStats = 'P';
     } else if (editMode === 'goalie') {
-      positionForStats = sport === 'hockey' ? 'G' : 'GK';
+      positionForStats = (sport === 'hockey' || sport === 'lacrosse') ? 'G' : 'GK';
     } else {
       positionForStats = 'batter';
     }
@@ -924,12 +924,12 @@ export default function TeamStatsScreen() {
 
             {/* Table Rows - Non-Goalies/Non-Pitchers (includes players with multiple positions that have batting positions) */}
             {sortedPlayers.filter(p => {
-              // For hockey/soccer: show if player has any non-goalie position
-              if (sport === 'hockey' || sport === 'soccer') {
+              // For hockey/soccer/lacrosse: show if player has any non-goalie position
+              if (sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') {
                 return playerHasNonGoaliePositions(p);
               }
-              // For baseball: show if player has any non-pitcher position
-              if (sport === 'baseball') {
+              // For baseball/softball: show if player has any non-pitcher position
+              if (sport === 'baseball' || sport === 'softball') {
                 return playerHasNonPitcherPositions(p);
               }
               return true;
@@ -1017,8 +1017,8 @@ export default function TeamStatsScreen() {
               </>
             )}
 
-            {/* Goalie Section for Hockey/Soccer */}
-            {(sport === 'hockey' || sport === 'soccer') && sortedPlayers.some(p => playerIsGoalie(p)) && (
+            {/* Goalie Section for Hockey/Soccer/Lacrosse */}
+            {(sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') && sortedPlayers.some(p => playerIsGoalie(p)) && (
               <>
                 {/* Goalie Header */}
                 <View className="flex-row items-center px-3 py-3 bg-slate-700/50 border-b border-slate-700">
@@ -1035,7 +1035,7 @@ export default function TeamStatsScreen() {
 
                 {/* Goalie Rows */}
                 {sortedPlayers.filter(p => playerIsGoalie(p)).map((player, index, arr) => {
-                  const statValues = getStatValues(sport, player.goalieStats, sport === 'hockey' ? 'G' : 'GK');
+                  const statValues = getStatValues(sport, player.goalieStats, (sport === 'hockey' || sport === 'lacrosse') ? 'G' : 'GK');
                   const canEdit = canEditPlayer(player.id);
                   return (
                     <Pressable
@@ -1219,15 +1219,21 @@ export default function TeamStatsScreen() {
                   if (editMode === 'pitcher') {
                     logHeaders = ['IP', 'K', 'BB', 'H', 'ER'];
                   } else if (editMode === 'goalie') {
-                    logHeaders = ['MP', 'SA', 'SV', 'GA'];
+                    if (sport === 'lacrosse') {
+                      logHeaders = ['MP', 'SA', 'SV', 'GA', 'GB'];
+                    } else {
+                      logHeaders = ['MP', 'SA', 'SV', 'GA'];
+                    }
                   } else if (sport === 'hockey') {
                     logHeaders = ['G', 'A', 'PIM', '+/-'];
-                  } else if (sport === 'baseball') {
+                  } else if (sport === 'baseball' || sport === 'softball') {
                     logHeaders = ['AB', 'H', 'HR', 'RBI', 'K'];
                   } else if (sport === 'basketball') {
                     logHeaders = ['PTS', 'REB', 'AST', 'STL', 'BLK'];
                   } else if (sport === 'soccer') {
                     logHeaders = ['G', 'A', 'YC'];
+                  } else if (sport === 'lacrosse') {
+                    logHeaders = ['G', 'A', 'GB', 'CT'];
                   }
 
                   // Map headers to stat keys
@@ -1239,6 +1245,7 @@ export default function TeamStatsScreen() {
                       'YC': 'yellowCards',
                       'IP': 'innings', 'BB': 'walks', 'ER': 'earnedRuns',
                       'MP': 'minutesPlayed', 'SA': 'shotsAgainst', 'SV': 'saves', 'GA': 'goalsAgainst',
+                      'GB': 'groundBalls', 'CT': 'causedTurnovers',
                     };
                     return keyMap[header] || header.toLowerCase();
                   };
