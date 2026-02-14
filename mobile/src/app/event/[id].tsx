@@ -21,6 +21,7 @@ import {
   Bell,
   BellOff,
   StickyNote,
+  FileText,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -475,8 +476,7 @@ export default function EventDetailScreen() {
                   className="flex-1 bg-slate-800/80 rounded-2xl p-4 mr-2 active:bg-slate-700/80"
                 >
                   <View className="flex-row items-center mb-1">
-                    <Calendar size={16} color="#60a5fa" />
-                    <Text className="text-slate-400 text-xs ml-2">Date</Text>
+                    <Text className="text-slate-400 text-xs">Date</Text>
                   </View>
                   <Text className="text-white font-semibold">{formattedDate}</Text>
                 </Pressable>
@@ -486,8 +486,7 @@ export default function EventDetailScreen() {
                   className="flex-1 bg-slate-800/80 rounded-2xl p-4 ml-2 active:bg-slate-700/80"
                 >
                   <View className="flex-row items-center mb-1">
-                    <Clock size={16} color="#60a5fa" />
-                    <Text className="text-slate-400 text-xs ml-2">Time</Text>
+                    <Text className="text-slate-400 text-xs">Time</Text>
                   </View>
                   <Text className="text-white font-semibold">{event.time}</Text>
                 </Pressable>
@@ -520,20 +519,18 @@ export default function EventDetailScreen() {
             </Animated.View>
 
             {/* Notes */}
-            <Animated.View entering={FadeInDown.delay(350).springify()} className="mt-4">
+            <Animated.View entering={FadeInDown.delay(350).springify()} className="mt-3">
               <Pressable
                 onPress={canManageTeam() ? openEditNotesModal : undefined}
                 disabled={!canManageTeam()}
-                className="bg-slate-800/80 rounded-2xl p-4 active:bg-slate-700/80"
+                className="bg-slate-800/80 rounded-xl py-2.5 px-3 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center">
-                  <View className="w-10 h-10 rounded-full bg-orange-500/20 items-center justify-center">
-                    <StickyNote size={20} color="#f97316" />
-                  </View>
-                  <View className="ml-3 flex-1">
+                  <FileText size={18} color="#ffffff" />
+                  <View className="flex-1 ml-2.5">
                     <View className="flex-row items-center justify-between">
-                      <Text className="text-white font-semibold">Notes</Text>
-                      <Text className="text-slate-500 text-xs">{(event.notes || '').length}/30</Text>
+                      <Text className="text-white font-medium text-sm">Notes</Text>
+                      <Text className="text-slate-500 text-[10px]">{(event.notes || '').length}/30</Text>
                     </View>
                     <Text className="text-slate-400 text-xs">
                       {event.notes || (canManageTeam() ? 'Tap to add notes' : 'No notes')}
@@ -542,6 +539,11 @@ export default function EventDetailScreen() {
                 </View>
               </Pressable>
             </Animated.View>
+
+            {/* Divider */}
+            <View className="mt-3 mb-5">
+              <View className="h-px bg-slate-700/50" />
+            </View>
 
             {/* Release Invites Status - Visible to admins/captains */}
             {canManageTeam() && (() => {
@@ -552,7 +554,7 @@ export default function EventDetailScreen() {
               const invitesAreSent = Boolean(event.invitesSent || scheduledTimePassed);
 
               return (
-                <Animated.View entering={FadeInDown.delay(350).springify()} className="mt-4">
+                <Animated.View entering={FadeInDown.delay(350).springify()} className="mb-4">
                   <Pressable
                     onPress={() => {
                       if (!invitesAreSent) {
