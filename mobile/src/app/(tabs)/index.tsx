@@ -2032,14 +2032,14 @@ export default function ScheduleScreen() {
               {/* Refreshment Duty (Game only) */}
               {recordType === 'game' && teamSettings.showRefreshmentDuty !== false && (
               <View className="mb-3">
-                <View className="flex-row items-center justify-between bg-slate-800 rounded-xl p-4">
+                <View className="flex-row items-center justify-between bg-slate-800 rounded-xl py-2.5 px-3">
                   <View className="flex-row items-center">
                     {teamSettings.refreshmentDutyIs21Plus !== false ? (
-                      <Beer size={20} color="#f59e0b" />
+                      <Beer size={16} color="#f59e0b" />
                     ) : (
-                      <JuiceBoxIcon size={20} color="#a855f7" />
+                      <JuiceBoxIcon size={16} color="#a855f7" />
                     )}
-                    <Text className="text-white font-medium ml-3">
+                    <Text className="text-white font-medium ml-2 text-sm">
                       {teamSettings.sport === 'hockey' && teamSettings.refreshmentDutyIs21Plus !== false
                         ? 'Post Game Beer Duty'
                         : 'Refreshment Duty'}
@@ -2050,25 +2050,26 @@ export default function ScheduleScreen() {
                     onValueChange={setShowBeerDuty}
                     trackColor={{ false: '#334155', true: teamSettings.refreshmentDutyIs21Plus !== false ? '#f59e0b40' : '#a855f740' }}
                     thumbColor={showBeerDuty ? (teamSettings.refreshmentDutyIs21Plus !== false ? '#f59e0b' : '#a855f7') : '#64748b'}
+                    style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
                   />
                 </View>
 
                 {showBeerDuty && (
-                  <View className="mt-3">
-                    <Text className="text-slate-400 text-sm mb-2">Assign Player</Text>
+                  <View className="mt-2">
+                    <Text className="text-slate-400 text-xs mb-1.5">Assign Player</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
                       <Pressable
                         onPress={() => setSelectedBeerDutyPlayer(null)}
                         className={cn(
-                          'px-4 py-2 rounded-xl mr-2 items-center justify-center border',
+                          'px-3 py-1.5 rounded-lg mr-1.5 items-center justify-center border',
                           selectedBeerDutyPlayer === null
                             ? 'bg-amber-500 border-amber-500'
                             : 'bg-slate-800 border-slate-700'
                         )}
-                        style={{ height: 40 }}
+                        style={{ height: 32 }}
                       >
                         <Text className={cn(
-                          'font-medium',
+                          'font-medium text-sm',
                           selectedBeerDutyPlayer === null ? 'text-slate-900' : 'text-slate-400'
                         )}>
                           None
@@ -2082,15 +2083,15 @@ export default function ScheduleScreen() {
                             setSelectedBeerDutyPlayer(player.id);
                           }}
                           className={cn(
-                            'flex-row items-center px-3 py-2 rounded-xl mr-2 border',
+                            'flex-row items-center px-2 py-1.5 rounded-lg mr-1.5 border',
                             selectedBeerDutyPlayer === player.id
                               ? 'bg-amber-500 border-amber-500'
                               : 'bg-slate-800 border-slate-700'
                           )}
                         >
-                          <PlayerAvatar player={player} size={24} />
+                          <PlayerAvatar player={player} size={20} />
                           <Text className={cn(
-                            'font-medium ml-2',
+                            'font-medium ml-1.5 text-sm',
                             selectedBeerDutyPlayer === player.id ? 'text-slate-900' : 'text-slate-400'
                           )}>
                             {player.firstName}
