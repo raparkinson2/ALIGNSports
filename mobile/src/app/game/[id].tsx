@@ -891,12 +891,12 @@ export default function GameDetailScreen() {
           {(game.showBeerDuty !== false) && teamSettings.showRefreshmentDuty !== false && (
             <Animated.View
               entering={FadeInUp.delay(113).springify()}
-              className="mx-4 mb-4"
+              className="mx-4 mb-3"
             >
               <Pressable
                 onPress={canManageTeam() ? () => setIsBeerDutyModalVisible(true) : undefined}
                 className={cn(
-                  "rounded-2xl p-4 border",
+                  "rounded-xl py-2.5 px-3 border",
                   teamSettings.refreshmentDutyIs21Plus !== false
                     ? "bg-amber-500/10 border-amber-500/20"
                     : "bg-purple-500/10 border-purple-500/20"
@@ -904,22 +904,22 @@ export default function GameDetailScreen() {
               >
                 <View className="flex-row items-center">
                   {teamSettings.refreshmentDutyIs21Plus !== false ? (
-                    <Beer size={22} color="#d97706" />
+                    <Beer size={18} color="#d97706" />
                   ) : (
-                    <JuiceBoxIcon size={22} color="#9333ea" />
+                    <JuiceBoxIcon size={18} color="#9333ea" />
                   )}
-                  <View className="flex-1 ml-3">
-                    <Text className={teamSettings.refreshmentDutyIs21Plus !== false ? "text-amber-500 font-medium" : "text-purple-500 font-medium"}>
+                  <View className="flex-1 ml-2.5">
+                    <Text className={teamSettings.refreshmentDutyIs21Plus !== false ? "text-amber-500 font-medium text-sm" : "text-purple-500 font-medium text-sm"}>
                       {teamSettings.sport === 'hockey' && teamSettings.refreshmentDutyIs21Plus !== false
                         ? 'Refreshment Duty'
                         : 'Refreshment Duty'}
                     </Text>
                     {beerDutyPlayer && (
-                      <Text className="text-slate-400 text-sm">{getPlayerName(beerDutyPlayer)}</Text>
+                      <Text className="text-slate-400 text-xs">{getPlayerName(beerDutyPlayer)}</Text>
                     )}
                   </View>
                   {canManageTeam() && (
-                    <ChevronDown size={20} color={teamSettings.refreshmentDutyIs21Plus !== false ? "#d97706" : "#9333ea"} />
+                    <ChevronDown size={16} color={teamSettings.refreshmentDutyIs21Plus !== false ? "#d97706" : "#9333ea"} />
                   )}
                 </View>
               </Pressable>
@@ -930,18 +930,18 @@ export default function GameDetailScreen() {
           {teamSettings.sport === 'hockey' && teamSettings.showLineups !== false && canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(115).springify()}
-              className="mx-4 mb-4"
+              className="mx-4 mb-3"
             >
               <Pressable
                 onPress={() => setIsLineupModalVisible(true)}
-                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30 active:bg-emerald-500/30"
+                className="bg-emerald-500/20 rounded-xl py-2.5 px-3 border border-emerald-500/30 active:bg-emerald-500/30"
               >
                 <View className="flex-row items-center">
-                  <ListOrdered size={24} color="#10b981" />
-                  <View className="flex-1 ml-3">
-                    <Text className="text-emerald-400 font-semibold">Set Lines</Text>
+                  <ListOrdered size={18} color="#10b981" />
+                  <View className="flex-1 ml-2.5">
+                    <Text className="text-emerald-400 font-medium text-sm">Set Lines</Text>
                   </View>
-                  <ChevronDown size={20} color="#10b981" />
+                  <ChevronDown size={16} color="#10b981" />
                 </View>
               </Pressable>
             </Animated.View>
