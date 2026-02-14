@@ -816,11 +816,10 @@ export default function GameDetailScreen() {
                 disabled={!canManageTeam()}
                 className="bg-slate-800/80 rounded-2xl p-4 ml-2 active:bg-slate-700/80"
               >
-                <View className="flex-row items-center mb-1">
+                <View className="flex-row items-center">
                   <JerseyIcon size={16} color={jerseyColorHex} />
                   <Text className="text-slate-400 text-xs ml-2">Jersey</Text>
                 </View>
-                <Text className="text-white font-semibold">{jerseyColorName}</Text>
               </Pressable>
             </View>
           </Animated.View>
