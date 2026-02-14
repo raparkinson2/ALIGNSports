@@ -1863,7 +1863,7 @@ export default function GameDetailScreen() {
           )}
 
           {/* Divider */}
-          <View className="mx-4 my-4">
+          <View className="mx-4 mt-3 mb-5">
             <View className="h-px bg-slate-700/50" />
           </View>
 
