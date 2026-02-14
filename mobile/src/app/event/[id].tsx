@@ -20,6 +20,7 @@ import {
   UserPlus,
   Bell,
   BellOff,
+  StickyNote,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -525,13 +526,20 @@ export default function EventDetailScreen() {
                 disabled={!canManageTeam()}
                 className="bg-slate-800/80 rounded-2xl p-4 active:bg-slate-700/80"
               >
-                <View className="flex-row items-center justify-between mb-2">
-                  <Text className="text-slate-400 text-xs">Notes</Text>
-                  <Text className="text-slate-500 text-xs">{(event.notes || '').length}/30</Text>
+                <View className="flex-row items-center">
+                  <View className="w-10 h-10 rounded-full bg-orange-500/20 items-center justify-center">
+                    <StickyNote size={20} color="#f97316" />
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-slate-400 text-xs">Notes</Text>
+                      <Text className="text-slate-500 text-xs">{(event.notes || '').length}/30</Text>
+                    </View>
+                    <Text className="text-white font-semibold">
+                      {event.notes || (canManageTeam() ? 'Tap to add notes' : 'No notes')}
+                    </Text>
+                  </View>
                 </View>
-                <Text className="text-white">
-                  {event.notes || (canManageTeam() ? 'Tap to add notes' : 'No notes')}
-                </Text>
               </Pressable>
             </Animated.View>
 
