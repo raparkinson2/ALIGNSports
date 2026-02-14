@@ -1091,8 +1091,8 @@ export default function AdminScreen() {
               </View>
             </View>
 
-            {/* Softball Mode Toggle - Only for Baseball */}
-            {teamSettings.sport === 'baseball' && teamSettings.showLineups !== false && (
+            {/* Softball Mode Toggle - Only for Softball */}
+            {teamSettings.sport === 'softball' && teamSettings.showLineups !== false && (
               <View className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/30 ml-4">
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center flex-1">
