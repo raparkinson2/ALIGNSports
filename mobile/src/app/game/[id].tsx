@@ -209,6 +209,12 @@ export default function GameDetailScreen() {
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const [isBeerDutyModalVisible, setIsBeerDutyModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  // Inline edit modal states
+  const [isEditOpponentModalVisible, setIsEditOpponentModalVisible] = useState(false);
+  const [isEditDateModalVisible, setIsEditDateModalVisible] = useState(false);
+  const [isEditTimeModalVisible, setIsEditTimeModalVisible] = useState(false);
+  const [isEditJerseyModalVisible, setIsEditJerseyModalVisible] = useState(false);
+  const [isEditLocationModalVisible, setIsEditLocationModalVisible] = useState(false);
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
   const [isLineupModalVisible, setIsLineupModalVisible] = useState(false);
   const [isBasketballLineupModalVisible, setIsBasketballLineupModalVisible] = useState(false);
@@ -552,6 +558,81 @@ export default function GameDetailScreen() {
     setIsEditModalVisible(false);
   };
 
+  // Inline edit handlers
+  const openEditOpponentModal = () => {
+    setEditOpponent(game.opponent);
+    setIsEditOpponentModalVisible(true);
+  };
+
+  const handleSaveOpponent = () => {
+    if (!editOpponent.trim()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+    updateGame(game.id, { opponent: editOpponent.trim() });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsEditOpponentModalVisible(false);
+  };
+
+  const openEditDateModal = () => {
+    setEditDate(parseISO(game.date));
+    setIsEditDateModalVisible(true);
+  };
+
+  const handleSaveDate = () => {
+    updateGame(game.id, { date: editDate.toISOString() });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsEditDateModalVisible(false);
+  };
+
+  const openEditTimeModal = () => {
+    const [time, period] = game.time.split(' ');
+    const [hours, minutes] = time.split(':').map(Number);
+    const timeDate = new Date();
+    let hour = hours;
+    if (period === 'PM' && hours !== 12) hour += 12;
+    if (period === 'AM' && hours === 12) hour = 0;
+    timeDate.setHours(hour, minutes, 0, 0);
+    setEditTime(timeDate);
+    setIsEditTimeModalVisible(true);
+  };
+
+  const handleSaveTime = () => {
+    const timeString = format(editTime, 'h:mm a');
+    updateGame(game.id, { time: timeString });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsEditTimeModalVisible(false);
+  };
+
+  const openEditJerseyModal = () => {
+    setEditJersey(game.jerseyColor);
+    setIsEditJerseyModalVisible(true);
+  };
+
+  const handleSaveJersey = (color: string) => {
+    updateGame(game.id, { jerseyColor: color });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsEditJerseyModalVisible(false);
+  };
+
+  const openEditLocationModal = () => {
+    const combinedLocation = game.address
+      ? `${game.location}, ${game.address}`
+      : game.location;
+    setEditLocation(combinedLocation);
+    setIsEditLocationModalVisible(true);
+  };
+
+  const handleSaveLocation = () => {
+    if (!editLocation.trim()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+    updateGame(game.id, { location: editLocation.trim(), address: '' });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsEditLocationModalVisible(false);
+  };
+
   const handleDeleteGame = () => {
     Alert.alert(
       'Delete Game',
@@ -694,7 +775,11 @@ export default function GameDetailScreen() {
             entering={FadeInUp.delay(100).springify()}
             className="mx-4 mb-4"
           >
-            <View className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50">
+            <Pressable
+              onPress={canManageTeam() ? openEditOpponentModal : undefined}
+              className="bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700/50 active:bg-slate-700/80"
+              disabled={!canManageTeam()}
+            >
               <View className="p-5">
                 <Text
                   className="text-white text-2xl font-bold text-center"
@@ -705,33 +790,45 @@ export default function GameDetailScreen() {
                   {teamName} vs {game.opponent}
                 </Text>
               </View>
-            </View>
+            </Pressable>
           </Animated.View>
 
           {/* Date, Time, and Jersey Cards */}
           <Animated.View entering={FadeInUp.delay(105).springify()} className="mx-4 mb-4">
             <View className="flex-row">
-              <View className="flex-1 bg-slate-800/80 rounded-2xl p-4 mr-2">
+              <Pressable
+                onPress={canManageTeam() ? openEditDateModal : undefined}
+                disabled={!canManageTeam()}
+                className="flex-1 bg-slate-800/80 rounded-2xl p-4 mr-2 active:bg-slate-700/80"
+              >
                 <View className="flex-row items-center mb-1">
                   <Calendar size={16} color="#67e8f9" />
                   <Text className="text-slate-400 text-xs ml-2">Date</Text>
                 </View>
                 <Text className="text-white font-semibold">{format(parseISO(game.date), 'EEEE, MMMM d, yyyy')}</Text>
-              </View>
-              <View className="bg-slate-800/80 rounded-2xl p-4 mx-1">
+              </Pressable>
+              <Pressable
+                onPress={canManageTeam() ? openEditTimeModal : undefined}
+                disabled={!canManageTeam()}
+                className="bg-slate-800/80 rounded-2xl p-4 mx-1 active:bg-slate-700/80"
+              >
                 <View className="flex-row items-center mb-1">
                   <Clock size={16} color="#67e8f9" />
                   <Text className="text-slate-400 text-xs ml-2">Time</Text>
                 </View>
                 <Text className="text-white font-semibold">{game.time}</Text>
-              </View>
-              <View className="bg-slate-800/80 rounded-2xl p-4 ml-2">
+              </Pressable>
+              <Pressable
+                onPress={canManageTeam() ? openEditJerseyModal : undefined}
+                disabled={!canManageTeam()}
+                className="bg-slate-800/80 rounded-2xl p-4 ml-2 active:bg-slate-700/80"
+              >
                 <View className="flex-row items-center mb-1">
                   <JerseyIcon size={16} color={jerseyColorHex} />
                   <Text className="text-slate-400 text-xs ml-2">Jersey</Text>
                 </View>
                 <Text className="text-white font-semibold">{jerseyColorName}</Text>
-              </View>
+              </Pressable>
             </View>
           </Animated.View>
 
@@ -741,8 +838,8 @@ export default function GameDetailScreen() {
             className="mx-4 mb-4"
           >
             <Pressable
-              onPress={handleOpenMaps}
-              className="bg-slate-800/80 rounded-2xl p-4 flex-row items-center justify-between"
+              onPress={canManageTeam() ? openEditLocationModal : handleOpenMaps}
+              className="bg-slate-800/80 rounded-2xl p-4 flex-row items-center justify-between active:bg-slate-700/80"
             >
               <View className="flex-row items-center flex-1">
                 <View className="w-10 h-10 rounded-full bg-cyan-500/20 items-center justify-center">
@@ -756,9 +853,13 @@ export default function GameDetailScreen() {
                   )}
                 </View>
               </View>
-              <View className="bg-cyan-500/20 rounded-full p-2">
+              <Pressable
+                onPress={handleOpenMaps}
+                className="bg-cyan-500/20 rounded-full p-2"
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <Navigation size={18} color="#67e8f9" />
-              </View>
+              </Pressable>
             </Pressable>
           </Animated.View>
 
@@ -1888,7 +1989,7 @@ export default function GameDetailScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      {/* Edit Game Modal (Admin only) */}
+      {/* Game Settings Modal (Admin only) */}
       <Modal
         visible={isSettingsModalVisible}
         animationType="slide"
@@ -1901,21 +2002,28 @@ export default function GameDetailScreen() {
               <Pressable onPress={() => setIsSettingsModalVisible(false)}>
                 <X size={24} color="#64748b" />
               </Pressable>
-              <Text className="text-white text-lg font-semibold">Edit Game</Text>
+              <Text className="text-white text-lg font-semibold">Game Settings</Text>
               <View style={{ width: 24 }} />
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6">
-              {/* Edit Game Button */}
+              {/* Tip for inline editing */}
+              <View className="bg-slate-800/50 rounded-xl p-4 mb-4 border border-slate-700/50">
+                <Text className="text-slate-400 text-sm">
+                  Tap any field on the game screen to edit it directly.
+                </Text>
+              </View>
+
+              {/* Advanced Edit Button */}
               <Pressable
                 onPress={openEditModal}
-                className="bg-cyan-500/20 rounded-xl p-4 mb-4 border border-cyan-500/30 active:bg-cyan-500/30"
+                className="bg-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/60"
               >
                 <View className="flex-row items-center">
                   <Pencil size={20} color="#67e8f9" />
                   <View className="ml-3">
-                    <Text className="text-cyan-400 font-semibold">Edit Game Details</Text>
-                    <Text className="text-slate-400 text-sm">Change date, time, location, etc.</Text>
+                    <Text className="text-white font-semibold">Advanced Settings</Text>
+                    <Text className="text-slate-400 text-sm">Invite release, notes, refreshment duty</Text>
                   </View>
                 </View>
               </Pressable>
@@ -2802,6 +2910,188 @@ export default function GameDetailScreen() {
                 )}
               </Pressable>
             </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Inline Edit Opponent Modal */}
+      <Modal
+        visible={isEditOpponentModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsEditOpponentModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsEditOpponentModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Edit Opponent</Text>
+              <Pressable onPress={handleSaveOpponent}>
+                <Check size={24} color="#22c55e" />
+              </Pressable>
+            </View>
+            <View className="flex-1 px-5 pt-6">
+              <Text className="text-slate-400 text-sm mb-2">Opponent Name</Text>
+              <TextInput
+                value={editOpponent}
+                onChangeText={setEditOpponent}
+                placeholder="e.g., Ice Wolves"
+                placeholderTextColor="#64748b"
+                autoCapitalize="words"
+                autoFocus
+                className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+              />
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Inline Edit Date Modal */}
+      <Modal
+        visible={isEditDateModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsEditDateModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsEditDateModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Edit Date</Text>
+              <Pressable onPress={handleSaveDate}>
+                <Check size={24} color="#22c55e" />
+              </Pressable>
+            </View>
+            <View className="flex-1 px-5 pt-6 items-center">
+              <DateTimePicker
+                value={editDate}
+                mode="date"
+                display="inline"
+                onChange={(event, date) => {
+                  if (date) setEditDate(date);
+                }}
+                themeVariant="dark"
+                accentColor="#67e8f9"
+              />
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Inline Edit Time Modal */}
+      <Modal
+        visible={isEditTimeModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsEditTimeModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsEditTimeModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Edit Time</Text>
+              <Pressable onPress={handleSaveTime}>
+                <Check size={24} color="#22c55e" />
+              </Pressable>
+            </View>
+            <View className="flex-1 px-5 pt-6 items-center">
+              <DateTimePicker
+                value={editTime}
+                mode="time"
+                display="spinner"
+                onChange={(event, time) => {
+                  if (time) setEditTime(time);
+                }}
+                themeVariant="dark"
+                accentColor="#67e8f9"
+              />
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Inline Edit Jersey Modal */}
+      <Modal
+        visible={isEditJerseyModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsEditJerseyModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsEditJerseyModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Select Jersey</Text>
+              <View style={{ width: 24 }} />
+            </View>
+            <ScrollView className="flex-1 px-5 pt-4">
+              {teamSettings.jerseyColors.map((color) => (
+                <Pressable
+                  key={color.name}
+                  onPress={() => handleSaveJersey(color.name)}
+                  className={cn(
+                    'flex-row items-center p-4 rounded-xl mb-2 border',
+                    game.jerseyColor === color.name
+                      ? 'bg-cyan-500/20 border-cyan-500/50'
+                      : 'bg-slate-800/60 border-slate-700/50'
+                  )}
+                >
+                  <View
+                    className="w-10 h-10 rounded-full mr-3 border-2 border-white/30"
+                    style={{ backgroundColor: color.color }}
+                  />
+                  <Text
+                    className={cn(
+                      'font-semibold flex-1',
+                      game.jerseyColor === color.name ? 'text-cyan-400' : 'text-white'
+                    )}
+                  >
+                    {color.name}
+                  </Text>
+                  {game.jerseyColor === color.name && (
+                    <CheckCircle2 size={24} color="#67e8f9" />
+                  )}
+                </Pressable>
+              ))}
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Inline Edit Location Modal */}
+      <Modal
+        visible={isEditLocationModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsEditLocationModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsEditLocationModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Edit Location</Text>
+              <Pressable onPress={handleSaveLocation}>
+                <Check size={24} color="#22c55e" />
+              </Pressable>
+            </View>
+            <View className="flex-1 px-5 pt-6" style={{ zIndex: 50 }}>
+              <Text className="text-slate-400 text-sm mb-2">Venue or Address</Text>
+              <AddressSearch
+                value={editLocation}
+                onChangeText={setEditLocation}
+                placeholder="Search for a venue or address..."
+              />
+            </View>
           </SafeAreaView>
         </View>
       </Modal>

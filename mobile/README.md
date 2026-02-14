@@ -85,7 +85,13 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 
 ### Game Details
 - Full game information including time, location, and jersey color
-- Tap location to open in Maps for directions
+- **Inline Editing**: Admins/Captains can tap any field to edit it directly
+  - Tap the "Team vs Opponent" header to change the opponent name
+  - Tap the Date card to change the game date
+  - Tap the Time card to change the game time
+  - Tap the Jersey card to select a different jersey color
+  - Tap the Location card to edit the venue/address
+- Tap the navigation icon on the Location card to open in Maps for directions
 - Check in/out for games
 - See who's been invited and who's checked in
 - **In-App Notifications**: Send game invites and reminders to all players
