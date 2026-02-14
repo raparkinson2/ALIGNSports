@@ -871,10 +871,7 @@ export default function GameDetailScreen() {
               disabled={!canManageTeam()}
             >
               <View className="flex-row items-center">
-                <View className="w-8 h-8 rounded-full bg-orange-500/20 items-center justify-center">
-                  <StickyNote size={16} color="#f97316" />
-                </View>
-                <View className="ml-2.5 flex-1">
+                <View className="flex-1">
                   <View className="flex-row items-center justify-between">
                     <Text className="text-white font-medium text-sm">Notes</Text>
                     <Text className="text-slate-500 text-[10px]">{(game.notes || '').length}/30</Text>
@@ -895,12 +892,7 @@ export default function GameDetailScreen() {
             >
               <Pressable
                 onPress={canManageTeam() ? () => setIsBeerDutyModalVisible(true) : undefined}
-                className={cn(
-                  "rounded-xl py-2.5 px-3 border",
-                  teamSettings.refreshmentDutyIs21Plus !== false
-                    ? "bg-amber-500/10 border-amber-500/20"
-                    : "bg-purple-500/10 border-purple-500/20"
-                )}
+                className="bg-slate-800/80 rounded-xl py-2.5 px-3 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center">
                   {teamSettings.refreshmentDutyIs21Plus !== false ? (
@@ -934,7 +926,7 @@ export default function GameDetailScreen() {
             >
               <Pressable
                 onPress={() => setIsLineupModalVisible(true)}
-                className="bg-emerald-500/20 rounded-xl py-2.5 px-3 border border-emerald-500/30 active:bg-emerald-500/30"
+                className="bg-slate-800/80 rounded-xl py-2.5 px-3 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center">
                   <ListOrdered size={18} color="#10b981" />
