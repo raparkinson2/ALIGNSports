@@ -934,7 +934,7 @@ export default function AdminScreen() {
               Type
             </Text>
 
-            <View className="flex-row justify-between mb-6 gap-2">
+            <View className="flex-row justify-between mb-3 gap-2">
               {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => SPORT_NAMES[a].localeCompare(SPORT_NAMES[b])).map((sport) => (
                 <Pressable
                   key={sport}
@@ -1063,7 +1063,7 @@ export default function AdminScreen() {
 
           {/* Team Structure Section */}
           <Animated.View entering={FadeInDown.delay(150).springify()}>
-            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4 mt-8">
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4 mt-4">
               Team Structure
             </Text>
 
@@ -1176,7 +1176,7 @@ export default function AdminScreen() {
 
           {/* Communication Section */}
           <Animated.View entering={FadeInDown.delay(200).springify()}>
-            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4 mt-8">
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4 mt-4">
               Communication
             </Text>
 
