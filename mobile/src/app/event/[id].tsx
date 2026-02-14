@@ -14,7 +14,6 @@ import {
   Navigation,
   Calendar,
   X,
-  Pencil,
   Check,
   Trash2,
   Send,
@@ -114,16 +113,19 @@ export default function EventDetailScreen() {
 
   const event = events.find((e) => e.id === id);
 
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
   const [isReleaseInvitesModalVisible, setIsReleaseInvitesModalVisible] = useState(false);
+  // Inline edit modal states
+  const [isEditTitleModalVisible, setIsEditTitleModalVisible] = useState(false);
+  const [isEditDateModalVisible, setIsEditDateModalVisible] = useState(false);
+  const [isEditTimeModalVisible, setIsEditTimeModalVisible] = useState(false);
+  const [isEditLocationModalVisible, setIsEditLocationModalVisible] = useState(false);
+  const [isEditNotesModalVisible, setIsEditNotesModalVisible] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [editDate, setEditDate] = useState(new Date());
-  const [editTimeValue, setEditTimeValue] = useState('');
-  const [editTimePeriod, setEditTimePeriod] = useState<'AM' | 'PM'>('PM');
+  const [editTime, setEditTime] = useState(new Date());
   const [editNotes, setEditNotes] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
   // Invite release edit state
   const [editInviteReleaseOption, setEditInviteReleaseOption] = useState<InviteReleaseOption>('now');
   const [editInviteReleaseDate, setEditInviteReleaseDate] = useState(new Date());
@@ -198,48 +200,79 @@ export default function EventDetailScreen() {
     Linking.openURL(url);
   };
 
-  const openEditModal = () => {
+  // Inline edit handlers
+  const openEditTitleModal = () => {
     setEditTitle(event.title);
-    setEditLocation(event.location);
-    setEditDate(eventDate);
-    // Parse time
-    const timeParts = event.time.match(/(\d+:\d+)\s*(AM|PM)/i);
-    if (timeParts) {
-      setEditTimeValue(timeParts[1]);
-      setEditTimePeriod(timeParts[2].toUpperCase() as 'AM' | 'PM');
-    } else {
-      setEditTimeValue(event.time);
-      setEditTimePeriod('PM');
-    }
-    setEditNotes(event.notes || '');
-    // Load invite release settings
-    setEditInviteReleaseOption(event.inviteReleaseOption || 'now');
-    setEditInviteReleaseDate(event.inviteReleaseDate ? parseISO(event.inviteReleaseDate) : new Date());
-    setShowEditInviteReleaseDatePicker(false);
-    setIsEditModalVisible(true);
+    setIsEditTitleModalVisible(true);
   };
 
-  const saveEdit = () => {
-    if (!editTitle.trim() || !editLocation.trim()) {
+  const handleSaveTitle = () => {
+    if (!editTitle.trim()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
-
-    const fullTime = `${editTimeValue.trim() || '7:00'} ${editTimePeriod}`;
-
-    updateEvent(event.id, {
-      title: editTitle.trim(),
-      location: editLocation.trim(),
-      date: editDate.toISOString(),
-      time: fullTime,
-      notes: editNotes.trim() || undefined,
-      inviteReleaseOption: editInviteReleaseOption,
-      inviteReleaseDate: editInviteReleaseOption === 'scheduled' ? editInviteReleaseDate.toISOString() : undefined,
-      invitesSent: editInviteReleaseOption === 'now' ? true : event.invitesSent,
-    });
-
+    updateEvent(event.id, { title: editTitle.trim() });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setIsEditModalVisible(false);
+    setIsEditTitleModalVisible(false);
+  };
+
+  const openEditDateModal = () => {
+    setEditDate(eventDate);
+    setIsEditDateModalVisible(true);
+  };
+
+  const handleSaveDate = () => {
+    updateEvent(event.id, { date: editDate.toISOString() });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsEditDateModalVisible(false);
+  };
+
+  const openEditTimeModal = () => {
+    const timeParts = event.time.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    const timeDate = new Date();
+    if (timeParts) {
+      let hours = parseInt(timeParts[1], 10);
+      const minutes = parseInt(timeParts[2], 10);
+      const period = timeParts[3].toUpperCase();
+      if (period === 'PM' && hours !== 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+      timeDate.setHours(hours, minutes, 0, 0);
+    }
+    setEditTime(timeDate);
+    setIsEditTimeModalVisible(true);
+  };
+
+  const handleSaveTime = () => {
+    const timeString = format(editTime, 'h:mm a');
+    updateEvent(event.id, { time: timeString });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsEditTimeModalVisible(false);
+  };
+
+  const openEditLocationModal = () => {
+    setEditLocation(event.location);
+    setIsEditLocationModalVisible(true);
+  };
+
+  const handleSaveLocation = () => {
+    if (!editLocation.trim()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+    updateEvent(event.id, { location: editLocation.trim() });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsEditLocationModalVisible(false);
+  };
+
+  const openEditNotesModal = () => {
+    setEditNotes(event.notes || '');
+    setIsEditNotesModalVisible(true);
+  };
+
+  const handleSaveNotes = () => {
+    updateEvent(event.id, { notes: editNotes.trim() || undefined });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsEditNotesModalVisible(false);
   };
 
   const handleSaveReleaseInvites = () => {
@@ -396,24 +429,14 @@ export default function EventDetailScreen() {
               <ChevronLeft size={24} color="white" />
             </Pressable>
 
-            <View className="flex-row">
-              {canManageTeam() && (
-                <>
-                  <Pressable
-                    onPress={openEditModal}
-                    className="w-10 h-10 rounded-full bg-slate-800 items-center justify-center mr-2"
-                  >
-                    <Pencil size={20} color="white" />
-                  </Pressable>
-                  <Pressable
-                    onPress={deleteEvent}
-                    className="w-10 h-10 rounded-full bg-slate-800 items-center justify-center"
-                  >
-                    <Trash2 size={20} color="#ef4444" />
-                  </Pressable>
-                </>
-              )}
-            </View>
+            {canManageTeam() && (
+              <Pressable
+                onPress={deleteEvent}
+                className="w-10 h-10 rounded-full bg-slate-800 items-center justify-center"
+              >
+                <Trash2 size={20} color="#ef4444" />
+              </Pressable>
+            )}
           </View>
         </Animated.View>
 
@@ -425,42 +448,56 @@ export default function EventDetailScreen() {
           {/* Event Info */}
           <View className="px-5">
             <Animated.View entering={FadeInDown.delay(100).springify()}>
-              <View className="flex-row items-center mb-2">
-                <View className={`px-3 py-1 rounded-full ${event.type === 'practice' ? 'bg-orange-500/30' : 'bg-blue-500/30'}`}>
-                  <Text className={`text-xs font-semibold ${event.type === 'practice' ? 'text-orange-300' : 'text-blue-300'}`}>
-                    {event.type === 'practice' ? 'PRACTICE' : 'EVENT'}
-                  </Text>
+              <Pressable
+                onPress={canManageTeam() ? openEditTitleModal : undefined}
+                disabled={!canManageTeam()}
+                className="active:opacity-70"
+              >
+                <View className="flex-row items-center mb-2">
+                  <View className={`px-3 py-1 rounded-full ${event.type === 'practice' ? 'bg-orange-500/30' : 'bg-blue-500/30'}`}>
+                    <Text className={`text-xs font-semibold ${event.type === 'practice' ? 'text-orange-300' : 'text-blue-300'}`}>
+                      {event.type === 'practice' ? 'PRACTICE' : 'EVENT'}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-              <Text className="text-white text-3xl font-bold mb-2">{event.title}</Text>
-              <Text className="text-slate-400 text-base">{teamName}</Text>
+                <Text className="text-white text-3xl font-bold mb-2">{event.title}</Text>
+                <Text className="text-slate-400 text-base">{teamName}</Text>
+              </Pressable>
             </Animated.View>
 
             {/* Quick Stats */}
             <Animated.View entering={FadeInDown.delay(200).springify()} className="mt-6">
               <View className="flex-row">
-                <View className="flex-1 bg-slate-800/80 rounded-2xl p-4 mr-2">
+                <Pressable
+                  onPress={canManageTeam() ? openEditDateModal : undefined}
+                  disabled={!canManageTeam()}
+                  className="flex-1 bg-slate-800/80 rounded-2xl p-4 mr-2 active:bg-slate-700/80"
+                >
                   <View className="flex-row items-center mb-1">
                     <Calendar size={16} color="#60a5fa" />
                     <Text className="text-slate-400 text-xs ml-2">Date</Text>
                   </View>
                   <Text className="text-white font-semibold">{formattedDate}</Text>
-                </View>
-                <View className="flex-1 bg-slate-800/80 rounded-2xl p-4 ml-2">
+                </Pressable>
+                <Pressable
+                  onPress={canManageTeam() ? openEditTimeModal : undefined}
+                  disabled={!canManageTeam()}
+                  className="flex-1 bg-slate-800/80 rounded-2xl p-4 ml-2 active:bg-slate-700/80"
+                >
                   <View className="flex-row items-center mb-1">
                     <Clock size={16} color="#60a5fa" />
                     <Text className="text-slate-400 text-xs ml-2">Time</Text>
                   </View>
                   <Text className="text-white font-semibold">{event.time}</Text>
-                </View>
+                </Pressable>
               </View>
             </Animated.View>
 
             {/* Location */}
             <Animated.View entering={FadeInDown.delay(300).springify()} className="mt-4">
               <Pressable
-                onPress={openInMaps}
-                className="bg-slate-800/80 rounded-2xl p-4 flex-row items-center justify-between"
+                onPress={canManageTeam() ? openEditLocationModal : openInMaps}
+                className="bg-slate-800/80 rounded-2xl p-4 flex-row items-center justify-between active:bg-slate-700/80"
               >
                 <View className="flex-row items-center flex-1">
                   <View className="w-10 h-10 rounded-full bg-blue-500/20 items-center justify-center">
@@ -471,21 +508,32 @@ export default function EventDetailScreen() {
                     <Text className="text-white font-semibold">{event.location}</Text>
                   </View>
                 </View>
-                <View className="bg-blue-500/20 rounded-full p-2">
+                <Pressable
+                  onPress={openInMaps}
+                  className="bg-blue-500/20 rounded-full p-2"
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                   <Navigation size={18} color="#60a5fa" />
-                </View>
+                </Pressable>
               </Pressable>
             </Animated.View>
 
             {/* Notes */}
-            {event.notes && (
-              <Animated.View entering={FadeInDown.delay(350).springify()} className="mt-4">
-                <View className="bg-slate-800/80 rounded-2xl p-4">
-                  <Text className="text-slate-400 text-xs mb-2">Notes</Text>
-                  <Text className="text-white">{event.notes}</Text>
+            <Animated.View entering={FadeInDown.delay(350).springify()} className="mt-4">
+              <Pressable
+                onPress={canManageTeam() ? openEditNotesModal : undefined}
+                disabled={!canManageTeam()}
+                className="bg-slate-800/80 rounded-2xl p-4 active:bg-slate-700/80"
+              >
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-slate-400 text-xs">Notes</Text>
+                  <Text className="text-slate-500 text-xs">{(event.notes || '').length}/30</Text>
                 </View>
-              </Animated.View>
-            )}
+                <Text className="text-white">
+                  {event.notes || (canManageTeam() ? 'Tap to add notes' : 'No notes')}
+                </Text>
+              </Pressable>
+            </Animated.View>
 
             {/* Release Invites Status - Visible to admins/captains */}
             {canManageTeam() && (
@@ -618,264 +666,178 @@ export default function EventDetailScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      {/* Edit Modal */}
+      {/* Inline Edit Title Modal */}
       <Modal
-        visible={isEditModalVisible}
+        visible={isEditTitleModalVisible}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setIsEditModalVisible(false)}
+        onRequestClose={() => setIsEditTitleModalVisible(false)}
       >
         <View className="flex-1 bg-slate-900">
           <SafeAreaView className="flex-1">
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsEditModalVisible(false)}>
+              <Pressable onPress={() => setIsEditTitleModalVisible(false)}>
                 <X size={24} color="#64748b" />
               </Pressable>
-              <Text className="text-white text-lg font-semibold">Edit Event</Text>
-              <Pressable onPress={saveEdit}>
+              <Text className="text-white text-lg font-semibold">Edit Title</Text>
+              <Pressable onPress={handleSaveTitle}>
                 <Check size={24} color="#22c55e" />
               </Pressable>
             </View>
+            <View className="flex-1 px-5 pt-6">
+              <Text className="text-slate-400 text-sm mb-2">Event Name</Text>
+              <TextInput
+                value={editTitle}
+                onChangeText={setEditTitle}
+                placeholder="Event name"
+                placeholderTextColor="#64748b"
+                autoCapitalize="words"
+                autoFocus
+                className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+              />
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
 
-            <ScrollView className="flex-1 px-5 pt-6">
-              {/* Event Name */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Event Name</Text>
-                <TextInput
-                  value={editTitle}
-                  onChangeText={setEditTitle}
-                  placeholder="Event name"
-                  placeholderTextColor="#64748b"
-                  autoCapitalize="words"
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                />
+      {/* Inline Edit Date Modal */}
+      <Modal
+        visible={isEditDateModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsEditDateModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsEditDateModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Edit Date</Text>
+              <Pressable onPress={handleSaveDate}>
+                <Check size={24} color="#22c55e" />
+              </Pressable>
+            </View>
+            <View className="flex-1 px-5 pt-6 items-center">
+              <DateTimePicker
+                value={editDate}
+                mode="date"
+                display="inline"
+                onChange={(event, date) => {
+                  if (date) setEditDate(date);
+                }}
+                themeVariant="dark"
+                accentColor="#67e8f9"
+              />
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Inline Edit Time Modal */}
+      <Modal
+        visible={isEditTimeModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsEditTimeModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsEditTimeModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Edit Time</Text>
+              <Pressable onPress={handleSaveTime}>
+                <Check size={24} color="#22c55e" />
+              </Pressable>
+            </View>
+            <View className="flex-1 px-5 pt-6 items-center">
+              <DateTimePicker
+                value={editTime}
+                mode="time"
+                display="spinner"
+                onChange={(event, time) => {
+                  if (time) setEditTime(time);
+                }}
+                themeVariant="dark"
+                accentColor="#67e8f9"
+              />
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Inline Edit Location Modal */}
+      <Modal
+        visible={isEditLocationModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsEditLocationModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsEditLocationModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Edit Location</Text>
+              <Pressable onPress={handleSaveLocation}>
+                <Check size={24} color="#22c55e" />
+              </Pressable>
+            </View>
+            <View className="flex-1 px-5 pt-6" style={{ zIndex: 50 }}>
+              <Text className="text-slate-400 text-sm mb-2">Venue or Address</Text>
+              <AddressSearch
+                value={editLocation}
+                onChangeText={setEditLocation}
+                placeholder="Search for a venue or address..."
+              />
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Inline Edit Notes Modal */}
+      <Modal
+        visible={isEditNotesModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsEditNotesModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsEditNotesModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Edit Notes</Text>
+              <Pressable onPress={handleSaveNotes}>
+                <Check size={24} color="#22c55e" />
+              </Pressable>
+            </View>
+            <View className="flex-1 px-5 pt-6">
+              <View className="flex-row items-center justify-between mb-2">
+                <Text className="text-slate-400 text-sm">Notes</Text>
+                <Text className={cn(
+                  "text-sm",
+                  editNotes.length > 30 ? "text-red-500" : "text-slate-500"
+                )}>{editNotes.length}/30</Text>
               </View>
-
-              {/* Date */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Date</Text>
-                <Pressable
-                  onPress={() => setShowDatePicker(!showDatePicker)}
-                  className="bg-slate-800 rounded-xl px-4 py-3"
-                >
-                  <Text className="text-white text-lg">
-                    {format(editDate, 'EEEE, MMMM d, yyyy')}
-                  </Text>
-                </Pressable>
-                {showDatePicker && (
-                  <View className="bg-slate-800 rounded-xl mt-2 overflow-hidden items-center">
-                    <DateTimePicker
-                      value={editDate}
-                      mode="date"
-                      display="inline"
-                      onChange={(evt, date) => {
-                        if (date) setEditDate(date);
-                      }}
-                      themeVariant="dark"
-                      accentColor="#f87171"
-                    />
-                  </View>
-                )}
-              </View>
-
-              {/* Time */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Time</Text>
-                <View className="flex-row items-center">
-                  <TextInput
-                    value={editTimeValue}
-                    onChangeText={setEditTimeValue}
-                    placeholder="7:00"
-                    placeholderTextColor="#64748b"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg flex-1"
-                    keyboardType="numbers-and-punctuation"
-                  />
-                  <View className="flex-row ml-3">
-                    <Pressable
-                      onPress={() => setEditTimePeriod('AM')}
-                      className={cn(
-                        'px-4 py-3 rounded-l-xl',
-                        editTimePeriod === 'AM'
-                          ? 'bg-red-500/30 border border-red-500/50'
-                          : 'bg-slate-800 border border-slate-700'
-                      )}
-                    >
-                      <Text className={cn(
-                        'font-semibold text-lg',
-                        editTimePeriod === 'AM' ? 'text-red-400' : 'text-slate-400'
-                      )}>
-                        AM
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => setEditTimePeriod('PM')}
-                      className={cn(
-                        'px-4 py-3 rounded-r-xl',
-                        editTimePeriod === 'PM'
-                          ? 'bg-red-500/30 border border-red-500/50'
-                          : 'bg-slate-800 border border-slate-700'
-                      )}
-                    >
-                      <Text className={cn(
-                        'font-semibold text-lg',
-                        editTimePeriod === 'PM' ? 'text-red-400' : 'text-slate-400'
-                      )}>
-                        PM
-                      </Text>
-                    </Pressable>
-                  </View>
-                </View>
-              </View>
-
-              {/* Location */}
-              <View className="mb-5" style={{ zIndex: 50 }}>
-                <Text className="text-slate-400 text-sm mb-2">Location</Text>
-                <AddressSearch
-                  value={editLocation}
-                  onChangeText={setEditLocation}
-                  placeholder="Search for a venue or address..."
-                />
-              </View>
-
-              {/* Notes */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Notes (Optional)</Text>
-                <TextInput
-                  value={editNotes}
-                  onChangeText={setEditNotes}
-                  placeholder="Any additional info..."
-                  placeholderTextColor="#64748b"
-                  autoCapitalize="sentences"
-                  multiline
-                  numberOfLines={3}
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                  style={{ minHeight: 80, textAlignVertical: 'top' }}
-                />
-              </View>
-
-              {/* Release Invites */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Release Invites</Text>
-                <View className="bg-slate-800/50 rounded-xl p-3">
-                  {/* Release Now Option */}
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setEditInviteReleaseOption('now');
-                      setShowEditInviteReleaseDatePicker(false);
-                    }}
-                    className={cn(
-                      'flex-row items-center p-3 rounded-xl mb-2 border',
-                      editInviteReleaseOption === 'now'
-                        ? 'bg-green-500/20 border-green-500/50'
-                        : 'bg-slate-700/50 border-slate-600'
-                    )}
-                  >
-                    <Send size={18} color={editInviteReleaseOption === 'now' ? '#22c55e' : '#64748b'} />
-                    <View className="ml-3 flex-1">
-                      <Text className={cn(
-                        'font-medium',
-                        editInviteReleaseOption === 'now' ? 'text-green-400' : 'text-slate-400'
-                      )}>
-                        Release invites now
-                      </Text>
-                      <Text className="text-slate-500 text-xs mt-0.5">
-                        Players will be notified immediately
-                      </Text>
-                    </View>
-                    {editInviteReleaseOption === 'now' && <Check size={18} color="#22c55e" />}
-                  </Pressable>
-
-                  {/* Schedule Release Option */}
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setEditInviteReleaseOption('scheduled');
-                      setShowEditInviteReleaseDatePicker(true);
-                    }}
-                    className={cn(
-                      'flex-row items-center p-3 rounded-xl mb-2 border',
-                      editInviteReleaseOption === 'scheduled'
-                        ? 'bg-cyan-500/20 border-cyan-500/50'
-                        : 'bg-slate-700/50 border-slate-600'
-                    )}
-                  >
-                    <Bell size={18} color={editInviteReleaseOption === 'scheduled' ? '#22d3ee' : '#64748b'} />
-                    <View className="ml-3 flex-1">
-                      <Text className={cn(
-                        'font-medium',
-                        editInviteReleaseOption === 'scheduled' ? 'text-cyan-400' : 'text-slate-400'
-                      )}>
-                        Schedule release
-                      </Text>
-                      <Text className="text-slate-500 text-xs mt-0.5">
-                        Choose when to notify players
-                      </Text>
-                    </View>
-                    {editInviteReleaseOption === 'scheduled' && <Check size={18} color="#22d3ee" />}
-                  </Pressable>
-
-                  {/* Schedule Date/Time Picker */}
-                  {editInviteReleaseOption === 'scheduled' && (
-                    <View className="mt-2">
-                      <Pressable
-                        onPress={() => setShowEditInviteReleaseDatePicker(!showEditInviteReleaseDatePicker)}
-                        className="bg-slate-700/80 rounded-xl px-4 py-3"
-                      >
-                        <Text className="text-cyan-400 text-base">
-                          {format(editInviteReleaseDate, 'EEE, MMM d, yyyy h:mm a')}
-                        </Text>
-                      </Pressable>
-                      {showEditInviteReleaseDatePicker && (
-                        <View className="bg-slate-700/80 rounded-xl mt-2 overflow-hidden items-center">
-                          <DateTimePicker
-                            value={editInviteReleaseDate}
-                            mode="datetime"
-                            display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                            onChange={(evt, date) => {
-                              if (date) setEditInviteReleaseDate(date);
-                              if (Platform.OS === 'android') setShowEditInviteReleaseDatePicker(false);
-                            }}
-                            minimumDate={new Date()}
-                            themeVariant="dark"
-                            accentColor="#22d3ee"
-                          />
-                        </View>
-                      )}
-                    </View>
-                  )}
-
-                  {/* Don't Send Option */}
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setEditInviteReleaseOption('none');
-                      setShowEditInviteReleaseDatePicker(false);
-                    }}
-                    className={cn(
-                      'flex-row items-center p-3 rounded-xl border',
-                      editInviteReleaseOption === 'none'
-                        ? 'bg-slate-600/50 border-slate-500'
-                        : 'bg-slate-700/50 border-slate-600'
-                    )}
-                  >
-                    <BellOff size={18} color={editInviteReleaseOption === 'none' ? '#94a3b8' : '#64748b'} />
-                    <View className="ml-3 flex-1">
-                      <Text className={cn(
-                        'font-medium',
-                        editInviteReleaseOption === 'none' ? 'text-slate-300' : 'text-slate-400'
-                      )}>
-                        Don't send invites
-                      </Text>
-                      <Text className="text-slate-500 text-xs mt-0.5">
-                        Send manually later
-                      </Text>
-                    </View>
-                    {editInviteReleaseOption === 'none' && <Check size={18} color="#94a3b8" />}
-                  </Pressable>
-                </View>
-              </View>
-            </ScrollView>
+              <TextInput
+                value={editNotes}
+                onChangeText={(text) => {
+                  if (text.length <= 30) {
+                    setEditNotes(text);
+                  }
+                }}
+                placeholder="Add a short note..."
+                placeholderTextColor="#64748b"
+                maxLength={30}
+                className="bg-slate-800 rounded-xl p-4 text-white text-base"
+                autoFocus
+              />
+            </View>
           </SafeAreaView>
         </View>
       </Modal>
