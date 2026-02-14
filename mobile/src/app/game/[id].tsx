@@ -1871,7 +1871,7 @@ export default function GameDetailScreen() {
           {canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(155).springify()}
-              className="mx-4 mb-3"
+              className="mx-4 mb-4"
             >
               <Pressable
                 onPress={() => {
