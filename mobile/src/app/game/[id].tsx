@@ -29,6 +29,7 @@ import {
   ListOrdered,
   Send,
   Calendar,
+  StickyNote,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -215,6 +216,7 @@ export default function GameDetailScreen() {
   const [isEditTimeModalVisible, setIsEditTimeModalVisible] = useState(false);
   const [isEditJerseyModalVisible, setIsEditJerseyModalVisible] = useState(false);
   const [isEditLocationModalVisible, setIsEditLocationModalVisible] = useState(false);
+  const [isEditNotesModalVisible, setIsEditNotesModalVisible] = useState(false);
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
   const [isLineupModalVisible, setIsLineupModalVisible] = useState(false);
   const [isBasketballLineupModalVisible, setIsBasketballLineupModalVisible] = useState(false);
@@ -748,20 +750,12 @@ export default function GameDetailScreen() {
           </Pressable>
 
           {canManageTeam() && (
-            <View className="flex-row">
-              <Pressable
-                onPress={() => setIsSettingsModalVisible(true)}
-                className="w-10 h-10 rounded-full bg-black/30 items-center justify-center mr-2"
-              >
-                <Pencil size={20} color="white" />
-              </Pressable>
-              <Pressable
-                onPress={handleDeleteGame}
-                className="w-10 h-10 rounded-full bg-red-500/80 items-center justify-center"
-              >
-                <Trash2 size={20} color="white" />
-              </Pressable>
-            </View>
+            <Pressable
+              onPress={handleDeleteGame}
+              className="w-10 h-10 rounded-full bg-red-500/80 items-center justify-center"
+            >
+              <Trash2 size={20} color="white" />
+            </Pressable>
           )}
         </Animated.View>
 
@@ -860,6 +854,36 @@ export default function GameDetailScreen() {
               >
                 <Navigation size={18} color="#67e8f9" />
               </Pressable>
+            </Pressable>
+          </Animated.View>
+
+          {/* Notes Section */}
+          <Animated.View
+            entering={FadeInUp.delay(111).springify()}
+            className="mx-4 mb-4"
+          >
+            <Pressable
+              onPress={canManageTeam() ? () => {
+                setEditNotes(game.notes || '');
+                setIsEditNotesModalVisible(true);
+              } : undefined}
+              className="bg-slate-800/80 rounded-2xl p-4 active:bg-slate-700/80"
+              disabled={!canManageTeam()}
+            >
+              <View className="flex-row items-center">
+                <View className="w-10 h-10 rounded-full bg-orange-500/20 items-center justify-center">
+                  <StickyNote size={20} color="#f97316" />
+                </View>
+                <View className="ml-3 flex-1">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-slate-400 text-xs">Notes</Text>
+                    <Text className="text-slate-500 text-xs">{(game.notes || '').length}/30</Text>
+                  </View>
+                  <Text className="text-white font-semibold">
+                    {game.notes || (canManageTeam() ? 'Tap to add notes' : 'No notes')}
+                  </Text>
+                </View>
+              </View>
             </Pressable>
           </Animated.View>
 
@@ -3090,6 +3114,53 @@ export default function GameDetailScreen() {
                 value={editLocation}
                 onChangeText={setEditLocation}
                 placeholder="Search for a venue or address..."
+              />
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Inline Edit Notes Modal */}
+      <Modal
+        visible={isEditNotesModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsEditNotesModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsEditNotesModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Edit Notes</Text>
+              <Pressable onPress={() => {
+                updateGame(game.id, { notes: editNotes.trim() });
+                setIsEditNotesModalVisible(false);
+              }}>
+                <Check size={24} color="#22c55e" />
+              </Pressable>
+            </View>
+            <View className="flex-1 px-5 pt-6">
+              <View className="flex-row items-center justify-between mb-2">
+                <Text className="text-slate-400 text-sm">Notes</Text>
+                <Text className={cn(
+                  "text-sm",
+                  editNotes.length > 30 ? "text-red-500" : "text-slate-500"
+                )}>{editNotes.length}/30</Text>
+              </View>
+              <TextInput
+                value={editNotes}
+                onChangeText={(text) => {
+                  if (text.length <= 30) {
+                    setEditNotes(text);
+                  }
+                }}
+                placeholder="Add a short note..."
+                placeholderTextColor="#64748b"
+                maxLength={30}
+                className="bg-slate-800 rounded-xl p-4 text-white text-base"
+                autoFocus
               />
             </View>
           </SafeAreaView>
