@@ -1543,7 +1543,7 @@ export default function AdminScreen() {
                       placeholder="First"
                       placeholderTextColor="#64748b"
                       autoCapitalize="words"
-                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                       onBlur={handleSavePlayerName}
                       onSubmitEditing={handleSavePlayerName}
                       returnKeyType="done"
@@ -1559,7 +1559,7 @@ export default function AdminScreen() {
                       placeholder="Last"
                       placeholderTextColor="#64748b"
                       autoCapitalize="words"
-                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                       onBlur={handleSavePlayerName}
                       onSubmitEditing={handleSavePlayerName}
                       returnKeyType="done"
@@ -1578,7 +1578,7 @@ export default function AdminScreen() {
                       placeholderTextColor="#64748b"
                       keyboardType="number-pad"
                       maxLength={2}
-                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                       style={{ width: 100 }}
                       onBlur={handleSavePlayerNumber}
                       onSubmitEditing={handleSavePlayerNumber}
@@ -1599,7 +1599,7 @@ export default function AdminScreen() {
                     placeholder="(555)123-4567"
                     placeholderTextColor="#64748b"
                     keyboardType="phone-pad"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                     onBlur={handleSavePlayerPhone}
                     onSubmitEditing={handleSavePlayerPhone}
                     returnKeyType="done"
@@ -1619,7 +1619,7 @@ export default function AdminScreen() {
                     placeholderTextColor="#64748b"
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                     onBlur={handleSavePlayerEmail}
                     onSubmitEditing={handleSavePlayerEmail}
                     returnKeyType="done"
@@ -1646,6 +1646,7 @@ export default function AdminScreen() {
                               <Pressable
                                 key={pos}
                                 onPress={() => {
+                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                   if (isSelected) {
                                     const newPositions = editPlayerPositions.filter(p => p !== pos);
                                     setEditPlayerPositions(newPositions);
@@ -1659,8 +1660,8 @@ export default function AdminScreen() {
                                   }
                                 }}
                                 className={cn(
-                                  'flex-1 py-3 rounded-xl items-center',
-                                  isSelected ? 'bg-cyan-500' : 'bg-slate-800'
+                                  'flex-1 py-3 rounded-xl items-center border',
+                                  isSelected ? 'bg-cyan-500 border-cyan-400' : 'bg-slate-800 border-slate-700'
                                 )}
                               >
                                 <Text
@@ -2239,7 +2240,7 @@ export default function AdminScreen() {
                     placeholder="First"
                     placeholderTextColor="#64748b"
                     autoCapitalize="words"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                   />
                 </View>
 
@@ -2252,7 +2253,7 @@ export default function AdminScreen() {
                     placeholder="Last"
                     placeholderTextColor="#64748b"
                     autoCapitalize="words"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                   />
                 </View>
               </View>
@@ -2271,13 +2272,14 @@ export default function AdminScreen() {
                       keyboardType="number-pad"
                       maxLength={2}
                       style={{ width: 100 }}
-                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                     />
                   </View>
 
                   {/* Position Selection */}
                   <View>
-                    <Text className="text-slate-400 text-sm mb-2">Position<Text className="text-red-400">*</Text></Text>
+                    <Text className="text-slate-400 text-sm mb-1">Position<Text className="text-red-400">*</Text></Text>
+                    <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
                     {/* Split positions into rows for better layout */}
                     {(() => {
                       const posCount = positions.length;
@@ -2301,13 +2303,13 @@ export default function AdminScreen() {
                                   }
                                 }}
                                 className={cn(
-                                  'flex-1 py-2 rounded-lg items-center',
-                                  isSelected ? 'bg-cyan-500' : 'bg-slate-800'
+                                  'flex-1 py-3 rounded-xl items-center border',
+                                  isSelected ? 'bg-cyan-500 border-cyan-400' : 'bg-slate-800 border-slate-700'
                                 )}
                               >
                                 <Text
                                   className={cn(
-                                    'font-semibold text-sm',
+                                    'font-semibold',
                                     isSelected ? 'text-white' : 'text-slate-400'
                                   )}
                                 >
@@ -2342,7 +2344,7 @@ export default function AdminScreen() {
                   placeholder="(555)123-4567"
                   placeholderTextColor="#64748b"
                   keyboardType="phone-pad"
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                 />
               </View>
 
@@ -2359,7 +2361,7 @@ export default function AdminScreen() {
                   placeholderTextColor="#64748b"
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                 />
               </View>
 

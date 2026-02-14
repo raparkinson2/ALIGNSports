@@ -867,34 +867,34 @@ export default function RosterScreen() {
               <View className="flex-row mb-5">
                 {/* First Name Input */}
                 <View className="flex-1 mr-2">
-                  <Text className="text-slate-300 text-sm mb-2">First Name<Text className="text-red-400 font-bold">*</Text></Text>
+                  <Text className="text-slate-400 text-sm mb-2">First Name<Text className="text-red-400">*</Text></Text>
                   <TextInput
                     value={firstName}
                     onChangeText={setFirstName}
                     placeholder="First"
                     placeholderTextColor="#64748b"
                     autoCapitalize="words"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                   />
                 </View>
 
                 {/* Last Name Input */}
                 <View className="flex-1 ml-2">
-                  <Text className="text-slate-300 text-sm mb-2">Last Name<Text className="text-red-400 font-bold">*</Text></Text>
+                  <Text className="text-slate-400 text-sm mb-2">Last Name<Text className="text-red-400">*</Text></Text>
                   <TextInput
                     value={lastName}
                     onChangeText={setLastName}
                     placeholder="Last"
                     placeholderTextColor="#64748b"
                     autoCapitalize="words"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                   />
                 </View>
               </View>
 
               {/* Jersey Number Row */}
               <View className="mb-5">
-                <Text className="text-slate-300 text-sm mb-2">Jersey Number<Text className="text-red-400 font-bold">*</Text></Text>
+                <Text className="text-slate-400 text-sm mb-2">Jersey Number<Text className="text-red-400">*</Text></Text>
                 <TextInput
                   value={number}
                   onChangeText={setNumber}
@@ -902,7 +902,7 @@ export default function RosterScreen() {
                   placeholderTextColor="#64748b"
                   keyboardType="number-pad"
                   maxLength={2}
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                   style={{ width: 100 }}
                 />
               </View>
@@ -920,7 +920,7 @@ export default function RosterScreen() {
                     placeholder="(555)123-4567"
                     placeholderTextColor="#64748b"
                     keyboardType="phone-pad"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                   />
                 </View>
               )}
@@ -939,7 +939,7 @@ export default function RosterScreen() {
                     placeholderTextColor="#64748b"
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
                   />
                 </View>
               )}
@@ -947,7 +947,7 @@ export default function RosterScreen() {
               {/* Position Selector - Multiple Selection - Hidden for coaches and parents */}
               {memberRole !== 'coach' && memberRole !== 'parent' && (
                 <View className="mb-5">
-                  <Text className="text-slate-300 text-sm mb-1">Positions<Text className="text-red-400 font-bold">*</Text></Text>
+                  <Text className="text-slate-400 text-sm mb-1">Positions<Text className="text-red-400">*</Text></Text>
                   <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
                   {/* Split positions into rows for better layout */}
                   {(() => {
@@ -973,21 +973,14 @@ export default function RosterScreen() {
                                 }
                               }}
                               className={cn(
-                                'flex-1 py-2.5 rounded-xl items-center border',
-                                isSelected ? 'bg-cyan-500 border-cyan-400' : 'bg-slate-800/80 border-slate-700'
+                                'flex-1 py-3 rounded-xl items-center border',
+                                isSelected ? 'bg-cyan-500 border-cyan-400' : 'bg-slate-800 border-slate-700'
                               )}
-                              style={isSelected ? {
-                                shadowColor: '#22d3ee',
-                                shadowOffset: { width: 0, height: 2 },
-                                shadowOpacity: 0.3,
-                                shadowRadius: 4,
-                                elevation: 3,
-                              } : undefined}
                             >
                               <Text
                                 className={cn(
                                   'font-semibold',
-                                  isSelected ? 'text-white' : 'text-slate-500'
+                                  isSelected ? 'text-white' : 'text-slate-400'
                                 )}
                               >
                                 {pos}
