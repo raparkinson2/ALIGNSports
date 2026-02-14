@@ -544,49 +544,49 @@ export default function EventDetailScreen() {
             </Animated.View>
 
             {/* Release Invites Status - Visible to admins/captains */}
-            {canManageTeam() && (
-              <Animated.View entering={FadeInDown.delay(350).springify()} className="mt-4">
-                <Pressable
-                  onPress={() => {
-                    if (!event.invitesSent) {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      // Initialize edit state with current values
-                      setEditInviteReleaseOption(event.inviteReleaseOption || 'now');
-                      setEditInviteReleaseDate(event.inviteReleaseDate ? parseISO(event.inviteReleaseDate) : new Date());
-                      setShowEditInviteReleaseDatePicker(false);
-                      setIsReleaseInvitesModalVisible(true);
-                    }
-                  }}
-                  disabled={event.invitesSent}
-                  className="flex-row items-center justify-center py-2.5 px-3 bg-slate-800/40 rounded-xl active:bg-slate-700/40"
-                >
-                  <Calendar size={14} color="#67e8f9" />
-                  <Text className="text-cyan-400 text-sm ml-1.5">Release Invites:</Text>
-                  {event.invitesSent ? (
-                    <View className="flex-row items-center ml-1.5">
-                      <Check size={14} color="#22c55e" />
-                      <Text className="text-green-400 text-sm ml-1">Invites sent</Text>
-                    </View>
-                  ) : event.inviteReleaseOption === 'scheduled' && event.inviteReleaseDate ? (
-                    // Check if scheduled time has passed
-                    new Date() >= parseISO(event.inviteReleaseDate) ? (
+            {canManageTeam() && (() => {
+              // Check if invites are considered sent (either explicitly or scheduled time passed)
+              const scheduledTimePassed = event.inviteReleaseOption === 'scheduled' &&
+                event.inviteReleaseDate &&
+                new Date() >= parseISO(event.inviteReleaseDate);
+              const invitesAreSent = Boolean(event.invitesSent || scheduledTimePassed);
+
+              return (
+                <Animated.View entering={FadeInDown.delay(350).springify()} className="mt-4">
+                  <Pressable
+                    onPress={() => {
+                      if (!invitesAreSent) {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        // Initialize edit state with current values
+                        setEditInviteReleaseOption(event.inviteReleaseOption || 'now');
+                        setEditInviteReleaseDate(event.inviteReleaseDate ? parseISO(event.inviteReleaseDate) : new Date());
+                        setShowEditInviteReleaseDatePicker(false);
+                        setIsReleaseInvitesModalVisible(true);
+                      }
+                    }}
+                    disabled={invitesAreSent}
+                    className="flex-row items-center justify-center py-2.5 px-3 bg-slate-800/40 rounded-xl active:bg-slate-700/40"
+                  >
+                    <Calendar size={14} color="#67e8f9" />
+                    <Text className="text-cyan-400 text-sm ml-1.5">Release Invites:</Text>
+                    {invitesAreSent ? (
                       <View className="flex-row items-center ml-1.5">
                         <Check size={14} color="#22c55e" />
                         <Text className="text-green-400 text-sm ml-1">Invites sent</Text>
                       </View>
-                    ) : (
+                    ) : event.inviteReleaseOption === 'scheduled' && event.inviteReleaseDate ? (
                       <Text className="text-amber-400 text-sm ml-1.5">
                         Scheduled {format(parseISO(event.inviteReleaseDate), 'MMM d, h:mm a')}
                       </Text>
-                    )
-                  ) : event.inviteReleaseOption === 'none' ? (
-                    <Text className="text-slate-400 text-sm ml-1.5">Not scheduled</Text>
-                  ) : (
-                    <Text className="text-green-400 text-sm ml-1.5">Ready to send</Text>
-                  )}
-                </Pressable>
-              </Animated.View>
-            )}
+                    ) : event.inviteReleaseOption === 'none' ? (
+                      <Text className="text-slate-400 text-sm ml-1.5">Not scheduled</Text>
+                    ) : (
+                      <Text className="text-green-400 text-sm ml-1.5">Ready to send</Text>
+                    )}
+                  </Pressable>
+                </Animated.View>
+              );
+            })()}
 
             {/* RSVP / Check In Summary */}
             <Animated.View entering={FadeInDown.delay(400).springify()} className="mt-6">
