@@ -862,12 +862,12 @@ export default function RosterScreen() {
               </Pressable>
             </View>
 
-            <ScrollView className="flex-1 px-5 pt-6">
+            <ScrollView className="flex-1 px-5 pt-4">
               {/* First Name and Last Name Row */}
-              <View className="flex-row mb-5">
+              <View className="flex-row mb-3">
                 {/* First Name Input */}
                 <View className="flex-1 mr-2">
-                  <Text className="text-slate-400 text-sm mb-2">First Name<Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-400 text-sm mb-1">First Name<Text className="text-red-400">*</Text></Text>
                   <TextInput
                     value={firstName}
                     onChangeText={setFirstName}
@@ -880,7 +880,7 @@ export default function RosterScreen() {
 
                 {/* Last Name Input */}
                 <View className="flex-1 ml-2">
-                  <Text className="text-slate-400 text-sm mb-2">Last Name<Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-400 text-sm mb-1">Last Name<Text className="text-red-400">*</Text></Text>
                   <TextInput
                     value={lastName}
                     onChangeText={setLastName}
@@ -893,8 +893,8 @@ export default function RosterScreen() {
               </View>
 
               {/* Jersey Number Row */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Jersey Number<Text className="text-red-400">*</Text></Text>
+              <View className="mb-3">
+                <Text className="text-slate-400 text-sm mb-1">Jersey Number<Text className="text-red-400">*</Text></Text>
                 <TextInput
                   value={number}
                   onChangeText={setNumber}
@@ -909,8 +909,8 @@ export default function RosterScreen() {
 
               {/* Phone Input - Admin Only */}
               {isAdmin() && (
-                <View className="mb-5">
-                  <View className="flex-row items-center mb-2">
+                <View className="mb-3">
+                  <View className="flex-row items-center mb-1">
                     <Phone size={14} color="#a78bfa" />
                     <Text className="text-slate-400 text-sm ml-2">Phone (Admin Only)</Text>
                   </View>
@@ -927,8 +927,8 @@ export default function RosterScreen() {
 
               {/* Email Input - Admin Only */}
               {isAdmin() && (
-                <View className="mb-5">
-                  <View className="flex-row items-center mb-2">
+                <View className="mb-3">
+                  <View className="flex-row items-center mb-1">
                     <Mail size={14} color="#a78bfa" />
                     <Text className="text-slate-400 text-sm ml-2">Email (Admin Only)</Text>
                   </View>
@@ -946,9 +946,9 @@ export default function RosterScreen() {
 
               {/* Position Selector - Multiple Selection - Hidden for coaches and parents */}
               {memberRole !== 'coach' && memberRole !== 'parent' && (
-                <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-1">Positions<Text className="text-red-400">*</Text></Text>
-                  <Text className="text-slate-500 text-xs mb-2">Tap to select multiple positions</Text>
+                <View className="mb-3">
+                  <Text className="text-slate-400 text-sm mb-0.5">Positions<Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-500 text-xs mb-1.5">Tap to select multiple positions</Text>
                   {/* Split positions into rows for better layout */}
                   {(() => {
                     const posCount = positions.length;
@@ -1006,8 +1006,8 @@ export default function RosterScreen() {
 
               {/* Player Status - Admin Only */}
               {isAdmin() && (
-                <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Player Status</Text>
+                <View className="mb-3">
+                  <Text className="text-slate-400 text-sm mb-1.5">Player Status</Text>
                   <View className="flex-row mb-2">
                     <Pressable
                       onPress={() => {
@@ -1180,8 +1180,8 @@ export default function RosterScreen() {
 
               {/* Roles - Admin Only */}
               {isAdmin() && (
-                <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Roles</Text>
+                <View className="mb-3">
+                  <Text className="text-slate-400 text-sm mb-1.5">Roles</Text>
                   {(() => {
                     const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
                     const showCoach = enabledRoles.includes('coach');
