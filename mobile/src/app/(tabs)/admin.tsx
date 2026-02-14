@@ -1063,7 +1063,7 @@ export default function AdminScreen() {
 
           {/* Team Structure Section */}
           <Animated.View entering={FadeInDown.delay(150).springify()}>
-            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4 mt-4">
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4 mt-2">
               Team Structure
             </Text>
 
@@ -1176,7 +1176,7 @@ export default function AdminScreen() {
 
           {/* Communication Section */}
           <Animated.View entering={FadeInDown.delay(200).springify()}>
-            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4 mt-4">
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4 mt-2">
               Communication
             </Text>
 
