@@ -25,7 +25,11 @@
       "package": "com.vibecode.alignsports",
       "versionCode": 2
     },
-    "extra": {},
+    "extra": {
+      "eas": {
+        "projectId": "your-eas-project-id-here"
+      }
+    },
     "plugins": [
       "expo-router"
     ],
