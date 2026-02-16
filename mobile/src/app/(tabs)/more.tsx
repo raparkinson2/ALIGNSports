@@ -33,6 +33,8 @@ import {
   UserCheck,
   HelpCircle,
   TrendingUp,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -1046,6 +1048,7 @@ export default function MoreScreen() {
   const [linksModalVisible, setLinksModalVisible] = useState(false);
   const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isStatsExpanded, setIsStatsExpanded] = useState(false);
 
   // Email Team modal state
   const [isEmailModalVisible, setIsEmailModalVisible] = useState(false);
@@ -1297,6 +1300,70 @@ export default function MoreScreen() {
             index={3}
           />
 
+          {/* Stats and Analytics - Expandable */}
+          <Animated.View entering={FadeInDown.delay(200).springify()}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsStatsExpanded(!isStatsExpanded);
+              }}
+              className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
+            >
+              <View className="w-10 h-10 rounded-full items-center justify-center bg-cyan-500/20">
+                <TrendingUp size={20} color="#67e8f9" />
+              </View>
+              <View className="flex-1 ml-3">
+                <Text className="font-semibold text-white">Stats and Analytics</Text>
+                <Text className="text-slate-400 text-sm">Attendance and team statistics</Text>
+              </View>
+              {isStatsExpanded ? (
+                <ChevronUp size={20} color="#64748b" />
+              ) : (
+                <ChevronDown size={20} color="#64748b" />
+              )}
+            </Pressable>
+
+            {isStatsExpanded && (
+              <View className="ml-6 mb-3">
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push('/attendance');
+                  }}
+                  className="flex-row items-center py-3 px-4 bg-slate-800/40 rounded-xl mb-2 active:bg-slate-700/80"
+                >
+                  <View className="w-8 h-8 rounded-full items-center justify-center bg-cyan-500/20">
+                    <UserCheck size={16} color="#67e8f9" />
+                  </View>
+                  <View className="flex-1 ml-3">
+                    <Text className="font-medium text-white">Attendance</Text>
+                    <Text className="text-slate-400 text-xs">Track check-ins and rates</Text>
+                  </View>
+                  <ChevronRight size={18} color="#64748b" />
+                </Pressable>
+
+                {showTeamStats && (
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      router.push('/team-stats');
+                    }}
+                    className="flex-row items-center py-3 px-4 bg-slate-800/40 rounded-xl mb-2 active:bg-slate-700/80"
+                  >
+                    <View className="w-8 h-8 rounded-full items-center justify-center bg-cyan-500/20">
+                      <BarChart3 size={16} color="#67e8f9" />
+                    </View>
+                    <View className="flex-1 ml-3">
+                      <Text className="font-medium text-white">View Team Stats</Text>
+                      <Text className="text-slate-400 text-xs">Player and team statistics</Text>
+                    </View>
+                    <ChevronRight size={18} color="#64748b" />
+                  </Pressable>
+                )}
+              </View>
+            )}
+          </Animated.View>
+
           <MenuItem
             icon={<Plus size={20} color="#67e8f9" />}
             title="Create New Team"
@@ -1304,29 +1371,6 @@ export default function MoreScreen() {
             onPress={() => router.push('/create-new-team')}
             index={4}
           />
-
-          {/* Stats and Analytics Section */}
-          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
-            Stats and Analytics
-          </Text>
-
-          <MenuItem
-            icon={<UserCheck size={20} color="#67e8f9" />}
-            title="Attendance"
-            subtitle="Track check-ins and attendance rates"
-            onPress={() => router.push('/attendance')}
-            index={5}
-          />
-
-          {showTeamStats && (
-            <MenuItem
-              icon={<TrendingUp size={20} color="#67e8f9" />}
-              title="View Team Stats"
-              subtitle="View player and team statistics"
-              onPress={() => router.push('/team-stats')}
-              index={6}
-            />
-          )}
 
           {/* Communication & Alerts Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
