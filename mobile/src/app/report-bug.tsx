@@ -230,7 +230,7 @@ export default function ReportBugScreen() {
               entering={FadeInDown.delay(150).springify()}
               className="mb-2"
             >
-              <Text className="text-slate-300 text-sm font-medium mb-1.5">Bug Title</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-1.5">Bug Title<Text className="text-red-400"> *</Text></Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
@@ -248,7 +248,7 @@ export default function ReportBugScreen() {
               entering={FadeInDown.delay(200).springify()}
               className="mb-2"
             >
-              <Text className="text-slate-300 text-sm font-medium mb-1.5">What happened?</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-1.5">What happened?<Text className="text-red-400"> *</Text></Text>
               <TextInput
                 value={description}
                 onChangeText={setDescription}
@@ -270,7 +270,7 @@ export default function ReportBugScreen() {
               entering={FadeInDown.delay(250).springify()}
               className="mb-2"
             >
-              <Text className="text-slate-300 text-sm font-medium mb-1.5">Steps to reproduce</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-1.5">Steps to reproduce<Text className="text-red-400"> *</Text></Text>
               <TextInput
                 value={stepsToReproduce}
                 onChangeText={setStepsToReproduce}
