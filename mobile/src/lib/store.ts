@@ -702,6 +702,7 @@ export interface ArchivedPlayerStats {
   playerName: string;
   jerseyNumber: string;
   position: string;
+  positions?: string[]; // All positions player can play
   stats?: PlayerStats;
   goalieStats?: HockeyGoalieStats | SoccerGoalieStats | LacrosseGoalieStats;
   pitcherStats?: BaseballPitcherStats;
@@ -1664,14 +1665,14 @@ export const useTeamStore = create<TeamStore>()(
         const players = state.players;
         const sport = state.teamSettings.sport;
 
-        // 1. Create archived player stats for players with any stats
+        // 1. Create archived player stats for ALL players (so we can show full roster)
         const archivedPlayerStats: ArchivedPlayerStats[] = players
-          .filter(p => p.stats || p.goalieStats || p.pitcherStats)
           .map(player => ({
             playerId: player.id,
             playerName: getPlayerName(player),
             jerseyNumber: player.number,
             position: player.position,
+            positions: player.positions || [player.position],
             stats: player.stats,
             goalieStats: player.goalieStats,
             pitcherStats: player.pitcherStats,

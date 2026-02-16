@@ -168,25 +168,100 @@ export default function SeasonHistoryScreen() {
                               Players ({season.playerStats.length})
                             </Text>
                           </View>
-                          {season.playerStats.slice(0, 5).map((player) => (
-                            <View
-                              key={player.playerId}
-                              className="flex-row items-center py-1.5 border-b border-slate-700/30 last:border-b-0"
-                            >
-                              <View className="w-6 h-6 rounded-full bg-slate-700 items-center justify-center mr-2">
-                                <Text className="text-slate-300 text-xs font-bold">
-                                  {player.jerseyNumber}
-                                </Text>
+                          {season.playerStats.map((player) => {
+                            // Get positions display (use positions array if available, fallback to single position)
+                            const positionsDisplay = player.positions?.length
+                              ? player.positions.join('/')
+                              : player.position;
+
+                            // Get stats summary based on sport
+                            const getStatsSummary = (): string => {
+                              if (season.sport === 'hockey') {
+                                // Check if goalie
+                                if (player.goalieStats) {
+                                  const gs = player.goalieStats as { games?: number; wins?: number; losses?: number; saves?: number; goalsAgainst?: number };
+                                  const svPct = gs.saves && gs.goalsAgainst !== undefined
+                                    ? ((gs.saves / (gs.saves + gs.goalsAgainst)) * 100).toFixed(1)
+                                    : '0.0';
+                                  return `${gs.games ?? 0}GP, ${gs.wins ?? 0}W, ${svPct}%`;
+                                }
+                                if (player.stats) {
+                                  const s = player.stats as { gamesPlayed?: number; goals?: number; assists?: number; pim?: number };
+                                  const pts = (s.goals ?? 0) + (s.assists ?? 0);
+                                  return `${s.gamesPlayed ?? 0}GP, ${s.goals ?? 0}G, ${s.assists ?? 0}A, ${pts}P`;
+                                }
+                              } else if (season.sport === 'soccer') {
+                                if (player.goalieStats) {
+                                  const gs = player.goalieStats as { games?: number; wins?: number; saves?: number; goalsAgainst?: number };
+                                  const svPct = gs.saves && gs.goalsAgainst !== undefined
+                                    ? ((gs.saves / (gs.saves + gs.goalsAgainst)) * 100).toFixed(1)
+                                    : '0.0';
+                                  return `${gs.games ?? 0}GP, ${gs.wins ?? 0}W, ${svPct}%`;
+                                }
+                                if (player.stats) {
+                                  const s = player.stats as { gamesPlayed?: number; goals?: number; assists?: number };
+                                  return `${s.gamesPlayed ?? 0}GP, ${s.goals ?? 0}G, ${s.assists ?? 0}A`;
+                                }
+                              } else if (season.sport === 'basketball') {
+                                if (player.stats) {
+                                  const s = player.stats as { gamesPlayed?: number; points?: number; rebounds?: number; assists?: number };
+                                  return `${s.gamesPlayed ?? 0}GP, ${s.points ?? 0}PTS, ${s.rebounds ?? 0}REB`;
+                                }
+                              } else if (season.sport === 'baseball' || season.sport === 'softball') {
+                                if (player.pitcherStats) {
+                                  const ps = player.pitcherStats as { wins?: number; losses?: number; strikeouts?: number; innings?: number; earnedRuns?: number };
+                                  const era = ps.innings && ps.innings > 0
+                                    ? ((ps.earnedRuns ?? 0) / ps.innings * 9).toFixed(2)
+                                    : '0.00';
+                                  return `${ps.wins ?? 0}W-${ps.losses ?? 0}L, ${era} ERA`;
+                                }
+                                if (player.stats) {
+                                  const s = player.stats as { gamesPlayed?: number; atBats?: number; hits?: number; homeRuns?: number };
+                                  const avg = s.atBats && s.atBats > 0
+                                    ? ((s.hits ?? 0) / s.atBats).toFixed(3).substring(1)
+                                    : '.000';
+                                  return `${s.gamesPlayed ?? 0}GP, ${avg} AVG, ${s.homeRuns ?? 0}HR`;
+                                }
+                              } else if (season.sport === 'lacrosse') {
+                                if (player.goalieStats) {
+                                  const gs = player.goalieStats as { games?: number; wins?: number; saves?: number; goalsAgainst?: number };
+                                  const svPct = gs.saves && gs.goalsAgainst !== undefined
+                                    ? ((gs.saves / (gs.saves + gs.goalsAgainst)) * 100).toFixed(1)
+                                    : '0.0';
+                                  return `${gs.games ?? 0}GP, ${gs.wins ?? 0}W, ${svPct}%`;
+                                }
+                                if (player.stats) {
+                                  const s = player.stats as { gamesPlayed?: number; goals?: number; assists?: number; groundBalls?: number };
+                                  return `${s.gamesPlayed ?? 0}GP, ${s.goals ?? 0}G, ${s.assists ?? 0}A`;
+                                }
+                              }
+                              return '';
+                            };
+
+                            const statsSummary = getStatsSummary();
+
+                            return (
+                              <View
+                                key={player.playerId}
+                                className="py-2 border-b border-slate-700/30 last:border-b-0"
+                              >
+                                <View className="flex-row items-center">
+                                  <View className="w-7 h-7 rounded-full bg-slate-700 items-center justify-center mr-2">
+                                    <Text className="text-slate-300 text-xs font-bold">
+                                      {player.jerseyNumber}
+                                    </Text>
+                                  </View>
+                                  <Text className="text-white text-sm flex-1">{player.playerName}</Text>
+                                  <Text className="text-slate-400 text-xs">{positionsDisplay}</Text>
+                                </View>
+                                {statsSummary && (
+                                  <Text className="text-cyan-400/80 text-xs mt-1 ml-9">
+                                    {statsSummary}
+                                  </Text>
+                                )}
                               </View>
-                              <Text className="text-white text-sm flex-1">{player.playerName}</Text>
-                              <Text className="text-slate-400 text-xs">{player.position}</Text>
-                            </View>
-                          ))}
-                          {season.playerStats.length > 5 && (
-                            <Text className="text-slate-500 text-xs mt-2 text-center">
-                              +{season.playerStats.length - 5} more players
-                            </Text>
-                          )}
+                            );
+                          })}
                         </View>
                       )}
                     </View>
