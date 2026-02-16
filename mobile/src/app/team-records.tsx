@@ -53,7 +53,7 @@ export default function TeamRecordsScreen() {
     const currentRecord = teamSettings.record;
 
     // Gather all seasons (archived + current)
-    type SeasonData = { name: string; wins: number; losses: number; ties: number; winStreak: number; loseStreak: number };
+    type SeasonData = { name: string; wins: number; losses: number; ties: number; winStreak: number; loseStreak: number; teamGoals: number };
     const allSeasons: SeasonData[] = [];
 
     // Add archived seasons
@@ -65,6 +65,7 @@ export default function TeamRecordsScreen() {
         ties: season.teamRecord.ties ?? 0,
         winStreak: season.teamRecord.longestWinStreak ?? 0,
         loseStreak: season.teamRecord.longestLosingStreak ?? 0,
+        teamGoals: season.teamRecord.teamGoals ?? 0,
       });
     });
 
@@ -80,6 +81,7 @@ export default function TeamRecordsScreen() {
         ties: currentTies,
         winStreak: currentRecord?.longestWinStreak ?? 0,
         loseStreak: currentRecord?.longestLosingStreak ?? 0,
+        teamGoals: currentRecord?.teamGoals ?? 0,
       });
     }
 
@@ -144,8 +146,23 @@ export default function TeamRecordsScreen() {
       });
     }
 
+    // Find most team goals in a season (hockey, soccer, lacrosse only)
+    const sport = teamSettings.sport || 'hockey';
+    if (sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') {
+      const mostGoalsSeason = allSeasons.reduce((best, season) =>
+        season.teamGoals > best.teamGoals ? season : best
+      , allSeasons[0]);
+      if (mostGoalsSeason.teamGoals > 0) {
+        records.push({
+          title: 'Most Team Goals (Season)',
+          value: `${mostGoalsSeason.teamGoals} (${mostGoalsSeason.name})`,
+          icon: <Target size={18} color="#22c55e" />,
+        });
+      }
+    }
+
     return records;
-  }, [teamSettings.record, seasonHistory, teamSettings.currentSeasonName]);
+  }, [teamSettings.record, seasonHistory, teamSettings.currentSeasonName, teamSettings.sport]);
 
   // Calculate individual records based on sport (best single-season performance)
   const individualRecords = useMemo((): RecordCategory[] => {

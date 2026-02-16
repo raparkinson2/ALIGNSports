@@ -269,6 +269,18 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
     - View game log history at bottom of modal
     - Delete individual game entries
     - Cumulative stats automatically calculated from all game logs
+- **Team Records**: View all-time team and individual records
+  - **Championships**: Track team championship wins with year and title
+  - **Team Records**: Historical team achievements across all seasons
+    - Best Season Record (by win percentage)
+    - Most Wins (Season)
+    - Longest Win Streak
+    - Longest Losing Streak
+    - Most Team Goals (Season) - for hockey, soccer, and lacrosse
+  - **Individual Records**: Best single-season performances per player
+    - Sport-specific records (goals, assists, points, etc.)
+    - Shows player name, value, and which season they set the record
+  - Records persist across archived seasons and show the year set
 - **Feature Request**: Submit suggestions for new app features via email
 - **Report Bug**: Report issues and bugs via email
 - **My Availability**: Set dates when you're unavailable

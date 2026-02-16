@@ -959,6 +959,7 @@ export default function ScheduleScreen() {
   const [recordOtLosses, setRecordOtLosses] = useState(teamSettings.record?.otLosses?.toString() ?? '0');
   const [recordWinStreak, setRecordWinStreak] = useState(teamSettings.record?.longestWinStreak?.toString() ?? '0');
   const [recordLosingStreak, setRecordLosingStreak] = useState(teamSettings.record?.longestLosingStreak?.toString() ?? '0');
+  const [recordTeamGoals, setRecordTeamGoals] = useState(teamSettings.record?.teamGoals?.toString() ?? '0');
 
   const sport = teamSettings.sport;
 
@@ -1320,6 +1321,7 @@ export default function ScheduleScreen() {
                 setRecordOtLosses(teamSettings.record?.otLosses?.toString() ?? '0');
                 setRecordWinStreak(teamSettings.record?.longestWinStreak?.toString() ?? '0');
                 setRecordLosingStreak(teamSettings.record?.longestLosingStreak?.toString() ?? '0');
+                setRecordTeamGoals(teamSettings.record?.teamGoals?.toString() ?? '0');
                 setIsRecordModalVisible(true);
               }
             }}
@@ -2167,6 +2169,7 @@ export default function ScheduleScreen() {
                 onPress={() => {
                   const winStreak = parseInt(recordWinStreak, 10) || 0;
                   const losingStreak = parseInt(recordLosingStreak, 10) || 0;
+                  const teamGoals = parseInt(recordTeamGoals, 10) || 0;
                   const newRecord: TeamRecord = {
                     wins: parseInt(recordWins, 10) || 0,
                     losses: parseInt(recordLosses, 10) || 0,
@@ -2174,6 +2177,7 @@ export default function ScheduleScreen() {
                     otLosses: sport === 'hockey' ? (parseInt(recordOtLosses, 10) || 0) : undefined,
                     longestWinStreak: winStreak > 0 ? winStreak : undefined,
                     longestLosingStreak: losingStreak > 0 ? losingStreak : undefined,
+                    teamGoals: (sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') && teamGoals > 0 ? teamGoals : undefined,
                   };
                   setTeamSettings({ record: newRecord });
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -2271,6 +2275,21 @@ export default function ScheduleScreen() {
                     className="bg-slate-800 rounded-xl px-4 py-3 text-white text-xl text-center font-bold"
                   />
                 </View>
+
+                {/* Team Goals (Hockey, Soccer, Lacrosse) */}
+                {(sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') && (
+                  <View className="w-1/2 pr-2 mb-4">
+                    <Text className="text-slate-400 text-sm mb-2">Team Goals</Text>
+                    <TextInput
+                      value={recordTeamGoals}
+                      onChangeText={setRecordTeamGoals}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      placeholderTextColor="#64748b"
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-xl text-center font-bold"
+                    />
+                  </View>
+                )}
               </View>
 
               {/* Clear record button */}

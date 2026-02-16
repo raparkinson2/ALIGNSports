@@ -659,6 +659,7 @@ export interface TeamRecord {
   otLosses?: number; // Hockey only (Overtime losses)
   longestWinStreak?: number; // Longest consecutive wins
   longestLosingStreak?: number; // Longest consecutive losses
+  teamGoals?: number; // Total team goals scored in season (hockey, soccer, lacrosse)
 }
 
 // View mode type for upcoming games
@@ -1684,6 +1685,7 @@ export const useTeamStore = create<TeamStore>()(
           otLosses: currentRecord?.otLosses,
           longestWinStreak: currentRecord?.longestWinStreak,
           longestLosingStreak: currentRecord?.longestLosingStreak,
+          teamGoals: currentRecord?.teamGoals,
         };
 
         // 3. Create archived season
