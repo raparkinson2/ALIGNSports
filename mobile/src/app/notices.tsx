@@ -103,7 +103,8 @@ export default function NoticesScreen() {
                     </View>
                     <View className="bg-slate-700/30 rounded-lg p-3">
                       <Text className="text-slate-300 text-sm leading-6">
-                        {'\u2022'} Edit Any Player Profile
+                        {'\u2022'} Edit Any Player Profile{'\n'}
+                        {'\u2022'} Edit Player Stats
                       </Text>
                     </View>
                   </View>
@@ -142,6 +143,7 @@ export default function NoticesScreen() {
                         {'\u2022'} Delete Own Polls{'\n'}
                         {'\u2022'} Check In/Out Self{'\n'}
                         {'\u2022'} Edit Own Profile{'\n'}
+                        {'\u2022'} Edit Own Stats (if enabled){'\n'}
                         {'\u2022'} View Schedule, Roster, Chat, Photos, Payments
                       </Text>
                     </View>
