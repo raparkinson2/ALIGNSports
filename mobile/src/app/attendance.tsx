@@ -33,11 +33,16 @@ export default function AttendanceScreen() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Get past games
-  const pastGames = useMemo(() => {
+  // Get games with attendance data (past games OR games where someone has responded)
+  const gamesWithAttendance = useMemo(() => {
     const now = new Date();
     return games
-      .filter((game) => new Date(game.date) < now)
+      .filter((game) => {
+        const isPast = new Date(game.date) < now;
+        const hasResponses = (game.checkedInPlayers?.length ?? 0) > 0 || (game.checkedOutPlayers?.length ?? 0) > 0;
+        // Include past games OR games where someone has already checked in/out
+        return isPast || hasResponses;
+      })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [games]);
 
@@ -48,7 +53,7 @@ export default function AttendanceScreen() {
       let gamesOut = 0;
       let noResponse = 0;
 
-      pastGames.forEach((game) => {
+      gamesWithAttendance.forEach((game) => {
         if (game.invitedPlayers?.includes(player.id)) {
           if (game.checkedInPlayers?.includes(player.id)) {
             gamesIn++;
@@ -82,7 +87,7 @@ export default function AttendanceScreen() {
         }
         return b.totalGames - a.totalGames;
       });
-  }, [players, pastGames]);
+  }, [players, gamesWithAttendance]);
 
   // Team totals
   const teamTotals = useMemo(() => {
@@ -105,7 +110,7 @@ export default function AttendanceScreen() {
   const playerGameAttendance = useMemo((): GameAttendance[] => {
     if (!selectedPlayer) return [];
 
-    return pastGames
+    return gamesWithAttendance
       .filter((game) => game.invitedPlayers?.includes(selectedPlayer.id))
       .map((game) => {
         let response: 'in' | 'out' | 'no_response' = 'no_response';
@@ -122,7 +127,7 @@ export default function AttendanceScreen() {
           response,
         };
       });
-  }, [selectedPlayer, pastGames]);
+  }, [selectedPlayer, gamesWithAttendance]);
 
   const getPlayer = (playerId: string) => players.find((p) => p.id === playerId);
 
