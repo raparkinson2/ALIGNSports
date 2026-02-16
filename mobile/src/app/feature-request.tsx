@@ -36,6 +36,11 @@ export default function FeatureRequestScreen() {
       return;
     }
 
+    if (!reasonForRequest.trim()) {
+      Alert.alert('Missing Reason', 'Please explain why this feature would be helpful.');
+      return;
+    }
+
     setIsSubmitting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -46,7 +51,7 @@ export default function FeatureRequestScreen() {
         `================\n\n` +
         `Title: ${title.trim()}\n\n` +
         `Description:\n${description.trim()}\n\n` +
-        `Reason for Request:\n${reasonForRequest.trim() || 'Not provided'}\n\n` +
+        `Reason for Request:\n${reasonForRequest.trim()}\n\n` +
         `---\n` +
         `Submitted by: ${currentPlayer ? getPlayerName(currentPlayer) : 'Unknown'}\n` +
         `Contact Email: ${contactEmail.trim() || 'Not provided'}\n` +
@@ -224,7 +229,7 @@ export default function FeatureRequestScreen() {
               entering={FadeInDown.delay(150).springify()}
               className="mb-2"
             >
-              <Text className="text-slate-300 text-sm font-medium mb-1.5">Feature Title</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-1.5">Feature Title<Text className="text-red-400"> *</Text></Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
@@ -242,7 +247,7 @@ export default function FeatureRequestScreen() {
               entering={FadeInDown.delay(200).springify()}
               className="mb-2"
             >
-              <Text className="text-slate-300 text-sm font-medium mb-1.5">Description</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-1.5">Description<Text className="text-red-400"> *</Text></Text>
               <TextInput
                 value={description}
                 onChangeText={setDescription}
@@ -264,7 +269,7 @@ export default function FeatureRequestScreen() {
               entering={FadeInDown.delay(250).springify()}
               className="mb-2"
             >
-              <Text className="text-slate-300 text-sm font-medium mb-1.5">Reason for request (optional)</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-1.5">Reason for request<Text className="text-red-400"> *</Text></Text>
               <TextInput
                 value={reasonForRequest}
                 onChangeText={setReasonForRequest}
@@ -304,11 +309,11 @@ export default function FeatureRequestScreen() {
             <Animated.View entering={FadeInDown.delay(350).springify()}>
               <Pressable
                 onPress={handleSubmit}
-                disabled={isSubmitting || !title.trim() || !description.trim()}
+                disabled={isSubmitting || !title.trim() || !description.trim() || !reasonForRequest.trim()}
                 className={`rounded-xl py-4 items-center flex-row justify-center ${
-                  isSubmitting || !title.trim() || !description.trim() ? 'bg-cyan-600/40' : 'bg-cyan-500 active:bg-cyan-600'
+                  isSubmitting || !title.trim() || !description.trim() || !reasonForRequest.trim() ? 'bg-cyan-600/40' : 'bg-cyan-500 active:bg-cyan-600'
                 }`}
-                style={(!isSubmitting && title.trim() && description.trim()) ? {
+                style={(!isSubmitting && title.trim() && description.trim() && reasonForRequest.trim()) ? {
                   shadowColor: '#22d3ee',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.4,
