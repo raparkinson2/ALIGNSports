@@ -681,6 +681,13 @@ export interface TeamSettings {
   enabledRoles?: ('player' | 'reserve' | 'coach' | 'parent')[]; // Which roles are available for this team
   isSoftball?: boolean; // If true, adds 10th fielder (Short Fielder) for softball
   showTeamRecords?: boolean; // Toggle to show/hide team records feature (requires showTeamStats)
+  championships?: Championship[]; // List of team championships
+}
+
+export interface Championship {
+  id: string;
+  year: string;
+  title: string;
 }
 
 // Multi-team support: A complete team with all its data
@@ -777,6 +784,10 @@ interface TeamStore {
   addTeamLink: (link: TeamLink) => void;
   updateTeamLink: (id: string, updates: Partial<TeamLink>) => void;
   removeTeamLink: (id: string) => void;
+
+  // Championships
+  addChampionship: (championship: Championship) => void;
+  removeChampionship: (id: string) => void;
 
   currentPlayerId: string | null;
   setCurrentPlayerId: (id: string | null) => void;
@@ -1592,6 +1603,20 @@ export const useTeamStore = create<TeamStore>()(
       })),
       removeTeamLink: (id) => set((state) => ({
         teamLinks: state.teamLinks.filter((l) => l.id !== id),
+      })),
+
+      // Championships
+      addChampionship: (championship) => set((state) => ({
+        teamSettings: {
+          ...state.teamSettings,
+          championships: [...(state.teamSettings.championships || []), championship],
+        },
+      })),
+      removeChampionship: (id) => set((state) => ({
+        teamSettings: {
+          ...state.teamSettings,
+          championships: (state.teamSettings.championships || []).filter((c) => c.id !== id),
+        },
       })),
 
       currentPlayerId: null, // No default player
