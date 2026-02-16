@@ -493,7 +493,7 @@ export default function TeamRecordsScreen() {
             </View>
 
             {/* Divider */}
-            <View className="h-px bg-slate-700/50 mt-5" />
+            <View className="h-px bg-slate-700/50 mt-5 mx-10" />
           </Animated.View>
 
           {/* Section 2: Team Records */}
@@ -530,7 +530,7 @@ export default function TeamRecordsScreen() {
             </View>
 
             {/* Divider */}
-            <View className="h-px bg-slate-700/50 mt-5" />
+            <View className="h-px bg-slate-700/50 mt-5 mx-10" />
           </Animated.View>
 
           {/* Section 3: Individual Records */}
