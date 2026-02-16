@@ -14,9 +14,10 @@ export default function TabLayout() {
   const showTeamChat = useTeamStore((s) => s.teamSettings.showTeamChat !== false);
   const showPhotos = useTeamStore((s) => s.teamSettings.showPhotos !== false);
 
-  // Derive admin status from reactive state
+  // Derive role status from reactive state
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
   const isAdminUser = currentPlayer?.roles?.includes('admin') ?? false;
+  const isParentUser = currentPlayer?.roles?.includes('parent') ?? false;
 
   // Count unread notifications for current player
   const unreadNotificationCount = notifications.filter(
@@ -95,7 +96,7 @@ export default function TabLayout() {
         name="chat"
         options={{
           title: 'Chat',
-          href: showTeamChat ? undefined : null,
+          href: showTeamChat && !isParentUser ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
@@ -134,7 +135,7 @@ export default function TabLayout() {
         name="photos"
         options={{
           title: 'Photos',
-          href: showPhotos ? undefined : null,
+          href: showPhotos && !isParentUser ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{

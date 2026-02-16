@@ -1956,7 +1956,7 @@ export const useTeamStore = create<TeamStore>()(
       canManageTeam: () => {
         const state = get();
         const currentPlayer = state.players.find((p) => p.id === state.currentPlayerId);
-        return currentPlayer?.roles?.includes('admin') || currentPlayer?.roles?.includes('captain') || false;
+        return currentPlayer?.roles?.includes('admin') || currentPlayer?.roles?.includes('captain') || currentPlayer?.roles?.includes('coach') || false;
       },
       isAdmin: () => {
         const state = get();
