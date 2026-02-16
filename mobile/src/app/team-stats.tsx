@@ -512,14 +512,15 @@ export default function TeamStatsScreen() {
 
   const sport = teamSettings.sport || 'hockey';
 
-  // Get current player and check if they're an admin
+  // Get current player and check their roles
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
   const isAdmin = currentPlayer?.roles?.includes('admin') ?? false;
+  const isCoach = currentPlayer?.roles?.includes('coach') ?? false;
 
   // Check if user can edit a specific player's stats
   const canEditPlayer = (playerId: string): boolean => {
-    // Admins can edit anyone's stats
-    if (isAdmin) return true;
+    // Admins and coaches can edit anyone's stats
+    if (isAdmin || isCoach) return true;
     // If allowPlayerSelfStats is enabled, players can edit their own stats
     if (teamSettings.allowPlayerSelfStats && playerId === currentPlayerId) return true;
     return false;
