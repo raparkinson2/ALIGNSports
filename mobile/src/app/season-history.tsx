@@ -240,6 +240,17 @@ export default function SeasonHistoryScreen() {
 
                             const statsSummary = getStatsSummary();
 
+                            // Get attendance summary
+                            const getAttendanceSummary = (): string => {
+                              const invited = player.gamesInvited ?? 0;
+                              const attended = player.gamesAttended ?? 0;
+                              if (invited === 0) return '';
+                              const pct = Math.round((attended / invited) * 100);
+                              return `${attended}/${invited} games (${pct}%)`;
+                            };
+
+                            const attendanceSummary = getAttendanceSummary();
+
                             return (
                               <View
                                 key={player.playerId}
@@ -254,10 +265,19 @@ export default function SeasonHistoryScreen() {
                                   <Text className="text-white text-sm flex-1">{player.playerName}</Text>
                                   <Text className="text-slate-400 text-xs">{positionsDisplay}</Text>
                                 </View>
-                                {statsSummary && (
-                                  <Text className="text-cyan-400/80 text-xs mt-1 ml-9">
-                                    {statsSummary}
-                                  </Text>
+                                {(statsSummary || attendanceSummary) && (
+                                  <View className="ml-9 mt-1">
+                                    {statsSummary && (
+                                      <Text className="text-cyan-400/80 text-xs">
+                                        {statsSummary}
+                                      </Text>
+                                    )}
+                                    {attendanceSummary && (
+                                      <Text className="text-slate-500 text-xs">
+                                        {attendanceSummary}
+                                      </Text>
+                                    )}
+                                  </View>
                                 )}
                               </View>
                             );

@@ -706,6 +706,10 @@ export interface ArchivedPlayerStats {
   stats?: PlayerStats;
   goalieStats?: HockeyGoalieStats | SoccerGoalieStats | LacrosseGoalieStats;
   pitcherStats?: BaseballPitcherStats;
+  // Attendance tracking
+  gamesInvited?: number;
+  gamesAttended?: number; // Checked in
+  gamesDeclined?: number; // Checked out
 }
 
 // Season Management - Complete archived season
@@ -1663,20 +1667,47 @@ export const useTeamStore = create<TeamStore>()(
         const state = get();
         const currentRecord = state.teamSettings.record;
         const players = state.players;
+        const games = state.games;
         const sport = state.teamSettings.sport;
+
+        // Calculate attendance for each player from games
+        const playerAttendance = new Map<string, { invited: number; attended: number; declined: number }>();
+        players.forEach(player => {
+          playerAttendance.set(player.id, { invited: 0, attended: 0, declined: 0 });
+        });
+
+        games.forEach(game => {
+          game.invitedPlayers?.forEach(playerId => {
+            const stats = playerAttendance.get(playerId);
+            if (stats) {
+              stats.invited++;
+              if (game.checkedInPlayers?.includes(playerId)) {
+                stats.attended++;
+              } else if (game.checkedOutPlayers?.includes(playerId)) {
+                stats.declined++;
+              }
+            }
+          });
+        });
 
         // 1. Create archived player stats for ALL players (so we can show full roster)
         const archivedPlayerStats: ArchivedPlayerStats[] = players
-          .map(player => ({
-            playerId: player.id,
-            playerName: getPlayerName(player),
-            jerseyNumber: player.number,
-            position: player.position,
-            positions: player.positions || [player.position],
-            stats: player.stats,
-            goalieStats: player.goalieStats,
-            pitcherStats: player.pitcherStats,
-          }));
+          .map(player => {
+            const attendance = playerAttendance.get(player.id);
+            return {
+              playerId: player.id,
+              playerName: getPlayerName(player),
+              jerseyNumber: player.number,
+              position: player.position,
+              positions: player.positions || [player.position],
+              stats: player.stats,
+              goalieStats: player.goalieStats,
+              pitcherStats: player.pitcherStats,
+              gamesInvited: attendance?.invited ?? 0,
+              gamesAttended: attendance?.attended ?? 0,
+              gamesDeclined: attendance?.declined ?? 0,
+            };
+          });
 
         // 2. Create archived team record
         const archivedTeamRecord: TeamRecord = {
