@@ -2,14 +2,15 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { ArrowLeft, FileText, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { ArrowLeft, FileText, ChevronDown, ChevronUp, Shield, Users, UserCheck, Eye } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 
 export default function NoticesScreen() {
   const router = useRouter();
-  const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(true);
+  const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(false);
+  const [isPermissionsExpanded, setIsPermissionsExpanded] = useState(false);
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -45,8 +46,122 @@ export default function NoticesScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 40 }}
         >
+          {/* Permissions Breakdown */}
+          <Animated.View entering={FadeInDown.delay(100).springify()} className="mb-3">
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsPermissionsExpanded(!isPermissionsExpanded);
+              }}
+              className="bg-slate-800/80 rounded-xl p-4 border border-slate-700/50 active:bg-slate-700/80"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View className="w-10 h-10 rounded-full bg-purple-500/20 items-center justify-center mr-3">
+                    <Shield size={20} color="#a78bfa" />
+                  </View>
+                  <Text className="text-white font-semibold">Permissions Breakdown</Text>
+                </View>
+                {isPermissionsExpanded ? (
+                  <ChevronUp size={20} color="#64748b" />
+                ) : (
+                  <ChevronDown size={20} color="#64748b" />
+                )}
+              </View>
+
+              {isPermissionsExpanded && (
+                <View className="mt-4 pt-4 border-t border-slate-700/50">
+                  <Text className="text-purple-400 font-bold text-lg mb-3">Role Permissions</Text>
+
+                  {/* Admin Section */}
+                  <View className="mb-4">
+                    <View className="flex-row items-center mb-2">
+                      <View className="w-6 h-6 rounded-full bg-purple-500/30 items-center justify-center mr-2">
+                        <Shield size={14} color="#a78bfa" />
+                      </View>
+                      <Text className="text-purple-400 font-semibold">Admin Only</Text>
+                    </View>
+                    <View className="bg-slate-700/30 rounded-lg p-3">
+                      <Text className="text-slate-300 text-sm leading-6">
+                        {'\u2022'} Access Admin Panel{'\n'}
+                        {'\u2022'} Player Management (add, edit, remove){'\n'}
+                        {'\u2022'} Delete Games{'\n'}
+                        {'\u2022'} Payment Methods (add/remove){'\n'}
+                        {'\u2022'} Payment Periods (create/manage){'\n'}
+                        {'\u2022'} Delete Any Poll
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Admin + Captain + Coach Section */}
+                  <View className="mb-4">
+                    <View className="flex-row items-center mb-2">
+                      <View className="w-6 h-6 rounded-full bg-cyan-500/30 items-center justify-center mr-2">
+                        <Users size={14} color="#67e8f9" />
+                      </View>
+                      <Text className="text-cyan-400 font-semibold">Admin + Captain + Coach</Text>
+                    </View>
+                    <View className="bg-slate-700/30 rounded-lg p-3">
+                      <Text className="text-slate-300 text-sm leading-6">
+                        {'\u2022'} Edit Games (opponent, date, time, location){'\n'}
+                        {'\u2022'} Set Lineups (all formation types){'\n'}
+                        {'\u2022'} Check In/Out Any Player{'\n'}
+                        {'\u2022'} Edit/Delete Events{'\n'}
+                        {'\u2022'} Payment Tracking{'\n'}
+                        {'\u2022'} Edit Any Player Profile{'\n'}
+                        {'\u2022'} Add Games from Calendar
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* All Players Section */}
+                  <View className="mb-4">
+                    <View className="flex-row items-center mb-2">
+                      <View className="w-6 h-6 rounded-full bg-green-500/30 items-center justify-center mr-2">
+                        <UserCheck size={14} color="#22c55e" />
+                      </View>
+                      <Text className="text-green-400 font-semibold">All Players</Text>
+                    </View>
+                    <View className="bg-slate-700/30 rounded-lg p-3">
+                      <Text className="text-slate-300 text-sm leading-6">
+                        {'\u2022'} Create Polls{'\n'}
+                        {'\u2022'} Vote on Polls{'\n'}
+                        {'\u2022'} Delete Own Polls{'\n'}
+                        {'\u2022'} Check In/Out Self{'\n'}
+                        {'\u2022'} Edit Own Profile{'\n'}
+                        {'\u2022'} View Schedule, Roster, Chat, Photos, Payments
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Parents Section */}
+                  <View>
+                    <View className="flex-row items-center mb-2">
+                      <View className="w-6 h-6 rounded-full bg-amber-500/30 items-center justify-center mr-2">
+                        <Eye size={14} color="#f59e0b" />
+                      </View>
+                      <Text className="text-amber-400 font-semibold">Parents (View Only)</Text>
+                    </View>
+                    <View className="bg-slate-700/30 rounded-lg p-3">
+                      <Text className="text-slate-300 text-sm leading-6">
+                        {'\u2022'} View Schedule{'\n'}
+                        {'\u2022'} View Roster{'\n'}
+                        {'\u2022'} View Payments
+                      </Text>
+                      <Text className="text-red-400 text-sm mt-2">
+                        {'\u2022'} No access to Chat{'\n'}
+                        {'\u2022'} No access to Photos{'\n'}
+                        {'\u2022'} No access to Admin Panel
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+            </Pressable>
+          </Animated.View>
+
           {/* Privacy Policy */}
-          <Animated.View entering={FadeInDown.delay(100).springify()}>
+          <Animated.View entering={FadeInDown.delay(150).springify()}>
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
