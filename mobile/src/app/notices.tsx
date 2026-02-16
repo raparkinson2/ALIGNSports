@@ -213,7 +213,7 @@ export default function NoticesScreen() {
                   <View className="mb-4">
                     <Text className="text-green-400 font-semibold mb-2">How do I set my unavailable dates?</Text>
                     <Text className="text-slate-400 text-sm leading-5">
-                      Go to More → My Availability. Here you can select dates when you'll be unavailable. You'll automatically be marked as "Out" for any games on those dates.
+                      Go to More → My Availability. Here you can select dates when you'll be unavailable. The app will automatically check you out (mark you as "Out") for any games or practices that fall on your unavailable dates. This saves you time so you don't have to manually update your status for each event.
                     </Text>
                   </View>
 
