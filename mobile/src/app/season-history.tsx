@@ -6,12 +6,113 @@ import { ArrowLeft, Calendar, Trophy, ChevronDown, ChevronUp, Users } from 'luci
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
-import { useTeamStore, ArchivedSeason, SPORT_NAMES } from '@/lib/store';
+import { useTeamStore, ArchivedSeason, ArchivedPlayerStats, SPORT_NAMES, Sport, getPlayerPositions } from '@/lib/store';
 import { format, parseISO } from 'date-fns';
+
+// Get stat headers based on sport
+const getStatHeaders = (sport: Sport): string[] => {
+  switch (sport) {
+    case 'hockey':
+      return ['GP', 'G', 'A', 'P', 'PIM'];
+    case 'soccer':
+      return ['GP', 'G', 'A', 'YC'];
+    case 'basketball':
+      return ['GP', 'PTS', 'REB', 'AST'];
+    case 'baseball':
+    case 'softball':
+      return ['GP', 'AB', 'H', 'HR', 'RBI'];
+    case 'lacrosse':
+      return ['GP', 'G', 'A', 'GB'];
+    default:
+      return ['GP'];
+  }
+};
+
+// Get goalie stat headers based on sport
+const getGoalieHeaders = (sport: Sport): string[] => {
+  switch (sport) {
+    case 'hockey':
+    case 'soccer':
+    case 'lacrosse':
+      return ['GP', 'W', 'L', 'SV%'];
+    default:
+      return [];
+  }
+};
+
+// Get stat values from archived player stats
+const getStatValues = (sport: Sport, player: ArchivedPlayerStats): string[] => {
+  const stats = player.stats as Record<string, number> | undefined;
+  if (!stats) return getStatHeaders(sport).map(() => '0');
+
+  switch (sport) {
+    case 'hockey': {
+      const gp = stats.gamesPlayed ?? 0;
+      const g = stats.goals ?? 0;
+      const a = stats.assists ?? 0;
+      const p = g + a;
+      const pim = stats.pim ?? 0;
+      return [gp.toString(), g.toString(), a.toString(), p.toString(), pim.toString()];
+    }
+    case 'soccer': {
+      const gp = stats.gamesPlayed ?? 0;
+      const g = stats.goals ?? 0;
+      const a = stats.assists ?? 0;
+      const yc = stats.yellowCards ?? 0;
+      return [gp.toString(), g.toString(), a.toString(), yc.toString()];
+    }
+    case 'basketball': {
+      const gp = stats.gamesPlayed ?? 0;
+      const pts = stats.points ?? 0;
+      const reb = stats.rebounds ?? 0;
+      const ast = stats.assists ?? 0;
+      return [gp.toString(), pts.toString(), reb.toString(), ast.toString()];
+    }
+    case 'baseball':
+    case 'softball': {
+      const gp = stats.gamesPlayed ?? 0;
+      const ab = stats.atBats ?? 0;
+      const h = stats.hits ?? 0;
+      const hr = stats.homeRuns ?? 0;
+      const rbi = stats.rbi ?? 0;
+      return [gp.toString(), ab.toString(), h.toString(), hr.toString(), rbi.toString()];
+    }
+    case 'lacrosse': {
+      const gp = stats.gamesPlayed ?? 0;
+      const g = stats.goals ?? 0;
+      const a = stats.assists ?? 0;
+      const gb = stats.groundBalls ?? 0;
+      return [gp.toString(), g.toString(), a.toString(), gb.toString()];
+    }
+    default:
+      return ['0'];
+  }
+};
+
+// Get goalie stat values
+const getGoalieStatValues = (sport: Sport, player: ArchivedPlayerStats): string[] => {
+  const gs = player.goalieStats as Record<string, number> | undefined;
+  if (!gs) return getGoalieHeaders(sport).map(() => '0');
+
+  const gp = gs.games ?? 0;
+  const w = gs.wins ?? 0;
+  const l = gs.losses ?? 0;
+  const saves = gs.saves ?? 0;
+  const ga = gs.goalsAgainst ?? 0;
+  const svPct = saves + ga > 0 ? ((saves / (saves + ga)) * 100).toFixed(1) : '0.0';
+
+  return [gp.toString(), w.toString(), l.toString(), svPct];
+};
+
+// Check if player is a goalie
+const isGoalie = (player: ArchivedPlayerStats): boolean => {
+  return !!player.goalieStats || player.position === 'G' || player.position === 'GK';
+};
 
 export default function SeasonHistoryScreen() {
   const router = useRouter();
   const teamSettings = useTeamStore((s) => s.teamSettings);
+  const currentPlayers = useTeamStore((s) => s.players);
   const seasonHistory = teamSettings.seasonHistory || [];
 
   const [expandedSeasonId, setExpandedSeasonId] = useState<string | null>(null);
@@ -30,6 +131,24 @@ export default function SeasonHistoryScreen() {
       return `${wins}-${losses}-${ties}`;
     }
     return `${wins}-${losses}`;
+  };
+
+  // Get display positions for a player - check current roster for positions if not in archived data
+  const getDisplayPositions = (player: ArchivedPlayerStats): string => {
+    // First try archived positions array
+    if (player.positions && player.positions.length > 0) {
+      return player.positions.join('/');
+    }
+
+    // Look up current player to get their positions (for old archived data)
+    const currentPlayer = currentPlayers.find(p => p.id === player.playerId);
+    if (currentPlayer) {
+      const positions = getPlayerPositions(currentPlayer);
+      return positions.join('/');
+    }
+
+    // Fall back to single position
+    return player.position;
   };
 
   // Sort seasons by archived date, most recent first
@@ -88,207 +207,218 @@ export default function SeasonHistoryScreen() {
               </Text>
             </Animated.View>
           ) : (
-            sortedSeasons.map((season, index) => (
-              <Animated.View
-                key={season.id}
-                entering={FadeInDown.delay(100 + index * 50).springify()}
-                className="mb-3"
-              >
-                <Pressable
-                  onPress={() => toggleExpanded(season.id)}
-                  className="bg-slate-800/60 rounded-xl border border-slate-700/50 overflow-hidden"
+            sortedSeasons.map((season, index) => {
+              const statHeaders = getStatHeaders(season.sport);
+              const goalieHeaders = getGoalieHeaders(season.sport);
+              const nonGoalies = season.playerStats.filter(p => !isGoalie(p));
+              const goalies = season.playerStats.filter(p => isGoalie(p));
+
+              return (
+                <Animated.View
+                  key={season.id}
+                  entering={FadeInDown.delay(100 + index * 50).springify()}
+                  className="mb-3"
                 >
-                  {/* Season Header */}
-                  <View className="flex-row items-center px-4 py-3">
-                    <View className="w-10 h-10 rounded-full bg-purple-500/20 items-center justify-center mr-3">
-                      <Trophy size={20} color="#a78bfa" />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-white font-semibold text-base">{season.seasonName}</Text>
-                      <Text className="text-slate-400 text-sm">
-                        {formatRecord(season)} • {SPORT_NAMES[season.sport]}
-                      </Text>
-                    </View>
-                    <View className="flex-row items-center">
-                      <Text className="text-slate-500 text-xs mr-2">
-                        {format(parseISO(season.archivedAt), 'MMM yyyy')}
-                      </Text>
-                      {expandedSeasonId === season.id ? (
-                        <ChevronUp size={20} color="#64748b" />
-                      ) : (
-                        <ChevronDown size={20} color="#64748b" />
-                      )}
-                    </View>
-                  </View>
-
-                  {/* Expanded Content */}
-                  {expandedSeasonId === season.id && (
-                    <View className="border-t border-slate-700/50">
-                      {/* Team Record Details */}
-                      <View className="px-4 py-3 bg-slate-700/20">
-                        <Text className="text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">
-                          Team Record
-                        </Text>
-                        <View className="flex-row flex-wrap">
-                          <View className="w-1/3 mb-2">
-                            <Text className="text-slate-500 text-xs">Wins</Text>
-                            <Text className="text-white font-semibold">{season.teamRecord.wins}</Text>
-                          </View>
-                          <View className="w-1/3 mb-2">
-                            <Text className="text-slate-500 text-xs">Losses</Text>
-                            <Text className="text-white font-semibold">{season.teamRecord.losses}</Text>
-                          </View>
-                          {season.teamRecord.ties !== undefined && (
-                            <View className="w-1/3 mb-2">
-                              <Text className="text-slate-500 text-xs">Ties</Text>
-                              <Text className="text-white font-semibold">{season.teamRecord.ties}</Text>
-                            </View>
-                          )}
-                          {season.teamRecord.longestWinStreak !== undefined && season.teamRecord.longestWinStreak > 0 && (
-                            <View className="w-1/3 mb-2">
-                              <Text className="text-slate-500 text-xs">Win Streak</Text>
-                              <Text className="text-orange-400 font-semibold">{season.teamRecord.longestWinStreak}</Text>
-                            </View>
-                          )}
-                          {season.teamRecord.longestLosingStreak !== undefined && season.teamRecord.longestLosingStreak > 0 && (
-                            <View className="w-1/3 mb-2">
-                              <Text className="text-slate-500 text-xs">Lose Streak</Text>
-                              <Text className="text-red-400 font-semibold">{season.teamRecord.longestLosingStreak}</Text>
-                            </View>
-                          )}
-                        </View>
+                  <Pressable
+                    onPress={() => toggleExpanded(season.id)}
+                    className="bg-slate-800/60 rounded-xl border border-slate-700/50 overflow-hidden"
+                  >
+                    {/* Season Header */}
+                    <View className="flex-row items-center px-4 py-3">
+                      <View className="w-10 h-10 rounded-full bg-purple-500/20 items-center justify-center mr-3">
+                        <Trophy size={20} color="#a78bfa" />
                       </View>
-
-                      {/* Player Stats */}
-                      {season.playerStats.length > 0 && (
-                        <View className="px-4 py-3">
-                          <View className="flex-row items-center mb-2">
-                            <Users size={14} color="#67e8f9" />
-                            <Text className="text-slate-300 text-xs font-semibold uppercase tracking-wider ml-2">
-                              Players ({season.playerStats.length})
-                            </Text>
-                          </View>
-                          {season.playerStats.map((player) => {
-                            // Get positions display (use positions array if available, fallback to single position)
-                            const positionsDisplay = player.positions?.length
-                              ? player.positions.join('/')
-                              : player.position;
-
-                            // Get stats summary based on sport
-                            const getStatsSummary = (): string => {
-                              if (season.sport === 'hockey') {
-                                // Check if goalie
-                                if (player.goalieStats) {
-                                  const gs = player.goalieStats as { games?: number; wins?: number; losses?: number; saves?: number; goalsAgainst?: number };
-                                  const svPct = gs.saves && gs.goalsAgainst !== undefined
-                                    ? ((gs.saves / (gs.saves + gs.goalsAgainst)) * 100).toFixed(1)
-                                    : '0.0';
-                                  return `${gs.games ?? 0}GP, ${gs.wins ?? 0}W, ${svPct}%`;
-                                }
-                                if (player.stats) {
-                                  const s = player.stats as { gamesPlayed?: number; goals?: number; assists?: number; pim?: number };
-                                  const pts = (s.goals ?? 0) + (s.assists ?? 0);
-                                  return `${s.gamesPlayed ?? 0}GP, ${s.goals ?? 0}G, ${s.assists ?? 0}A, ${pts}P`;
-                                }
-                              } else if (season.sport === 'soccer') {
-                                if (player.goalieStats) {
-                                  const gs = player.goalieStats as { games?: number; wins?: number; saves?: number; goalsAgainst?: number };
-                                  const svPct = gs.saves && gs.goalsAgainst !== undefined
-                                    ? ((gs.saves / (gs.saves + gs.goalsAgainst)) * 100).toFixed(1)
-                                    : '0.0';
-                                  return `${gs.games ?? 0}GP, ${gs.wins ?? 0}W, ${svPct}%`;
-                                }
-                                if (player.stats) {
-                                  const s = player.stats as { gamesPlayed?: number; goals?: number; assists?: number };
-                                  return `${s.gamesPlayed ?? 0}GP, ${s.goals ?? 0}G, ${s.assists ?? 0}A`;
-                                }
-                              } else if (season.sport === 'basketball') {
-                                if (player.stats) {
-                                  const s = player.stats as { gamesPlayed?: number; points?: number; rebounds?: number; assists?: number };
-                                  return `${s.gamesPlayed ?? 0}GP, ${s.points ?? 0}PTS, ${s.rebounds ?? 0}REB`;
-                                }
-                              } else if (season.sport === 'baseball' || season.sport === 'softball') {
-                                if (player.pitcherStats) {
-                                  const ps = player.pitcherStats as { wins?: number; losses?: number; strikeouts?: number; innings?: number; earnedRuns?: number };
-                                  const era = ps.innings && ps.innings > 0
-                                    ? ((ps.earnedRuns ?? 0) / ps.innings * 9).toFixed(2)
-                                    : '0.00';
-                                  return `${ps.wins ?? 0}W-${ps.losses ?? 0}L, ${era} ERA`;
-                                }
-                                if (player.stats) {
-                                  const s = player.stats as { gamesPlayed?: number; atBats?: number; hits?: number; homeRuns?: number };
-                                  const avg = s.atBats && s.atBats > 0
-                                    ? ((s.hits ?? 0) / s.atBats).toFixed(3).substring(1)
-                                    : '.000';
-                                  return `${s.gamesPlayed ?? 0}GP, ${avg} AVG, ${s.homeRuns ?? 0}HR`;
-                                }
-                              } else if (season.sport === 'lacrosse') {
-                                if (player.goalieStats) {
-                                  const gs = player.goalieStats as { games?: number; wins?: number; saves?: number; goalsAgainst?: number };
-                                  const svPct = gs.saves && gs.goalsAgainst !== undefined
-                                    ? ((gs.saves / (gs.saves + gs.goalsAgainst)) * 100).toFixed(1)
-                                    : '0.0';
-                                  return `${gs.games ?? 0}GP, ${gs.wins ?? 0}W, ${svPct}%`;
-                                }
-                                if (player.stats) {
-                                  const s = player.stats as { gamesPlayed?: number; goals?: number; assists?: number; groundBalls?: number };
-                                  return `${s.gamesPlayed ?? 0}GP, ${s.goals ?? 0}G, ${s.assists ?? 0}A`;
-                                }
-                              }
-                              return '';
-                            };
-
-                            const statsSummary = getStatsSummary();
-
-                            // Get attendance summary
-                            const getAttendanceSummary = (): string => {
-                              const invited = player.gamesInvited ?? 0;
-                              const attended = player.gamesAttended ?? 0;
-                              if (invited === 0) return '';
-                              const pct = Math.round((attended / invited) * 100);
-                              return `${attended}/${invited} games (${pct}%)`;
-                            };
-
-                            const attendanceSummary = getAttendanceSummary();
-
-                            return (
-                              <View
-                                key={player.playerId}
-                                className="py-2 border-b border-slate-700/30 last:border-b-0"
-                              >
-                                <View className="flex-row items-center">
-                                  <View className="w-7 h-7 rounded-full bg-slate-700 items-center justify-center mr-2">
-                                    <Text className="text-slate-300 text-xs font-bold">
-                                      {player.jerseyNumber}
-                                    </Text>
-                                  </View>
-                                  <Text className="text-white text-sm flex-1">{player.playerName}</Text>
-                                  <Text className="text-slate-400 text-xs">{positionsDisplay}</Text>
-                                </View>
-                                {(statsSummary || attendanceSummary) && (
-                                  <View className="ml-9 mt-1">
-                                    {statsSummary && (
-                                      <Text className="text-cyan-400/80 text-xs">
-                                        {statsSummary}
-                                      </Text>
-                                    )}
-                                    {attendanceSummary && (
-                                      <Text className="text-slate-500 text-xs">
-                                        {attendanceSummary}
-                                      </Text>
-                                    )}
-                                  </View>
-                                )}
-                              </View>
-                            );
-                          })}
-                        </View>
-                      )}
+                      <View className="flex-1">
+                        <Text className="text-white font-semibold text-base">{season.seasonName}</Text>
+                        <Text className="text-slate-400 text-sm">
+                          {formatRecord(season)} • {SPORT_NAMES[season.sport]}
+                        </Text>
+                      </View>
+                      <View className="flex-row items-center">
+                        <Text className="text-slate-500 text-xs mr-2">
+                          {format(parseISO(season.archivedAt), 'MMM yyyy')}
+                        </Text>
+                        {expandedSeasonId === season.id ? (
+                          <ChevronUp size={20} color="#64748b" />
+                        ) : (
+                          <ChevronDown size={20} color="#64748b" />
+                        )}
+                      </View>
                     </View>
-                  )}
-                </Pressable>
-              </Animated.View>
-            ))
+
+                    {/* Expanded Content */}
+                    {expandedSeasonId === season.id && (
+                      <View className="border-t border-slate-700/50">
+                        {/* Team Record Details */}
+                        <View className="px-4 py-3 bg-slate-700/20">
+                          <Text className="text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">
+                            Team Record
+                          </Text>
+                          <View className="flex-row flex-wrap">
+                            <View className="w-1/3 mb-2">
+                              <Text className="text-slate-500 text-xs">Wins</Text>
+                              <Text className="text-white font-semibold">{season.teamRecord.wins}</Text>
+                            </View>
+                            <View className="w-1/3 mb-2">
+                              <Text className="text-slate-500 text-xs">Losses</Text>
+                              <Text className="text-white font-semibold">{season.teamRecord.losses}</Text>
+                            </View>
+                            {season.teamRecord.ties !== undefined && (
+                              <View className="w-1/3 mb-2">
+                                <Text className="text-slate-500 text-xs">Ties</Text>
+                                <Text className="text-white font-semibold">{season.teamRecord.ties}</Text>
+                              </View>
+                            )}
+                            {season.teamRecord.longestWinStreak !== undefined && season.teamRecord.longestWinStreak > 0 && (
+                              <View className="w-1/3 mb-2">
+                                <Text className="text-slate-500 text-xs">Win Streak</Text>
+                                <Text className="text-orange-400 font-semibold">{season.teamRecord.longestWinStreak}</Text>
+                              </View>
+                            )}
+                            {season.teamRecord.longestLosingStreak !== undefined && season.teamRecord.longestLosingStreak > 0 && (
+                              <View className="w-1/3 mb-2">
+                                <Text className="text-slate-500 text-xs">Lose Streak</Text>
+                                <Text className="text-red-400 font-semibold">{season.teamRecord.longestLosingStreak}</Text>
+                              </View>
+                            )}
+                            {season.teamRecord.teamGoals !== undefined && season.teamRecord.teamGoals > 0 && (
+                              <View className="w-1/3 mb-2">
+                                <Text className="text-slate-500 text-xs">Team Goals</Text>
+                                <Text className="text-green-400 font-semibold">{season.teamRecord.teamGoals}</Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+
+                        {/* Player Stats Table */}
+                        {season.playerStats.length > 0 && (
+                          <View className="px-4 py-3">
+                            <View className="flex-row items-center mb-3">
+                              <Users size={14} color="#67e8f9" />
+                              <Text className="text-slate-300 text-xs font-semibold uppercase tracking-wider ml-2">
+                                Roster ({season.playerStats.length})
+                              </Text>
+                            </View>
+
+                            {/* Stats Table */}
+                            <View className="bg-slate-700/30 rounded-xl overflow-hidden">
+                              {/* Table Header */}
+                              <View className="flex-row items-center px-2 py-2 bg-slate-700/50 border-b border-slate-600/50">
+                                <Text className="text-slate-300 font-semibold text-xs w-16">Player</Text>
+                                <Text className="text-slate-300 font-semibold text-xs w-12 text-center">Pos</Text>
+                                {statHeaders.map((header) => (
+                                  <Text key={header} className="text-slate-300 font-semibold text-xs flex-1 text-center">
+                                    {header}
+                                  </Text>
+                                ))}
+                              </View>
+
+                              {/* Non-Goalie Rows */}
+                              {nonGoalies.map((player, idx) => {
+                                const statValues = getStatValues(season.sport, player);
+                                const positions = getDisplayPositions(player);
+                                return (
+                                  <View
+                                    key={player.playerId}
+                                    className={`flex-row items-center px-2 py-2 ${idx !== nonGoalies.length - 1 || goalies.length > 0 ? 'border-b border-slate-600/30' : ''}`}
+                                  >
+                                    <View className="w-16 flex-row items-center">
+                                      <Text className="text-cyan-400 text-[10px] font-bold mr-0.5">#{player.jerseyNumber}</Text>
+                                      <Text className="text-white text-[10px]" numberOfLines={1}>{player.playerName.split(' ')[0]}</Text>
+                                    </View>
+                                    <Text className="text-slate-400 text-[10px] w-12 text-center">{positions}</Text>
+                                    {statValues.map((value, i) => (
+                                      <Text key={i} className="text-slate-300 text-xs flex-1 text-center">
+                                        {value}
+                                      </Text>
+                                    ))}
+                                  </View>
+                                );
+                              })}
+
+                              {/* Goalie Section */}
+                              {goalies.length > 0 && goalieHeaders.length > 0 && (
+                                <>
+                                  {/* Goalie Header */}
+                                  <View className="flex-row items-center px-2 py-2 bg-slate-700/50 border-b border-slate-600/50">
+                                    <Text className="text-slate-300 font-semibold text-xs w-16">Goalies</Text>
+                                    <Text className="text-slate-300 font-semibold text-xs w-12 text-center">Pos</Text>
+                                    {goalieHeaders.map((header) => (
+                                      <Text key={header} className="text-slate-300 font-semibold text-xs flex-1 text-center">
+                                        {header}
+                                      </Text>
+                                    ))}
+                                  </View>
+
+                                  {/* Goalie Rows */}
+                                  {goalies.map((player, idx) => {
+                                    const statValues = getGoalieStatValues(season.sport, player);
+                                    const positions = getDisplayPositions(player);
+                                    return (
+                                      <View
+                                        key={player.playerId}
+                                        className={`flex-row items-center px-2 py-2 ${idx !== goalies.length - 1 ? 'border-b border-slate-600/30' : ''}`}
+                                      >
+                                        <View className="w-16 flex-row items-center">
+                                          <Text className="text-cyan-400 text-[10px] font-bold mr-0.5">#{player.jerseyNumber}</Text>
+                                          <Text className="text-white text-[10px]" numberOfLines={1}>{player.playerName.split(' ')[0]}</Text>
+                                        </View>
+                                        <Text className="text-slate-400 text-[10px] w-12 text-center">{positions}</Text>
+                                        {statValues.map((value, i) => (
+                                          <Text key={i} className="text-slate-300 text-xs flex-1 text-center">
+                                            {value}
+                                          </Text>
+                                        ))}
+                                      </View>
+                                    );
+                                  })}
+                                </>
+                              )}
+                            </View>
+
+                            {/* Attendance Summary (if available) */}
+                            {season.playerStats.some(p => (p.gamesInvited ?? 0) > 0) && (
+                              <View className="mt-3">
+                                <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                                  Attendance
+                                </Text>
+                                <View className="bg-slate-700/30 rounded-xl overflow-hidden">
+                                  <View className="flex-row items-center px-2 py-2 bg-slate-700/50 border-b border-slate-600/50">
+                                    <Text className="text-slate-300 font-semibold text-xs flex-1">Player</Text>
+                                    <Text className="text-slate-300 font-semibold text-xs w-16 text-center">Games</Text>
+                                    <Text className="text-slate-300 font-semibold text-xs w-12 text-center">%</Text>
+                                  </View>
+                                  {season.playerStats.filter(p => (p.gamesInvited ?? 0) > 0).map((player, idx, arr) => {
+                                    const invited = player.gamesInvited ?? 0;
+                                    const attended = player.gamesAttended ?? 0;
+                                    const pct = invited > 0 ? Math.round((attended / invited) * 100) : 0;
+                                    return (
+                                      <View
+                                        key={player.playerId}
+                                        className={`flex-row items-center px-2 py-2 ${idx !== arr.length - 1 ? 'border-b border-slate-600/30' : ''}`}
+                                      >
+                                        <View className="flex-1 flex-row items-center">
+                                          <Text className="text-cyan-400 text-[10px] font-bold mr-1">#{player.jerseyNumber}</Text>
+                                          <Text className="text-white text-xs">{player.playerName}</Text>
+                                        </View>
+                                        <Text className="text-slate-300 text-xs w-16 text-center">{attended}/{invited}</Text>
+                                        <Text className={`text-xs w-12 text-center font-medium ${pct >= 80 ? 'text-green-400' : pct >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                          {pct}%
+                                        </Text>
+                                      </View>
+                                    );
+                                  })}
+                                </View>
+                              </View>
+                            )}
+                          </View>
+                        )}
+                      </View>
+                    )}
+                  </Pressable>
+                </Animated.View>
+              );
+            })
           )}
         </ScrollView>
       </SafeAreaView>
