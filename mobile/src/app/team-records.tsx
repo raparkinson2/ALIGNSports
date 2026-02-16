@@ -491,10 +491,13 @@ export default function TeamRecordsScreen() {
                 ))
               )}
             </View>
+
+            {/* Divider */}
+            <View className="h-px bg-slate-700/50 mt-5" />
           </Animated.View>
 
           {/* Section 2: Team Records */}
-          <Animated.View entering={FadeInDown.delay(150).springify()} className="mb-4">
+          <Animated.View entering={FadeInDown.delay(150).springify()} className="mt-5 mb-4">
             <View className="flex-row items-center mb-2">
               <TrendingUp size={16} color="#22c55e" />
               <Text className="text-slate-300 text-xs font-semibold uppercase tracking-wider ml-2">
@@ -525,10 +528,13 @@ export default function TeamRecordsScreen() {
                 ))
               )}
             </View>
+
+            {/* Divider */}
+            <View className="h-px bg-slate-700/50 mt-5" />
           </Animated.View>
 
           {/* Section 3: Individual Records */}
-          <Animated.View entering={FadeInDown.delay(200).springify()}>
+          <Animated.View entering={FadeInDown.delay(200).springify()} className="mt-5">
             <View className="flex-row items-center mb-2">
               <Users size={16} color="#67e8f9" />
               <Text className="text-slate-300 text-xs font-semibold uppercase tracking-wider ml-2">
