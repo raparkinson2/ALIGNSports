@@ -2,7 +2,7 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { ArrowLeft, TrendingUp, UserCheck, BarChart3, ChevronRight, Trophy } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, UserCheck, BarChart3, ChevronRight, Trophy, Calendar } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore } from '@/lib/store';
@@ -11,6 +11,7 @@ export default function StatsAnalyticsScreen() {
   const router = useRouter();
   const showTeamStats = useTeamStore((s) => s.teamSettings.showTeamStats !== false);
   const showTeamRecords = useTeamStore((s) => s.teamSettings.showTeamRecords === true && s.teamSettings.showTeamStats !== false);
+  const hasSeasonHistory = useTeamStore((s) => (s.teamSettings.seasonHistory?.length ?? 0) > 0);
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -107,6 +108,28 @@ export default function StatsAnalyticsScreen() {
                 <View className="flex-1 ml-3">
                   <Text className="font-semibold text-white">View Team Stats</Text>
                   <Text className="text-slate-400 text-sm">View player and team statistics</Text>
+                </View>
+                <ChevronRight size={20} color="#64748b" />
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* Season History - only show if there's history */}
+          {hasSeasonHistory && (
+            <Animated.View entering={FadeInDown.delay(250).springify()}>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/season-history');
+                }}
+                className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
+              >
+                <View className="w-10 h-10 rounded-full items-center justify-center bg-purple-500/20">
+                  <Calendar size={20} color="#a78bfa" />
+                </View>
+                <View className="flex-1 ml-3">
+                  <Text className="font-semibold text-white">Season History</Text>
+                  <Text className="text-slate-400 text-sm">View archived seasons and stats</Text>
                 </View>
                 <ChevronRight size={20} color="#64748b" />
               </Pressable>

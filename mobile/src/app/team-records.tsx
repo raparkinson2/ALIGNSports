@@ -44,52 +44,107 @@ export default function TeamRecordsScreen() {
   const [newYear, setNewYear] = useState('');
   const [newTitle, setNewTitle] = useState('');
 
-  // Calculate team records from current team record
+  const seasonHistory = teamSettings.seasonHistory || [];
+
+  // Calculate team records from current + historical records
   const teamRecords = useMemo((): TeamRecordItem[] => {
     const records: TeamRecordItem[] = [];
     const currentRecord = teamSettings.record;
 
-    // Current Season Record (if available)
-    if (currentRecord && (currentRecord.wins > 0 || currentRecord.losses > 0 || (currentRecord.ties ?? 0) > 0)) {
-      const recordStr = currentRecord.ties
-        ? `${currentRecord.wins}-${currentRecord.losses}-${currentRecord.ties}`
-        : `${currentRecord.wins}-${currentRecord.losses}`;
-      records.push({
-        title: 'Best Season Record',
-        value: recordStr,
-        icon: <Star size={18} color="#22c55e" />,
-      });
+    // Gather all seasons (archived + current)
+    type SeasonData = { name: string; wins: number; losses: number; ties: number; winStreak: number; loseStreak: number };
+    const allSeasons: SeasonData[] = [];
 
-      // Most Wins (Season) - using current season
-      if (currentRecord.wins > 0) {
-        records.push({
-          title: 'Most Wins (Season)',
-          value: `${currentRecord.wins}`,
-          icon: <Trophy size={18} color="#f59e0b" />,
-        });
-      }
+    // Add archived seasons
+    seasonHistory.forEach((season) => {
+      allSeasons.push({
+        name: season.seasonName,
+        wins: season.teamRecord.wins,
+        losses: season.teamRecord.losses,
+        ties: season.teamRecord.ties ?? 0,
+        winStreak: season.teamRecord.longestWinStreak ?? 0,
+        loseStreak: season.teamRecord.longestLosingStreak ?? 0,
+      });
+    });
+
+    // Add current season if it has any games
+    const currentWins = currentRecord?.wins ?? 0;
+    const currentLosses = currentRecord?.losses ?? 0;
+    const currentTies = currentRecord?.ties ?? 0;
+    if (currentWins > 0 || currentLosses > 0 || currentTies > 0) {
+      allSeasons.push({
+        name: teamSettings.currentSeasonName || 'Current',
+        wins: currentWins,
+        losses: currentLosses,
+        ties: currentTies,
+        winStreak: currentRecord?.longestWinStreak ?? 0,
+        loseStreak: currentRecord?.longestLosingStreak ?? 0,
+      });
     }
 
-    // Longest Win Streak
-    if (currentRecord?.longestWinStreak && currentRecord.longestWinStreak > 0) {
+    if (allSeasons.length === 0) {
+      return records;
+    }
+
+    // Find best season record (by win percentage)
+    let bestSeason = allSeasons[0];
+    let bestWinPct = 0;
+    allSeasons.forEach((season) => {
+      const total = season.wins + season.losses + season.ties;
+      const pct = total > 0 ? season.wins / total : 0;
+      if (pct > bestWinPct || (pct === bestWinPct && season.wins > bestSeason.wins)) {
+        bestWinPct = pct;
+        bestSeason = season;
+      }
+    });
+
+    const bestRecordStr = bestSeason.ties > 0
+      ? `${bestSeason.wins}-${bestSeason.losses}-${bestSeason.ties}`
+      : `${bestSeason.wins}-${bestSeason.losses}`;
+    records.push({
+      title: 'Best Season Record',
+      value: `${bestRecordStr} (${bestSeason.name})`,
+      icon: <Star size={18} color="#22c55e" />,
+    });
+
+    // Find most wins in a season
+    const mostWinsSeason = allSeasons.reduce((best, season) =>
+      season.wins > best.wins ? season : best
+    , allSeasons[0]);
+    if (mostWinsSeason.wins > 0) {
+      records.push({
+        title: 'Most Wins (Season)',
+        value: `${mostWinsSeason.wins} (${mostWinsSeason.name})`,
+        icon: <Trophy size={18} color="#f59e0b" />,
+      });
+    }
+
+    // Find longest win streak across all seasons
+    const bestWinStreak = allSeasons.reduce((best, season) =>
+      season.winStreak > best.winStreak ? season : best
+    , allSeasons[0]);
+    if (bestWinStreak.winStreak > 0) {
       records.push({
         title: 'Longest Win Streak',
-        value: `${currentRecord.longestWinStreak}`,
+        value: `${bestWinStreak.winStreak} (${bestWinStreak.name})`,
         icon: <Flame size={18} color="#f97316" />,
       });
     }
 
-    // Longest Losing Streak
-    if (currentRecord?.longestLosingStreak && currentRecord.longestLosingStreak > 0) {
+    // Find longest losing streak across all seasons
+    const worstLoseStreak = allSeasons.reduce((worst, season) =>
+      season.loseStreak > worst.loseStreak ? season : worst
+    , allSeasons[0]);
+    if (worstLoseStreak.loseStreak > 0) {
       records.push({
         title: 'Longest Losing Streak',
-        value: `${currentRecord.longestLosingStreak}`,
+        value: `${worstLoseStreak.loseStreak} (${worstLoseStreak.name})`,
         icon: <TrendingDown size={18} color="#ef4444" />,
       });
     }
 
     return records;
-  }, [teamSettings.record]);
+  }, [teamSettings.record, seasonHistory, teamSettings.currentSeasonName]);
 
   // Calculate individual records based on sport
   const individualRecords = useMemo((): RecordCategory[] => {

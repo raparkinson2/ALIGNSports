@@ -684,12 +684,36 @@ export interface TeamSettings {
   isSoftball?: boolean; // If true, adds 10th fielder (Short Fielder) for softball
   showTeamRecords?: boolean; // Toggle to show/hide team records feature (requires showTeamStats)
   championships?: Championship[]; // List of team championships
+  // Season Management
+  currentSeasonName?: string; // Current season label (e.g., "2024-2025")
+  seasonHistory?: ArchivedSeason[]; // Array of archived seasons
 }
 
 export interface Championship {
   id: string;
   year: string;
   title: string;
+}
+
+// Season Management - Archived player stats snapshot
+export interface ArchivedPlayerStats {
+  playerId: string;
+  playerName: string;
+  jerseyNumber: string;
+  position: string;
+  stats?: PlayerStats;
+  goalieStats?: HockeyGoalieStats | SoccerGoalieStats | LacrosseGoalieStats;
+  pitcherStats?: BaseballPitcherStats;
+}
+
+// Season Management - Complete archived season
+export interface ArchivedSeason {
+  id: string;
+  seasonName: string; // e.g., "2024-2025"
+  sport: Sport;
+  archivedAt: string; // ISO date when archived
+  teamRecord: TeamRecord;
+  playerStats: ArchivedPlayerStats[];
 }
 
 // Multi-team support: A complete team with all its data
@@ -790,6 +814,10 @@ interface TeamStore {
   // Championships
   addChampionship: (championship: Championship) => void;
   removeChampionship: (id: string) => void;
+
+  // Season Management
+  setCurrentSeasonName: (name: string) => void;
+  archiveAndStartNewSeason: (seasonName: string) => { success: boolean; newBestRecord: boolean };
 
   currentPlayerId: string | null;
   setCurrentPlayerId: (id: string | null) => void;
@@ -1620,6 +1648,115 @@ export const useTeamStore = create<TeamStore>()(
           championships: (state.teamSettings.championships || []).filter((c) => c.id !== id),
         },
       })),
+
+      // Season Management
+      setCurrentSeasonName: (name) => set((state) => ({
+        teamSettings: {
+          ...state.teamSettings,
+          currentSeasonName: name,
+        },
+      })),
+
+      archiveAndStartNewSeason: (seasonName) => {
+        const state = get();
+        const currentRecord = state.teamSettings.record;
+        const players = state.players;
+        const sport = state.teamSettings.sport;
+
+        // 1. Create archived player stats for players with any stats
+        const archivedPlayerStats: ArchivedPlayerStats[] = players
+          .filter(p => p.stats || p.goalieStats || p.pitcherStats)
+          .map(player => ({
+            playerId: player.id,
+            playerName: getPlayerName(player),
+            jerseyNumber: player.number,
+            position: player.position,
+            stats: player.stats,
+            goalieStats: player.goalieStats,
+            pitcherStats: player.pitcherStats,
+          }));
+
+        // 2. Create archived team record
+        const archivedTeamRecord: TeamRecord = {
+          wins: currentRecord?.wins ?? 0,
+          losses: currentRecord?.losses ?? 0,
+          ties: currentRecord?.ties,
+          otLosses: currentRecord?.otLosses,
+          longestWinStreak: currentRecord?.longestWinStreak,
+          longestLosingStreak: currentRecord?.longestLosingStreak,
+        };
+
+        // 3. Create archived season
+        const archivedSeason: ArchivedSeason = {
+          id: Date.now().toString(),
+          seasonName,
+          sport,
+          archivedAt: new Date().toISOString(),
+          teamRecord: archivedTeamRecord,
+          playerStats: archivedPlayerStats,
+        };
+
+        // 4. Check if this is a new best record (by win percentage)
+        const existingHistory = state.teamSettings.seasonHistory || [];
+        const currentWins = currentRecord?.wins ?? 0;
+        const currentLosses = currentRecord?.losses ?? 0;
+        const currentTies = currentRecord?.ties ?? 0;
+        const currentTotal = currentWins + currentLosses + currentTies;
+        const currentWinPct = currentTotal > 0 ? currentWins / currentTotal : 0;
+
+        let newBestRecord = false;
+        if (existingHistory.length === 0) {
+          // First season archived is automatically best
+          newBestRecord = currentTotal > 0;
+        } else {
+          // Compare against all previous seasons
+          const bestPrevious = existingHistory.reduce((best, season) => {
+            const w = season.teamRecord.wins;
+            const l = season.teamRecord.losses;
+            const t = season.teamRecord.ties ?? 0;
+            const total = w + l + t;
+            const pct = total > 0 ? w / total : 0;
+            return pct > best.pct ? { pct, season } : best;
+          }, { pct: 0, season: null as ArchivedSeason | null });
+
+          newBestRecord = currentWinPct > bestPrevious.pct;
+        }
+
+        // 5. Add to season history
+        const seasonHistory = [...existingHistory, archivedSeason];
+
+        // 6. Zero out player stats
+        const updatedPlayers = players.map(player => ({
+          ...player,
+          stats: undefined,
+          goalieStats: undefined,
+          pitcherStats: undefined,
+          gameLogs: [], // Clear game logs for new season
+        }));
+
+        // 7. Zero out team record
+        const newRecord: TeamRecord = {
+          wins: 0,
+          losses: 0,
+          ties: (sport === 'hockey' || sport === 'soccer') ? 0 : undefined,
+          otLosses: sport === 'hockey' ? 0 : undefined,
+          longestWinStreak: 0,
+          longestLosingStreak: 0,
+        };
+
+        // 8. Update state
+        set({
+          teamSettings: {
+            ...state.teamSettings,
+            seasonHistory,
+            record: newRecord,
+            currentSeasonName: undefined, // Clear until new season is named
+          },
+          players: updatedPlayers,
+        });
+
+        return { success: true, newBestRecord };
+      },
 
       currentPlayerId: null, // No default player
       setCurrentPlayerId: (id) => set({ currentPlayerId: id }),
