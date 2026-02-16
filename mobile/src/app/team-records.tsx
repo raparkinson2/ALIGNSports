@@ -427,32 +427,32 @@ export default function TeamRecordsScreen() {
               <Animated.View
                 key={category.title}
                 entering={FadeInDown.delay(100 + catIndex * 50).springify()}
-                className="mb-4"
+                className="mb-2"
               >
                 <View className="bg-slate-800/60 rounded-xl border border-slate-700/50 overflow-hidden">
                   {/* Category Header */}
-                  <View className="flex-row items-center px-4 py-3 bg-slate-700/30 border-b border-slate-700/50">
-                    <View className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center mr-3">
+                  <View className="flex-row items-center px-3 py-2 bg-slate-700/30 border-b border-slate-700/50">
+                    <View className="w-6 h-6 rounded-full bg-slate-800 items-center justify-center mr-2">
                       {category.icon}
                     </View>
-                    <Text className="text-white font-semibold flex-1">{category.title}</Text>
+                    <Text className="text-white font-semibold text-sm flex-1">{category.title}</Text>
                   </View>
 
                   {/* Records */}
                   {category.records.map((record, index) => (
                     <View
                       key={record.playerId}
-                      className={`flex-row items-center px-4 py-3 ${
+                      className={`flex-row items-center px-3 py-2 ${
                         index !== category.records.length - 1 ? 'border-b border-slate-700/30' : ''
                       }`}
                     >
                       {/* Rank */}
                       <View
-                        className="w-8 h-8 rounded-full items-center justify-center mr-3"
+                        className="w-6 h-6 rounded-full items-center justify-center mr-2"
                         style={{ backgroundColor: `${getMedalColor(index)}20` }}
                       >
                         <Text
-                          className="text-xs font-bold"
+                          className="text-[10px] font-bold"
                           style={{ color: getMedalColor(index) }}
                         >
                           {getMedalEmoji(index)}
@@ -460,16 +460,16 @@ export default function TeamRecordsScreen() {
                       </View>
 
                       {/* Player */}
-                      <PlayerAvatar player={record.player} size={36} />
-                      <View className="flex-1 ml-3">
-                        <Text className="text-white font-medium">{record.playerName}</Text>
-                        <Text className="text-slate-500 text-xs">#{record.player.number}</Text>
+                      <PlayerAvatar player={record.player} size={28} />
+                      <View className="flex-1 ml-2">
+                        <Text className="text-white font-medium text-sm">{record.playerName}</Text>
+                        <Text className="text-slate-500 text-[10px]">#{record.player.number}</Text>
                       </View>
 
                       {/* Value */}
                       <View className="items-end">
                         <Text
-                          className="text-xl font-bold"
+                          className="text-lg font-bold"
                           style={{ color: getMedalColor(index) }}
                         >
                           {category.isLowerBetter ? record.value.toFixed(2) : record.value}

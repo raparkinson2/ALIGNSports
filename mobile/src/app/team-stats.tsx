@@ -1110,32 +1110,32 @@ export default function TeamStatsScreen() {
                 </Pressable>
               </View>
 
-              <ScrollView className="flex-1 px-5 pt-4" keyboardShouldPersistTaps="handled">
+              <ScrollView className="flex-1 px-5 pt-3" keyboardShouldPersistTaps="handled">
                 {/* Player Info */}
                 {selectedPlayer && (
-                  <View className="mb-4">
+                  <View className="mb-3">
                     <Text className="text-cyan-400 text-sm">#{selectedPlayer.number}</Text>
-                    <Text className="text-white text-2xl font-bold">{selectedPlayer.firstName} {selectedPlayer.lastName}</Text>
+                    <Text className="text-white text-xl font-bold">{selectedPlayer.firstName} {selectedPlayer.lastName}</Text>
                   </View>
                 )}
 
                 {/* Date Picker */}
-                <View className="mb-6">
-                  <Text className="text-slate-400 text-sm mb-2">Game Date</Text>
+                <View className="mb-4">
+                  <Text className="text-slate-400 text-xs mb-1">Game Date</Text>
                   <Pressable
                     onPress={() => setShowDatePicker(!showDatePicker)}
-                    className="bg-slate-800 rounded-xl px-4 py-3 border border-slate-700 flex-row items-center justify-between"
+                    className="bg-slate-800 rounded-lg px-3 py-2.5 border border-slate-700 flex-row items-center justify-between"
                   >
                     <View className="flex-row items-center">
-                      <Calendar size={20} color="#67e8f9" />
-                      <Text className="text-white text-lg ml-3">
+                      <Calendar size={18} color="#67e8f9" />
+                      <Text className="text-white text-base ml-2">
                         {gameDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                       </Text>
                     </View>
-                    <ChevronRight size={18} color="#64748b" />
+                    <ChevronRight size={16} color="#64748b" />
                   </Pressable>
                   {showDatePicker && (
-                    <View className="bg-slate-800 rounded-xl mt-2 overflow-hidden items-center">
+                    <View className="bg-slate-800 rounded-lg mt-2 overflow-hidden items-center">
                       <DateTimePicker
                         value={gameDate}
                         mode="date"
@@ -1152,12 +1152,12 @@ export default function TeamStatsScreen() {
                 </View>
 
                 {/* Stat Fields */}
-                <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
                   Game Stats
                 </Text>
                 {currentStatFields.map((field) => (
-                  <View key={field.key} className="mb-4">
-                    <Text className="text-slate-400 text-sm mb-2">{field.label}</Text>
+                  <View key={field.key} className="mb-2.5">
+                    <Text className="text-slate-400 text-xs mb-1">{field.label}</Text>
                     {field.key === 'plusMinus' ? (
                       // Special +/- control with increment/decrement buttons
                       <View className="flex-row items-center">
@@ -1167,12 +1167,12 @@ export default function TeamStatsScreen() {
                             const current = parseInt(editStats[field.key] || '0', 10) || 0;
                             setEditStats({ ...editStats, [field.key]: String(current - 1) });
                           }}
-                          className="bg-red-500/20 border border-red-500/50 rounded-xl w-16 h-14 items-center justify-center active:bg-red-500/40"
+                          className="bg-red-500/20 border border-red-500/50 rounded-lg w-14 h-11 items-center justify-center active:bg-red-500/40"
                         >
-                          <Text className="text-red-400 text-2xl font-bold">−</Text>
+                          <Text className="text-red-400 text-xl font-bold">−</Text>
                         </Pressable>
-                        <View className="flex-1 mx-3 bg-slate-800 rounded-xl px-4 py-3 border border-slate-700 items-center">
-                          <Text className="text-white text-xl font-semibold">
+                        <View className="flex-1 mx-2 bg-slate-800 rounded-lg px-3 py-2 border border-slate-700 items-center">
+                          <Text className="text-white text-lg font-semibold">
                             {(() => {
                               const val = parseInt(editStats[field.key] || '0', 10) || 0;
                               return val > 0 ? `+${val}` : String(val);
@@ -1185,14 +1185,14 @@ export default function TeamStatsScreen() {
                             const current = parseInt(editStats[field.key] || '0', 10) || 0;
                             setEditStats({ ...editStats, [field.key]: String(current + 1) });
                           }}
-                          className="bg-green-500/20 border border-green-500/50 rounded-xl w-16 h-14 items-center justify-center active:bg-green-500/40"
+                          className="bg-green-500/20 border border-green-500/50 rounded-lg w-14 h-11 items-center justify-center active:bg-green-500/40"
                         >
-                          <Text className="text-green-400 text-2xl font-bold">+</Text>
+                          <Text className="text-green-400 text-xl font-bold">+</Text>
                         </Pressable>
                       </View>
                     ) : (
                       <TextInput
-                        className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg border border-slate-700"
+                        className="bg-slate-800 rounded-lg px-3 py-2.5 text-white text-base border border-slate-700"
                         value={editStats[field.key] === '0' ? '' : editStats[field.key]}
                         onChangeText={(text) => setEditStats({ ...editStats, [field.key]: text.replace(/[^0-9]/g, '') || '0' })}
                         keyboardType="number-pad"
@@ -1252,22 +1252,22 @@ export default function TeamStatsScreen() {
                   };
 
                   return (
-                    <View className="mt-6 mb-8">
-                      <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                    <View className="mt-4 mb-6">
+                      <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
                         Game Log ({playerLogs.length})
                       </Text>
-                      <View className="bg-slate-800/60 rounded-2xl border border-slate-700/50 overflow-hidden">
+                      <View className="bg-slate-800/60 rounded-xl border border-slate-700/50 overflow-hidden">
                         {/* Header Row */}
-                        <View className="flex-row items-center px-4 py-2 bg-slate-700/50 border-b border-slate-700">
-                          <Text className="text-slate-400 text-xs font-semibold w-14">Date</Text>
+                        <View className="flex-row items-center px-3 py-1.5 bg-slate-700/50 border-b border-slate-700">
+                          <Text className="text-slate-400 text-[10px] font-semibold w-12">Date</Text>
                           <View className="flex-row flex-1 justify-around">
                             {logHeaders.map((header) => (
-                              <Text key={header} className="text-slate-400 text-xs font-semibold w-10 text-center">
+                              <Text key={header} className="text-slate-400 text-[10px] font-semibold w-8 text-center">
                                 {header}
                               </Text>
                             ))}
                           </View>
-                          <View className="w-8" />
+                          <View className="w-6" />
                         </View>
                         {/* Data Rows */}
                         {playerLogs.map((log, index) => {
@@ -1277,9 +1277,9 @@ export default function TeamStatsScreen() {
                           return (
                             <View
                               key={log.id}
-                              className={`flex-row items-center px-4 py-3 ${index !== playerLogs.length - 1 ? 'border-b border-slate-700/50' : ''}`}
+                              className={`flex-row items-center px-3 py-2 ${index !== playerLogs.length - 1 ? 'border-b border-slate-700/50' : ''}`}
                             >
-                              <Text className="text-cyan-400 text-sm font-medium w-14">{dateStr}</Text>
+                              <Text className="text-cyan-400 text-xs font-medium w-12">{dateStr}</Text>
                               <View className="flex-row flex-1 justify-around">
                                 {logHeaders.map((header) => {
                                   const key = getStatKey(header);
@@ -1287,7 +1287,7 @@ export default function TeamStatsScreen() {
                                   // Format +/- with sign
                                   const displayValue = header === '+/-' && value > 0 ? `+${value}` : String(value);
                                   return (
-                                    <Text key={header} className="text-white text-sm w-10 text-center">
+                                    <Text key={header} className="text-white text-xs w-8 text-center">
                                       {displayValue}
                                     </Text>
                                   );
@@ -1295,9 +1295,9 @@ export default function TeamStatsScreen() {
                               </View>
                               <Pressable
                                 onPress={() => handleDeleteGameLog(log.id, currentStatType)}
-                                className="w-8 items-center"
+                                className="w-6 items-center"
                               >
-                                <Trash2 size={16} color="#ef4444" />
+                                <Trash2 size={14} color="#ef4444" />
                               </Pressable>
                             </View>
                           );
