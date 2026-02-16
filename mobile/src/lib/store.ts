@@ -680,6 +680,7 @@ export interface TeamSettings {
   teamTotalAmountOwed?: number; // Total amount owed by the team (admin-only view)
   enabledRoles?: ('player' | 'reserve' | 'coach' | 'parent')[]; // Which roles are available for this team
   isSoftball?: boolean; // If true, adds 10th fielder (Short Fielder) for softball
+  showTeamRecords?: boolean; // Toggle to show/hide team records feature (requires showTeamStats)
 }
 
 // Multi-team support: A complete team with all its data

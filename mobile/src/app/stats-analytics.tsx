@@ -2,7 +2,7 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { ArrowLeft, TrendingUp, UserCheck, BarChart3, ChevronRight } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, UserCheck, BarChart3, ChevronRight, Trophy } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore } from '@/lib/store';
@@ -10,6 +10,7 @@ import { useTeamStore } from '@/lib/store';
 export default function StatsAnalyticsScreen() {
   const router = useRouter();
   const showTeamStats = useTeamStore((s) => s.teamSettings.showTeamStats !== false);
+  const showTeamRecords = useTeamStore((s) => s.teamSettings.showTeamRecords === true && s.teamSettings.showTeamStats !== false);
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -68,9 +69,31 @@ export default function StatsAnalyticsScreen() {
             </Pressable>
           </Animated.View>
 
+          {/* Team Records */}
+          {showTeamRecords && (
+            <Animated.View entering={FadeInDown.delay(150).springify()}>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/team-records');
+                }}
+                className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
+              >
+                <View className="w-10 h-10 rounded-full items-center justify-center bg-amber-500/20">
+                  <Trophy size={20} color="#f59e0b" />
+                </View>
+                <View className="flex-1 ml-3">
+                  <Text className="font-semibold text-white">Team Records</Text>
+                  <Text className="text-slate-400 text-sm">All-time team records and leaders</Text>
+                </View>
+                <ChevronRight size={20} color="#64748b" />
+              </Pressable>
+            </Animated.View>
+          )}
+
           {/* View Team Stats */}
           {showTeamStats && (
-            <Animated.View entering={FadeInDown.delay(150).springify()}>
+            <Animated.View entering={FadeInDown.delay(200).springify()}>
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

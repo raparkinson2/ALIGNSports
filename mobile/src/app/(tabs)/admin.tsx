@@ -32,6 +32,7 @@ import {
   Heart,
   Calendar,
   RefreshCw,
+  Trophy,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -1418,6 +1419,34 @@ export default function AdminScreen() {
                     onValueChange={(value) => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setTeamSettings({ allowPlayerSelfStats: value });
+                    }}
+                    trackColor={{ false: '#334155', true: '#22c55e' }}
+                    thumbColor="#ffffff"
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Team Records Toggle - only show when team stats is enabled */}
+            {teamSettings.showTeamStats !== false && (
+              <View className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/30 ml-4">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View className="bg-amber-500/10 p-2 rounded-full">
+                      <Trophy size={18} color="#f59e0b" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="text-slate-200 font-medium">Team Records</Text>
+                      <Text className="text-slate-400 text-sm">
+                        Show all-time team records and leaders
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={teamSettings.showTeamRecords === true}
+                    onValueChange={(value) => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setTeamSettings({ showTeamRecords: value });
                     }}
                     trackColor={{ false: '#334155', true: '#22c55e' }}
                     thumbColor="#ffffff"
