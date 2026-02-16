@@ -1025,6 +1025,7 @@ export default function MoreScreen() {
   const effectivePlayerId = currentPlayerId || (players.length > 0 ? players[0].id : null);
   const currentPlayer = players.find((p) => p.id === effectivePlayerId);
   const canManageTeam = currentPlayer?.roles?.includes('admin') || currentPlayer?.roles?.includes('captain');
+  const canEditPlayers = currentPlayer?.roles?.includes('admin') || currentPlayer?.roles?.includes('coach');
 
   // Check how many teams the user belongs to
   const userTeams = teams.filter((team) =>
@@ -1052,8 +1053,8 @@ export default function MoreScreen() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const handleEditProfile = (player: Player) => {
-    // Can edit own profile, or any profile if admin/captain
-    const canEdit = player.id === effectivePlayerId || canManageTeam;
+    // Can edit own profile, or any profile if admin/coach
+    const canEdit = player.id === effectivePlayerId || canEditPlayers;
     if (canEdit) {
       setPlayerToEdit(player);
       setEditModalVisible(true);

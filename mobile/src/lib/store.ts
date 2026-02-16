@@ -795,6 +795,7 @@ interface TeamStore {
 
   // Helper to check if current user has admin/captain privileges
   canManageTeam: () => boolean;
+  canEditPlayers: () => boolean;
   isAdmin: () => boolean;
 
   // Notification Preferences
@@ -1957,6 +1958,11 @@ export const useTeamStore = create<TeamStore>()(
         const state = get();
         const currentPlayer = state.players.find((p) => p.id === state.currentPlayerId);
         return currentPlayer?.roles?.includes('admin') || currentPlayer?.roles?.includes('captain') || currentPlayer?.roles?.includes('coach') || false;
+      },
+      canEditPlayers: () => {
+        const state = get();
+        const currentPlayer = state.players.find((p) => p.id === state.currentPlayerId);
+        return currentPlayer?.roles?.includes('admin') || currentPlayer?.roles?.includes('coach') || false;
       },
       isAdmin: () => {
         const state = get();

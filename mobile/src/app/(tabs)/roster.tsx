@@ -426,6 +426,7 @@ export default function RosterScreen() {
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const teamName = useTeamStore((s) => s.teamName);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
+  const canEditPlayers = useTeamStore((s) => s.canEditPlayers);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const showTeamStats = teamSettings.showTeamStats !== false;
@@ -480,7 +481,7 @@ export default function RosterScreen() {
   };
 
   const openAddModal = () => {
-    if (!canManageTeam()) {
+    if (!canEditPlayers()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -489,7 +490,7 @@ export default function RosterScreen() {
   };
 
   const openEditModal = (player: Player) => {
-    if (!canManageTeam()) {
+    if (!canEditPlayers()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -525,9 +526,9 @@ export default function RosterScreen() {
   // Handle player card press - either edit player or go to stats
   const handlePlayerPress = (player: Player) => {
     const isOwnProfile = player.id === currentPlayerId;
-    const canEdit = canManageTeam();
+    const canEdit = canEditPlayers();
 
-    // If admin/captain, open edit modal
+    // If admin/coach, open edit modal
     if (canEdit) {
       openEditModal(player);
       return;
@@ -788,7 +789,7 @@ export default function RosterScreen() {
           </View>
           <View className="flex-row items-center justify-between">
             <Text className="text-white text-3xl font-bold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{teamName} Roster</Text>
-            {canManageTeam() && (
+            {canEditPlayers() && (
               <Pressable
                 onPress={openAddModal}
               >
@@ -829,7 +830,7 @@ export default function RosterScreen() {
                         onPress={() => handlePlayerPress(player)}
                         showStats={showTeamStats}
                         isCurrentUser={player.id === currentPlayerId}
-                        canEditOwnStats={allowPlayerSelfStats && !canManageTeam()}
+                        canEditOwnStats={allowPlayerSelfStats && !canEditPlayers()}
                       />
                     </View>
                   ))}

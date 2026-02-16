@@ -85,10 +85,25 @@ export default function NoticesScreen() {
                       <Text className="text-slate-300 text-sm leading-6">
                         {'\u2022'} Access Admin Panel{'\n'}
                         {'\u2022'} Player Management (add, edit, remove){'\n'}
-                        {'\u2022'} Delete Games{'\n'}
                         {'\u2022'} Payment Methods (add/remove){'\n'}
                         {'\u2022'} Payment Periods (create/manage){'\n'}
+                        {'\u2022'} Payment Tracking{'\n'}
                         {'\u2022'} Delete Any Poll
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Admin + Coach Section */}
+                  <View className="mb-4">
+                    <View className="flex-row items-center mb-2">
+                      <View className="w-6 h-6 rounded-full bg-blue-500/30 items-center justify-center mr-2">
+                        <Users size={14} color="#3b82f6" />
+                      </View>
+                      <Text className="text-blue-400 font-semibold">Admin + Coach</Text>
+                    </View>
+                    <View className="bg-slate-700/30 rounded-lg p-3">
+                      <Text className="text-slate-300 text-sm leading-6">
+                        {'\u2022'} Edit Any Player Profile
                       </Text>
                     </View>
                   </View>
@@ -103,12 +118,10 @@ export default function NoticesScreen() {
                     </View>
                     <View className="bg-slate-700/30 rounded-lg p-3">
                       <Text className="text-slate-300 text-sm leading-6">
-                        {'\u2022'} Edit Games (opponent, date, time, location){'\n'}
+                        {'\u2022'} Create, Edit, Delete Games{'\n'}
                         {'\u2022'} Set Lineups (all formation types){'\n'}
                         {'\u2022'} Check In/Out Any Player{'\n'}
                         {'\u2022'} Edit/Delete Events{'\n'}
-                        {'\u2022'} Payment Tracking{'\n'}
-                        {'\u2022'} Edit Any Player Profile{'\n'}
                         {'\u2022'} Add Games from Calendar
                       </Text>
                     </View>
@@ -148,7 +161,7 @@ export default function NoticesScreen() {
                         {'\u2022'} View Roster{'\n'}
                         {'\u2022'} View Payments
                       </Text>
-                      <Text className="text-red-400 text-sm mt-2">
+                      <Text className="text-red-400 text-sm leading-6 mt-2">
                         {'\u2022'} No access to Chat{'\n'}
                         {'\u2022'} No access to Photos{'\n'}
                         {'\u2022'} No access to Admin Panel

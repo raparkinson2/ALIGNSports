@@ -930,9 +930,9 @@ export default function PaymentsScreen() {
     ? players.filter((p) => !selectedPeriod.playerPayments.some((pp) => pp.playerId === p.id))
     : [];
 
-  // Check if current user can view this player's details
+  // Check if current user can view this player's details (admin only for other players)
   const canViewPlayerDetails = (playerId: string) => {
-    return canManageTeam() || playerId === currentPlayerId;
+    return isAdmin() || playerId === currentPlayerId;
   };
 
   // Get current player's payment status across all periods
@@ -1015,8 +1015,8 @@ export default function PaymentsScreen() {
             )}
           </Animated.View>
 
-          {/* Payment Tracking Section */}
-          {(isAdmin() || canManageTeam()) && (
+          {/* Payment Tracking Section - Admin Only */}
+          {isAdmin() && (
             <Animated.View entering={FadeInDown.delay(150).springify()}>
               <View className="flex-row items-center justify-between mb-2">
                 <View className="flex-row items-center">
@@ -1122,8 +1122,8 @@ export default function PaymentsScreen() {
             </Animated.View>
           )}
 
-          {/* My Payment Status - For regular players */}
-          {!isAdmin() && !canManageTeam() && myPaymentStatus.length > 0 && (
+          {/* My Payment Status - For non-admin players */}
+          {!isAdmin() && myPaymentStatus.length > 0 && (
             <Animated.View entering={FadeInDown.delay(150).springify()}>
               <View className="flex-row items-center mb-3">
                 <DollarSign size={16} color="#22c55e" />
@@ -1672,8 +1672,8 @@ export default function PaymentsScreen() {
                     );
                   })()}
 
-                  {/* Add Payment Section - Only for Admins/Captains */}
-                  {canManageTeam() && (
+                  {/* Add Payment Section - Admin Only */}
+                  {isAdmin() && (
                     <View className="bg-slate-800/60 rounded-xl p-4 mb-6 border border-slate-700/50">
                       <Text className="text-cyan-400 font-semibold mb-3">Add Payment</Text>
 
@@ -1772,7 +1772,7 @@ export default function PaymentsScreen() {
                                 {entry.note && ` • ${entry.note}`}
                               </Text>
                             </View>
-                            {canManageTeam() && (
+                            {isAdmin() && (
                               <Pressable
                                 onPress={() => handleDeletePaymentEntry(entry.id)}
                                 className="p-2"
