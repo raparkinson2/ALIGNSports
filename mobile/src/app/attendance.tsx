@@ -1,13 +1,13 @@
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Check, X, HelpCircle, TrendingUp, Calendar, Users } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { useTeamStore, getPlayerName } from '@/lib/store';
+import { useTeamStore, getPlayerName, Player, Game } from '@/lib/store';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 interface AttendanceStats {
   playerId: string;
@@ -19,27 +19,36 @@ interface AttendanceStats {
   attendanceRate: number;
 }
 
+interface GameAttendance {
+  gameId: string;
+  date: string;
+  opponent: string;
+  response: 'in' | 'out' | 'no_response';
+}
+
 export default function AttendanceScreen() {
   const router = useRouter();
   const players = useTeamStore((s) => s.players);
   const games = useTeamStore((s) => s.games);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  // Get past games
+  const pastGames = useMemo(() => {
+    const now = new Date();
+    return games
+      .filter((game) => new Date(game.date) < now)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [games]);
 
   // Calculate attendance stats for each player
   const attendanceStats = useMemo(() => {
-    // Only count past games (games that have already happened)
-    const now = new Date();
-    const pastGames = games.filter((game) => {
-      const gameDate = new Date(game.date);
-      return gameDate < now;
-    });
-
     const stats: AttendanceStats[] = players.map((player) => {
       let gamesIn = 0;
       let gamesOut = 0;
       let noResponse = 0;
 
       pastGames.forEach((game) => {
-        // Only count if player was invited to the game
         if (game.invitedPlayers?.includes(player.id)) {
           if (game.checkedInPlayers?.includes(player.id)) {
             gamesIn++;
@@ -65,7 +74,6 @@ export default function AttendanceScreen() {
       };
     });
 
-    // Sort by attendance rate (highest first), then by total games
     return stats
       .filter((s) => s.totalGames > 0)
       .sort((a, b) => {
@@ -74,7 +82,7 @@ export default function AttendanceScreen() {
         }
         return b.totalGames - a.totalGames;
       });
-  }, [players, games]);
+  }, [players, pastGames]);
 
   // Team totals
   const teamTotals = useMemo(() => {
@@ -93,13 +101,54 @@ export default function AttendanceScreen() {
     return { ...totals, totalResponses, overallRate };
   }, [attendanceStats]);
 
+  // Get game-by-game attendance for selected player
+  const playerGameAttendance = useMemo((): GameAttendance[] => {
+    if (!selectedPlayer) return [];
+
+    return pastGames
+      .filter((game) => game.invitedPlayers?.includes(selectedPlayer.id))
+      .map((game) => {
+        let response: 'in' | 'out' | 'no_response' = 'no_response';
+        if (game.checkedInPlayers?.includes(selectedPlayer.id)) {
+          response = 'in';
+        } else if (game.checkedOutPlayers?.includes(selectedPlayer.id)) {
+          response = 'out';
+        }
+
+        return {
+          gameId: game.id,
+          date: game.date,
+          opponent: game.opponent,
+          response,
+        };
+      });
+  }, [selectedPlayer, pastGames]);
+
   const getPlayer = (playerId: string) => players.find((p) => p.id === playerId);
 
   const getAttendanceColor = (rate: number) => {
-    if (rate >= 80) return '#22c55e'; // green
-    if (rate >= 60) return '#eab308'; // yellow
-    if (rate >= 40) return '#f97316'; // orange
-    return '#ef4444'; // red
+    if (rate >= 80) return '#22c55e';
+    if (rate >= 60) return '#eab308';
+    if (rate >= 40) return '#f97316';
+    return '#ef4444';
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const handlePlayerPress = (playerId: string) => {
+    const player = getPlayer(playerId);
+    if (player) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setSelectedPlayer(player);
+      setModalVisible(true);
+    }
   };
 
   return (
@@ -217,7 +266,10 @@ export default function AttendanceScreen() {
                   key={stat.playerId}
                   entering={FadeInDown.delay(200 + index * 30).springify()}
                 >
-                  <View className="bg-slate-800/60 rounded-xl p-4 mb-3 border border-slate-700/30">
+                  <Pressable
+                    onPress={() => handlePlayerPress(stat.playerId)}
+                    className="bg-slate-800/60 rounded-xl p-4 mb-3 border border-slate-700/30 active:bg-slate-700/60"
+                  >
                     <View className="flex-row items-center mb-3">
                       <PlayerAvatar player={player} size={44} />
                       <View className="flex-1 ml-3">
@@ -275,13 +327,108 @@ export default function AttendanceScreen() {
                         </View>
                       </View>
                     </View>
-                  </View>
+                  </Pressable>
                 </Animated.View>
               );
             })
           )}
         </ScrollView>
       </SafeAreaView>
+
+      {/* Player Game History Modal */}
+      <Modal visible={modalVisible} animationType="slide" transparent>
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-slate-900 rounded-t-3xl max-h-[80%]">
+            {/* Modal Header */}
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              {selectedPlayer && (
+                <View className="flex-row items-center flex-1">
+                  <PlayerAvatar player={selectedPlayer} size={40} />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-white text-lg font-bold">{getPlayerName(selectedPlayer)}</Text>
+                    <Text className="text-slate-400 text-sm">Game History</Text>
+                  </View>
+                </View>
+              )}
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setModalVisible(false);
+                }}
+                className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center"
+              >
+                <X size={18} color="#94a3b8" />
+              </Pressable>
+            </View>
+
+            {/* Game List */}
+            <ScrollView className="px-5 py-4" showsVerticalScrollIndicator={false}>
+              {playerGameAttendance.length === 0 ? (
+                <View className="items-center py-8">
+                  <Calendar size={40} color="#64748b" />
+                  <Text className="text-slate-400 text-center mt-3">No games found</Text>
+                </View>
+              ) : (
+                playerGameAttendance.map((game, index) => (
+                  <View
+                    key={game.gameId}
+                    className="flex-row items-center py-3 border-b border-slate-800"
+                  >
+                    {/* Response Icon */}
+                    <View
+                      className={`w-10 h-10 rounded-full items-center justify-center ${
+                        game.response === 'in'
+                          ? 'bg-green-500/20'
+                          : game.response === 'out'
+                          ? 'bg-red-500/20'
+                          : 'bg-slate-700/50'
+                      }`}
+                    >
+                      {game.response === 'in' ? (
+                        <Check size={20} color="#22c55e" />
+                      ) : game.response === 'out' ? (
+                        <X size={20} color="#ef4444" />
+                      ) : (
+                        <HelpCircle size={20} color="#94a3b8" />
+                      )}
+                    </View>
+
+                    {/* Game Details */}
+                    <View className="flex-1 ml-3">
+                      <Text className="text-white font-medium">vs {game.opponent}</Text>
+                      <Text className="text-slate-400 text-sm">{formatDate(game.date)}</Text>
+                    </View>
+
+                    {/* Response Label */}
+                    <View
+                      className={`px-3 py-1 rounded-full ${
+                        game.response === 'in'
+                          ? 'bg-green-500/20'
+                          : game.response === 'out'
+                          ? 'bg-red-500/20'
+                          : 'bg-slate-700/50'
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs font-medium ${
+                          game.response === 'in'
+                            ? 'text-green-400'
+                            : game.response === 'out'
+                            ? 'text-red-400'
+                            : 'text-slate-400'
+                        }`}
+                      >
+                        {game.response === 'in' ? 'In' : game.response === 'out' ? 'Out' : 'No Response'}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              )}
+              <View className="h-8" />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
