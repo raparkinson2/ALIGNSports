@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, TextInput, Modal } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
@@ -599,60 +599,68 @@ export default function TeamRecordsScreen() {
       </SafeAreaView>
 
       {/* Add Championship Modal */}
-      <Modal visible={showAddModal} animationType="slide" transparent>
-        <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Text className="text-white text-lg font-bold">Add Championship</Text>
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowAddModal(false);
-                  setNewYear('');
-                  setNewTitle('');
-                }}
-                className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center"
-              >
-                <X size={18} color="#94a3b8" />
-              </Pressable>
-            </View>
+      <Modal
+        visible={showAddModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => {
+          setShowAddModal(false);
+          setNewYear('');
+          setNewTitle('');
+        }}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              className="flex-1"
+            >
+              <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setShowAddModal(false);
+                    setNewYear('');
+                    setNewTitle('');
+                  }}
+                >
+                  <X size={24} color="#64748b" />
+                </Pressable>
+                <Text className="text-white text-lg font-semibold">Add Championship</Text>
+                <Pressable
+                  onPress={handleAddChampionship}
+                  disabled={!newYear.trim() || !newTitle.trim()}
+                >
+                  <Text className={`font-semibold ${
+                    newYear.trim() && newTitle.trim() ? 'text-amber-400' : 'text-slate-600'
+                  }`}>
+                    Save
+                  </Text>
+                </Pressable>
+              </View>
 
-            <View className="px-5 py-4">
-              <Text className="text-slate-400 text-sm mb-2">Year/Season</Text>
-              <TextInput
-                value={newYear}
-                onChangeText={setNewYear}
-                placeholder="e.g., 2024, 2023-24"
-                placeholderTextColor="#64748b"
-                className="bg-slate-800 rounded-xl px-4 py-3 text-white mb-4"
-              />
+              <View className="px-5 pt-6">
+                <Text className="text-slate-400 text-sm mb-2">Year/Season</Text>
+                <TextInput
+                  value={newYear}
+                  onChangeText={setNewYear}
+                  placeholder="e.g., 2024, 2023-24"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white mb-4"
+                  autoFocus
+                />
 
-              <Text className="text-slate-400 text-sm mb-2">Championship Title</Text>
-              <TextInput
-                value={newTitle}
-                onChangeText={setNewTitle}
-                placeholder="e.g., League Champions, Tournament Winners"
-                placeholderTextColor="#64748b"
-                className="bg-slate-800 rounded-xl px-4 py-3 text-white mb-6"
-              />
-
-              <Pressable
-                onPress={handleAddChampionship}
-                disabled={!newYear.trim() || !newTitle.trim()}
-                className={`rounded-xl py-3.5 items-center ${
-                  newYear.trim() && newTitle.trim() ? 'bg-amber-500' : 'bg-slate-700'
-                }`}
-              >
-                <Text className={`font-semibold ${
-                  newYear.trim() && newTitle.trim() ? 'text-black' : 'text-slate-500'
-                }`}>
-                  Add Championship
-                </Text>
-              </Pressable>
-            </View>
-
-            <View className="h-8" />
-          </View>
+                <Text className="text-slate-400 text-sm mb-2">Championship Title</Text>
+                <TextInput
+                  value={newTitle}
+                  onChangeText={setNewTitle}
+                  placeholder="e.g., League Champions, Tournament Winners"
+                  placeholderTextColor="#64748b"
+                  className="bg-slate-800 rounded-xl px-4 py-3 text-white"
+                />
+              </View>
+            </KeyboardAvoidingView>
+          </SafeAreaView>
         </View>
       </Modal>
     </View>
