@@ -2,7 +2,7 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { ArrowLeft, FileText, ChevronDown, ChevronUp, Shield, Users, UserCheck, Eye, HelpCircle } from 'lucide-react-native';
+import { ArrowLeft, FileText, ChevronDown, ChevronUp, Shield, Users, UserCheck, Eye } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
@@ -11,7 +11,6 @@ export default function NoticesScreen() {
   const router = useRouter();
   const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(false);
   const [isPermissionsExpanded, setIsPermissionsExpanded] = useState(false);
-  const [isFaqExpanded, setIsFaqExpanded] = useState(false);
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -176,85 +175,8 @@ export default function NoticesScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* FAQs */}
-          <Animated.View entering={FadeInDown.delay(150).springify()} className="mb-3">
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setIsFaqExpanded(!isFaqExpanded);
-              }}
-              className="bg-slate-800/80 rounded-xl p-4 border border-slate-700/50 active:bg-slate-700/80"
-            >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center flex-1">
-                  <View className="w-10 h-10 rounded-full bg-green-500/20 items-center justify-center mr-3">
-                    <HelpCircle size={20} color="#22c55e" />
-                  </View>
-                  <Text className="text-white font-semibold">FAQs</Text>
-                </View>
-                {isFaqExpanded ? (
-                  <ChevronUp size={20} color="#64748b" />
-                ) : (
-                  <ChevronDown size={20} color="#64748b" />
-                )}
-              </View>
-
-              {isFaqExpanded && (
-                <View className="mt-4 pt-4 border-t border-slate-700/50">
-                  {/* FAQ 1 */}
-                  <View className="mb-4">
-                    <Text className="text-green-400 font-semibold mb-2">How do I check in for a game?</Text>
-                    <Text className="text-slate-400 text-sm leading-5">
-                      Go to the Schedule tab, tap on the game you want to check in for, then tap the check-in button next to your name. You can mark yourself as "In" or "Out".
-                    </Text>
-                  </View>
-
-                  {/* FAQ 2 */}
-                  <View className="mb-4">
-                    <Text className="text-green-400 font-semibold mb-2">How do I set my unavailable dates?</Text>
-                    <Text className="text-slate-400 text-sm leading-5">
-                      Go to More → My Availability. Here you can select dates when you'll be unavailable. The app will automatically check you out (mark you as "Out") for any games or practices that fall on your unavailable dates. This saves you time so you don't have to manually update your status for each event.
-                    </Text>
-                  </View>
-
-                  {/* FAQ 3 */}
-                  <View className="mb-4">
-                    <Text className="text-green-400 font-semibold mb-2">How do I create a poll?</Text>
-                    <Text className="text-slate-400 text-sm leading-5">
-                      Go to More → Team Polls and tap the "+" button. You can create single or multiple choice polls, set deadlines, and notify team members.
-                    </Text>
-                  </View>
-
-                  {/* FAQ 4 */}
-                  <View className="mb-4">
-                    <Text className="text-green-400 font-semibold mb-2">What's the difference between roles?</Text>
-                    <Text className="text-slate-400 text-sm leading-5">
-                      Admins have full access to all features including payments and player management. Coaches can edit player profiles and stats. Captains can manage games and lineups. Parents have view-only access to schedule, roster, and payments.
-                    </Text>
-                  </View>
-
-                  {/* FAQ 5 */}
-                  <View className="mb-4">
-                    <Text className="text-green-400 font-semibold mb-2">How do I switch between teams?</Text>
-                    <Text className="text-slate-400 text-sm leading-5">
-                      If you're on multiple teams, go to More → Switch Team. You'll see all teams you belong to and can tap to switch between them.
-                    </Text>
-                  </View>
-
-                  {/* FAQ 6 */}
-                  <View>
-                    <Text className="text-green-400 font-semibold mb-2">How do I delete my account?</Text>
-                    <Text className="text-slate-400 text-sm leading-5">
-                      Go to More → scroll to the bottom → Delete My Account. You'll need to type "DELETE" to confirm. This action is permanent and cannot be undone.
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </Pressable>
-          </Animated.View>
-
           {/* Privacy Policy */}
-          <Animated.View entering={FadeInDown.delay(200).springify()}>
+          <Animated.View entering={FadeInDown.delay(150).springify()}>
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

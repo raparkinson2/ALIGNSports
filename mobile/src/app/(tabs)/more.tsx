@@ -31,6 +31,7 @@ import {
   FileText,
   UserX,
   UserCheck,
+  HelpCircle,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -1383,6 +1384,14 @@ export default function MoreScreen() {
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
             Support
           </Text>
+
+          <MenuItem
+            icon={<HelpCircle size={20} color="#67e8f9" />}
+            title="FAQs"
+            subtitle="Frequently asked questions"
+            onPress={() => router.push('/faqs')}
+            index={10}
+          />
 
           <MenuItem
             icon={<Lightbulb size={20} color="#67e8f9" />}
