@@ -14,6 +14,7 @@ interface RecordEntry {
   playerName: string;
   value: number;
   player: Player;
+  seasonName?: string;
 }
 
 interface RecordCategory {
@@ -146,101 +147,67 @@ export default function TeamRecordsScreen() {
     return records;
   }, [teamSettings.record, seasonHistory, teamSettings.currentSeasonName]);
 
-  // Calculate individual records based on sport (all-time, including archived seasons)
+  // Calculate individual records based on sport (best single-season performance)
   const individualRecords = useMemo((): RecordCategory[] => {
     const categories: RecordCategory[] = [];
 
-    // Build a map of all-time aggregated stats per player
-    // Key: playerId, Value: { player info, aggregated stats }
-    interface AllTimePlayerRecord {
+    // Track best single-season performance per player per stat
+    // Key: playerId, Value: { player info, best stats per category with season }
+    interface SeasonPlayerRecord {
       playerId: string;
       playerName: string;
       position: string;
-      player: Player | null; // null if player no longer exists (only in archived)
-      stats: Record<string, number>; // aggregated stat values
-      goalieStats: Record<string, number>; // aggregated goalie stat values
+      player: Player | null;
+      seasonName: string;
+      stats: Record<string, number>;
+      goalieStats: Record<string, number>;
     }
 
-    const allTimeRecords: Map<string, AllTimePlayerRecord> = new Map();
+    // Collect all player-season records
+    const allSeasonRecords: SeasonPlayerRecord[] = [];
 
-    // Helper to add stats to allTimeRecords
-    const addPlayerStats = (
-      playerId: string,
-      playerName: string,
-      position: string,
-      player: Player | null,
-      stats: unknown,
-      goalieStats: unknown
-    ) => {
-      let record = allTimeRecords.get(playerId);
-      if (!record) {
-        record = {
-          playerId,
-          playerName,
-          position,
-          player,
-          stats: {},
-          goalieStats: {},
-        };
-        allTimeRecords.set(playerId, record);
-      }
-      // Update player reference if we have a current player
-      if (player) {
-        record.player = player;
-        record.playerName = getPlayerName(player);
-        record.position = player.position;
-      }
-      // Aggregate stats
-      if (stats && typeof stats === 'object') {
-        Object.entries(stats as Record<string, unknown>).forEach(([key, value]) => {
-          if (typeof value === 'number') {
-            record!.stats[key] = (record!.stats[key] || 0) + value;
-          }
-        });
-      }
-      // Aggregate goalie stats
-      if (goalieStats && typeof goalieStats === 'object') {
-        Object.entries(goalieStats as Record<string, unknown>).forEach(([key, value]) => {
-          if (typeof value === 'number') {
-            record!.goalieStats[key] = (record!.goalieStats[key] || 0) + value;
-          }
-        });
-      }
-    };
-
-    // Add current player stats
+    // Add current player stats as current season
+    const currentSeasonName = teamSettings.currentSeasonName || 'Current';
     players.forEach((player) => {
-      addPlayerStats(
-        player.id,
-        getPlayerName(player),
-        player.position,
-        player,
-        player.stats,
-        player.goalieStats
-      );
+      const stats = player.stats as Record<string, number> | undefined;
+      const goalieStats = player.goalieStats as Record<string, number> | undefined;
+      const hasStats = stats && Object.values(stats).some(v => typeof v === 'number' && v > 0);
+      const hasGoalieStats = goalieStats && Object.values(goalieStats).some(v => typeof v === 'number' && v > 0);
+
+      if (hasStats || hasGoalieStats) {
+        allSeasonRecords.push({
+          playerId: player.id,
+          playerName: getPlayerName(player),
+          position: player.position,
+          player,
+          seasonName: currentSeasonName,
+          stats: stats || {},
+          goalieStats: goalieStats || {},
+        });
+      }
     });
 
     // Add archived season stats
     seasonHistory.forEach((season: ArchivedSeason) => {
       season.playerStats.forEach((archived: ArchivedPlayerStats) => {
-        // Find current player if exists
         const currentPlayer = players.find((p) => p.id === archived.playerId) || null;
-        addPlayerStats(
-          archived.playerId,
-          archived.playerName,
-          archived.position,
-          currentPlayer,
-          archived.stats,
-          archived.goalieStats
-        );
+        const stats = archived.stats as Record<string, number> | undefined;
+        const goalieStats = archived.goalieStats as Record<string, number> | undefined;
+
+        allSeasonRecords.push({
+          playerId: archived.playerId,
+          playerName: archived.playerName,
+          position: archived.position,
+          player: currentPlayer,
+          seasonName: season.seasonName,
+          stats: stats || {},
+          goalieStats: goalieStats || {},
+        });
       });
     });
 
-    // Convert to array for querying
-    const allRecords = Array.from(allTimeRecords.values());
-
     // Helper to create a display-only player object for archived players
-    const createDisplayPlayer = (record: AllTimePlayerRecord): Player => {
+    const createDisplayPlayer = (record: SeasonPlayerRecord): Player => {
       if (record.player) return record.player;
       return {
         id: record.playerId,
@@ -255,11 +222,11 @@ export default function TeamRecordsScreen() {
 
     const getTopPlayers = (
       statKey: string,
-      filterFn?: (record: AllTimePlayerRecord) => boolean
+      filterFn?: (record: SeasonPlayerRecord) => boolean
     ): RecordEntry[] => {
       const entries: RecordEntry[] = [];
 
-      allRecords.forEach((record) => {
+      allSeasonRecords.forEach((record) => {
         if (filterFn && !filterFn(record)) return;
         const value = record.stats[statKey];
         if (value !== undefined && value > 0) {
@@ -268,22 +235,32 @@ export default function TeamRecordsScreen() {
             playerName: record.playerName,
             value,
             player: createDisplayPlayer(record),
+            seasonName: record.seasonName,
           });
         }
       });
 
-      return entries
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 3);
+      // Sort by value descending, then deduplicate keeping best per player
+      entries.sort((a, b) => b.value - a.value);
+      const seen = new Set<string>();
+      const unique: RecordEntry[] = [];
+      for (const entry of entries) {
+        if (!seen.has(entry.playerId)) {
+          seen.add(entry.playerId);
+          unique.push(entry);
+        }
+        if (unique.length >= 3) break;
+      }
+      return unique;
     };
 
     const getTopGoalies = (
       statKey: string,
-      filterFn?: (record: AllTimePlayerRecord) => boolean
+      filterFn?: (record: SeasonPlayerRecord) => boolean
     ): RecordEntry[] => {
       const entries: RecordEntry[] = [];
 
-      allRecords.forEach((record) => {
+      allSeasonRecords.forEach((record) => {
         if (filterFn && !filterFn(record)) return;
         const value = record.goalieStats[statKey];
         if (value !== undefined && value > 0) {
@@ -292,23 +269,32 @@ export default function TeamRecordsScreen() {
             playerName: record.playerName,
             value,
             player: createDisplayPlayer(record),
+            seasonName: record.seasonName,
           });
         }
       });
 
-      return entries
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 3);
+      entries.sort((a, b) => b.value - a.value);
+      const seen = new Set<string>();
+      const unique: RecordEntry[] = [];
+      for (const entry of entries) {
+        if (!seen.has(entry.playerId)) {
+          seen.add(entry.playerId);
+          unique.push(entry);
+        }
+        if (unique.length >= 3) break;
+      }
+      return unique;
     };
 
     const getTopGoaliesLowerBetter = (
       computeValue: (goalieStats: Record<string, number>) => number | undefined,
-      filterFn?: (record: AllTimePlayerRecord) => boolean,
+      filterFn?: (record: SeasonPlayerRecord) => boolean,
       minGames: number = 1
     ): RecordEntry[] => {
       const entries: RecordEntry[] = [];
 
-      allRecords.forEach((record) => {
+      allSeasonRecords.forEach((record) => {
         if (filterFn && !filterFn(record)) return;
         const gameCount = record.goalieStats.games ?? 0;
         if (gameCount < minGames) return;
@@ -319,16 +305,25 @@ export default function TeamRecordsScreen() {
             playerName: record.playerName,
             value,
             player: createDisplayPlayer(record),
+            seasonName: record.seasonName,
           });
         }
       });
 
-      return entries
-        .sort((a, b) => a.value - b.value)
-        .slice(0, 3);
+      entries.sort((a, b) => a.value - b.value);
+      const seen = new Set<string>();
+      const unique: RecordEntry[] = [];
+      for (const entry of entries) {
+        if (!seen.has(entry.playerId)) {
+          seen.add(entry.playerId);
+          unique.push(entry);
+        }
+        if (unique.length >= 3) break;
+      }
+      return unique;
     };
 
-    const isGoalie = (record: AllTimePlayerRecord): boolean => {
+    const isGoalie = (record: SeasonPlayerRecord): boolean => {
       return record.position === 'G' || record.position === 'GK';
     };
 
@@ -504,7 +499,7 @@ export default function TeamRecordsScreen() {
     }
 
     return categories.filter((cat) => cat.records.length > 0);
-  }, [players, sport, seasonHistory]);
+  }, [players, sport, seasonHistory, teamSettings.currentSeasonName]);
 
   const getMedalColor = (index: number): string => {
     switch (index) {
@@ -729,6 +724,9 @@ export default function TeamRecordsScreen() {
                       <PlayerAvatar player={record.player} size={24} />
                       <View className="flex-1 ml-2">
                         <Text className="text-white font-medium text-sm">{record.playerName}</Text>
+                        {record.seasonName && (
+                          <Text className="text-slate-500 text-xs">{record.seasonName}</Text>
+                        )}
                       </View>
 
                       {/* Value */}
