@@ -36,6 +36,11 @@ export default function ReportBugScreen() {
       return;
     }
 
+    if (!stepsToReproduce.trim()) {
+      Alert.alert('Missing Steps', 'Please provide the steps to reproduce the bug.');
+      return;
+    }
+
     setIsSubmitting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -46,7 +51,7 @@ export default function ReportBugScreen() {
         `================\n\n` +
         `Title: ${title.trim()}\n\n` +
         `Description:\n${description.trim()}\n\n` +
-        `Steps to Reproduce:\n${stepsToReproduce.trim() || 'Not provided'}\n\n` +
+        `Steps to Reproduce:\n${stepsToReproduce.trim()}\n\n` +
         `---\n` +
         `Reported by: ${currentPlayer ? getPlayerName(currentPlayer) : 'Unknown'}\n` +
         `Contact Email: ${contactEmail.trim() || 'Not provided'}\n` +
@@ -265,7 +270,7 @@ export default function ReportBugScreen() {
               entering={FadeInDown.delay(250).springify()}
               className="mb-2"
             >
-              <Text className="text-slate-300 text-sm font-medium mb-1.5">Steps to reproduce (optional)</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-1.5">Steps to reproduce</Text>
               <TextInput
                 value={stepsToReproduce}
                 onChangeText={setStepsToReproduce}
@@ -305,11 +310,11 @@ export default function ReportBugScreen() {
             <Animated.View entering={FadeInDown.delay(350).springify()}>
               <Pressable
                 onPress={handleSubmit}
-                disabled={isSubmitting || !title.trim() || !description.trim()}
+                disabled={isSubmitting || !title.trim() || !description.trim() || !stepsToReproduce.trim()}
                 className={`rounded-xl py-4 items-center flex-row justify-center ${
-                  isSubmitting || !title.trim() || !description.trim() ? 'bg-red-600/40' : 'bg-red-500 active:bg-red-600'
+                  isSubmitting || !title.trim() || !description.trim() || !stepsToReproduce.trim() ? 'bg-red-600/40' : 'bg-red-500 active:bg-red-600'
                 }`}
-                style={(!isSubmitting && title.trim() && description.trim()) ? {
+                style={(!isSubmitting && title.trim() && description.trim() && stepsToReproduce.trim()) ? {
                   shadowColor: '#ef4444',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.4,
