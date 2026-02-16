@@ -1294,20 +1294,14 @@ export default function MoreScreen() {
             index={3}
           />
 
-          {/* Attendance Section */}
-          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
-            Attendance
-          </Text>
-
           <MenuItem
             icon={<UserCheck size={20} color="#67e8f9" />}
-            title="Player Attendance"
+            title="Attendance"
             subtitle="Track check-ins and attendance rates"
             onPress={() => router.push('/attendance')}
             index={4}
           />
 
-          {/* Create New Team */}
           <MenuItem
             icon={<Plus size={20} color="#67e8f9" />}
             title="Create New Team"
