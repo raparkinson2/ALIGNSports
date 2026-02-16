@@ -1403,7 +1403,7 @@ export default function MoreScreen() {
           <MenuItem
             icon={<FileText size={20} color="#67e8f9" />}
             title="Notices"
-            subtitle="Privacy policy & legal"
+            subtitle="Policies and additional information"
             onPress={() => router.push('/notices')}
             index={13}
           />
