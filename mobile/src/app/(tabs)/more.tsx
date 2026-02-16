@@ -1298,11 +1298,24 @@ export default function MoreScreen() {
           />
 
           <MenuItem
+            icon={<Plus size={20} color="#67e8f9" />}
+            title="Create New Team"
+            subtitle="Start a new team"
+            onPress={() => router.push('/create-new-team')}
+            index={4}
+          />
+
+          {/* Stats and Analytics Section */}
+          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
+            Stats and Analytics
+          </Text>
+
+          <MenuItem
             icon={<UserCheck size={20} color="#67e8f9" />}
             title="Attendance"
             subtitle="Track check-ins and attendance rates"
             onPress={() => router.push('/attendance')}
-            index={4}
+            index={5}
           />
 
           {showTeamStats && (
@@ -1311,17 +1324,9 @@ export default function MoreScreen() {
               title="View Team Stats"
               subtitle="View player and team statistics"
               onPress={() => router.push('/team-stats')}
-              index={5}
+              index={6}
             />
           )}
-
-          <MenuItem
-            icon={<Plus size={20} color="#67e8f9" />}
-            title="Create New Team"
-            subtitle="Start a new team"
-            onPress={() => router.push('/create-new-team')}
-            index={6}
-          />
 
           {/* Communication & Alerts Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
