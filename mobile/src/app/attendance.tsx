@@ -174,7 +174,7 @@ export default function AttendanceScreen() {
                 <View className="flex-1 items-center">
                   <View className="flex-row items-center mb-1">
                     <HelpCircle size={16} color="#94a3b8" />
-                    <Text className="text-slate-400 text-xs ml-1">NO RSP</Text>
+                    <Text className="text-slate-400 text-xs ml-1">NO RESPONSE</Text>
                   </View>
                   <Text className="text-white text-2xl font-bold">{teamTotals.noResponse}</Text>
                 </View>
@@ -270,7 +270,7 @@ export default function AttendanceScreen() {
                         <View className="flex-row items-center bg-slate-600/50 rounded-full px-2.5 py-1">
                           <HelpCircle size={12} color="#94a3b8" />
                           <Text className="text-slate-400 text-xs font-medium ml-1">
-                            {stat.noResponse} No Rsp
+                            {stat.noResponse} No Response
                           </Text>
                         </View>
                       </View>
