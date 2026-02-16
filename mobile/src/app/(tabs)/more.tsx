@@ -30,6 +30,7 @@ import {
   CalendarOff,
   FileText,
   UserX,
+  UserCheck,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -1293,12 +1294,26 @@ export default function MoreScreen() {
             index={3}
           />
 
+          {/* Attendance Section */}
+          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
+            Attendance
+          </Text>
+
+          <MenuItem
+            icon={<UserCheck size={20} color="#67e8f9" />}
+            title="Player Attendance"
+            subtitle="Track check-ins and attendance rates"
+            onPress={() => router.push('/attendance')}
+            index={4}
+          />
+
+          {/* Create New Team */}
           <MenuItem
             icon={<Plus size={20} color="#67e8f9" />}
             title="Create New Team"
             subtitle="Start a new team"
             onPress={() => router.push('/create-new-team')}
-            index={4}
+            index={5}
           />
 
           {/* Communication & Alerts Section */}
