@@ -6,7 +6,7 @@ import { ArrowLeft, Trophy, Target, Crosshair, Calendar, Shield, Award, Plus, X,
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useMemo, useState } from 'react';
-import { useTeamStore, Player, HockeyStats, HockeyGoalieStats, BaseballStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, getPlayerName, Championship } from '@/lib/store';
+import { useTeamStore, Player, getPlayerName, Championship, ArchivedPlayerStats, ArchivedSeason } from '@/lib/store';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 interface RecordEntry {
@@ -146,25 +146,128 @@ export default function TeamRecordsScreen() {
     return records;
   }, [teamSettings.record, seasonHistory, teamSettings.currentSeasonName]);
 
-  // Calculate individual records based on sport
+  // Calculate individual records based on sport (all-time, including archived seasons)
   const individualRecords = useMemo((): RecordCategory[] => {
     const categories: RecordCategory[] = [];
 
+    // Build a map of all-time aggregated stats per player
+    // Key: playerId, Value: { player info, aggregated stats }
+    interface AllTimePlayerRecord {
+      playerId: string;
+      playerName: string;
+      position: string;
+      player: Player | null; // null if player no longer exists (only in archived)
+      stats: Record<string, number>; // aggregated stat values
+      goalieStats: Record<string, number>; // aggregated goalie stat values
+    }
+
+    const allTimeRecords: Map<string, AllTimePlayerRecord> = new Map();
+
+    // Helper to add stats to allTimeRecords
+    const addPlayerStats = (
+      playerId: string,
+      playerName: string,
+      position: string,
+      player: Player | null,
+      stats: unknown,
+      goalieStats: unknown
+    ) => {
+      let record = allTimeRecords.get(playerId);
+      if (!record) {
+        record = {
+          playerId,
+          playerName,
+          position,
+          player,
+          stats: {},
+          goalieStats: {},
+        };
+        allTimeRecords.set(playerId, record);
+      }
+      // Update player reference if we have a current player
+      if (player) {
+        record.player = player;
+        record.playerName = getPlayerName(player);
+        record.position = player.position;
+      }
+      // Aggregate stats
+      if (stats && typeof stats === 'object') {
+        Object.entries(stats as Record<string, unknown>).forEach(([key, value]) => {
+          if (typeof value === 'number') {
+            record!.stats[key] = (record!.stats[key] || 0) + value;
+          }
+        });
+      }
+      // Aggregate goalie stats
+      if (goalieStats && typeof goalieStats === 'object') {
+        Object.entries(goalieStats as Record<string, unknown>).forEach(([key, value]) => {
+          if (typeof value === 'number') {
+            record!.goalieStats[key] = (record!.goalieStats[key] || 0) + value;
+          }
+        });
+      }
+    };
+
+    // Add current player stats
+    players.forEach((player) => {
+      addPlayerStats(
+        player.id,
+        getPlayerName(player),
+        player.position,
+        player,
+        player.stats,
+        player.goalieStats
+      );
+    });
+
+    // Add archived season stats
+    seasonHistory.forEach((season: ArchivedSeason) => {
+      season.playerStats.forEach((archived: ArchivedPlayerStats) => {
+        // Find current player if exists
+        const currentPlayer = players.find((p) => p.id === archived.playerId) || null;
+        addPlayerStats(
+          archived.playerId,
+          archived.playerName,
+          archived.position,
+          currentPlayer,
+          archived.stats,
+          archived.goalieStats
+        );
+      });
+    });
+
+    // Convert to array for querying
+    const allRecords = Array.from(allTimeRecords.values());
+
+    // Helper to create a display-only player object for archived players
+    const createDisplayPlayer = (record: AllTimePlayerRecord): Player => {
+      if (record.player) return record.player;
+      return {
+        id: record.playerId,
+        firstName: record.playerName.split(' ')[0] || '',
+        lastName: record.playerName.split(' ').slice(1).join(' ') || '',
+        number: '',
+        position: record.position,
+        roles: [],
+        status: 'active',
+      };
+    };
+
     const getTopPlayers = (
-      getStatValue: (player: Player) => number | undefined,
-      filterFn?: (player: Player) => boolean
+      statKey: string,
+      filterFn?: (record: AllTimePlayerRecord) => boolean
     ): RecordEntry[] => {
       const entries: RecordEntry[] = [];
 
-      players.forEach((player) => {
-        if (filterFn && !filterFn(player)) return;
-        const value = getStatValue(player);
+      allRecords.forEach((record) => {
+        if (filterFn && !filterFn(record)) return;
+        const value = record.stats[statKey];
         if (value !== undefined && value > 0) {
           entries.push({
-            playerId: player.id,
-            playerName: getPlayerName(player),
+            playerId: record.playerId,
+            playerName: record.playerName,
             value,
-            player,
+            player: createDisplayPlayer(record),
           });
         }
       });
@@ -174,24 +277,48 @@ export default function TeamRecordsScreen() {
         .slice(0, 3);
     };
 
-    const getTopPlayersLowerBetter = (
-      getStatValue: (player: Player) => number | undefined,
-      filterFn?: (player: Player) => boolean,
+    const getTopGoalies = (
+      statKey: string,
+      filterFn?: (record: AllTimePlayerRecord) => boolean
+    ): RecordEntry[] => {
+      const entries: RecordEntry[] = [];
+
+      allRecords.forEach((record) => {
+        if (filterFn && !filterFn(record)) return;
+        const value = record.goalieStats[statKey];
+        if (value !== undefined && value > 0) {
+          entries.push({
+            playerId: record.playerId,
+            playerName: record.playerName,
+            value,
+            player: createDisplayPlayer(record),
+          });
+        }
+      });
+
+      return entries
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 3);
+    };
+
+    const getTopGoaliesLowerBetter = (
+      computeValue: (goalieStats: Record<string, number>) => number | undefined,
+      filterFn?: (record: AllTimePlayerRecord) => boolean,
       minGames: number = 1
     ): RecordEntry[] => {
       const entries: RecordEntry[] = [];
 
-      players.forEach((player) => {
-        if (filterFn && !filterFn(player)) return;
-        const value = getStatValue(player);
-        const goalieStats = player.goalieStats as HockeyGoalieStats | SoccerGoalieStats | LacrosseGoalieStats | undefined;
-        const gameCount = goalieStats?.games ?? 0;
-        if (value !== undefined && value > 0 && gameCount >= minGames) {
+      allRecords.forEach((record) => {
+        if (filterFn && !filterFn(record)) return;
+        const gameCount = record.goalieStats.games ?? 0;
+        if (gameCount < minGames) return;
+        const value = computeValue(record.goalieStats);
+        if (value !== undefined && value > 0) {
           entries.push({
-            playerId: player.id,
-            playerName: getPlayerName(player),
+            playerId: record.playerId,
+            playerName: record.playerName,
             value,
-            player,
+            player: createDisplayPlayer(record),
           });
         }
       });
@@ -201,8 +328,8 @@ export default function TeamRecordsScreen() {
         .slice(0, 3);
     };
 
-    const isGoalie = (player: Player): boolean => {
-      return player.position === 'G' || player.position === 'GK';
+    const isGoalie = (record: AllTimePlayerRecord): boolean => {
+      return record.position === 'G' || record.position === 'GK';
     };
 
     switch (sport) {
@@ -210,40 +337,27 @@ export default function TeamRecordsScreen() {
         categories.push({
           title: 'Most Goals',
           icon: <Target size={18} color="#22c55e" />,
-          records: getTopPlayers(
-            (p) => (p.stats as HockeyStats)?.goals,
-            (p) => !isGoalie(p)
-          ),
+          records: getTopPlayers('goals', (p) => !isGoalie(p)),
         });
         categories.push({
           title: 'Most Assists',
           icon: <Crosshair size={18} color="#3b82f6" />,
-          records: getTopPlayers(
-            (p) => (p.stats as HockeyStats)?.assists,
-            (p) => !isGoalie(p)
-          ),
+          records: getTopPlayers('assists', (p) => !isGoalie(p)),
         });
         categories.push({
           title: 'Most Games Played',
           icon: <Calendar size={18} color="#a78bfa" />,
-          records: getTopPlayers(
-            (p) => (p.stats as HockeyStats)?.gamesPlayed,
-            (p) => !isGoalie(p)
-          ),
+          records: getTopPlayers('gamesPlayed', (p) => !isGoalie(p)),
         });
         categories.push({
           title: 'Most Wins (Goalie)',
           icon: <Trophy size={18} color="#f59e0b" />,
-          records: getTopPlayers(
-            (p) => (p.goalieStats as HockeyGoalieStats)?.wins,
-            isGoalie
-          ),
+          records: getTopGoalies('wins', isGoalie),
         });
-        const gaaRecords = getTopPlayersLowerBetter(
-          (p) => {
-            const stats = p.goalieStats as HockeyGoalieStats;
-            if (!stats || !stats.minutesPlayed || stats.minutesPlayed === 0) return undefined;
-            return (stats.goalsAgainst ?? 0) * 60 / stats.minutesPlayed;
+        const gaaRecords = getTopGoaliesLowerBetter(
+          (gs) => {
+            if (!gs.minutesPlayed || gs.minutesPlayed === 0) return undefined;
+            return (gs.goalsAgainst ?? 0) * 60 / gs.minutesPlayed;
           },
           isGoalie,
           1
@@ -263,40 +377,27 @@ export default function TeamRecordsScreen() {
         categories.push({
           title: 'Most Goals',
           icon: <Target size={18} color="#22c55e" />,
-          records: getTopPlayers(
-            (p) => (p.stats as SoccerStats)?.goals,
-            (p) => !isGoalie(p)
-          ),
+          records: getTopPlayers('goals', (p) => !isGoalie(p)),
         });
         categories.push({
           title: 'Most Assists',
           icon: <Crosshair size={18} color="#3b82f6" />,
-          records: getTopPlayers(
-            (p) => (p.stats as SoccerStats)?.assists,
-            (p) => !isGoalie(p)
-          ),
+          records: getTopPlayers('assists', (p) => !isGoalie(p)),
         });
         categories.push({
           title: 'Most Games Played',
           icon: <Calendar size={18} color="#a78bfa" />,
-          records: getTopPlayers(
-            (p) => (p.stats as SoccerStats)?.gamesPlayed,
-            (p) => !isGoalie(p)
-          ),
+          records: getTopPlayers('gamesPlayed', (p) => !isGoalie(p)),
         });
         categories.push({
           title: 'Most Wins (Goalkeeper)',
           icon: <Trophy size={18} color="#f59e0b" />,
-          records: getTopPlayers(
-            (p) => (p.goalieStats as SoccerGoalieStats)?.wins,
-            isGoalie
-          ),
+          records: getTopGoalies('wins', isGoalie),
         });
-        const soccerGaaRecords = getTopPlayersLowerBetter(
-          (p) => {
-            const stats = p.goalieStats as SoccerGoalieStats;
-            if (!stats || !stats.minutesPlayed || stats.minutesPlayed === 0) return undefined;
-            return (stats.goalsAgainst ?? 0) / stats.minutesPlayed * 90;
+        const soccerGaaRecords = getTopGoaliesLowerBetter(
+          (gs) => {
+            if (!gs.minutesPlayed || gs.minutesPlayed === 0) return undefined;
+            return (gs.goalsAgainst ?? 0) / gs.minutesPlayed * 90;
           },
           isGoalie,
           1
@@ -316,40 +417,27 @@ export default function TeamRecordsScreen() {
         categories.push({
           title: 'Most Goals',
           icon: <Target size={18} color="#22c55e" />,
-          records: getTopPlayers(
-            (p) => (p.stats as LacrosseStats)?.goals,
-            (p) => !isGoalie(p)
-          ),
+          records: getTopPlayers('goals', (p) => !isGoalie(p)),
         });
         categories.push({
           title: 'Most Assists',
           icon: <Crosshair size={18} color="#3b82f6" />,
-          records: getTopPlayers(
-            (p) => (p.stats as LacrosseStats)?.assists,
-            (p) => !isGoalie(p)
-          ),
+          records: getTopPlayers('assists', (p) => !isGoalie(p)),
         });
         categories.push({
           title: 'Most Games Played',
           icon: <Calendar size={18} color="#a78bfa" />,
-          records: getTopPlayers(
-            (p) => (p.stats as LacrosseStats)?.gamesPlayed,
-            (p) => !isGoalie(p)
-          ),
+          records: getTopPlayers('gamesPlayed', (p) => !isGoalie(p)),
         });
         categories.push({
           title: 'Most Wins (Goalie)',
           icon: <Trophy size={18} color="#f59e0b" />,
-          records: getTopPlayers(
-            (p) => (p.goalieStats as unknown as LacrosseGoalieStats)?.wins,
-            isGoalie
-          ),
+          records: getTopGoalies('wins', isGoalie),
         });
-        const lacrosseGaaRecords = getTopPlayersLowerBetter(
-          (p) => {
-            const stats = p.goalieStats as unknown as LacrosseGoalieStats;
-            if (!stats || !stats.minutesPlayed || stats.minutesPlayed === 0) return undefined;
-            return (stats.goalsAgainst ?? 0) / stats.minutesPlayed * 60;
+        const lacrosseGaaRecords = getTopGoaliesLowerBetter(
+          (gs) => {
+            if (!gs.minutesPlayed || gs.minutesPlayed === 0) return undefined;
+            return (gs.goalsAgainst ?? 0) / gs.minutesPlayed * 60;
           },
           isGoalie,
           1
@@ -370,22 +458,22 @@ export default function TeamRecordsScreen() {
         categories.push({
           title: 'Most Hits',
           icon: <Target size={18} color="#22c55e" />,
-          records: getTopPlayers((p) => (p.stats as BaseballStats)?.hits),
+          records: getTopPlayers('hits'),
         });
         categories.push({
           title: 'Most Home Runs',
           icon: <Trophy size={18} color="#f59e0b" />,
-          records: getTopPlayers((p) => (p.stats as BaseballStats)?.homeRuns),
+          records: getTopPlayers('homeRuns'),
         });
         categories.push({
           title: 'Most RBIs',
           icon: <Crosshair size={18} color="#3b82f6" />,
-          records: getTopPlayers((p) => (p.stats as BaseballStats)?.rbi),
+          records: getTopPlayers('rbi'),
         });
         categories.push({
           title: 'Most Games Played',
           icon: <Calendar size={18} color="#a78bfa" />,
-          records: getTopPlayers((p) => (p.stats as BaseballStats)?.gamesPlayed),
+          records: getTopPlayers('gamesPlayed'),
         });
         break;
       }
@@ -394,29 +482,29 @@ export default function TeamRecordsScreen() {
         categories.push({
           title: 'Most Points',
           icon: <Target size={18} color="#22c55e" />,
-          records: getTopPlayers((p) => (p.stats as BasketballStats)?.points),
+          records: getTopPlayers('points'),
         });
         categories.push({
           title: 'Most Rebounds',
           icon: <Trophy size={18} color="#f59e0b" />,
-          records: getTopPlayers((p) => (p.stats as BasketballStats)?.rebounds),
+          records: getTopPlayers('rebounds'),
         });
         categories.push({
           title: 'Most Assists',
           icon: <Crosshair size={18} color="#3b82f6" />,
-          records: getTopPlayers((p) => (p.stats as BasketballStats)?.assists),
+          records: getTopPlayers('assists'),
         });
         categories.push({
           title: 'Most Games Played',
           icon: <Calendar size={18} color="#a78bfa" />,
-          records: getTopPlayers((p) => (p.stats as BasketballStats)?.gamesPlayed),
+          records: getTopPlayers('gamesPlayed'),
         });
         break;
       }
     }
 
     return categories.filter((cat) => cat.records.length > 0);
-  }, [players, sport]);
+  }, [players, sport, seasonHistory]);
 
   const getMedalColor = (index: number): string => {
     switch (index) {
