@@ -45,7 +45,7 @@ import { BaseballLineupViewer } from '@/components/BaseballLineupViewer';
 import { hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
 import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
 import { hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
-import { sendGameInviteNotification, scheduleGameInviteNotification, sendEventInviteNotification, scheduleEventReminderDayBefore, scheduleEventReminderHourBefore } from '@/lib/notifications';
+import { sendGameInviteNotification, scheduleGameInviteNotification, sendEventInviteNotification, scheduleEventReminderDayBefore, scheduleEventReminderHourBefore, scheduleGameReminderDayBefore, scheduleGameReminderHoursBefore } from '@/lib/notifications';
 
 const getDateLabel = (dateString: string): string => {
   const date = parseISO(dateString);
@@ -902,6 +902,11 @@ export default function ScheduleScreen() {
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const releaseScheduledGameInvites = useTeamStore((s) => s.releaseScheduledGameInvites);
+  const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
+
+  // Get current player's notification preferences
+  const currentPlayer = players.find((p) => p.id === currentPlayerId);
+  const notificationPrefs = currentPlayer?.notificationPreferences;
 
   // Get persisted view mode from team settings, default to 'list'
   const persistedViewMode = teamSettings.upcomingGamesViewMode ?? 'list';
@@ -1058,6 +1063,14 @@ export default function ScheduleScreen() {
     }
     // If 'none', no notifications are sent - user can send manually from game details
 
+    // Schedule game reminders based on user notification preferences
+    if (notificationPrefs?.gameReminderDayBefore !== false) {
+      scheduleGameReminderDayBefore(newGame.id, opponent.trim(), gameDate, fullGameTime);
+    }
+    if (notificationPrefs?.gameReminderHoursBefore !== false) {
+      scheduleGameReminderHoursBefore(newGame.id, opponent.trim(), gameDate, fullGameTime);
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsModalVisible(false);
     resetForm();
@@ -1117,9 +1130,13 @@ export default function ScheduleScreen() {
         addNotification(notification);
       });
 
-      // Schedule reminders
-      scheduleEventReminderDayBefore(newEvent.id, eventName.trim(), gameDate, fullEventTime);
-      scheduleEventReminderHourBefore(newEvent.id, eventName.trim(), gameDate, fullEventTime);
+      // Schedule reminders based on user notification preferences
+      if (notificationPrefs?.gameReminderDayBefore !== false) {
+        scheduleEventReminderDayBefore(newEvent.id, eventName.trim(), gameDate, fullEventTime);
+      }
+      if (notificationPrefs?.gameReminderHoursBefore !== false) {
+        scheduleEventReminderHourBefore(newEvent.id, eventName.trim(), gameDate, fullEventTime);
+      }
     } else if (inviteReleaseOption === 'scheduled') {
       console.log('Event invites scheduled for:', inviteReleaseDate.toISOString());
     }
@@ -1183,9 +1200,13 @@ export default function ScheduleScreen() {
         addNotification(notification);
       });
 
-      // Schedule reminders
-      scheduleEventReminderDayBefore(newPractice.id, 'Practice', gameDate, fullPracticeTime);
-      scheduleEventReminderHourBefore(newPractice.id, 'Practice', gameDate, fullPracticeTime);
+      // Schedule reminders based on user notification preferences
+      if (notificationPrefs?.gameReminderDayBefore !== false) {
+        scheduleEventReminderDayBefore(newPractice.id, 'Practice', gameDate, fullPracticeTime);
+      }
+      if (notificationPrefs?.gameReminderHoursBefore !== false) {
+        scheduleEventReminderHourBefore(newPractice.id, 'Practice', gameDate, fullPracticeTime);
+      }
     } else if (inviteReleaseOption === 'scheduled') {
       console.log('Practice invites scheduled for:', inviteReleaseDate.toISOString());
     }

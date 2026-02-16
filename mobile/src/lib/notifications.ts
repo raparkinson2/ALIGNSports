@@ -106,19 +106,19 @@ export async function scheduleGameReminder(
 }
 
 /**
- * Schedule a reminder 1 hour before a game
+ * Schedule a reminder 2 hours before a game
  */
-export async function scheduleGameReminderHourBefore(
+export async function scheduleGameReminderHoursBefore(
   gameId: string,
   opponent: string,
   gameDate: Date,
   gameTime: string
 ): Promise<string | null> {
-  const reminderDate = new Date(gameDate.getTime() - 60 * 60 * 1000); // 1 hour before
+  const reminderDate = new Date(gameDate.getTime() - 2 * 60 * 60 * 1000); // 2 hours before
 
   return scheduleGameReminder(
     gameId,
-    'Game in 1 Hour!',
+    'Game in 2 Hours!',
     `Get ready! You're playing vs ${opponent} at ${gameTime}. Make sure to check in or out in the app.`,
     reminderDate
   );
@@ -317,7 +317,7 @@ export async function scheduleEventReminder(
 }
 
 /**
- * Schedule a reminder 1 hour before an event
+ * Schedule a reminder 2 hours before an event
  */
 export async function scheduleEventReminderHourBefore(
   eventId: string,
@@ -325,11 +325,11 @@ export async function scheduleEventReminderHourBefore(
   eventDate: Date,
   eventTime: string
 ): Promise<string | null> {
-  const reminderDate = new Date(eventDate.getTime() - 60 * 60 * 1000); // 1 hour before
+  const reminderDate = new Date(eventDate.getTime() - 2 * 60 * 60 * 1000); // 2 hours before
 
   return scheduleEventReminder(
     eventId,
-    'Event in 1 Hour!',
+    'Event in 2 Hours!',
     `Get ready! "${eventTitle}" starts at ${eventTime}.`,
     reminderDate
   );
