@@ -206,13 +206,13 @@ export default function FeatureRequestScreen() {
             {/* Info Card */}
             <Animated.View
               entering={FadeInDown.delay(100).springify()}
-              className="bg-cyan-500/10 border border-cyan-500/30 rounded-2xl p-4 mb-6"
+              className="bg-cyan-500/10 border border-cyan-500/30 rounded-2xl p-4 mb-4"
             >
-              <View className="flex-row items-center mb-2">
-                <View className="w-10 h-10 rounded-full bg-cyan-500/20 items-center justify-center mr-3">
-                  <Lightbulb size={20} color="#67e8f9" />
+              <View className="flex-row items-center mb-1">
+                <View className="w-9 h-9 rounded-full bg-cyan-500/20 items-center justify-center mr-3">
+                  <Lightbulb size={18} color="#67e8f9" />
                 </View>
-                <Text className="text-cyan-400 font-semibold text-lg">Got an idea?</Text>
+                <Text className="text-cyan-400 font-semibold text-base">Got an idea?</Text>
               </View>
               <Text className="text-slate-300 text-sm leading-5">
                 We'd love to hear your suggestions! Fill out the form below and we'll review your feature request.
@@ -222,71 +222,71 @@ export default function FeatureRequestScreen() {
             {/* Title Input */}
             <Animated.View
               entering={FadeInDown.delay(150).springify()}
-              className="mb-3"
+              className="mb-2"
             >
-              <Text className="text-slate-300 text-sm font-medium mb-2">Feature Title</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-1.5">Feature Title</Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
                 placeholder="e.g., Add team stats dashboard"
                 placeholderTextColor="#94a3b8"
                 autoCapitalize="sentences"
-                className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
+                className="bg-slate-800 rounded-xl px-4 py-3.5 text-white text-base"
                 maxLength={100}
               />
-              <Text className="text-slate-600 text-[10px] mt-1 text-right">{title.length}/100</Text>
+              <Text className="text-slate-600 text-[10px] text-right">{title.length}/100</Text>
             </Animated.View>
 
             {/* Description Input */}
             <Animated.View
               entering={FadeInDown.delay(200).springify()}
-              className="mb-3"
+              className="mb-2"
             >
-              <Text className="text-slate-300 text-sm font-medium mb-2">Description</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-1.5">Description</Text>
               <TextInput
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Describe the feature you'd like to see. Include any specific details that would help us understand your request..."
                 placeholderTextColor="#94a3b8"
                 autoCapitalize="sentences"
-                className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
+                className="bg-slate-800 rounded-xl px-4 py-3.5 text-white text-base"
                 multiline
-                numberOfLines={6}
+                numberOfLines={5}
                 textAlignVertical="top"
-                style={{ minHeight: 150 }}
+                style={{ minHeight: 120 }}
                 maxLength={1000}
               />
-              <Text className="text-slate-600 text-[10px] mt-1 text-right">{description.length}/1000</Text>
+              <Text className="text-slate-600 text-[10px] text-right">{description.length}/1000</Text>
             </Animated.View>
 
             {/* Reason for Request Input */}
             <Animated.View
               entering={FadeInDown.delay(250).springify()}
-              className="mb-3"
+              className="mb-2"
             >
-              <Text className="text-slate-300 text-sm font-medium mb-2">Reason for request (optional)</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-1.5">Reason for request (optional)</Text>
               <TextInput
                 value={reasonForRequest}
                 onChangeText={setReasonForRequest}
                 placeholder="How will this feature help users and improve the app?"
                 placeholderTextColor="#94a3b8"
                 autoCapitalize="sentences"
-                className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
+                className="bg-slate-800 rounded-xl px-4 py-3.5 text-white text-base"
                 multiline
-                numberOfLines={4}
+                numberOfLines={3}
                 textAlignVertical="top"
-                style={{ minHeight: 100 }}
+                style={{ minHeight: 80 }}
                 maxLength={500}
               />
-              <Text className="text-slate-600 text-[10px] mt-1 text-right">{reasonForRequest.length}/500</Text>
+              <Text className="text-slate-600 text-[10px] text-right">{reasonForRequest.length}/500</Text>
             </Animated.View>
 
             {/* Contact Email Input */}
             <Animated.View
               entering={FadeInDown.delay(300).springify()}
-              className="mb-5"
+              className="mb-4"
             >
-              <Text className="text-slate-300 text-sm font-medium mb-2">Your email (optional)</Text>
+              <Text className="text-slate-300 text-sm font-medium mb-1.5">Your email (optional)</Text>
               <TextInput
                 value={contactEmail}
                 onChangeText={setContactEmail}
@@ -295,9 +295,9 @@ export default function FeatureRequestScreen() {
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoComplete="email"
-                className="bg-slate-800 rounded-xl px-4 py-4 text-white text-base"
+                className="bg-slate-800 rounded-xl px-4 py-3.5 text-white text-base"
               />
-              <Text className="text-slate-500 text-xs mt-1">So we can follow up on your request</Text>
+              <Text className="text-slate-500 text-xs">So we can follow up on your request</Text>
             </Animated.View>
 
             {/* Submit Button */}
@@ -326,9 +326,9 @@ export default function FeatureRequestScreen() {
             {/* Note */}
             <Animated.View
               entering={FadeInDown.delay(400).springify()}
-              className="mt-5"
+              className="mt-3"
             >
-              <Text className="text-slate-400 text-sm text-center">
+              <Text className="text-slate-500 text-xs text-center">
                 Your feature request will be sent directly to our development team.
               </Text>
             </Animated.View>
