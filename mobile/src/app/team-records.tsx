@@ -2,7 +2,7 @@ import { View, Text, ScrollView, Pressable, TextInput, Modal } from 'react-nativ
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Trophy, Target, Crosshair, Calendar, Shield, Award, Plus, X, Star, TrendingUp, Users } from 'lucide-react-native';
+import { ArrowLeft, Trophy, Target, Crosshair, Calendar, Shield, Award, Plus, X, Star, TrendingUp, Users, Flame, TrendingDown } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useMemo, useState } from 'react';
@@ -55,7 +55,7 @@ export default function TeamRecordsScreen() {
         ? `${currentRecord.wins}-${currentRecord.losses}-${currentRecord.ties}`
         : `${currentRecord.wins}-${currentRecord.losses}`;
       records.push({
-        title: 'Current Season Record',
+        title: 'Best Season Record',
         value: recordStr,
         icon: <Star size={18} color="#22c55e" />,
       });
@@ -68,6 +68,24 @@ export default function TeamRecordsScreen() {
           icon: <Trophy size={18} color="#f59e0b" />,
         });
       }
+    }
+
+    // Longest Win Streak
+    if (currentRecord?.longestWinStreak && currentRecord.longestWinStreak > 0) {
+      records.push({
+        title: 'Longest Win Streak',
+        value: `${currentRecord.longestWinStreak}`,
+        icon: <Flame size={18} color="#f97316" />,
+      });
+    }
+
+    // Longest Losing Streak
+    if (currentRecord?.longestLosingStreak && currentRecord.longestLosingStreak > 0) {
+      records.push({
+        title: 'Longest Losing Streak',
+        value: `${currentRecord.longestLosingStreak}`,
+        icon: <TrendingDown size={18} color="#ef4444" />,
+      });
     }
 
     return records;

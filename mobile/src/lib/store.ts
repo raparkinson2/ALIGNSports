@@ -657,6 +657,8 @@ export interface TeamRecord {
   losses: number;
   ties?: number; // Hockey, Soccer
   otLosses?: number; // Hockey only (Overtime losses)
+  longestWinStreak?: number; // Longest consecutive wins
+  longestLosingStreak?: number; // Longest consecutive losses
 }
 
 // View mode type for upcoming games

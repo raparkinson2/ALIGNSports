@@ -957,6 +957,8 @@ export default function ScheduleScreen() {
   const [recordLosses, setRecordLosses] = useState(teamSettings.record?.losses?.toString() ?? '0');
   const [recordTies, setRecordTies] = useState(teamSettings.record?.ties?.toString() ?? '0');
   const [recordOtLosses, setRecordOtLosses] = useState(teamSettings.record?.otLosses?.toString() ?? '0');
+  const [recordWinStreak, setRecordWinStreak] = useState(teamSettings.record?.longestWinStreak?.toString() ?? '0');
+  const [recordLosingStreak, setRecordLosingStreak] = useState(teamSettings.record?.longestLosingStreak?.toString() ?? '0');
 
   const sport = teamSettings.sport;
 
@@ -1316,6 +1318,8 @@ export default function ScheduleScreen() {
                 setRecordLosses(teamSettings.record?.losses?.toString() ?? '0');
                 setRecordTies(teamSettings.record?.ties?.toString() ?? '0');
                 setRecordOtLosses(teamSettings.record?.otLosses?.toString() ?? '0');
+                setRecordWinStreak(teamSettings.record?.longestWinStreak?.toString() ?? '0');
+                setRecordLosingStreak(teamSettings.record?.longestLosingStreak?.toString() ?? '0');
                 setIsRecordModalVisible(true);
               }
             }}
@@ -2161,11 +2165,15 @@ export default function ScheduleScreen() {
               <Text className="text-white text-lg font-semibold">Team Record</Text>
               <Pressable
                 onPress={() => {
+                  const winStreak = parseInt(recordWinStreak, 10) || 0;
+                  const losingStreak = parseInt(recordLosingStreak, 10) || 0;
                   const newRecord: TeamRecord = {
                     wins: parseInt(recordWins, 10) || 0,
                     losses: parseInt(recordLosses, 10) || 0,
                     ties: (sport === 'hockey' || sport === 'soccer') ? (parseInt(recordTies, 10) || 0) : undefined,
                     otLosses: sport === 'hockey' ? (parseInt(recordOtLosses, 10) || 0) : undefined,
+                    longestWinStreak: winStreak > 0 ? winStreak : undefined,
+                    longestLosingStreak: losingStreak > 0 ? losingStreak : undefined,
                   };
                   setTeamSettings({ record: newRecord });
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -2237,6 +2245,32 @@ export default function ScheduleScreen() {
                     />
                   </View>
                 )}
+
+                {/* Longest Win Streak */}
+                <View className="w-1/2 pr-2 mb-4">
+                  <Text className="text-slate-400 text-sm mb-2">Win Streak</Text>
+                  <TextInput
+                    value={recordWinStreak}
+                    onChangeText={setRecordWinStreak}
+                    keyboardType="number-pad"
+                    placeholder="0"
+                    placeholderTextColor="#64748b"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-xl text-center font-bold"
+                  />
+                </View>
+
+                {/* Longest Losing Streak */}
+                <View className="w-1/2 pl-2 mb-4">
+                  <Text className="text-slate-400 text-sm mb-2">Losing Streak</Text>
+                  <TextInput
+                    value={recordLosingStreak}
+                    onChangeText={setRecordLosingStreak}
+                    keyboardType="number-pad"
+                    placeholder="0"
+                    placeholderTextColor="#64748b"
+                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-xl text-center font-bold"
+                  />
+                </View>
               </View>
 
               {/* Clear record button */}
