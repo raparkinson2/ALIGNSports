@@ -500,13 +500,6 @@ export default function RosterScreen() {
     setNumber(player.number);
     // Filter out 'Coach' from positions - keep empty if coach
     const playerPositions = getPlayerPositions(player).filter(p => p && p !== 'Coach');
-    console.log('Loading player positions:', {
-      playerId: player.id,
-      playerName: `${player.firstName} ${player.lastName}`,
-      position: player.position,
-      positions: player.positions,
-      resolvedPositions: playerPositions
-    });
     setSelectedPositions(playerPositions);
     setPhone(formatPhoneNumber(player.phone));
     setEmail(player.email || '');
@@ -606,14 +599,6 @@ export default function RosterScreen() {
         updates.statusEndDate = (isInjured || isSuspended) ? (statusEndDate || undefined) : undefined;
       }
 
-      console.log('Saving player updates:', {
-        playerId: editingPlayer.id,
-        selectedPositions,
-        position: updates.position,
-        positions: updates.positions,
-        memberRole,
-        updates
-      });
       updatePlayer(editingPlayer.id, updates);
       setIsModalVisible(false);
       resetForm();
