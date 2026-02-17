@@ -1787,6 +1787,7 @@ export const useTeamStore = create<TeamStore>()(
             currentSeasonName: undefined, // Clear until new season is named
           },
           players: updatedPlayers,
+          games: [], // Clear games for new season (resets attendance)
         });
 
         return { success: true, newBestRecord };
