@@ -804,8 +804,8 @@ export default function RosterScreen() {
             if (group.players.length === 0) return null;
 
             return (
-              <View key={group.title} className="mb-5">
-                <View className="flex-row items-center mb-2">
+              <View key={group.title} className="mb-3">
+                <View className="flex-row items-center mb-1.5">
                   <Text className="text-cyan-300 font-bold text-base">
                     {group.title} ({group.players.length})
                   </Text>
