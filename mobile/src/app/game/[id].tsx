@@ -1720,10 +1720,14 @@ export default function GameDetailScreen() {
                                   let mode: GameStatEditMode;
                                   if (teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') {
                                     mode = playerIsPitcher(player) ? 'pitcher' : 'batter';
-                                  } else if (teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer') {
+                                  } else if (teamSettings.sport === 'hockey') {
+                                    mode = playerIsGoalie(player) ? 'goalie' : 'skater';
+                                  } else if (teamSettings.sport === 'soccer') {
                                     mode = playerIsGoalie(player) ? 'goalie' : 'skater';
                                   } else if (teamSettings.sport === 'lacrosse') {
                                     mode = playerIsGoalie(player) ? 'lacrosse_goalie' : 'lacrosse';
+                                  } else if (teamSettings.sport === 'basketball') {
+                                    mode = 'batter'; // Basketball only has player stats, use batter mode
                                   } else {
                                     mode = 'skater';
                                   }
@@ -3925,7 +3929,9 @@ export default function GameDetailScreen() {
                           ? 'Goalie'
                           : gameStatsEditMode === 'lacrosse'
                             ? 'Player'
-                            : gameStatsEditMode.charAt(0).toUpperCase() + gameStatsEditMode.slice(1)}
+                            : gameStatsEditMode === 'batter'
+                              ? (teamSettings.sport === 'basketball' ? 'Player' : 'Batter')
+                              : gameStatsEditMode.charAt(0).toUpperCase() + gameStatsEditMode.slice(1)}
                     </Text>
                   </View>
                 </View>
