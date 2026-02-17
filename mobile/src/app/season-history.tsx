@@ -138,7 +138,7 @@ export default function SeasonHistoryScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
       'Restore Season',
-      `Are you sure you want to restore "${season.seasonName}"? This will:\n\n• Remove it from season history\n• Restore all player stats from that season\n• Restore the team record\n\nThis can only be done if the current season has no games or stats recorded.`,
+      `Are you sure you want to restore "${season.seasonName}"? This will:\n\n• Remove it from season history\n• Restore all player stats from that season\n• Restore the team record\n\nIf the current season has data, it will be discarded.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -149,6 +149,30 @@ export default function SeasonHistoryScreen() {
             if (result.success) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert('Season Restored', result.message);
+            } else if (result.hasConflict) {
+              // Show force restore option
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              Alert.alert(
+                'Current Season Has Data',
+                'The current season has games or stats recorded. Restoring this archived season will discard all current season data.\n\nDo you want to proceed?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Discard & Restore',
+                    style: 'destructive',
+                    onPress: () => {
+                      const forceResult = unarchiveSeason(season.id, true);
+                      if (forceResult.success) {
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        Alert.alert('Season Restored', forceResult.message);
+                      } else {
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                        Alert.alert('Cannot Restore', forceResult.message);
+                      }
+                    },
+                  },
+                ]
+              );
             } else {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               Alert.alert('Cannot Restore', result.message);

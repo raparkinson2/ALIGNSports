@@ -824,7 +824,7 @@ interface TeamStore {
   // Season Management
   setCurrentSeasonName: (name: string) => void;
   archiveAndStartNewSeason: (seasonName: string) => { success: boolean; newBestRecord: boolean };
-  unarchiveSeason: (seasonId: string) => { success: boolean; message: string };
+  unarchiveSeason: (seasonId: string, forceRestore?: boolean) => { success: boolean; message: string; hasConflict?: boolean };
 
   currentPlayerId: string | null;
   setCurrentPlayerId: (id: string | null) => void;
@@ -1794,7 +1794,7 @@ export const useTeamStore = create<TeamStore>()(
         return { success: true, newBestRecord };
       },
 
-      unarchiveSeason: (seasonId) => {
+      unarchiveSeason: (seasonId, forceRestore = false) => {
         const state = get();
         const seasonHistory = state.teamSettings.seasonHistory || [];
 
@@ -1811,10 +1811,11 @@ export const useTeamStore = create<TeamStore>()(
                                      (currentRecord?.ties ?? 0) > 0 ||
                                      state.games.length > 0;
 
-        if (hasCurrentSeasonData) {
+        if (hasCurrentSeasonData && !forceRestore) {
           return {
             success: false,
-            message: 'Cannot restore archived season while current season has data. Please archive the current season first.'
+            message: 'Current season has data. Restoring will discard current season games and stats. Use "Force Restore" if you want to proceed.',
+            hasConflict: true
           };
         }
 
@@ -1846,7 +1847,7 @@ export const useTeamStore = create<TeamStore>()(
           teamGoals: seasonToRestore.teamRecord.teamGoals,
         };
 
-        // Update state
+        // Update state - also clear games since we're restoring a previous season
         set({
           teamSettings: {
             ...state.teamSettings,
@@ -1855,6 +1856,7 @@ export const useTeamStore = create<TeamStore>()(
             currentSeasonName: seasonToRestore.seasonName,
           },
           players: updatedPlayers,
+          games: [], // Clear current games when restoring archived season
         });
 
         return { success: true, message: `Season "${seasonToRestore.seasonName}" has been restored.` };
