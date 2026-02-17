@@ -188,12 +188,12 @@ function getGameStatHeaders(sport: Sport): string[] {
   }
 }
 
-// Get goalie stat headers for table display
+// Get goalie stat headers for table display (includes calculated stats)
 function getGameGoalieHeaders(sport: Sport): string[] {
   if (sport === 'lacrosse') {
-    return ['MP', 'SA', 'SV', 'GA', 'GB'];
+    return ['MP', 'SA', 'SV', 'GA', 'GAA', 'SV%', 'GB'];
   }
-  return ['MP', 'SA', 'SV', 'GA'];
+  return ['MP', 'SA', 'SV', 'GA', 'GAA', 'SV%'];
 }
 
 // Get pitcher stat headers for table display
@@ -234,8 +234,8 @@ function getGameStatValuesForPlayer(
   if (!gameLog) {
     // Return zeros based on sport/type
     if (isPitcherStats) return [0, 0, 0, 0, 0];
-    if (isGoalieStats && sport === 'lacrosse') return [0, 0, 0, 0, 0];
-    if (isGoalieStats) return [0, 0, 0, 0];
+    if (isGoalieStats && sport === 'lacrosse') return [0, 0, 0, 0, '-', '-', 0];
+    if (isGoalieStats) return [0, 0, 0, 0, '-', '-'];
     switch (sport) {
       case 'hockey': return [0, 0, 0, 0, 0];
       case 'baseball':
@@ -261,20 +261,35 @@ function getGameStatValuesForPlayer(
   }
 
   if (isGoalieStats) {
+    const minutesPlayed = stats.minutesPlayed ?? 0;
+    const shotsAgainst = stats.shotsAgainst ?? 0;
+    const saves = stats.saves ?? 0;
+    const goalsAgainst = stats.goalsAgainst ?? 0;
+
+    // Calculate GAA (Goals Against Average) - goals per 60 minutes
+    const gaa = minutesPlayed > 0 ? ((goalsAgainst / minutesPlayed) * 60).toFixed(2) : '0.00';
+
+    // Calculate SV% (Save Percentage)
+    const svPct = shotsAgainst > 0 ? ((saves / shotsAgainst) * 100).toFixed(0) + '%' : '-';
+
     if (sport === 'lacrosse') {
       return [
-        stats.minutesPlayed ?? 0,
-        stats.shotsAgainst ?? 0,
-        stats.saves ?? 0,
-        stats.goalsAgainst ?? 0,
+        minutesPlayed,
+        shotsAgainst,
+        saves,
+        goalsAgainst,
+        gaa,
+        svPct,
         stats.groundBalls ?? 0
       ];
     }
     return [
-      stats.minutesPlayed ?? 0,
-      stats.shotsAgainst ?? 0,
-      stats.saves ?? 0,
-      stats.goalsAgainst ?? 0
+      minutesPlayed,
+      shotsAgainst,
+      saves,
+      goalsAgainst,
+      gaa,
+      svPct
     ];
   }
 
