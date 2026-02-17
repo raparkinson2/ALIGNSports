@@ -54,6 +54,30 @@ const getDateLabel = (dateString: string): string => {
   return format(date, 'EEE, MMM d');
 };
 
+// Combine a date with a time string (e.g., "7:00 PM") into a single Date object
+const combineDateAndTime = (date: Date, timeString: string): Date => {
+  const result = new Date(date);
+
+  // Parse time string like "7:00 PM" or "10:30 AM"
+  const timeMatch = timeString.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (timeMatch) {
+    let hours = parseInt(timeMatch[1], 10);
+    const minutes = parseInt(timeMatch[2], 10);
+    const period = timeMatch[3].toUpperCase();
+
+    // Convert to 24-hour format
+    if (period === 'PM' && hours !== 12) {
+      hours += 12;
+    } else if (period === 'AM' && hours === 12) {
+      hours = 0;
+    }
+
+    result.setHours(hours, minutes, 0, 0);
+  }
+
+  return result;
+};
+
 // Format team record based on sport
 const formatTeamRecord = (record: TeamRecord | undefined, sport: Sport): string => {
   if (!record) return '';
@@ -1074,11 +1098,12 @@ export default function ScheduleScreen() {
     // If 'none', no notifications are sent - user can send manually from game details
 
     // Schedule game reminders based on user notification preferences
+    const gameDateTime = combineDateAndTime(gameDate, fullGameTime);
     if (notificationPrefs?.gameReminderDayBefore !== false) {
-      scheduleGameReminderDayBefore(newGame.id, opponent.trim(), gameDate, fullGameTime);
+      scheduleGameReminderDayBefore(newGame.id, opponent.trim(), gameDateTime, fullGameTime);
     }
     if (notificationPrefs?.gameReminderHoursBefore !== false) {
-      scheduleGameReminderHoursBefore(newGame.id, opponent.trim(), gameDate, fullGameTime);
+      scheduleGameReminderHoursBefore(newGame.id, opponent.trim(), gameDateTime, fullGameTime);
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -1141,11 +1166,12 @@ export default function ScheduleScreen() {
       });
 
       // Schedule reminders based on user notification preferences
+      const eventDateTime = combineDateAndTime(gameDate, fullEventTime);
       if (notificationPrefs?.gameReminderDayBefore !== false) {
-        scheduleEventReminderDayBefore(newEvent.id, eventName.trim(), gameDate, fullEventTime);
+        scheduleEventReminderDayBefore(newEvent.id, eventName.trim(), eventDateTime, fullEventTime);
       }
       if (notificationPrefs?.gameReminderHoursBefore !== false) {
-        scheduleEventReminderHourBefore(newEvent.id, eventName.trim(), gameDate, fullEventTime);
+        scheduleEventReminderHourBefore(newEvent.id, eventName.trim(), eventDateTime, fullEventTime);
       }
     } else if (inviteReleaseOption === 'scheduled') {
       console.log('Event invites scheduled for:', inviteReleaseDate.toISOString());
@@ -1211,11 +1237,12 @@ export default function ScheduleScreen() {
       });
 
       // Schedule reminders based on user notification preferences
+      const practiceDateTime = combineDateAndTime(gameDate, fullPracticeTime);
       if (notificationPrefs?.gameReminderDayBefore !== false) {
-        scheduleEventReminderDayBefore(newPractice.id, 'Practice', gameDate, fullPracticeTime);
+        scheduleEventReminderDayBefore(newPractice.id, 'Practice', practiceDateTime, fullPracticeTime);
       }
       if (notificationPrefs?.gameReminderHoursBefore !== false) {
-        scheduleEventReminderHourBefore(newPractice.id, 'Practice', gameDate, fullPracticeTime);
+        scheduleEventReminderHourBefore(newPractice.id, 'Practice', practiceDateTime, fullPracticeTime);
       }
     } else if (inviteReleaseOption === 'scheduled') {
       console.log('Practice invites scheduled for:', inviteReleaseDate.toISOString());
