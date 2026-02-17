@@ -280,47 +280,47 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
     <Animated.View entering={FadeInDown.delay(index * 60).springify()}>
       <Pressable
         onPress={onPress}
-        className="bg-slate-800/80 rounded-2xl p-4 mb-2.5 border border-slate-700/50 active:bg-slate-700/80"
+        className="bg-slate-800/60 rounded-xl p-3 mb-2 border border-slate-700/40 active:bg-slate-700/80"
       >
         <View className="flex-row items-center">
           <View className="relative">
-            <PlayerAvatar player={player} size={56} />
-            <View className="absolute -bottom-1 -right-1 bg-slate-700 rounded-full px-2 py-0.5">
-              <Text className="text-white text-xs font-bold">#{player.number}</Text>
+            <PlayerAvatar player={player} size={44} />
+            <View className="absolute -bottom-0.5 -right-0.5 bg-slate-700 rounded-full px-1.5 py-0">
+              <Text className="text-white text-[10px] font-bold">#{player.number}</Text>
             </View>
           </View>
 
-          <View className="flex-1 ml-4">
+          <View className="flex-1 ml-3">
             <View className="flex-row items-center">
-              <Text className="text-white text-lg font-semibold">{getPlayerName(player)}</Text>
+              <Text className="text-white text-base font-semibold">{getPlayerName(player)}</Text>
               {isCurrentUser && (
-                <View className="ml-1.5 bg-cyan-500/20 rounded-full px-1.5 py-0.5">
-                  <Text className="text-cyan-400 text-[10px] font-semibold">You</Text>
+                <View className="ml-1 bg-cyan-500/20 rounded-full px-1.5 py-0.5">
+                  <Text className="text-cyan-400 text-[9px] font-semibold">You</Text>
                 </View>
               )}
               {player.roles?.includes('captain') && (
-                <View className="ml-1.5 bg-amber-500/20 rounded-full w-5 h-5 items-center justify-center">
-                  <Text className="text-amber-500 text-xs font-black">C</Text>
+                <View className="ml-1 bg-amber-500/20 rounded-full w-4 h-4 items-center justify-center">
+                  <Text className="text-amber-500 text-[10px] font-black">C</Text>
                 </View>
               )}
               {player.roles?.includes('admin') && (
-                <View className="ml-1.5 bg-purple-500/20 rounded-full w-5 h-5 items-center justify-center">
-                  <Shield size={12} color="#a78bfa" strokeWidth={2.5} />
+                <View className="ml-1 bg-purple-500/20 rounded-full w-4 h-4 items-center justify-center">
+                  <Shield size={10} color="#a78bfa" strokeWidth={2.5} />
                 </View>
               )}
             </View>
             <View className="flex-row items-center">
-              <Text className="text-slate-300 text-sm">{positionDisplay}</Text>
+              <Text className="text-slate-400 text-xs">{positionDisplay}</Text>
               {/* Injured indicator with end date */}
               {player.isInjured && (
-                <View className="flex-row items-center ml-2">
-                  <Text className="text-red-400 font-black text-sm">+</Text>
+                <View className="flex-row items-center ml-1.5">
+                  <Text className="text-red-400 font-black text-xs">+</Text>
                   {player.statusEndDate ? (
-                    <Text className="text-red-400/80 text-xs ml-0.5">
+                    <Text className="text-red-400/80 text-[10px] ml-0.5">
                       (until {format(parseISO(player.statusEndDate), 'MMM d')})
                     </Text>
                   ) : player.injuryDuration ? (
-                    <Text className="text-red-400/80 text-xs ml-0.5">
+                    <Text className="text-red-400/80 text-[10px] ml-0.5">
                       ({formatStatusDuration(player.injuryDuration)})
                     </Text>
                   ) : null}
@@ -328,14 +328,14 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
               )}
               {/* Suspended indicator with end date */}
               {player.isSuspended && (
-                <View className="flex-row items-center ml-2">
-                  <Text className="text-red-400 font-bold text-xs">SUS</Text>
+                <View className="flex-row items-center ml-1.5">
+                  <Text className="text-red-400 font-bold text-[10px]">SUS</Text>
                   {player.statusEndDate ? (
-                    <Text className="text-red-400/80 text-xs ml-0.5">
+                    <Text className="text-red-400/80 text-[10px] ml-0.5">
                       (until {format(parseISO(player.statusEndDate), 'MMM d')})
                     </Text>
                   ) : player.suspensionDuration ? (
-                    <Text className="text-red-400/80 text-xs ml-0.5">
+                    <Text className="text-red-400/80 text-[10px] ml-0.5">
                       ({formatStatusDuration(player.suspensionDuration)})
                     </Text>
                   ) : null}
@@ -344,17 +344,17 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
             </View>
             {/* Show hint for self-stats editing */}
             {isCurrentUser && canEditOwnStats && showStats && (
-              <Text className="text-cyan-400/70 text-xs mt-1">Tap to edit your stats</Text>
+              <Text className="text-cyan-400/70 text-[10px] mt-0.5">Tap to edit your stats</Text>
             )}
           </View>
 
           {/* Status Badge */}
           <View className={cn(
-            'px-2.5 py-1 rounded-full',
+            'px-2 py-0.5 rounded-full',
             player.status === 'active' ? 'bg-green-500/15' : 'bg-slate-600/50'
           )}>
             <Text className={cn(
-              'text-xs font-semibold',
+              'text-[10px] font-semibold',
               player.status === 'active' ? 'text-green-400' : 'text-slate-400'
             )}>
               {player.status === 'active' ? 'Active' : 'Reserve'}
@@ -364,33 +364,33 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
 
         {/* Player Stats */}
         {showStats && (
-          <View className="mt-3 pt-3 border-t border-slate-700/50">
+          <View className="mt-2 pt-2 border-t border-slate-700/40">
             {/* Label for skater stats when showing both */}
             {showBothGoalieStats && (
-              <Text className="text-cyan-400 text-xs font-medium mb-2">Skater</Text>
+              <Text className="text-cyan-400 text-[10px] font-medium mb-1">Skater</Text>
             )}
             {/* Label for batting stats when showing both */}
             {showBothBaseballStats && (
-              <Text className="text-cyan-400 text-xs font-medium mb-2">Batting</Text>
+              <Text className="text-cyan-400 text-[10px] font-medium mb-1">Batting</Text>
             )}
             <View className="flex-row justify-between">
               {headers.map((header, i) => (
                 <View key={header} className="items-center flex-1">
-                  <Text className="text-slate-500 text-xs mb-1">{header}</Text>
-                  <Text className="text-white text-sm font-medium">{statValues[i]}</Text>
+                  <Text className="text-slate-500 text-[10px] mb-0.5">{header}</Text>
+                  <Text className="text-white text-xs font-medium">{statValues[i]}</Text>
                 </View>
               ))}
             </View>
 
             {/* Goalie stats row for goalie/skater players */}
             {showBothGoalieStats && (
-              <View className="mt-3 pt-3 border-t border-slate-700/30">
-                <Text className="text-cyan-400 text-xs font-medium mb-2">Goalie</Text>
+              <View className="mt-2 pt-2 border-t border-slate-700/30">
+                <Text className="text-cyan-400 text-[10px] font-medium mb-1">Goalie</Text>
                 <View className="flex-row justify-between">
                   {goalieHeaders.map((header, i) => (
                     <View key={`goalie-${header}`} className="items-center flex-1">
-                      <Text className="text-slate-500 text-xs mb-1">{header}</Text>
-                      <Text className="text-white text-sm font-medium">{goalieStatValues[i]}</Text>
+                      <Text className="text-slate-500 text-[10px] mb-0.5">{header}</Text>
+                      <Text className="text-white text-xs font-medium">{goalieStatValues[i]}</Text>
                     </View>
                   ))}
                 </View>
@@ -399,13 +399,13 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
 
             {/* Pitching stats row for pitcher/position players */}
             {showBothBaseballStats && (
-              <View className="mt-3 pt-3 border-t border-slate-700/30">
-                <Text className="text-cyan-400 text-xs font-medium mb-2">Pitching</Text>
+              <View className="mt-2 pt-2 border-t border-slate-700/30">
+                <Text className="text-cyan-400 text-[10px] font-medium mb-1">Pitching</Text>
                 <View className="flex-row justify-between">
                   {pitchingHeaders.map((header, i) => (
                     <View key={`pitching-${header}`} className="items-center flex-1">
-                      <Text className="text-slate-500 text-xs mb-1">{header}</Text>
-                      <Text className="text-white text-sm font-medium">{pitchingStatValues[i]}</Text>
+                      <Text className="text-slate-500 text-[10px] mb-0.5">{header}</Text>
+                      <Text className="text-white text-xs font-medium">{pitchingStatValues[i]}</Text>
                     </View>
                   ))}
                 </View>
