@@ -21,6 +21,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Pencil,
   Check,
   Trash2,
@@ -33,6 +34,8 @@ import {
   FileText,
   Trophy,
   Minus,
+  BarChart3,
+  Save,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -40,7 +43,7 @@ import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, BattingOrderLineup, SoccerLineup, SoccerDiamondLineup, LacrosseLineup, getPlayerName, InviteReleaseOption } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, BattingOrderLineup, SoccerLineup, SoccerDiamondLineup, LacrosseLineup, getPlayerName, InviteReleaseOption, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, PlayerStats, GameLogEntry, getPlayerPositions } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
@@ -113,6 +116,133 @@ const hexToColorName = (hex: string): string => {
 
   return hex; // Return as-is if not a recognized format
 };
+
+// Edit mode type for game stats - determines which stats to show/edit
+type GameStatEditMode = 'batter' | 'pitcher' | 'skater' | 'goalie' | 'lacrosse' | 'lacrosse_goalie';
+
+// Check if player is a goalie (checks all positions)
+function isGoalie(position: string): boolean {
+  return position === 'G' || position === 'GK';
+}
+
+// Check if any of the player's positions is a goalie
+function playerIsGoalie(player: Player): boolean {
+  const positions = getPlayerPositions(player);
+  return positions.some(p => isGoalie(p));
+}
+
+// Check if player is a pitcher
+function isPitcher(position: string): boolean {
+  return position === 'P';
+}
+
+// Check if any of the player's positions is a pitcher
+function playerIsPitcher(player: Player): boolean {
+  const positions = getPlayerPositions(player);
+  return positions.includes('P');
+}
+
+// Check if player has non-pitcher positions (for baseball)
+function playerHasNonPitcherPositions(player: Player): boolean {
+  const positions = getPlayerPositions(player);
+  return positions.some(p => p !== 'P');
+}
+
+// Check if player has non-goalie positions (for hockey/soccer/lacrosse)
+function playerHasNonGoaliePositions(player: Player): boolean {
+  const positions = getPlayerPositions(player);
+  return positions.some(p => !isGoalie(p));
+}
+
+// Get stat field definitions based on sport and position
+function getGameStatFields(sport: Sport, position: string): { key: string; label: string }[] {
+  const playerIsGoaliePos = isGoalie(position);
+  const playerIsPitcherPos = isPitcher(position);
+
+  // Goalie stats for hockey/soccer (no games field - each log = 1 GP)
+  if (playerIsGoaliePos && (sport === 'hockey' || sport === 'soccer')) {
+    if (sport === 'hockey') {
+      return [
+        { key: 'minutesPlayed', label: 'Minutes Played' },
+        { key: 'shotsAgainst', label: 'Shots Against' },
+        { key: 'saves', label: 'Saves' },
+        { key: 'goalsAgainst', label: 'Goals Against' },
+      ];
+    }
+    return [
+      { key: 'minutesPlayed', label: 'Minutes Played' },
+      { key: 'shotsAgainst', label: 'Shots Against' },
+      { key: 'saves', label: 'Saves' },
+      { key: 'goalsAgainst', label: 'Goals Against' },
+    ];
+  }
+
+  // Lacrosse goalie stats
+  if (playerIsGoaliePos && sport === 'lacrosse') {
+    return [
+      { key: 'minutesPlayed', label: 'Minutes Played' },
+      { key: 'shotsAgainst', label: 'Shots Against' },
+      { key: 'saves', label: 'Saves' },
+      { key: 'goalsAgainst', label: 'Goals Against' },
+      { key: 'groundBalls', label: 'Ground Balls' },
+    ];
+  }
+
+  // Pitcher stats for baseball/softball
+  if (playerIsPitcherPos && (sport === 'baseball' || sport === 'softball')) {
+    return [
+      { key: 'innings', label: 'Innings' },
+      { key: 'strikeouts', label: 'Strikeouts (K)' },
+      { key: 'walks', label: 'Walks (BB)' },
+      { key: 'hits', label: 'Hits' },
+      { key: 'homeRuns', label: 'Home Runs' },
+      { key: 'earnedRuns', label: 'Earned Runs' },
+    ];
+  }
+
+  // Regular player stats (no gamesPlayed field - each log = 1 GP)
+  switch (sport) {
+    case 'hockey':
+      return [
+        { key: 'goals', label: 'Goals' },
+        { key: 'assists', label: 'Assists' },
+        { key: 'pim', label: 'PIM' },
+        { key: 'plusMinus', label: '+/-' },
+      ];
+    case 'baseball':
+    case 'softball':
+      return [
+        { key: 'atBats', label: 'At Bats' },
+        { key: 'hits', label: 'Hits' },
+        { key: 'homeRuns', label: 'Home Runs' },
+        { key: 'rbi', label: 'RBI' },
+        { key: 'strikeouts', label: 'Strikeouts' },
+      ];
+    case 'basketball':
+      return [
+        { key: 'points', label: 'Points' },
+        { key: 'rebounds', label: 'Rebounds' },
+        { key: 'assists', label: 'Assists' },
+        { key: 'steals', label: 'Steals' },
+        { key: 'blocks', label: 'Blocks' },
+      ];
+    case 'soccer':
+      return [
+        { key: 'goals', label: 'Goals' },
+        { key: 'assists', label: 'Assists' },
+        { key: 'yellowCards', label: 'Yellow Cards' },
+      ];
+    case 'lacrosse':
+      return [
+        { key: 'goals', label: 'Goals' },
+        { key: 'assists', label: 'Assists' },
+        { key: 'groundBalls', label: 'Ground Balls' },
+        { key: 'causedTurnovers', label: 'Caused Turnovers' },
+      ];
+    default:
+      return [];
+  }
+}
 
 interface PlayerRowProps {
   player: Player;
@@ -202,6 +332,13 @@ export default function GameDetailScreen() {
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const releaseScheduledGameInvites = useTeamStore((s) => s.releaseScheduledGameInvites);
+  const addGameLog = useTeamStore((s) => s.addGameLog);
+  const updatePlayer = useTeamStore((s) => s.updatePlayer);
+
+  // Get current player and check their roles for stats permissions
+  const currentPlayer = players.find((p) => p.id === currentPlayerId);
+  const isCoach = currentPlayer?.roles?.includes('coach') ?? false;
+  const canManageStats = canManageTeam() || isCoach;
 
   // Check for scheduled invites that need to be released on mount
   useEffect(() => {
@@ -258,6 +395,13 @@ export default function GameDetailScreen() {
   const [scoreThem, setScoreThem] = useState('');
   const [selectedResult, setSelectedResult] = useState<'win' | 'loss' | 'tie' | 'otLoss' | null>(null);
   const [isFinalScoreExpanded, setIsFinalScoreExpanded] = useState(false);
+
+  // Game stats state
+  const [isGameStatsExpanded, setIsGameStatsExpanded] = useState(false);
+  const [isGameStatsModalVisible, setIsGameStatsModalVisible] = useState(false);
+  const [selectedStatsPlayer, setSelectedStatsPlayer] = useState<Player | null>(null);
+  const [gameStatsEditMode, setGameStatsEditMode] = useState<GameStatEditMode>('skater');
+  const [editGameStats, setEditGameStats] = useState<Record<string, string>>({});
 
   const game = games.find((g) => g.id === id);
 
@@ -349,6 +493,140 @@ export default function GameDetailScreen() {
     if (game.checkedOutPlayers?.includes(playerId)) return 'out';
     return 'none';
   };
+
+  // Check if user can edit a specific player's game stats
+  const canEditPlayerStats = (playerId: string): boolean => {
+    // Admins, captains, and coaches can edit anyone's stats
+    if (canManageStats) return true;
+    // If allowPlayerSelfStats is enabled, players can edit their own stats
+    if (teamSettings.allowPlayerSelfStats && playerId === currentPlayerId) return true;
+    return false;
+  };
+
+  // Open game stats modal for a player
+  const openGameStatsModal = (player: Player, mode: GameStatEditMode) => {
+    if (!canEditPlayerStats(player.id)) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedStatsPlayer(player);
+    setGameStatsEditMode(mode);
+
+    // Determine which position to use for getting stat fields based on mode
+    let positionForStats: string;
+    if (mode === 'pitcher') {
+      positionForStats = 'P';
+    } else if (mode === 'goalie' || mode === 'lacrosse_goalie') {
+      positionForStats = teamSettings.sport === 'soccer' ? 'GK' : 'G';
+    } else {
+      positionForStats = 'batter';
+    }
+
+    const statFields = getGameStatFields(teamSettings.sport, positionForStats);
+
+    // Start with empty stats (zeros) for entering this game's stats
+    const statsObj: Record<string, string> = {};
+    statFields.forEach((field) => {
+      statsObj[field.key] = '0';
+    });
+    setEditGameStats(statsObj);
+    setIsGameStatsModalVisible(true);
+  };
+
+  // Save game stats for a player
+  const saveGameStats = () => {
+    if (!selectedStatsPlayer || !game) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // Determine which position to use for getting stat fields based on edit mode
+    let positionForStats: string;
+    let statType: 'skater' | 'goalie' | 'batter' | 'pitcher' | 'lacrosse' | 'lacrosse_goalie';
+
+    if (gameStatsEditMode === 'pitcher') {
+      positionForStats = 'P';
+      statType = 'pitcher';
+    } else if (gameStatsEditMode === 'goalie') {
+      positionForStats = teamSettings.sport === 'soccer' ? 'GK' : 'G';
+      statType = 'goalie';
+    } else if (gameStatsEditMode === 'lacrosse_goalie') {
+      positionForStats = 'G';
+      statType = 'lacrosse_goalie';
+    } else if (gameStatsEditMode === 'batter') {
+      positionForStats = 'batter';
+      statType = 'batter';
+    } else if (gameStatsEditMode === 'lacrosse') {
+      positionForStats = 'batter';
+      statType = 'lacrosse';
+    } else {
+      positionForStats = 'batter';
+      statType = 'skater';
+    }
+
+    const statFields = getGameStatFields(teamSettings.sport, positionForStats);
+    const newStats: Record<string, number> = {};
+    statFields.forEach((field) => {
+      newStats[field.key] = parseInt(editGameStats[field.key] || '0', 10) || 0;
+    });
+
+    // Create game log entry with the game's date
+    const gameLogEntry: GameLogEntry = {
+      id: `${game.id}-${Date.now()}`,
+      date: game.date, // Use the game's date
+      stats: newStats as unknown as PlayerStats,
+      statType,
+    };
+
+    // Add game log
+    addGameLog(selectedStatsPlayer.id, gameLogEntry);
+
+    // Recalculate cumulative stats from all game logs of this type
+    const updatedPlayer = players.find(p => p.id === selectedStatsPlayer.id);
+    const allLogs = [...(updatedPlayer?.gameLogs || []), gameLogEntry].filter(log => log.statType === statType);
+
+    const cumulativeStats: Record<string, number> = {};
+    allLogs.forEach(log => {
+      const logStats = log.stats as unknown as Record<string, number>;
+      Object.keys(logStats).forEach(key => {
+        cumulativeStats[key] = (cumulativeStats[key] || 0) + (logStats[key] || 0);
+      });
+    });
+
+    // Add games played count (each log = 1 game)
+    if (gameStatsEditMode === 'goalie' || gameStatsEditMode === 'lacrosse_goalie') {
+      cumulativeStats.games = allLogs.length;
+    } else {
+      cumulativeStats.gamesPlayed = allLogs.length;
+    }
+
+    // Save cumulative stats to the appropriate stats field based on edit mode
+    if (gameStatsEditMode === 'pitcher') {
+      updatePlayer(selectedStatsPlayer.id, { pitcherStats: cumulativeStats as unknown as BaseballPitcherStats });
+    } else if (gameStatsEditMode === 'goalie' || gameStatsEditMode === 'lacrosse_goalie') {
+      updatePlayer(selectedStatsPlayer.id, { goalieStats: cumulativeStats as unknown as HockeyGoalieStats });
+    } else {
+      updatePlayer(selectedStatsPlayer.id, { stats: cumulativeStats as unknown as PlayerStats });
+    }
+
+    // Close modal
+    setIsGameStatsModalVisible(false);
+    setSelectedStatsPlayer(null);
+
+    // Show success
+    Alert.alert('Stats Saved', `Game stats saved for ${selectedStatsPlayer.firstName} ${selectedStatsPlayer.lastName}.`);
+  };
+
+  // Get stat fields for the currently selected player
+  const currentGameStatFields = selectedStatsPlayer ? (() => {
+    let positionForStats: string;
+    if (gameStatsEditMode === 'pitcher') {
+      positionForStats = 'P';
+    } else if (gameStatsEditMode === 'goalie' || gameStatsEditMode === 'lacrosse_goalie') {
+      positionForStats = teamSettings.sport === 'soccer' ? 'GK' : 'G';
+    } else {
+      positionForStats = 'batter';
+    }
+    return getGameStatFields(teamSettings.sport, positionForStats);
+  })() : [];
 
   const handleOpenMaps = () => {
     const locationQuery = game.address
@@ -1324,6 +1602,155 @@ export default function GameDetailScreen() {
                     <Text className="text-slate-500 text-xs text-center mt-2">
                       This will add a {selectedResult} to your team record
                     </Text>
+                  )}
+                </View>
+              )}
+            </Animated.View>
+          )}
+
+          {/* Game Stats Section - Only when team stats is enabled */}
+          {teamSettings.showTeamStats && (canManageStats || teamSettings.allowPlayerSelfStats) && (
+            <Animated.View
+              entering={FadeInUp.delay(122).springify()}
+              className="mx-4 mb-3"
+            >
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setIsGameStatsExpanded(!isGameStatsExpanded);
+                }}
+                className="bg-slate-800/80 rounded-xl py-2.5 px-3 active:bg-slate-700/80"
+              >
+                <View className="flex-row items-center">
+                  <BarChart3 size={18} color="#8b5cf6" />
+                  <View className="flex-1 ml-2.5">
+                    <Text className="text-white font-medium text-sm">
+                      Game Stats
+                    </Text>
+                    <Text className="text-slate-400 text-xs">
+                      Tap to enter player stats
+                    </Text>
+                  </View>
+                  <ChevronDown
+                    size={16}
+                    color="#8b5cf6"
+                    style={{ transform: [{ rotate: isGameStatsExpanded ? '180deg' : '0deg' }] }}
+                  />
+                </View>
+              </Pressable>
+
+              {/* Expanded content - Player list */}
+              {isGameStatsExpanded && (
+                <View className="bg-slate-800/60 rounded-xl mt-2 p-3">
+                  <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                    Select Player
+                  </Text>
+
+                  {/* Show checked-in players for stats entry */}
+                  {checkedInPlayers.length > 0 ? (
+                    <View>
+                      {checkedInPlayers.map((player, index) => {
+                        const canEdit = canEditPlayerStats(player.id);
+                        const hasMultipleStatTypes = (
+                          (teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer') && playerIsGoalie(player) && playerHasNonGoaliePositions(player)
+                        ) || (
+                          (teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') && playerIsPitcher(player) && playerHasNonPitcherPositions(player)
+                        ) || (
+                          teamSettings.sport === 'lacrosse' && playerIsGoalie(player) && playerHasNonGoaliePositions(player)
+                        );
+
+                        return (
+                          <View key={player.id} className={`${index !== checkedInPlayers.length - 1 ? 'mb-2' : ''}`}>
+                            {hasMultipleStatTypes ? (
+                              // Show buttons for both stat types
+                              <View className="flex-row items-center bg-slate-700/50 rounded-lg p-2">
+                                <PlayerAvatar player={player} size={36} borderWidth={1} borderColor="#8b5cf6" />
+                                <View className="flex-1 ml-2">
+                                  <Text className="text-white text-sm font-medium">
+                                    {player.firstName} {player.lastName}
+                                  </Text>
+                                  <Text className="text-slate-400 text-xs">#{player.number}</Text>
+                                </View>
+                                <View className="flex-row">
+                                  {/* Skater/Batter/Field button */}
+                                  <Pressable
+                                    onPress={() => {
+                                      if (!canEdit) return;
+                                      const mode: GameStatEditMode = teamSettings.sport === 'baseball' || teamSettings.sport === 'softball' ? 'batter' : teamSettings.sport === 'lacrosse' ? 'lacrosse' : 'skater';
+                                      openGameStatsModal(player, mode);
+                                    }}
+                                    disabled={!canEdit}
+                                    className={cn(
+                                      'px-2.5 py-1.5 rounded-lg mr-1.5',
+                                      canEdit ? 'bg-violet-500/20 active:bg-violet-500/40' : 'bg-slate-700/30 opacity-50'
+                                    )}
+                                  >
+                                    <Text className={cn('text-xs font-medium', canEdit ? 'text-violet-400' : 'text-slate-500')}>
+                                      {teamSettings.sport === 'baseball' || teamSettings.sport === 'softball' ? 'Batter' : teamSettings.sport === 'lacrosse' ? 'Field' : 'Skater'}
+                                    </Text>
+                                  </Pressable>
+                                  {/* Goalie/Pitcher button */}
+                                  <Pressable
+                                    onPress={() => {
+                                      if (!canEdit) return;
+                                      const mode: GameStatEditMode = teamSettings.sport === 'baseball' || teamSettings.sport === 'softball' ? 'pitcher' : teamSettings.sport === 'lacrosse' ? 'lacrosse_goalie' : 'goalie';
+                                      openGameStatsModal(player, mode);
+                                    }}
+                                    disabled={!canEdit}
+                                    className={cn(
+                                      'px-2.5 py-1.5 rounded-lg',
+                                      canEdit ? 'bg-violet-500/20 active:bg-violet-500/40' : 'bg-slate-700/30 opacity-50'
+                                    )}
+                                  >
+                                    <Text className={cn('text-xs font-medium', canEdit ? 'text-violet-400' : 'text-slate-500')}>
+                                      {teamSettings.sport === 'baseball' || teamSettings.sport === 'softball' ? 'Pitcher' : 'Goalie'}
+                                    </Text>
+                                  </Pressable>
+                                </View>
+                              </View>
+                            ) : (
+                              // Single stat type - show as pressable row
+                              <Pressable
+                                onPress={() => {
+                                  if (!canEdit) return;
+                                  // Determine the stat type based on position
+                                  let mode: GameStatEditMode;
+                                  if (teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') {
+                                    mode = playerIsPitcher(player) ? 'pitcher' : 'batter';
+                                  } else if (teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer') {
+                                    mode = playerIsGoalie(player) ? 'goalie' : 'skater';
+                                  } else if (teamSettings.sport === 'lacrosse') {
+                                    mode = playerIsGoalie(player) ? 'lacrosse_goalie' : 'lacrosse';
+                                  } else {
+                                    mode = 'skater';
+                                  }
+                                  openGameStatsModal(player, mode);
+                                }}
+                                disabled={!canEdit}
+                                className={cn(
+                                  'flex-row items-center bg-slate-700/50 rounded-lg p-2',
+                                  canEdit ? 'active:bg-slate-600/50' : 'opacity-50'
+                                )}
+                              >
+                                <PlayerAvatar player={player} size={36} borderWidth={1} borderColor="#8b5cf6" />
+                                <View className="flex-1 ml-2">
+                                  <Text className="text-white text-sm font-medium">
+                                    {player.firstName} {player.lastName}
+                                  </Text>
+                                  <Text className="text-slate-400 text-xs">#{player.number}</Text>
+                                </View>
+                                <ChevronRight size={16} color={canEdit ? '#8b5cf6' : '#64748b'} />
+                              </Pressable>
+                            )}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ) : (
+                    <View className="items-center py-4">
+                      <Text className="text-slate-500 text-sm">No players checked in</Text>
+                      <Text className="text-slate-600 text-xs mt-1">Players must check in to enter stats</Text>
+                    </View>
                   )}
                 </View>
               )}
@@ -3446,6 +3873,126 @@ export default function GameDetailScreen() {
                 autoFocus
               />
             </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Game Stats Modal */}
+      <Modal
+        visible={isGameStatsModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsGameStatsModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1" edges={['top']}>
+            {/* Header */}
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable
+                onPress={() => setIsGameStatsModalVisible(false)}
+                className="w-10 h-10 rounded-full bg-slate-800 items-center justify-center"
+              >
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Game Stats</Text>
+              <Pressable
+                onPress={saveGameStats}
+                className="w-10 h-10 rounded-full bg-violet-500 items-center justify-center"
+              >
+                <Check size={24} color="#fff" />
+              </Pressable>
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-4" keyboardShouldPersistTaps="handled">
+              {/* Player Info */}
+              {selectedStatsPlayer && (
+                <View className="flex-row items-center bg-slate-800/60 rounded-xl p-3 mb-4">
+                  <PlayerAvatar player={selectedStatsPlayer} size={48} borderWidth={2} borderColor="#8b5cf6" />
+                  <View className="flex-1 ml-3">
+                    <Text className="text-white text-base font-semibold">
+                      {selectedStatsPlayer.firstName} {selectedStatsPlayer.lastName}
+                    </Text>
+                    <Text className="text-slate-400 text-sm">#{selectedStatsPlayer.number}</Text>
+                  </View>
+                  <View className="bg-violet-500/20 px-3 py-1.5 rounded-lg">
+                    <Text className="text-violet-400 text-xs font-medium capitalize">
+                      {gameStatsEditMode === 'lacrosse_goalie' ? 'Goalie' : gameStatsEditMode}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Game Info */}
+              <View className="bg-slate-800/40 rounded-xl p-3 mb-4">
+                <View className="flex-row items-center">
+                  <Calendar size={16} color="#64748b" />
+                  <Text className="text-slate-400 text-sm ml-2">
+                    vs {game.opponent} • {format(parseISO(game.date), 'MMM d, yyyy')}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Stat Fields */}
+              <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                Enter Stats
+              </Text>
+
+              {currentGameStatFields.map((field) => (
+                <View key={field.key} className="mb-3">
+                  <Text className="text-slate-400 text-xs mb-1.5">{field.label}</Text>
+                  {field.key === 'plusMinus' ? (
+                    // Special +/- control with increment/decrement buttons
+                    <View className="flex-row items-center">
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          const current = parseInt(editGameStats[field.key] || '0', 10) || 0;
+                          setEditGameStats({ ...editGameStats, [field.key]: String(current - 1) });
+                        }}
+                        className="bg-red-500/20 border border-red-500/50 rounded-lg w-14 h-11 items-center justify-center active:bg-red-500/40"
+                      >
+                        <Text className="text-red-400 text-xl font-bold">−</Text>
+                      </Pressable>
+                      <View className="flex-1 mx-2 bg-slate-800 rounded-lg px-3 py-2 border border-slate-700 items-center">
+                        <Text className="text-white text-lg font-semibold">
+                          {(() => {
+                            const val = parseInt(editGameStats[field.key] || '0', 10) || 0;
+                            return val > 0 ? `+${val}` : String(val);
+                          })()}
+                        </Text>
+                      </View>
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          const current = parseInt(editGameStats[field.key] || '0', 10) || 0;
+                          setEditGameStats({ ...editGameStats, [field.key]: String(current + 1) });
+                        }}
+                        className="bg-green-500/20 border border-green-500/50 rounded-lg w-14 h-11 items-center justify-center active:bg-green-500/40"
+                      >
+                        <Text className="text-green-400 text-xl font-bold">+</Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <TextInput
+                      className="bg-slate-800 rounded-lg px-3 py-2.5 text-white text-base border border-slate-700"
+                      value={editGameStats[field.key] === '0' ? '' : editGameStats[field.key]}
+                      onChangeText={(text) => setEditGameStats({ ...editGameStats, [field.key]: text.replace(/[^0-9-]/g, '') || '0' })}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      placeholderTextColor="#64748b"
+                    />
+                  )}
+                </View>
+              ))}
+
+              {/* Save Button */}
+              <Pressable
+                onPress={saveGameStats}
+                className="bg-violet-500 rounded-xl py-3.5 items-center mt-4 mb-8 active:bg-violet-600"
+              >
+                <Text className="text-white text-base font-semibold">Save Stats</Text>
+              </Pressable>
+            </ScrollView>
           </SafeAreaView>
         </View>
       </Modal>

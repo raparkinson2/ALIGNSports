@@ -103,6 +103,14 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
   - Select Win (green), Loss (red), Tie (grey), or OT Loss (orange, hockey only) result
   - Saves result and automatically updates team record
   - Can clear/update results if needed (adjusts record accordingly)
+- **Game Stats**: Enter player statistics directly from the game detail screen
+  - Only appears when Team Stats is enabled in Admin settings
+  - Shows checked-in players for stat entry
+  - Captains/Admins/Coaches can enter stats for any player
+  - Players can enter their own stats if "Allow players to manage own stats" is enabled
+  - Sport-specific stat fields (Goals, Assists, PIM for hockey, etc.)
+  - Stats automatically added to player's game log and cumulative totals
+  - Players with multiple positions (e.g., goalie who also plays forward) show buttons for both stat types
 - **Hockey Lines** (Hockey only): Captains/Admins can set line combinations
   - Configure forward lines (LW - C - RW), defense pairs (LD - RD), and goalies
   - Choose 1-4 forward lines, 1-4 defense pairs, and 1-2 goalies
