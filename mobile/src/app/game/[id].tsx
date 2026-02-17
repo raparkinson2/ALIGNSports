@@ -154,6 +154,173 @@ function playerHasNonGoaliePositions(player: Player): boolean {
   return positions.some(p => !isGoalie(p));
 }
 
+// Get display position string (e.g., "P/3B" or "LW/C")
+function getDisplayPosition(player: Player): string {
+  const positions = getPlayerPositions(player);
+  return positions.join('/');
+}
+
+// Format name as "F. LastName"
+function formatShortName(fullName: string): string {
+  const parts = fullName.trim().split(' ');
+  if (parts.length < 2) return fullName;
+  const firstName = parts[0];
+  const lastName = parts.slice(1).join(' ');
+  return `${firstName.charAt(0)}. ${lastName}`;
+}
+
+// Get stat column headers for table display based on sport
+function getGameStatHeaders(sport: Sport): string[] {
+  switch (sport) {
+    case 'hockey':
+      return ['G', 'A', 'P', 'PIM', '+/-'];
+    case 'baseball':
+    case 'softball':
+      return ['AB', 'H', 'RBI', 'R', 'HR'];
+    case 'basketball':
+      return ['PTS', 'REB', 'AST', 'STL', 'BLK'];
+    case 'soccer':
+      return ['G', 'A', 'YC'];
+    case 'lacrosse':
+      return ['G', 'A', 'GB', 'CT'];
+    default:
+      return ['G', 'A', 'P', 'PIM', '+/-'];
+  }
+}
+
+// Get goalie stat headers for table display
+function getGameGoalieHeaders(sport: Sport): string[] {
+  if (sport === 'lacrosse') {
+    return ['MP', 'SA', 'SV', 'GA', 'GB'];
+  }
+  return ['MP', 'SA', 'SV', 'GA'];
+}
+
+// Get pitcher stat headers for table display
+function getGamePitcherHeaders(): string[] {
+  return ['IP', 'K', 'BB', 'H', 'ER'];
+}
+
+// Get stat values for a player for this specific game
+function getGameStatValuesForPlayer(
+  sport: Sport,
+  player: Player,
+  gameId: string,
+  isGoalieStats: boolean = false,
+  isPitcherStats: boolean = false
+): (number | string)[] {
+  // Find the game log for this specific game
+  const gameLogs = player.gameLogs || [];
+
+  // Determine which stat type to look for
+  let statType: string;
+  if (isPitcherStats) {
+    statType = 'pitcher';
+  } else if (isGoalieStats) {
+    statType = sport === 'lacrosse' ? 'lacrosse_goalie' : 'goalie';
+  } else if (sport === 'baseball' || sport === 'softball') {
+    statType = 'batter';
+  } else if (sport === 'lacrosse') {
+    statType = 'lacrosse';
+  } else {
+    statType = 'skater';
+  }
+
+  const gameLog = gameLogs.find(log => log.id.startsWith(gameId) && log.statType === statType);
+
+  if (!gameLog) {
+    // Return zeros based on sport/type
+    if (isPitcherStats) return [0, 0, 0, 0, 0];
+    if (isGoalieStats && sport === 'lacrosse') return [0, 0, 0, 0, 0];
+    if (isGoalieStats) return [0, 0, 0, 0];
+    switch (sport) {
+      case 'hockey': return [0, 0, 0, 0, 0];
+      case 'baseball':
+      case 'softball': return [0, 0, 0, 0, 0];
+      case 'basketball': return [0, 0, 0, 0, 0];
+      case 'soccer': return [0, 0, 0];
+      case 'lacrosse': return [0, 0, 0, 0];
+      default: return [0, 0, 0, 0, 0];
+    }
+  }
+
+  const stats = gameLog.stats as unknown as Record<string, number>;
+
+  // Return values in the correct order for headers
+  if (isPitcherStats) {
+    return [
+      stats.innings ?? 0,
+      stats.strikeouts ?? 0,
+      stats.walks ?? 0,
+      stats.hits ?? 0,
+      stats.earnedRuns ?? 0
+    ];
+  }
+
+  if (isGoalieStats) {
+    if (sport === 'lacrosse') {
+      return [
+        stats.minutesPlayed ?? 0,
+        stats.shotsAgainst ?? 0,
+        stats.saves ?? 0,
+        stats.goalsAgainst ?? 0,
+        stats.groundBalls ?? 0
+      ];
+    }
+    return [
+      stats.minutesPlayed ?? 0,
+      stats.shotsAgainst ?? 0,
+      stats.saves ?? 0,
+      stats.goalsAgainst ?? 0
+    ];
+  }
+
+  switch (sport) {
+    case 'hockey': {
+      const goals = stats.goals ?? 0;
+      const assists = stats.assists ?? 0;
+      const points = goals + assists;
+      const plusMinus = stats.plusMinus ?? 0;
+      const plusMinusStr = plusMinus > 0 ? `+${plusMinus}` : `${plusMinus}`;
+      return [goals, assists, points, stats.pim ?? 0, plusMinusStr];
+    }
+    case 'baseball':
+    case 'softball':
+      return [
+        stats.atBats ?? 0,
+        stats.hits ?? 0,
+        stats.rbi ?? 0,
+        stats.runs ?? 0,
+        stats.homeRuns ?? 0
+      ];
+    case 'basketball':
+      return [
+        stats.points ?? 0,
+        stats.rebounds ?? 0,
+        stats.assists ?? 0,
+        stats.steals ?? 0,
+        stats.blocks ?? 0
+      ];
+    case 'soccer':
+      return [stats.goals ?? 0, stats.assists ?? 0, stats.yellowCards ?? 0];
+    case 'lacrosse':
+      return [
+        stats.goals ?? 0,
+        stats.assists ?? 0,
+        stats.groundBalls ?? 0,
+        stats.causedTurnovers ?? 0
+      ];
+    default:
+      return [0, 0, 0, 0, 0];
+  }
+}
+
+// Check if player has stats entered for this game
+function playerHasGameStats(player: Player, gameId: string): boolean {
+  const gameLogs = player.gameLogs || [];
+  return gameLogs.some(log => log.id.startsWith(gameId));
+}
+
 // Get stat field definitions based on sport and position
 function getGameStatFields(sport: Sport, position: string): { key: string; label: string }[] {
   const playerIsGoaliePos = isGoalie(position);
@@ -1642,119 +1809,207 @@ export default function GameDetailScreen() {
                 </View>
               </Pressable>
 
-              {/* Expanded content - Player list */}
+              {/* Expanded content - Table-style player stats */}
               {isGameStatsExpanded && (
-                <View className="bg-slate-800/60 rounded-xl mt-2 p-3">
-                  <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-                    Select Player
-                  </Text>
-
-                  {/* Show checked-in players for stats entry */}
+                <View className="bg-slate-800/60 rounded-xl mt-2 overflow-hidden">
                   {checkedInPlayers.length > 0 ? (
                     <View>
-                      {checkedInPlayers.map((player, index) => {
-                        const canEdit = canEditPlayerStats(player.id);
-                        const hasMultipleStatTypes = (
-                          (teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer') && playerIsGoalie(player) && playerHasNonGoaliePositions(player)
-                        ) || (
-                          (teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') && playerIsPitcher(player) && playerHasNonPitcherPositions(player)
-                        ) || (
-                          teamSettings.sport === 'lacrosse' && playerIsGoalie(player) && playerHasNonGoaliePositions(player)
-                        );
+                      {/* Player Statistics Table */}
+                      <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider px-3 pt-3 pb-2">
+                        Player Statistics
+                      </Text>
 
-                        return (
-                          <View key={player.id} className={`${index !== checkedInPlayers.length - 1 ? 'mb-2' : ''}`}>
-                            {hasMultipleStatTypes ? (
-                              // Show buttons for both stat types
-                              <View className="flex-row items-center bg-slate-700/50 rounded-lg p-2">
-                                <PlayerAvatar player={player} size={36} borderWidth={1} borderColor="#8b5cf6" />
-                                <View className="flex-1 ml-2">
-                                  <Text className="text-white text-sm font-medium">
-                                    {player.firstName} {player.lastName}
-                                  </Text>
-                                  <Text className="text-slate-400 text-xs">#{player.number}</Text>
-                                </View>
-                                <View className="flex-row">
-                                  {/* Skater/Batter/Player button */}
-                                  <Pressable
-                                    onPress={() => {
-                                      if (!canEdit) return;
-                                      const mode: GameStatEditMode = teamSettings.sport === 'baseball' || teamSettings.sport === 'softball' ? 'batter' : teamSettings.sport === 'lacrosse' ? 'lacrosse' : 'skater';
-                                      openGameStatsModal(player, mode);
-                                    }}
-                                    disabled={!canEdit}
-                                    className={cn(
-                                      'px-2.5 py-1.5 rounded-lg mr-1.5',
-                                      canEdit ? 'bg-violet-500/20 active:bg-violet-500/40' : 'bg-slate-700/30 opacity-50'
-                                    )}
-                                  >
-                                    <Text className={cn('text-xs font-medium', canEdit ? 'text-violet-400' : 'text-slate-500')}>
-                                      {teamSettings.sport === 'baseball' || teamSettings.sport === 'softball' ? 'Batter' : teamSettings.sport === 'hockey' ? 'Skater' : 'Player'}
-                                    </Text>
-                                  </Pressable>
-                                  {/* Goalie/Pitcher button */}
-                                  <Pressable
-                                    onPress={() => {
-                                      if (!canEdit) return;
-                                      const mode: GameStatEditMode = teamSettings.sport === 'baseball' || teamSettings.sport === 'softball' ? 'pitcher' : teamSettings.sport === 'lacrosse' ? 'lacrosse_goalie' : 'goalie';
-                                      openGameStatsModal(player, mode);
-                                    }}
-                                    disabled={!canEdit}
-                                    className={cn(
-                                      'px-2.5 py-1.5 rounded-lg',
-                                      canEdit ? 'bg-violet-500/20 active:bg-violet-500/40' : 'bg-slate-700/30 opacity-50'
-                                    )}
-                                  >
-                                    <Text className={cn('text-xs font-medium', canEdit ? 'text-violet-400' : 'text-slate-500')}>
-                                      {teamSettings.sport === 'baseball' || teamSettings.sport === 'softball' ? 'Pitcher' : 'Goalie'}
-                                    </Text>
-                                  </Pressable>
-                                </View>
+                      {/* Table Header for Players */}
+                      <View className="flex-row items-center px-2 py-2 bg-slate-700/50 border-b border-slate-700">
+                        <Text className="text-slate-300 font-semibold text-xs flex-1" style={{ minWidth: 80 }}>Player</Text>
+                        <Text className="text-slate-300 font-semibold w-8 text-center text-[10px]">Pos</Text>
+                        {getGameStatHeaders(teamSettings.sport).map((header) => (
+                          <Text key={header} className="text-slate-300 font-semibold w-7 text-center text-[10px]">
+                            {header}
+                          </Text>
+                        ))}
+                        <View className="w-4" />
+                      </View>
+
+                      {/* Non-Goalie/Non-Pitcher Player Rows */}
+                      {checkedInPlayers
+                        .filter(p => {
+                          if (teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer' || teamSettings.sport === 'lacrosse') {
+                            return playerHasNonGoaliePositions(p);
+                          }
+                          if (teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') {
+                            return playerHasNonPitcherPositions(p);
+                          }
+                          return true;
+                        })
+                        .map((player, index, arr) => {
+                          const canEdit = canEditPlayerStats(player.id);
+                          const statValues = getGameStatValuesForPlayer(teamSettings.sport, player, game.id, false, false);
+                          const hasStats = playerHasGameStats(player, game.id);
+                          const showBorder = index !== arr.length - 1 ||
+                            ((teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer' || teamSettings.sport === 'lacrosse') && checkedInPlayers.some(p => playerIsGoalie(p))) ||
+                            ((teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') && checkedInPlayers.some(p => playerIsPitcher(p)));
+
+                          return (
+                            <Pressable
+                              key={player.id}
+                              onPress={() => {
+                                if (!canEdit) return;
+                                const mode: GameStatEditMode = teamSettings.sport === 'baseball' || teamSettings.sport === 'softball' ? 'batter' : teamSettings.sport === 'lacrosse' ? 'lacrosse' : 'skater';
+                                openGameStatsModal(player, mode);
+                              }}
+                              disabled={!canEdit}
+                              className={cn(
+                                'flex-row items-center px-2 py-2.5',
+                                canEdit ? 'active:bg-slate-700/50' : '',
+                                showBorder ? 'border-b border-slate-700/50' : ''
+                              )}
+                            >
+                              <View className="flex-1 flex-row items-center" style={{ minWidth: 80 }}>
+                                <Text className="text-violet-400 font-medium text-[10px] mr-0.5">#{player.number}</Text>
+                                <Text className="text-white text-xs" numberOfLines={1}>
+                                  {formatShortName(getPlayerName(player))}
+                                </Text>
                               </View>
-                            ) : (
-                              // Single stat type - show as pressable row
+                              <Text className="text-slate-400 w-8 text-center text-[10px]">{getDisplayPosition(player)}</Text>
+                              {statValues.map((value, i) => (
+                                <Text key={i} className={cn(
+                                  'w-7 text-center text-xs',
+                                  hasStats ? 'text-white' : 'text-slate-500'
+                                )}>
+                                  {value}
+                                </Text>
+                              ))}
+                              <View className="w-4 items-center">
+                                {canEdit && <ChevronRight size={12} color="#64748b" />}
+                              </View>
+                            </Pressable>
+                          );
+                        })}
+
+                      {/* Goalie Section for Hockey/Soccer/Lacrosse */}
+                      {(teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer' || teamSettings.sport === 'lacrosse') &&
+                       checkedInPlayers.some(p => playerIsGoalie(p)) && (
+                        <>
+                          {/* Goalie Header */}
+                          <View className="flex-row items-center px-2 py-2 bg-slate-700/50 border-b border-slate-700">
+                            <Text className="text-slate-300 font-semibold text-xs flex-1" style={{ minWidth: 80 }}>Goalies</Text>
+                            <View className="w-8" />
+                            {getGameGoalieHeaders(teamSettings.sport).map((header) => (
+                              <Text key={header} className="text-slate-300 font-semibold w-7 text-center text-[10px]">
+                                {header}
+                              </Text>
+                            ))}
+                            <View className="w-4" />
+                          </View>
+
+                          {/* Goalie Rows */}
+                          {checkedInPlayers.filter(p => playerIsGoalie(p)).map((player, index, arr) => {
+                            const canEdit = canEditPlayerStats(player.id);
+                            const statValues = getGameStatValuesForPlayer(teamSettings.sport, player, game.id, true, false);
+                            const hasStats = playerHasGameStats(player, game.id);
+
+                            return (
                               <Pressable
+                                key={`goalie-${player.id}`}
                                 onPress={() => {
                                   if (!canEdit) return;
-                                  // Determine the stat type based on position
-                                  let mode: GameStatEditMode;
-                                  if (teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') {
-                                    mode = playerIsPitcher(player) ? 'pitcher' : 'batter';
-                                  } else if (teamSettings.sport === 'hockey') {
-                                    mode = playerIsGoalie(player) ? 'goalie' : 'skater';
-                                  } else if (teamSettings.sport === 'soccer') {
-                                    mode = playerIsGoalie(player) ? 'goalie' : 'skater';
-                                  } else if (teamSettings.sport === 'lacrosse') {
-                                    mode = playerIsGoalie(player) ? 'lacrosse_goalie' : 'lacrosse';
-                                  } else if (teamSettings.sport === 'basketball') {
-                                    mode = 'batter'; // Basketball only has player stats, use batter mode
-                                  } else {
-                                    mode = 'skater';
-                                  }
+                                  const mode: GameStatEditMode = teamSettings.sport === 'lacrosse' ? 'lacrosse_goalie' : 'goalie';
                                   openGameStatsModal(player, mode);
                                 }}
                                 disabled={!canEdit}
                                 className={cn(
-                                  'flex-row items-center bg-slate-700/50 rounded-lg p-2',
-                                  canEdit ? 'active:bg-slate-600/50' : 'opacity-50'
+                                  'flex-row items-center px-2 py-2.5',
+                                  canEdit ? 'active:bg-slate-700/50' : '',
+                                  index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
                                 )}
                               >
-                                <PlayerAvatar player={player} size={36} borderWidth={1} borderColor="#8b5cf6" />
-                                <View className="flex-1 ml-2">
-                                  <Text className="text-white text-sm font-medium">
-                                    {player.firstName} {player.lastName}
+                                <View className="flex-1 flex-row items-center" style={{ minWidth: 80 }}>
+                                  <Text className="text-violet-400 font-medium text-[10px] mr-0.5">#{player.number}</Text>
+                                  <Text className="text-white text-xs" numberOfLines={1}>
+                                    {formatShortName(getPlayerName(player))}
                                   </Text>
-                                  <Text className="text-slate-400 text-xs">#{player.number}</Text>
                                 </View>
-                                <ChevronRight size={16} color={canEdit ? '#8b5cf6' : '#64748b'} />
+                                <Text className="text-slate-400 w-8 text-center text-[10px]">G</Text>
+                                {statValues.map((value, i) => (
+                                  <Text key={i} className={cn(
+                                    'w-7 text-center text-xs',
+                                    hasStats ? 'text-white' : 'text-slate-500'
+                                  )}>
+                                    {value}
+                                  </Text>
+                                ))}
+                                <View className="w-4 items-center">
+                                  {canEdit && <ChevronRight size={12} color="#64748b" />}
+                                </View>
                               </Pressable>
-                            )}
+                            );
+                          })}
+                        </>
+                      )}
+
+                      {/* Pitcher Section for Baseball/Softball */}
+                      {(teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') &&
+                       checkedInPlayers.some(p => playerIsPitcher(p)) && (
+                        <>
+                          {/* Pitcher Header */}
+                          <View className="flex-row items-center px-2 py-2 bg-slate-700/50 border-b border-slate-700">
+                            <Text className="text-slate-300 font-semibold text-xs flex-1" style={{ minWidth: 80 }}>Pitchers</Text>
+                            <View className="w-8" />
+                            {getGamePitcherHeaders().map((header) => (
+                              <Text key={header} className="text-slate-300 font-semibold w-7 text-center text-[10px]">
+                                {header}
+                              </Text>
+                            ))}
+                            <View className="w-4" />
                           </View>
-                        );
-                      })}
+
+                          {/* Pitcher Rows */}
+                          {checkedInPlayers.filter(p => playerIsPitcher(p)).map((player, index, arr) => {
+                            const canEdit = canEditPlayerStats(player.id);
+                            const statValues = getGameStatValuesForPlayer(teamSettings.sport, player, game.id, false, true);
+                            const hasStats = playerHasGameStats(player, game.id);
+
+                            return (
+                              <Pressable
+                                key={`pitcher-${player.id}`}
+                                onPress={() => {
+                                  if (!canEdit) return;
+                                  openGameStatsModal(player, 'pitcher');
+                                }}
+                                disabled={!canEdit}
+                                className={cn(
+                                  'flex-row items-center px-2 py-2.5',
+                                  canEdit ? 'active:bg-slate-700/50' : '',
+                                  index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
+                                )}
+                              >
+                                <View className="flex-1 flex-row items-center" style={{ minWidth: 80 }}>
+                                  <Text className="text-violet-400 font-medium text-[10px] mr-0.5">#{player.number}</Text>
+                                  <Text className="text-white text-xs" numberOfLines={1}>
+                                    {formatShortName(getPlayerName(player))}
+                                  </Text>
+                                </View>
+                                <Text className="text-slate-400 w-8 text-center text-[10px]">P</Text>
+                                {statValues.map((value, i) => (
+                                  <Text key={i} className={cn(
+                                    'w-7 text-center text-xs',
+                                    hasStats ? 'text-white' : 'text-slate-500'
+                                  )}>
+                                    {value}
+                                  </Text>
+                                ))}
+                                <View className="w-4 items-center">
+                                  {canEdit && <ChevronRight size={12} color="#64748b" />}
+                                </View>
+                              </Pressable>
+                            );
+                          })}
+                        </>
+                      )}
                     </View>
                   ) : (
-                    <View className="items-center py-4">
+                    <View className="items-center py-6">
                       <Text className="text-slate-500 text-sm">No players checked in</Text>
                       <Text className="text-slate-600 text-xs mt-1">Players must check in to enter stats</Text>
                     </View>
