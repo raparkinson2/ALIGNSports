@@ -1869,201 +1869,223 @@ export default function GameDetailScreen() {
               {isGameStatsExpanded && (
                 <View className="bg-slate-800/60 rounded-xl mt-2 overflow-hidden">
                   {checkedInPlayers.length > 0 ? (
-                    <View>
-                      {/* Player Statistics Table */}
-                      <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider px-3 pt-3 pb-2">
-                        Player Statistics
-                      </Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <View style={{ minWidth: '100%' }}>
+                        {/* Player Statistics Table */}
+                        <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider px-3 pt-3 pb-2">
+                          Player Statistics
+                        </Text>
 
-                      {/* Table Header for Players */}
-                      <View className="flex-row items-center px-2 py-2 bg-slate-700/50 border-b border-slate-700">
-                        <Text className="text-slate-300 font-semibold text-xs flex-1" style={{ minWidth: 80 }}>Player</Text>
-                        <Text className="text-slate-300 font-semibold w-8 text-center text-[10px]">Pos</Text>
-                        {getGameStatHeaders(teamSettings.sport).map((header) => (
-                          <Text key={header} className="text-slate-300 font-semibold w-7 text-center text-[10px]">
-                            {header}
-                          </Text>
-                        ))}
-                        <View className="w-4" />
-                      </View>
-
-                      {/* Non-Goalie/Non-Pitcher Player Rows */}
-                      {checkedInPlayers
-                        .filter(p => {
-                          if (teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer' || teamSettings.sport === 'lacrosse') {
-                            return playerHasNonGoaliePositions(p);
-                          }
-                          if (teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') {
-                            return playerHasNonPitcherPositions(p);
-                          }
-                          return true;
-                        })
-                        .map((player, index, arr) => {
-                          const canEdit = canEditPlayerStats(player.id);
-                          const statValues = getGameStatValuesForPlayer(teamSettings.sport, player, game.id, false, false);
-                          const hasStats = playerHasGameStats(player, game.id);
-                          const showBorder = index !== arr.length - 1 ||
-                            ((teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer' || teamSettings.sport === 'lacrosse') && checkedInPlayers.some(p => playerIsGoalie(p))) ||
-                            ((teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') && checkedInPlayers.some(p => playerIsPitcher(p)));
-
-                          return (
-                            <Pressable
-                              key={player.id}
-                              onPress={() => {
-                                if (!canEdit) return;
-                                const mode: GameStatEditMode = teamSettings.sport === 'baseball' || teamSettings.sport === 'softball' ? 'batter' : teamSettings.sport === 'lacrosse' ? 'lacrosse' : 'skater';
-                                openGameStatsModal(player, mode);
-                              }}
-                              disabled={!canEdit}
-                              className={cn(
-                                'flex-row items-center px-2 py-2.5',
-                                canEdit ? 'active:bg-slate-700/50' : '',
-                                showBorder ? 'border-b border-slate-700/50' : ''
-                              )}
-                            >
-                              <View className="flex-1 flex-row items-center" style={{ minWidth: 80 }}>
-                                <Text className="text-violet-400 font-medium text-[10px] mr-0.5">#{player.number}</Text>
-                                <Text className="text-white text-xs" numberOfLines={1}>
-                                  {formatShortName(getPlayerName(player))}
-                                </Text>
-                              </View>
-                              <Text className="text-slate-400 w-8 text-center text-[10px]">{getDisplayPosition(player)}</Text>
-                              {statValues.map((value, i) => (
-                                <Text key={i} className={cn(
-                                  'w-7 text-center text-xs',
-                                  hasStats ? 'text-white' : 'text-slate-500'
-                                )}>
-                                  {value}
-                                </Text>
-                              ))}
-                              <View className="w-4 items-center">
-                                {canEdit && <ChevronRight size={12} color="#64748b" />}
-                              </View>
-                            </Pressable>
-                          );
-                        })}
-
-                      {/* Goalie Section for Hockey/Soccer/Lacrosse */}
-                      {(teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer' || teamSettings.sport === 'lacrosse') &&
-                       checkedInPlayers.some(p => playerIsGoalie(p)) && (
-                        <>
-                          {/* Goalie Header */}
-                          <View className="flex-row items-center px-2 py-2 bg-slate-700/50 border-b border-slate-700">
-                            <Text className="text-slate-300 font-semibold text-xs flex-1" style={{ minWidth: 80 }}>Goalies</Text>
-                            <View className="w-8" />
-                            {getGameGoalieHeaders(teamSettings.sport).map((header) => (
-                              <Text key={header} className="text-slate-300 font-semibold w-7 text-center text-[10px]">
-                                {header}
-                              </Text>
-                            ))}
-                            <View className="w-4" />
+                        {/* Table Header for Players */}
+                        <View className="flex-row items-center px-3 py-2.5 bg-slate-700/50 border-b border-slate-700">
+                          <View style={{ width: 120 }}>
+                            <Text className="text-slate-300 font-semibold text-xs">Player</Text>
                           </View>
+                          <View style={{ width: 36 }}>
+                            <Text className="text-slate-300 font-semibold text-center text-xs">Pos</Text>
+                          </View>
+                          {getGameStatHeaders(teamSettings.sport).map((header) => (
+                            <View key={header} style={{ width: 36 }}>
+                              <Text className="text-slate-300 font-semibold text-center text-xs">{header}</Text>
+                            </View>
+                          ))}
+                          <View style={{ width: 24 }} />
+                        </View>
 
-                          {/* Goalie Rows */}
-                          {checkedInPlayers.filter(p => playerIsGoalie(p)).map((player, index, arr) => {
+                        {/* Non-Goalie/Non-Pitcher Player Rows */}
+                        {checkedInPlayers
+                          .filter(p => {
+                            if (teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer' || teamSettings.sport === 'lacrosse') {
+                              return playerHasNonGoaliePositions(p);
+                            }
+                            if (teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') {
+                              return playerHasNonPitcherPositions(p);
+                            }
+                            return true;
+                          })
+                          .map((player, index, arr) => {
                             const canEdit = canEditPlayerStats(player.id);
-                            const statValues = getGameStatValuesForPlayer(teamSettings.sport, player, game.id, true, false);
+                            const statValues = getGameStatValuesForPlayer(teamSettings.sport, player, game.id, false, false);
                             const hasStats = playerHasGameStats(player, game.id);
+                            const showBorder = index !== arr.length - 1 ||
+                              ((teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer' || teamSettings.sport === 'lacrosse') && checkedInPlayers.some(p => playerIsGoalie(p))) ||
+                              ((teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') && checkedInPlayers.some(p => playerIsPitcher(p)));
 
                             return (
                               <Pressable
-                                key={`goalie-${player.id}`}
+                                key={player.id}
                                 onPress={() => {
                                   if (!canEdit) return;
-                                  const mode: GameStatEditMode = teamSettings.sport === 'lacrosse' ? 'lacrosse_goalie' : 'goalie';
+                                  const mode: GameStatEditMode = teamSettings.sport === 'baseball' || teamSettings.sport === 'softball' ? 'batter' : teamSettings.sport === 'lacrosse' ? 'lacrosse' : 'skater';
                                   openGameStatsModal(player, mode);
                                 }}
                                 disabled={!canEdit}
                                 className={cn(
-                                  'flex-row items-center px-2 py-2.5',
+                                  'flex-row items-center px-3 py-3',
                                   canEdit ? 'active:bg-slate-700/50' : '',
-                                  index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
+                                  showBorder ? 'border-b border-slate-700/50' : ''
                                 )}
                               >
-                                <View className="flex-1 flex-row items-center" style={{ minWidth: 80 }}>
-                                  <Text className="text-violet-400 font-medium text-[10px] mr-0.5">#{player.number}</Text>
-                                  <Text className="text-white text-xs" numberOfLines={1}>
+                                <View className="flex-row items-center" style={{ width: 120 }}>
+                                  <Text className="text-violet-400 font-semibold text-xs mr-1">#{player.number}</Text>
+                                  <Text className="text-white text-sm font-medium" numberOfLines={1} style={{ flex: 1 }}>
                                     {formatShortName(getPlayerName(player))}
                                   </Text>
                                 </View>
-                                <Text className="text-slate-400 w-8 text-center text-[10px]">G</Text>
+                                <View style={{ width: 36 }}>
+                                  <Text className="text-slate-400 text-center text-xs">{getDisplayPosition(player)}</Text>
+                                </View>
                                 {statValues.map((value, i) => (
-                                  <Text key={i} className={cn(
-                                    'w-7 text-center text-xs',
-                                    hasStats ? 'text-white' : 'text-slate-500'
-                                  )}>
-                                    {value}
-                                  </Text>
+                                  <View key={i} style={{ width: 36 }}>
+                                    <Text className={cn(
+                                      'text-center text-sm',
+                                      hasStats ? 'text-white font-medium' : 'text-slate-500'
+                                    )}>
+                                      {value}
+                                    </Text>
+                                  </View>
                                 ))}
-                                <View className="w-4 items-center">
-                                  {canEdit && <ChevronRight size={12} color="#64748b" />}
+                                <View style={{ width: 24 }} className="items-center">
+                                  {canEdit && <ChevronRight size={14} color="#64748b" />}
                                 </View>
                               </Pressable>
                             );
                           })}
-                        </>
-                      )}
 
-                      {/* Pitcher Section for Baseball/Softball */}
-                      {(teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') &&
-                       checkedInPlayers.some(p => playerIsPitcher(p)) && (
-                        <>
-                          {/* Pitcher Header */}
-                          <View className="flex-row items-center px-2 py-2 bg-slate-700/50 border-b border-slate-700">
-                            <Text className="text-slate-300 font-semibold text-xs flex-1" style={{ minWidth: 80 }}>Pitchers</Text>
-                            <View className="w-8" />
-                            {getGamePitcherHeaders().map((header) => (
-                              <Text key={header} className="text-slate-300 font-semibold w-7 text-center text-[10px]">
-                                {header}
-                              </Text>
-                            ))}
-                            <View className="w-4" />
-                          </View>
-
-                          {/* Pitcher Rows */}
-                          {checkedInPlayers.filter(p => playerIsPitcher(p)).map((player, index, arr) => {
-                            const canEdit = canEditPlayerStats(player.id);
-                            const statValues = getGameStatValuesForPlayer(teamSettings.sport, player, game.id, false, true);
-                            const hasStats = playerHasGameStats(player, game.id);
-
-                            return (
-                              <Pressable
-                                key={`pitcher-${player.id}`}
-                                onPress={() => {
-                                  if (!canEdit) return;
-                                  openGameStatsModal(player, 'pitcher');
-                                }}
-                                disabled={!canEdit}
-                                className={cn(
-                                  'flex-row items-center px-2 py-2.5',
-                                  canEdit ? 'active:bg-slate-700/50' : '',
-                                  index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
-                                )}
-                              >
-                                <View className="flex-1 flex-row items-center" style={{ minWidth: 80 }}>
-                                  <Text className="text-violet-400 font-medium text-[10px] mr-0.5">#{player.number}</Text>
-                                  <Text className="text-white text-xs" numberOfLines={1}>
-                                    {formatShortName(getPlayerName(player))}
-                                  </Text>
+                        {/* Goalie Section for Hockey/Soccer/Lacrosse */}
+                        {(teamSettings.sport === 'hockey' || teamSettings.sport === 'soccer' || teamSettings.sport === 'lacrosse') &&
+                         checkedInPlayers.some(p => playerIsGoalie(p)) && (
+                          <>
+                            {/* Goalie Header */}
+                            <View className="flex-row items-center px-3 py-2.5 bg-slate-700/50 border-b border-slate-700">
+                              <View style={{ width: 120 }}>
+                                <Text className="text-slate-300 font-semibold text-xs">Goalies</Text>
+                              </View>
+                              <View style={{ width: 36 }} />
+                              {getGameGoalieHeaders(teamSettings.sport).map((header) => (
+                                <View key={header} style={{ width: 36 }}>
+                                  <Text className="text-slate-300 font-semibold text-center text-xs">{header}</Text>
                                 </View>
-                                <Text className="text-slate-400 w-8 text-center text-[10px]">P</Text>
-                                {statValues.map((value, i) => (
-                                  <Text key={i} className={cn(
-                                    'w-7 text-center text-xs',
-                                    hasStats ? 'text-white' : 'text-slate-500'
-                                  )}>
-                                    {value}
-                                  </Text>
-                                ))}
-                                <View className="w-4 items-center">
-                                  {canEdit && <ChevronRight size={12} color="#64748b" />}
+                              ))}
+                              <View style={{ width: 24 }} />
+                            </View>
+
+                            {/* Goalie Rows */}
+                            {checkedInPlayers.filter(p => playerIsGoalie(p)).map((player, index, arr) => {
+                              const canEdit = canEditPlayerStats(player.id);
+                              const statValues = getGameStatValuesForPlayer(teamSettings.sport, player, game.id, true, false);
+                              const hasStats = playerHasGameStats(player, game.id);
+
+                              return (
+                                <Pressable
+                                  key={`goalie-${player.id}`}
+                                  onPress={() => {
+                                    if (!canEdit) return;
+                                    const mode: GameStatEditMode = teamSettings.sport === 'lacrosse' ? 'lacrosse_goalie' : 'goalie';
+                                    openGameStatsModal(player, mode);
+                                  }}
+                                  disabled={!canEdit}
+                                  className={cn(
+                                    'flex-row items-center px-3 py-3',
+                                    canEdit ? 'active:bg-slate-700/50' : '',
+                                    index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
+                                  )}
+                                >
+                                  <View className="flex-row items-center" style={{ width: 120 }}>
+                                    <Text className="text-violet-400 font-semibold text-xs mr-1">#{player.number}</Text>
+                                    <Text className="text-white text-sm font-medium" numberOfLines={1} style={{ flex: 1 }}>
+                                      {formatShortName(getPlayerName(player))}
+                                    </Text>
+                                  </View>
+                                  <View style={{ width: 36 }}>
+                                    <Text className="text-slate-400 text-center text-xs">G</Text>
+                                  </View>
+                                  {statValues.map((value, i) => (
+                                    <View key={i} style={{ width: 36 }}>
+                                      <Text className={cn(
+                                        'text-center text-sm',
+                                        hasStats ? 'text-white font-medium' : 'text-slate-500'
+                                      )}>
+                                        {value}
+                                      </Text>
+                                    </View>
+                                  ))}
+                                  <View style={{ width: 24 }} className="items-center">
+                                    {canEdit && <ChevronRight size={14} color="#64748b" />}
+                                  </View>
+                                </Pressable>
+                              );
+                            })}
+                          </>
+                        )}
+
+                        {/* Pitcher Section for Baseball/Softball */}
+                        {(teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') &&
+                         checkedInPlayers.some(p => playerIsPitcher(p)) && (
+                          <>
+                            {/* Pitcher Header */}
+                            <View className="flex-row items-center px-3 py-2.5 bg-slate-700/50 border-b border-slate-700">
+                              <View style={{ width: 120 }}>
+                                <Text className="text-slate-300 font-semibold text-xs">Pitchers</Text>
+                              </View>
+                              <View style={{ width: 36 }} />
+                              {getGamePitcherHeaders().map((header) => (
+                                <View key={header} style={{ width: 36 }}>
+                                  <Text className="text-slate-300 font-semibold text-center text-xs">{header}</Text>
                                 </View>
-                              </Pressable>
-                            );
-                          })}
-                        </>
-                      )}
-                    </View>
+                              ))}
+                              <View style={{ width: 24 }} />
+                            </View>
+
+                            {/* Pitcher Rows */}
+                            {checkedInPlayers.filter(p => playerIsPitcher(p)).map((player, index, arr) => {
+                              const canEdit = canEditPlayerStats(player.id);
+                              const statValues = getGameStatValuesForPlayer(teamSettings.sport, player, game.id, false, true);
+                              const hasStats = playerHasGameStats(player, game.id);
+
+                              return (
+                                <Pressable
+                                  key={`pitcher-${player.id}`}
+                                  onPress={() => {
+                                    if (!canEdit) return;
+                                    openGameStatsModal(player, 'pitcher');
+                                  }}
+                                  disabled={!canEdit}
+                                  className={cn(
+                                    'flex-row items-center px-3 py-3',
+                                    canEdit ? 'active:bg-slate-700/50' : '',
+                                    index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
+                                  )}
+                                >
+                                  <View className="flex-row items-center" style={{ width: 120 }}>
+                                    <Text className="text-violet-400 font-semibold text-xs mr-1">#{player.number}</Text>
+                                    <Text className="text-white text-sm font-medium" numberOfLines={1} style={{ flex: 1 }}>
+                                      {formatShortName(getPlayerName(player))}
+                                    </Text>
+                                  </View>
+                                  <View style={{ width: 36 }}>
+                                    <Text className="text-slate-400 text-center text-xs">P</Text>
+                                  </View>
+                                  {statValues.map((value, i) => (
+                                    <View key={i} style={{ width: 36 }}>
+                                      <Text className={cn(
+                                        'text-center text-sm',
+                                        hasStats ? 'text-white font-medium' : 'text-slate-500'
+                                      )}>
+                                        {value}
+                                      </Text>
+                                    </View>
+                                  ))}
+                                  <View style={{ width: 24 }} className="items-center">
+                                    {canEdit && <ChevronRight size={14} color="#64748b" />}
+                                  </View>
+                                </Pressable>
+                              );
+                            })}
+                          </>
+                        )}
+                      </View>
+                    </ScrollView>
                   ) : (
                     <View className="items-center py-6">
                       <Text className="text-slate-500 text-sm">No players checked in</Text>
