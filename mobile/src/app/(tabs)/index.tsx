@@ -1768,13 +1768,13 @@ export default function ScheduleScreen() {
                     }
                     setShowPlayerSelection(!showPlayerSelection);
                   }}
-                  className="flex-row items-center justify-between bg-slate-800 rounded-xl p-3"
+                  className="flex-row items-center justify-between bg-slate-800/60 rounded-xl px-3 py-2.5"
                 >
                   <View className="flex-row items-center">
-                    <Users size={20} color="#67e8f9" />
-                    <View className="ml-3">
-                      <Text className="text-white font-medium">Invite Players</Text>
-                      <Text className="text-slate-300 text-sm">
+                    <Users size={16} color="#67e8f9" />
+                    <View className="ml-2.5">
+                      <Text className="text-white text-sm font-medium">Invite Players</Text>
+                      <Text className="text-slate-400 text-xs">
                         {selectedPlayerIds.length === 0
                           ? 'All active players (default)'
                           : `${selectedPlayerIds.length} player${selectedPlayerIds.length !== 1 ? 's' : ''} selected`}
@@ -1782,27 +1782,27 @@ export default function ScheduleScreen() {
                     </View>
                   </View>
                   <ChevronDown
-                    size={20}
+                    size={16}
                     color="#64748b"
                     style={{ transform: [{ rotate: showPlayerSelection ? '180deg' : '0deg' }] }}
                   />
                 </Pressable>
 
                 {showPlayerSelection && (
-                  <View className="mt-3 bg-slate-800/50 rounded-xl p-4">
+                  <View className="mt-2 bg-slate-800/40 rounded-xl p-3">
                     {/* Group Selection Buttons */}
-                    <View className="flex-row mb-4">
+                    <View className="flex-row mb-3">
                       <Pressable
                         onPress={isAllActiveSelected ? deselectAllActive : selectAllActive}
                         className={cn(
-                          'flex-1 py-2 rounded-lg mr-2 border items-center',
+                          'flex-1 py-1.5 rounded-lg mr-2 border items-center',
                           isAllActiveSelected
                             ? 'bg-green-500/20 border-green-500/50'
                             : 'bg-slate-700/50 border-slate-600'
                         )}
                       >
                         <Text className={cn(
-                          'font-medium text-sm',
+                          'font-medium text-xs',
                           isAllActiveSelected ? 'text-green-400' : 'text-slate-400'
                         )}>
                           {isAllActiveSelected ? '✓ Active' : 'Active'} ({activePlayers.length})
@@ -1812,14 +1812,14 @@ export default function ScheduleScreen() {
                         <Pressable
                           onPress={isAllReserveSelected ? deselectAllReserve : selectAllReserve}
                           className={cn(
-                            'flex-1 py-2 rounded-lg mr-2 border items-center',
+                            'flex-1 py-1.5 rounded-lg mr-2 border items-center',
                             isAllReserveSelected
                               ? 'bg-amber-500/20 border-amber-500/50'
                               : 'bg-slate-700/50 border-slate-600'
                           )}
                         >
                           <Text className={cn(
-                            'font-medium text-sm',
+                            'font-medium text-xs',
                             isAllReserveSelected ? 'text-amber-400' : 'text-slate-400'
                           )}>
                             {isAllReserveSelected ? '✓ Reserve' : 'Reserve'} ({reservePlayers.length})
@@ -1829,14 +1829,14 @@ export default function ScheduleScreen() {
                       <Pressable
                         onPress={selectedPlayerIds.length === players.length ? deselectAll : selectAll}
                         className={cn(
-                          'py-2 px-3 rounded-lg border items-center',
+                          'py-1.5 px-2.5 rounded-lg border items-center',
                           selectedPlayerIds.length === players.length
                             ? 'bg-cyan-500/20 border-cyan-500/50'
                             : 'bg-slate-700/50 border-slate-600'
                         )}
                       >
                         <Text className={cn(
-                          'font-medium text-sm',
+                          'font-medium text-xs',
                           selectedPlayerIds.length === players.length ? 'text-cyan-400' : 'text-slate-400'
                         )}>
                           {selectedPlayerIds.length === players.length ? '✓ All' : 'All'}
@@ -1845,10 +1845,10 @@ export default function ScheduleScreen() {
                     </View>
 
                     {/* Active Players */}
-                    <Text className="text-green-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                    <Text className="text-green-400 text-[10px] font-semibold uppercase tracking-wider mb-1.5">
                       Active Players
                     </Text>
-                    <View className="flex-row flex-wrap mb-4">
+                    <View className="flex-row flex-wrap mb-3">
                       {activePlayers.map((player) => {
                         const isSelected = selectedPlayerIds.includes(player.id);
                         return (
@@ -1856,20 +1856,20 @@ export default function ScheduleScreen() {
                             key={player.id}
                             onPress={() => togglePlayer(player.id)}
                             className={cn(
-                              'flex-row items-center px-3 py-2 rounded-lg mr-2 mb-2 border',
+                              'flex-row items-center px-2 py-1.5 rounded-lg mr-1.5 mb-1.5 border',
                               isSelected
                                 ? 'bg-green-500/20 border-green-500/50'
                                 : 'bg-slate-700/50 border-slate-600'
                             )}
                           >
-                            <PlayerAvatar player={player} size={24} />
+                            <PlayerAvatar player={player} size={20} />
                             <Text className={cn(
-                              'font-medium ml-2 text-sm',
+                              'font-medium ml-1.5 text-xs',
                               isSelected ? 'text-green-400' : 'text-slate-400'
                             )}>
                               {player.firstName}
                             </Text>
-                            {isSelected && <Check size={14} color="#22c55e" style={{ marginLeft: 4 }} />}
+                            {isSelected && <Check size={12} color="#22c55e" style={{ marginLeft: 3 }} />}
                           </Pressable>
                         );
                       })}
@@ -1878,7 +1878,7 @@ export default function ScheduleScreen() {
                     {/* Reserve Players */}
                     {reservePlayers.length > 0 && (
                       <>
-                        <Text className="text-amber-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                        <Text className="text-amber-400 text-[10px] font-semibold uppercase tracking-wider mb-1.5">
                           Reserve Players
                         </Text>
                         <View className="flex-row flex-wrap">
@@ -1889,20 +1889,20 @@ export default function ScheduleScreen() {
                                 key={player.id}
                                 onPress={() => togglePlayer(player.id)}
                                 className={cn(
-                                  'flex-row items-center px-3 py-2 rounded-lg mr-2 mb-2 border',
+                                  'flex-row items-center px-2 py-1.5 rounded-lg mr-1.5 mb-1.5 border',
                                   isSelected
                                     ? 'bg-amber-500/20 border-amber-500/50'
                                     : 'bg-slate-700/50 border-slate-600'
                                 )}
                               >
-                                <PlayerAvatar player={player} size={24} />
+                                <PlayerAvatar player={player} size={20} />
                                 <Text className={cn(
-                                  'font-medium ml-2 text-sm',
+                                  'font-medium ml-1.5 text-xs',
                                   isSelected ? 'text-amber-400' : 'text-slate-400'
                                 )}>
                                   {player.firstName}
                                 </Text>
-                                {isSelected && <Check size={14} color="#f59e0b" style={{ marginLeft: 4 }} />}
+                                {isSelected && <Check size={12} color="#f59e0b" style={{ marginLeft: 3 }} />}
                               </Pressable>
                             );
                           })}
@@ -1915,8 +1915,8 @@ export default function ScheduleScreen() {
 
               {/* Invite Release Options */}
               <View className="mb-2">
-                <Text className="text-slate-400 text-sm mb-1">Release Invites</Text>
-                <View className="bg-slate-800/50 rounded-xl p-2">
+                <Text className="text-slate-400 text-xs mb-1">Release Invites</Text>
+                <View className="bg-slate-800/40 rounded-xl p-1.5">
                   {/* Release Now Option */}
                   <Pressable
                     onPress={() => {
@@ -1925,25 +1925,25 @@ export default function ScheduleScreen() {
                       setShowInviteReleaseDatePicker(false);
                     }}
                     className={cn(
-                      'flex-row items-center p-2.5 rounded-xl mb-1.5 border-2',
+                      'flex-row items-center px-2.5 py-2 rounded-lg mb-1 border',
                       inviteReleaseOption === 'now'
-                        ? 'bg-green-500/20 border-green-500'
+                        ? 'bg-green-500/20 border-green-500/50'
                         : 'bg-slate-800/50 border-transparent'
                     )}
                   >
-                    <Send size={18} color={inviteReleaseOption === 'now' ? '#22c55e' : '#64748b'} />
-                    <View className="ml-3 flex-1">
+                    <Send size={14} color={inviteReleaseOption === 'now' ? '#22c55e' : '#64748b'} />
+                    <View className="ml-2 flex-1">
                       <Text className={cn(
-                        'font-medium',
+                        'text-sm font-medium',
                         inviteReleaseOption === 'now' ? 'text-green-400' : 'text-slate-500'
                       )}>
                         Release invites now
                       </Text>
-                      <Text className={cn('text-xs mt-0.5', inviteReleaseOption === 'now' ? 'text-slate-400' : 'text-slate-600')}>
+                      <Text className={cn('text-[10px]', inviteReleaseOption === 'now' ? 'text-slate-400' : 'text-slate-600')}>
                         Players will be notified immediately
                       </Text>
                     </View>
-                    {inviteReleaseOption === 'now' && <Check size={18} color="#22c55e" />}
+                    {inviteReleaseOption === 'now' && <Check size={14} color="#22c55e" />}
                   </Pressable>
 
                   {/* Schedule Release Option */}
@@ -1955,38 +1955,38 @@ export default function ScheduleScreen() {
                       setShowInviteReleaseDatePicker(true);
                     }}
                     className={cn(
-                      'flex-row items-center p-2.5 rounded-xl mb-1.5 border-2',
+                      'flex-row items-center px-2.5 py-2 rounded-lg mb-1 border',
                       inviteReleaseOption === 'scheduled'
-                        ? 'bg-cyan-500/20 border-cyan-500'
+                        ? 'bg-cyan-500/20 border-cyan-500/50'
                         : 'bg-slate-800/50 border-transparent'
                     )}
                   >
-                    <Bell size={18} color={inviteReleaseOption === 'scheduled' ? '#22d3ee' : '#64748b'} />
-                    <View className="ml-3 flex-1">
+                    <Bell size={14} color={inviteReleaseOption === 'scheduled' ? '#22d3ee' : '#64748b'} />
+                    <View className="ml-2 flex-1">
                       <Text className={cn(
-                        'font-medium',
+                        'text-sm font-medium',
                         inviteReleaseOption === 'scheduled' ? 'text-cyan-400' : 'text-slate-500'
                       )}>
                         Schedule release
                       </Text>
-                      <Text className={cn('text-xs mt-0.5', inviteReleaseOption === 'scheduled' ? 'text-slate-400' : 'text-slate-600')}>
+                      <Text className={cn('text-[10px]', inviteReleaseOption === 'scheduled' ? 'text-slate-400' : 'text-slate-600')}>
                         Choose when to notify players
                       </Text>
                     </View>
-                    {inviteReleaseOption === 'scheduled' && <Check size={18} color="#22d3ee" />}
+                    {inviteReleaseOption === 'scheduled' && <Check size={14} color="#22d3ee" />}
                   </Pressable>
 
                   {/* Schedule Date/Time Picker */}
                   {inviteReleaseOption === 'scheduled' && (
-                    <View className="mt-2">
+                    <View className="mt-1 mb-1">
                       <Pressable
                         onPress={() => {
                           setAndroidPickerMode('date');
                           setShowInviteReleaseDatePicker(!showInviteReleaseDatePicker);
                         }}
-                        className="bg-slate-700/80 rounded-xl px-4 py-2.5"
+                        className="bg-slate-700/80 rounded-lg px-3 py-2"
                       >
-                        <Text className="text-cyan-400 text-base">
+                        <Text className="text-cyan-400 text-sm">
                           {format(inviteReleaseDate, 'EEE, MMM d, yyyy h:mm a')}
                         </Text>
                       </Pressable>
@@ -2044,25 +2044,25 @@ export default function ScheduleScreen() {
                       setShowInviteReleaseDatePicker(false);
                     }}
                     className={cn(
-                      'flex-row items-center p-2.5 rounded-xl border',
+                      'flex-row items-center px-2.5 py-2 rounded-lg border',
                       inviteReleaseOption === 'none'
-                        ? 'bg-slate-600/50 border-slate-500'
-                        : 'bg-slate-700/50 border-slate-600'
+                        ? 'bg-slate-600/50 border-slate-500/50'
+                        : 'bg-slate-700/50 border-transparent'
                     )}
                   >
-                    <BellOff size={18} color={inviteReleaseOption === 'none' ? '#94a3b8' : '#64748b'} />
-                    <View className="ml-3 flex-1">
+                    <BellOff size={14} color={inviteReleaseOption === 'none' ? '#94a3b8' : '#64748b'} />
+                    <View className="ml-2 flex-1">
                       <Text className={cn(
-                        'font-medium',
-                        inviteReleaseOption === 'none' ? 'text-slate-300' : 'text-slate-400'
+                        'text-sm font-medium',
+                        inviteReleaseOption === 'none' ? 'text-slate-300' : 'text-slate-500'
                       )}>
                         Don't send invites
                       </Text>
-                      <Text className="text-slate-500 text-xs mt-0.5">
+                      <Text className="text-slate-600 text-[10px]">
                         Send manually later
                       </Text>
                     </View>
-                    {inviteReleaseOption === 'none' && <Check size={18} color="#94a3b8" />}
+                    {inviteReleaseOption === 'none' && <Check size={14} color="#94a3b8" />}
                   </Pressable>
                 </View>
               </View>
@@ -2070,12 +2070,12 @@ export default function ScheduleScreen() {
               {/* Refreshment Duty (Game only) */}
               {recordType === 'game' && teamSettings.showRefreshmentDuty !== false && (
               <View className="mb-2">
-                <View className="flex-row items-center justify-between bg-slate-800 rounded-xl py-2.5 px-3">
+                <View className="flex-row items-center justify-between bg-slate-800/60 rounded-xl py-2 px-3">
                   <View className="flex-row items-center">
                     {teamSettings.refreshmentDutyIs21Plus !== false ? (
-                      <Beer size={16} color="#f59e0b" />
+                      <Beer size={14} color="#f59e0b" />
                     ) : (
-                      <JuiceBoxIcon size={16} color="#a855f7" />
+                      <JuiceBoxIcon size={14} color="#a855f7" />
                     )}
                     <Text className="text-white font-medium ml-2 text-sm">
                       {teamSettings.sport === 'hockey' && teamSettings.refreshmentDutyIs21Plus !== false
@@ -2088,13 +2088,13 @@ export default function ScheduleScreen() {
                     onValueChange={setShowBeerDuty}
                     trackColor={{ false: '#334155', true: teamSettings.refreshmentDutyIs21Plus !== false ? '#f59e0b40' : '#a855f740' }}
                     thumbColor={showBeerDuty ? (teamSettings.refreshmentDutyIs21Plus !== false ? '#f59e0b' : '#a855f7') : '#64748b'}
-                    style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
+                    style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
                   />
                 </View>
 
                 {showBeerDuty && (
-                  <View className="mt-2">
-                    <Text className="text-slate-400 text-xs mb-1.5">Assign Player</Text>
+                  <View className="mt-1.5">
+                    <Text className="text-slate-400 text-[10px] mb-1">Assign Player</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
                       <Pressable
                         onPress={() => setSelectedBeerDutyPlayer(null)}
