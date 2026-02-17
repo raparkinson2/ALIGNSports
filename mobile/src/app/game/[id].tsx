@@ -3918,8 +3918,14 @@ export default function GameDetailScreen() {
                     <Text className="text-slate-400 text-sm">#{selectedStatsPlayer.number}</Text>
                   </View>
                   <View className="bg-violet-500/20 px-3 py-1.5 rounded-lg">
-                    <Text className="text-violet-400 text-xs font-medium capitalize">
-                      {gameStatsEditMode === 'lacrosse_goalie' ? 'Goalie' : gameStatsEditMode}
+                    <Text className="text-violet-400 text-xs font-medium">
+                      {gameStatsEditMode === 'skater'
+                        ? (teamSettings.sport === 'hockey' ? 'Skater' : 'Player')
+                        : gameStatsEditMode === 'lacrosse_goalie'
+                          ? 'Goalie'
+                          : gameStatsEditMode === 'lacrosse'
+                            ? 'Player'
+                            : gameStatsEditMode.charAt(0).toUpperCase() + gameStatsEditMode.slice(1)}
                     </Text>
                   </View>
                 </View>
