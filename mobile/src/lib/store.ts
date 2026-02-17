@@ -525,6 +525,11 @@ export interface Game {
   inviteReleaseOption?: InviteReleaseOption; // 'now' | 'scheduled' | 'none'
   inviteReleaseDate?: string; // ISO string - when to release invites (only if scheduled)
   invitesSent?: boolean; // Whether invites have been sent
+  // Final score and result
+  finalScoreUs?: number; // Our team's final score
+  finalScoreThem?: number; // Opponent's final score
+  gameResult?: 'win' | 'loss' | 'tie'; // Game result for record tracking
+  resultRecorded?: boolean; // Whether the result has been added to team record
 }
 
 // In-app notification types

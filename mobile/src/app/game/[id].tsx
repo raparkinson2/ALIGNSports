@@ -31,6 +31,8 @@ import {
   Calendar,
   StickyNote,
   FileText,
+  Trophy,
+  Minus,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -189,6 +191,7 @@ export default function GameDetailScreen() {
   const players = useTeamStore((s) => s.players);
   const teamName = useTeamStore((s) => s.teamName);
   const teamSettings = useTeamStore((s) => s.teamSettings);
+  const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const checkInToGame = useTeamStore((s) => s.checkInToGame);
   const checkOutFromGame = useTeamStore((s) => s.checkOutFromGame);
   const clearPlayerResponse = useTeamStore((s) => s.clearPlayerResponse);
@@ -250,7 +253,26 @@ export default function GameDetailScreen() {
   const [editInviteReleaseDate, setEditInviteReleaseDate] = useState(new Date());
   const [showEditInviteReleaseDatePicker, setShowEditInviteReleaseDatePicker] = useState(false);
 
+  // Final score state
+  const [scoreUs, setScoreUs] = useState('');
+  const [scoreThem, setScoreThem] = useState('');
+  const [selectedResult, setSelectedResult] = useState<'win' | 'loss' | 'tie' | null>(null);
+  const [isFinalScoreExpanded, setIsFinalScoreExpanded] = useState(false);
+
   const game = games.find((g) => g.id === id);
+
+  // Initialize final score state from game data
+  useEffect(() => {
+    if (game) {
+      setScoreUs(game.finalScoreUs?.toString() ?? '');
+      setScoreThem(game.finalScoreThem?.toString() ?? '');
+      setSelectedResult(game.gameResult ?? null);
+      // Auto-expand if there's already a result
+      if (game.gameResult) {
+        setIsFinalScoreExpanded(true);
+      }
+    }
+  }, [game?.id, game?.finalScoreUs, game?.finalScoreThem, game?.gameResult]);
 
   if (!game) {
     return (
@@ -684,6 +706,86 @@ export default function GameDetailScreen() {
     setIsReleaseInvitesModalVisible(false);
   };
 
+  const handleSaveFinalScore = () => {
+    if (!selectedResult) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    const usScore = scoreUs ? parseInt(scoreUs, 10) : undefined;
+    const themScore = scoreThem ? parseInt(scoreThem, 10) : undefined;
+
+    // Update game with final score
+    updateGame(game.id, {
+      finalScoreUs: usScore,
+      finalScoreThem: themScore,
+      gameResult: selectedResult,
+      resultRecorded: true,
+    });
+
+    // Update team record if not already recorded
+    if (!game.resultRecorded) {
+      const currentRecord = teamSettings.record || { wins: 0, losses: 0, ties: 0, otLosses: 0 };
+      const newRecord = { ...currentRecord };
+
+      if (selectedResult === 'win') {
+        newRecord.wins = (newRecord.wins || 0) + 1;
+      } else if (selectedResult === 'loss') {
+        newRecord.losses = (newRecord.losses || 0) + 1;
+      } else if (selectedResult === 'tie') {
+        newRecord.ties = (newRecord.ties || 0) + 1;
+      }
+
+      setTeamSettings({ record: newRecord });
+    }
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleClearFinalScore = () => {
+    Alert.alert(
+      'Clear Result',
+      'This will remove the final score and adjust the team record. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: () => {
+            // Reverse the record update if it was recorded
+            if (game.resultRecorded && game.gameResult) {
+              const currentRecord = teamSettings.record || { wins: 0, losses: 0, ties: 0, otLosses: 0 };
+              const newRecord = { ...currentRecord };
+
+              if (game.gameResult === 'win') {
+                newRecord.wins = Math.max(0, (newRecord.wins || 0) - 1);
+              } else if (game.gameResult === 'loss') {
+                newRecord.losses = Math.max(0, (newRecord.losses || 0) - 1);
+              } else if (game.gameResult === 'tie') {
+                newRecord.ties = Math.max(0, (newRecord.ties || 0) - 1);
+              }
+
+              setTeamSettings({ record: newRecord });
+            }
+
+            // Clear the game result
+            updateGame(game.id, {
+              finalScoreUs: undefined,
+              finalScoreThem: undefined,
+              gameResult: undefined,
+              resultRecorded: false,
+            });
+
+            setScoreUs('');
+            setScoreThem('');
+            setSelectedResult(null);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
+        },
+      ]
+    );
+  };
+
   const handleSaveLineup = (lineup: HockeyLineup) => {
     updateGame(game.id, { lineup });
     setIsLineupModalVisible(false);
@@ -1044,6 +1146,173 @@ export default function GameDetailScreen() {
                   <ChevronDown size={20} color="#10b981" />
                 </View>
               </Pressable>
+            </Animated.View>
+          )}
+
+          {/* Final Score Section - Only for captains/admins */}
+          {canManageTeam() && (
+            <Animated.View
+              entering={FadeInUp.delay(120).springify()}
+              className="mx-4 mb-3"
+            >
+              <View className="bg-slate-800/80 rounded-xl overflow-hidden">
+                {/* Header - always visible */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setIsFinalScoreExpanded(!isFinalScoreExpanded);
+                  }}
+                  className="px-3 py-2.5 active:bg-slate-700/80"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <Trophy size={16} color={game.gameResult ? (game.gameResult === 'win' ? '#22c55e' : game.gameResult === 'loss' ? '#ef4444' : '#94a3b8') : '#f59e0b'} />
+                      <Text className="text-white text-sm font-medium ml-2">Final Score</Text>
+                      {game.gameResult && (
+                        <View className={cn(
+                          'ml-2 px-2 py-0.5 rounded-full',
+                          game.gameResult === 'win' ? 'bg-green-500/20' : game.gameResult === 'loss' ? 'bg-red-500/20' : 'bg-slate-500/20'
+                        )}>
+                          <Text className={cn(
+                            'text-xs font-medium',
+                            game.gameResult === 'win' ? 'text-green-400' : game.gameResult === 'loss' ? 'text-red-400' : 'text-slate-400'
+                          )}>
+                            {game.gameResult === 'win' ? 'W' : game.gameResult === 'loss' ? 'L' : 'T'}
+                            {(game.finalScoreUs !== undefined && game.finalScoreThem !== undefined) && ` ${game.finalScoreUs}-${game.finalScoreThem}`}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <ChevronDown
+                      size={16}
+                      color="#64748b"
+                      style={{ transform: [{ rotate: isFinalScoreExpanded ? '180deg' : '0deg' }] }}
+                    />
+                  </View>
+                </Pressable>
+
+                {/* Expanded content */}
+                {isFinalScoreExpanded && (
+                  <View className="px-3 pb-3 border-t border-slate-700/50">
+                    {/* Score inputs */}
+                    <View className="flex-row items-center justify-center mt-3 mb-3">
+                      <View className="items-center">
+                        <Text className="text-slate-400 text-xs mb-1">{teamName || 'Us'}</Text>
+                        <TextInput
+                          value={scoreUs}
+                          onChangeText={setScoreUs}
+                          placeholder="0"
+                          placeholderTextColor="#64748b"
+                          keyboardType="number-pad"
+                          className="bg-slate-700/80 rounded-lg px-4 py-2 text-white text-xl font-bold text-center w-16"
+                        />
+                      </View>
+                      <View className="mx-4">
+                        <Minus size={20} color="#64748b" />
+                      </View>
+                      <View className="items-center">
+                        <Text className="text-slate-400 text-xs mb-1">{game.opponent}</Text>
+                        <TextInput
+                          value={scoreThem}
+                          onChangeText={setScoreThem}
+                          placeholder="0"
+                          placeholderTextColor="#64748b"
+                          keyboardType="number-pad"
+                          className="bg-slate-700/80 rounded-lg px-4 py-2 text-white text-xl font-bold text-center w-16"
+                        />
+                      </View>
+                    </View>
+
+                    {/* Win/Loss/Tie toggle */}
+                    <View className="flex-row rounded-lg overflow-hidden mb-3">
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setSelectedResult('win');
+                        }}
+                        className={cn(
+                          'flex-1 py-2 items-center border-r border-slate-600',
+                          selectedResult === 'win' ? 'bg-green-500' : 'bg-slate-700/80'
+                        )}
+                      >
+                        <Text className={cn(
+                          'text-sm font-semibold',
+                          selectedResult === 'win' ? 'text-white' : 'text-slate-400'
+                        )}>
+                          Win
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setSelectedResult('loss');
+                        }}
+                        className={cn(
+                          'flex-1 py-2 items-center border-r border-slate-600',
+                          selectedResult === 'loss' ? 'bg-red-500' : 'bg-slate-700/80'
+                        )}
+                      >
+                        <Text className={cn(
+                          'text-sm font-semibold',
+                          selectedResult === 'loss' ? 'text-white' : 'text-slate-400'
+                        )}>
+                          Loss
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setSelectedResult('tie');
+                        }}
+                        className={cn(
+                          'flex-1 py-2 items-center',
+                          selectedResult === 'tie' ? 'bg-slate-500' : 'bg-slate-700/80'
+                        )}
+                      >
+                        <Text className={cn(
+                          'text-sm font-semibold',
+                          selectedResult === 'tie' ? 'text-white' : 'text-slate-400'
+                        )}>
+                          Tie
+                        </Text>
+                      </Pressable>
+                    </View>
+
+                    {/* Save/Clear buttons */}
+                    <View className="flex-row">
+                      {game.resultRecorded && (
+                        <Pressable
+                          onPress={handleClearFinalScore}
+                          className="flex-1 py-2 rounded-lg bg-slate-700/80 mr-2 items-center active:bg-slate-600"
+                        >
+                          <Text className="text-slate-400 text-sm font-medium">Clear</Text>
+                        </Pressable>
+                      )}
+                      <Pressable
+                        onPress={handleSaveFinalScore}
+                        disabled={!selectedResult}
+                        className={cn(
+                          'flex-1 py-2 rounded-lg items-center',
+                          selectedResult ? 'bg-amber-500 active:bg-amber-600' : 'bg-slate-700/50'
+                        )}
+                      >
+                        <Text className={cn(
+                          'text-sm font-medium',
+                          selectedResult ? 'text-slate-900' : 'text-slate-500'
+                        )}>
+                          {game.resultRecorded ? 'Update' : 'Save to Record'}
+                        </Text>
+                      </Pressable>
+                    </View>
+
+                    {!game.resultRecorded && selectedResult && (
+                      <Text className="text-slate-500 text-xs text-center mt-2">
+                        This will add a {selectedResult} to your team record
+                      </Text>
+                    )}
+                  </View>
+                )}
+              </View>
             </Animated.View>
           )}
 

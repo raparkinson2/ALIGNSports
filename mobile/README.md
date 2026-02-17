@@ -98,6 +98,11 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - See who's been invited and who's checked in
 - **In-App Notifications**: Send game invites and reminders to all players
 - **Refreshment Duty**: Admin toggle to show/hide who's bringing drinks (age-appropriate toggle)
+- **Final Score**: Captains/Admins can record game results
+  - Enter final score for both teams
+  - Select Win (green), Loss (red), or Tie (grey) result
+  - Saves result and automatically updates team record
+  - Can clear/update results if needed (adjusts record accordingly)
 - **Hockey Lines** (Hockey only): Captains/Admins can set line combinations
   - Configure forward lines (LW - C - RW), defense pairs (LD - RD), and goalies
   - Choose 1-4 forward lines, 1-4 defense pairs, and 1-2 goalies
