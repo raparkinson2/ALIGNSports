@@ -34,7 +34,7 @@ const getGoalieHeaders = (sport: Sport): string[] => {
     case 'hockey':
     case 'soccer':
     case 'lacrosse':
-      return ['GP', 'W', 'L', 'SV%'];
+      return ['GP', 'W', 'L', 'MP', 'GAA', 'SV%'];
     default:
       return [];
   }
@@ -97,11 +97,20 @@ const getGoalieStatValues = (sport: Sport, player: ArchivedPlayerStats): string[
   const gp = gs.games ?? 0;
   const w = gs.wins ?? 0;
   const l = gs.losses ?? 0;
+  const mp = gs.minutesPlayed ?? 0;
   const saves = gs.saves ?? 0;
   const ga = gs.goalsAgainst ?? 0;
   const svPct = saves + ga > 0 ? ((saves / (saves + ga)) * 100).toFixed(1) : '0.0';
 
-  return [gp.toString(), w.toString(), l.toString(), svPct];
+  // Calculate GAA: (Goals Against / Minutes Played) * 60 for hockey/lacrosse, * 90 for soccer
+  let gaa: string;
+  if (sport === 'soccer') {
+    gaa = mp > 0 ? ((ga / mp) * 90).toFixed(2) : '0.00';
+  } else {
+    gaa = mp > 0 ? ((ga * 60) / mp).toFixed(2) : '0.00';
+  }
+
+  return [gp.toString(), w.toString(), l.toString(), mp.toString(), gaa, svPct];
 };
 
 // Check if player is a goalie
