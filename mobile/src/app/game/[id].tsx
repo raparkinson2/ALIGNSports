@@ -1005,7 +1005,7 @@ export default function GameDetailScreen() {
                     <JuiceBoxIcon size={18} color="#9333ea" />
                   )}
                   <View className="flex-1 ml-2.5">
-                    <Text className={teamSettings.refreshmentDutyIs21Plus !== false ? "text-amber-500 font-medium text-sm" : "text-purple-500 font-medium text-sm"}>
+                    <Text className="text-white font-medium text-sm">
                       {teamSettings.sport === 'hockey' && teamSettings.refreshmentDutyIs21Plus !== false
                         ? 'Refreshment Duty'
                         : 'Refreshment Duty'}
@@ -1035,7 +1035,7 @@ export default function GameDetailScreen() {
                 <View className="flex-row items-center">
                   <ListOrdered size={18} color="#10b981" />
                   <View className="flex-1 ml-2.5">
-                    <Text className="text-emerald-400 font-medium text-sm">Set Lines</Text>
+                    <Text className="text-white font-medium text-sm">Set Lines</Text>
                     <Text className="text-slate-400 text-xs">Tap to edit lineup</Text>
                   </View>
                   <ChevronDown size={16} color="#10b981" />
@@ -1165,10 +1165,7 @@ export default function GameDetailScreen() {
                 <View className="flex-row items-center">
                   <Trophy size={18} color={game.gameResult ? (game.gameResult === 'win' ? '#22c55e' : game.gameResult === 'loss' ? '#ef4444' : '#94a3b8') : '#f59e0b'} />
                   <View className="flex-1 ml-2.5">
-                    <Text className={cn(
-                      'font-medium text-sm',
-                      game.gameResult === 'win' ? 'text-green-400' : game.gameResult === 'loss' ? 'text-red-400' : game.gameResult === 'tie' ? 'text-slate-400' : 'text-amber-400'
-                    )}>
+                    <Text className="text-white font-medium text-sm">
                       Final Score
                     </Text>
                     <Text className="text-slate-400 text-xs">
