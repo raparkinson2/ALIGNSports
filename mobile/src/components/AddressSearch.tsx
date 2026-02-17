@@ -311,12 +311,12 @@ export function AddressSearch({
       {/* Display Field - Tap to open search modal */}
       <Pressable
         onPress={openSearch}
-        className="flex-row items-center bg-slate-800 rounded-xl px-4 py-3 border border-transparent"
+        className="flex-row items-center bg-slate-800 rounded-xl px-4 py-2.5 border border-transparent"
       >
-        <Search size={18} color="#64748b" />
+        <Search size={16} color="#64748b" />
         <Text
           className={cn(
-            'flex-1 ml-3 text-lg',
+            'flex-1 ml-3 text-base',
             searchQuery ? 'text-white' : 'text-slate-500'
           )}
           numberOfLines={1}

@@ -1537,9 +1537,9 @@ export default function ScheduleScreen() {
               </Pressable>
             </View>
 
-            <ScrollView className="flex-1 px-5 pt-6">
+            <ScrollView className="flex-1 px-5 pt-4">
               {/* Game/Practice/Event Toggle */}
-              <View className="mb-3">
+              <View className="mb-2">
                 <View className="flex-row bg-slate-800/80 rounded-xl p-1">
                   <Pressable
                     onPress={() => {
@@ -1547,11 +1547,12 @@ export default function ScheduleScreen() {
                       setRecordType('game');
                     }}
                     className={cn(
-                      'flex-1 py-2.5 rounded-lg items-center',
+                      'flex-1 py-2 rounded-lg items-center',
                       recordType === 'game' && 'bg-cyan-500'
                     )}
                   >
                     <Text className={cn(
+                      'text-sm',
                       recordType === 'game' ? 'text-white font-bold' : 'text-slate-400 font-medium'
                     )}>
                       Game
@@ -1563,11 +1564,12 @@ export default function ScheduleScreen() {
                       setRecordType('practice');
                     }}
                     className={cn(
-                      'flex-1 py-2.5 rounded-lg items-center',
+                      'flex-1 py-2 rounded-lg items-center',
                       recordType === 'practice' && 'bg-orange-500'
                     )}
                   >
                     <Text className={cn(
+                      'text-sm',
                       recordType === 'practice' ? 'text-white font-bold' : 'text-slate-400 font-medium'
                     )}>
                       Practice
@@ -1579,11 +1581,12 @@ export default function ScheduleScreen() {
                       setRecordType('event');
                     }}
                     className={cn(
-                      'flex-1 py-2.5 rounded-lg items-center',
+                      'flex-1 py-2 rounded-lg items-center',
                       recordType === 'event' && 'bg-blue-500'
                     )}
                   >
                     <Text className={cn(
+                      'text-sm',
                       recordType === 'event' ? 'text-white font-bold' : 'text-slate-400 font-medium'
                     )}>
                       Event
@@ -1594,42 +1597,42 @@ export default function ScheduleScreen() {
 
               {/* Opponent (Game only) */}
               {recordType === 'game' && (
-                <View className="mb-3">
-                  <Text className="text-slate-400 text-sm mb-2">Opponent <Text className="text-red-400">*</Text></Text>
+                <View className="mb-2">
+                  <Text className="text-slate-400 text-sm mb-1">Opponent <Text className="text-red-400">*</Text></Text>
                   <TextInput
                     value={opponent}
                     onChangeText={setOpponent}
                     placeholder="e.g., Ice Wolves"
                     placeholderTextColor="#64748b"
                     autoCapitalize="words"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    className="bg-slate-800 rounded-xl px-4 py-2.5 text-white text-base"
                   />
                 </View>
               )}
 
               {/* Event Name (Event only - not for Practice) */}
               {recordType === 'event' && (
-                <View className="mb-3">
-                  <Text className="text-slate-400 text-sm mb-2">Event Name <Text className="text-red-400">*</Text></Text>
+                <View className="mb-2">
+                  <Text className="text-slate-400 text-sm mb-1">Event Name <Text className="text-red-400">*</Text></Text>
                   <TextInput
                     value={eventName}
                     onChangeText={setEventName}
                     placeholder="e.g., Team Practice, Team Dinner"
                     placeholderTextColor="#64748b"
                     autoCapitalize="words"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
+                    className="bg-slate-800 rounded-xl px-4 py-2.5 text-white text-base"
                   />
                 </View>
               )}
 
               {/* Date */}
-              <View className="mb-3">
-                <Text className="text-slate-400 text-sm mb-2">Date <Text className="text-red-400">*</Text></Text>
+              <View className="mb-2">
+                <Text className="text-slate-400 text-sm mb-1">Date <Text className="text-red-400">*</Text></Text>
                 <Pressable
                   onPress={() => setShowDatePicker(!showDatePicker)}
-                  className="bg-slate-800 rounded-xl px-4 py-3"
+                  className="bg-slate-800 rounded-xl px-4 py-2.5"
                 >
-                  <Text className="text-white text-lg">
+                  <Text className="text-white text-base">
                     {format(gameDate, 'EEEE, MMMM d, yyyy')}
                   </Text>
                 </Pressable>
@@ -1652,15 +1655,15 @@ export default function ScheduleScreen() {
               </View>
 
               {/* Time */}
-              <View className="mb-3">
-                <Text className="text-slate-400 text-sm mb-2">Time <Text className="text-red-400">*</Text></Text>
+              <View className="mb-2">
+                <Text className="text-slate-400 text-sm mb-1">Time <Text className="text-red-400">*</Text></Text>
                 <View className="flex-row items-center">
                   <TextInput
                     value={gameTimeValue}
                     onChangeText={setGameTimeValue}
                     placeholder="7:00"
                     placeholderTextColor="#64748b"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg flex-1"
+                    className="bg-slate-800 rounded-xl px-4 py-2.5 text-white text-base flex-1"
                     keyboardType="numbers-and-punctuation"
                   />
                   <View className="flex-row ml-2">
@@ -1670,7 +1673,7 @@ export default function ScheduleScreen() {
                         setGameTimePeriod('AM');
                       }}
                       className={cn(
-                        'px-3 py-3 rounded-l-xl',
+                        'px-3 py-2.5 rounded-l-xl',
                         gameTimePeriod === 'AM'
                           ? 'bg-cyan-500'
                           : 'bg-slate-800 border border-slate-700'
@@ -1689,7 +1692,7 @@ export default function ScheduleScreen() {
                         setGameTimePeriod('PM');
                       }}
                       className={cn(
-                        'px-3 py-3 rounded-r-xl',
+                        'px-3 py-2.5 rounded-r-xl',
                         gameTimePeriod === 'PM'
                           ? 'bg-cyan-500'
                           : 'bg-slate-800 border border-slate-700'
@@ -1707,8 +1710,8 @@ export default function ScheduleScreen() {
               </View>
 
               {/* Location */}
-              <View className="mb-3" style={{ zIndex: 50 }}>
-                <Text className="text-slate-400 text-sm mb-2">Location <Text className="text-red-400">*</Text></Text>
+              <View className="mb-2" style={{ zIndex: 50 }}>
+                <Text className="text-slate-400 text-sm mb-1">Location <Text className="text-red-400">*</Text></Text>
                 <AddressSearch
                   value={location}
                   onChangeText={setLocation}
@@ -1718,8 +1721,8 @@ export default function ScheduleScreen() {
 
               {/* Jersey Color (Game only) */}
               {recordType === 'game' && (
-                <View className="mb-3">
-                  <Text className="text-slate-400 text-sm mb-2">Jersey Color</Text>
+                <View className="mb-2">
+                  <Text className="text-slate-400 text-sm mb-1">Jersey Color</Text>
                   <View className="flex-row bg-slate-800/80 rounded-xl p-1">
                     {teamSettings.jerseyColors.map((color, index) => (
                       <Pressable
@@ -1729,7 +1732,7 @@ export default function ScheduleScreen() {
                           setSelectedJersey(color.name);
                         }}
                         className={cn(
-                          'flex-1 flex-row items-center justify-center py-2.5 rounded-lg',
+                          'flex-1 flex-row items-center justify-center py-2 rounded-lg',
                           selectedJersey === color.name
                             ? 'bg-slate-700'
                             : ''
@@ -1737,13 +1740,14 @@ export default function ScheduleScreen() {
                       >
                         <View
                           className={cn(
-                            "w-4 h-4 rounded-full mr-1.5",
+                            "w-3.5 h-3.5 rounded-full mr-1.5",
                             selectedJersey === color.name ? "border-2 border-white" : "border border-white/30"
                           )}
                           style={{ backgroundColor: color.color }}
                         />
                         <Text
                           className={cn(
+                            'text-sm',
                             selectedJersey === color.name ? 'text-white font-bold' : 'text-slate-500 font-medium'
                           )}
                         >
@@ -1756,7 +1760,7 @@ export default function ScheduleScreen() {
               )}
 
               {/* Player Invitations */}
-              <View className="mb-3">
+              <View className="mb-2">
                 <Pressable
                   onPress={() => {
                     if (!showPlayerSelection && selectedPlayerIds.length === 0) {
@@ -1764,7 +1768,7 @@ export default function ScheduleScreen() {
                     }
                     setShowPlayerSelection(!showPlayerSelection);
                   }}
-                  className="flex-row items-center justify-between bg-slate-800 rounded-xl p-4"
+                  className="flex-row items-center justify-between bg-slate-800 rounded-xl p-3"
                 >
                   <View className="flex-row items-center">
                     <Users size={20} color="#67e8f9" />
@@ -1910,9 +1914,9 @@ export default function ScheduleScreen() {
               </View>
 
               {/* Invite Release Options */}
-              <View className="mb-3">
-                <Text className="text-slate-400 text-sm mb-2">Release Invites</Text>
-                <View className="bg-slate-800/50 rounded-xl p-3">
+              <View className="mb-2">
+                <Text className="text-slate-400 text-sm mb-1">Release Invites</Text>
+                <View className="bg-slate-800/50 rounded-xl p-2">
                   {/* Release Now Option */}
                   <Pressable
                     onPress={() => {
@@ -1921,7 +1925,7 @@ export default function ScheduleScreen() {
                       setShowInviteReleaseDatePicker(false);
                     }}
                     className={cn(
-                      'flex-row items-center p-3 rounded-xl mb-2 border-2',
+                      'flex-row items-center p-2.5 rounded-xl mb-1.5 border-2',
                       inviteReleaseOption === 'now'
                         ? 'bg-green-500/20 border-green-500'
                         : 'bg-slate-800/50 border-transparent'
@@ -1951,7 +1955,7 @@ export default function ScheduleScreen() {
                       setShowInviteReleaseDatePicker(true);
                     }}
                     className={cn(
-                      'flex-row items-center p-3 rounded-xl mb-2 border-2',
+                      'flex-row items-center p-2.5 rounded-xl mb-1.5 border-2',
                       inviteReleaseOption === 'scheduled'
                         ? 'bg-cyan-500/20 border-cyan-500'
                         : 'bg-slate-800/50 border-transparent'
@@ -1980,7 +1984,7 @@ export default function ScheduleScreen() {
                           setAndroidPickerMode('date');
                           setShowInviteReleaseDatePicker(!showInviteReleaseDatePicker);
                         }}
-                        className="bg-slate-700/80 rounded-xl px-4 py-3"
+                        className="bg-slate-700/80 rounded-xl px-4 py-2.5"
                       >
                         <Text className="text-cyan-400 text-base">
                           {format(inviteReleaseDate, 'EEE, MMM d, yyyy h:mm a')}
@@ -2040,7 +2044,7 @@ export default function ScheduleScreen() {
                       setShowInviteReleaseDatePicker(false);
                     }}
                     className={cn(
-                      'flex-row items-center p-3 rounded-xl border',
+                      'flex-row items-center p-2.5 rounded-xl border',
                       inviteReleaseOption === 'none'
                         ? 'bg-slate-600/50 border-slate-500'
                         : 'bg-slate-700/50 border-slate-600'
@@ -2065,7 +2069,7 @@ export default function ScheduleScreen() {
 
               {/* Refreshment Duty (Game only) */}
               {recordType === 'game' && teamSettings.showRefreshmentDuty !== false && (
-              <View className="mb-3">
+              <View className="mb-2">
                 <View className="flex-row items-center justify-between bg-slate-800 rounded-xl py-2.5 px-3">
                   <View className="flex-row items-center">
                     {teamSettings.refreshmentDutyIs21Plus !== false ? (
@@ -2140,7 +2144,7 @@ export default function ScheduleScreen() {
 
               {/* Notes */}
               <View className="mb-3">
-                <Text className="text-slate-400 text-sm mb-2">Notes (Optional)</Text>
+                <Text className="text-slate-400 text-sm mb-1">Notes (Optional)</Text>
                 <TextInput
                   value={notes}
                   onChangeText={setNotes}
@@ -2148,9 +2152,9 @@ export default function ScheduleScreen() {
                   placeholderTextColor="#64748b"
                   autoCapitalize="sentences"
                   multiline
-                  numberOfLines={4}
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                  style={{ minHeight: 100, textAlignVertical: 'top' }}
+                  numberOfLines={3}
+                  className="bg-slate-800 rounded-xl px-4 py-2.5 text-white text-base"
+                  style={{ minHeight: 80, textAlignVertical: 'top' }}
                 />
               </View>
             </ScrollView>
