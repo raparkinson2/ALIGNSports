@@ -413,10 +413,6 @@ export default function GameDetailScreen() {
       setScoreUs(game.finalScoreUs?.toString() ?? '');
       setScoreThem(game.finalScoreThem?.toString() ?? '');
       setSelectedResult(game.gameResult ?? null);
-      // Auto-expand if there's already a result
-      if (game.gameResult) {
-        setIsFinalScoreExpanded(true);
-      }
     }
   }, [game?.id, game?.finalScoreUs, game?.finalScoreThem, game?.gameResult]);
 
