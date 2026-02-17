@@ -277,46 +277,210 @@ export default function SeasonHistoryScreen() {
                     {/* Expanded Content */}
                     {expandedSeasonId === season.id && (
                       <View className="border-t border-slate-700/50">
-                        {/* Team Record Details */}
-                        <View className="px-4 py-3 bg-slate-700/20">
-                          <Text className="text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">
-                            Team Record
+                        {/* Win/Loss/Ties/OTL Row - Colored numbers */}
+                        <View className="flex-row justify-around py-4 px-4 border-b border-slate-700/50">
+                          <View className="items-center">
+                            <Text className="text-green-400 text-3xl font-bold">{season.teamRecord.wins}</Text>
+                            <Text className="text-slate-400 text-xs">Wins</Text>
+                          </View>
+                          <View className="items-center">
+                            <Text className="text-red-400 text-3xl font-bold">{season.teamRecord.losses}</Text>
+                            <Text className="text-slate-400 text-xs">Losses</Text>
+                          </View>
+                          <View className="items-center">
+                            <Text className="text-amber-400 text-3xl font-bold">{season.teamRecord.ties ?? 0}</Text>
+                            <Text className="text-slate-400 text-xs">{season.sport === 'soccer' ? 'Draws' : 'Ties'}</Text>
+                          </View>
+                          {season.sport === 'hockey' && (
+                            <View className="items-center">
+                              <Text className="text-purple-400 text-3xl font-bold">{season.teamRecord.otLosses ?? 0}</Text>
+                              <Text className="text-slate-400 text-xs">OTL</Text>
+                            </View>
+                          )}
+                        </View>
+
+                        {/* Win Percentage */}
+                        <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-700/50">
+                          <Text className="text-slate-400 text-sm">Win Percentage</Text>
+                          <Text className="text-white text-xl font-bold">
+                            {(() => {
+                              const gp = season.sport === 'hockey'
+                                ? season.teamRecord.wins + season.teamRecord.losses + (season.teamRecord.ties ?? 0) + (season.teamRecord.otLosses ?? 0)
+                                : season.teamRecord.wins + season.teamRecord.losses + (season.teamRecord.ties ?? 0);
+                              return gp > 0 ? (season.teamRecord.wins / gp).toFixed(3) : '.000';
+                            })()}
                           </Text>
-                          <View className="flex-row flex-wrap">
-                            <View className="w-1/3 mb-2">
-                              <Text className="text-slate-500 text-xs">Wins</Text>
-                              <Text className="text-white font-semibold">{season.teamRecord.wins}</Text>
+                        </View>
+
+                        {/* Season Statistics */}
+                        <View className="px-4 py-3 border-b border-slate-700/50">
+                          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                            Season Statistics
+                          </Text>
+                          <View className="bg-slate-700/30 rounded-xl p-3">
+                            <View className="flex-row items-center justify-around">
+                              <View className="items-center">
+                                <Text className="text-white text-2xl font-bold">
+                                  {(() => {
+                                    const gp = season.sport === 'hockey'
+                                      ? season.teamRecord.wins + season.teamRecord.losses + (season.teamRecord.ties ?? 0) + (season.teamRecord.otLosses ?? 0)
+                                      : season.teamRecord.wins + season.teamRecord.losses + (season.teamRecord.ties ?? 0);
+                                    return gp;
+                                  })()}
+                                </Text>
+                                <Text className="text-slate-500 text-xs">GP</Text>
+                              </View>
+                              {(season.sport === 'hockey' || season.sport === 'soccer' || season.sport === 'lacrosse') && (
+                                <>
+                                  <View className="items-center">
+                                    <Text className="text-white text-2xl font-bold">
+                                      {season.playerStats.reduce((sum, p) => {
+                                        const stats = p.stats as Record<string, number> | undefined;
+                                        return sum + (stats?.goals ?? 0);
+                                      }, 0)}
+                                    </Text>
+                                    <Text className="text-slate-500 text-xs">Goals</Text>
+                                  </View>
+                                  <View className="items-center">
+                                    <Text className="text-white text-2xl font-bold">
+                                      {season.playerStats.reduce((sum, p) => {
+                                        const stats = p.stats as Record<string, number> | undefined;
+                                        return sum + (stats?.assists ?? 0);
+                                      }, 0)}
+                                    </Text>
+                                    <Text className="text-slate-500 text-xs">Assists</Text>
+                                  </View>
+                                  <View className="items-center">
+                                    <Text className="text-white text-2xl font-bold">
+                                      {season.playerStats.reduce((sum, p) => {
+                                        const stats = p.stats as Record<string, number> | undefined;
+                                        return sum + (stats?.goals ?? 0) + (stats?.assists ?? 0);
+                                      }, 0)}
+                                    </Text>
+                                    <Text className="text-slate-500 text-xs">Points</Text>
+                                  </View>
+                                </>
+                              )}
+                              {(season.sport === 'baseball' || season.sport === 'softball') && (
+                                <>
+                                  <View className="items-center">
+                                    <Text className="text-white text-2xl font-bold">
+                                      {season.playerStats.reduce((sum, p) => {
+                                        const stats = p.stats as Record<string, number> | undefined;
+                                        return sum + (stats?.hits ?? 0);
+                                      }, 0)}
+                                    </Text>
+                                    <Text className="text-slate-500 text-xs">Hits</Text>
+                                  </View>
+                                  <View className="items-center">
+                                    <Text className="text-white text-2xl font-bold">
+                                      {season.playerStats.reduce((sum, p) => {
+                                        const stats = p.stats as Record<string, number> | undefined;
+                                        return sum + (stats?.homeRuns ?? 0);
+                                      }, 0)}
+                                    </Text>
+                                    <Text className="text-slate-500 text-xs">HRs</Text>
+                                  </View>
+                                  <View className="items-center">
+                                    <Text className="text-white text-2xl font-bold">
+                                      {season.playerStats.reduce((sum, p) => {
+                                        const stats = p.stats as Record<string, number> | undefined;
+                                        return sum + (stats?.rbi ?? 0);
+                                      }, 0)}
+                                    </Text>
+                                    <Text className="text-slate-500 text-xs">RBIs</Text>
+                                  </View>
+                                </>
+                              )}
+                              {season.sport === 'basketball' && (
+                                <>
+                                  <View className="items-center">
+                                    <Text className="text-white text-2xl font-bold">
+                                      {season.playerStats.reduce((sum, p) => {
+                                        const stats = p.stats as Record<string, number> | undefined;
+                                        return sum + (stats?.points ?? 0);
+                                      }, 0)}
+                                    </Text>
+                                    <Text className="text-slate-500 text-xs">Points</Text>
+                                  </View>
+                                  <View className="items-center">
+                                    <Text className="text-white text-2xl font-bold">
+                                      {season.playerStats.reduce((sum, p) => {
+                                        const stats = p.stats as Record<string, number> | undefined;
+                                        return sum + (stats?.rebounds ?? 0);
+                                      }, 0)}
+                                    </Text>
+                                    <Text className="text-slate-500 text-xs">Rebounds</Text>
+                                  </View>
+                                  <View className="items-center">
+                                    <Text className="text-white text-2xl font-bold">
+                                      {season.playerStats.reduce((sum, p) => {
+                                        const stats = p.stats as Record<string, number> | undefined;
+                                        return sum + (stats?.assists ?? 0);
+                                      }, 0)}
+                                    </Text>
+                                    <Text className="text-slate-500 text-xs">Assists</Text>
+                                  </View>
+                                </>
+                              )}
                             </View>
-                            <View className="w-1/3 mb-2">
-                              <Text className="text-slate-500 text-xs">Losses</Text>
-                              <Text className="text-white font-semibold">{season.teamRecord.losses}</Text>
-                            </View>
-                            {season.teamRecord.ties !== undefined && (
-                              <View className="w-1/3 mb-2">
-                                <Text className="text-slate-500 text-xs">Ties</Text>
-                                <Text className="text-white font-semibold">{season.teamRecord.ties}</Text>
-                              </View>
-                            )}
-                            {season.teamRecord.longestWinStreak !== undefined && season.teamRecord.longestWinStreak > 0 && (
-                              <View className="w-1/3 mb-2">
-                                <Text className="text-slate-500 text-xs">Win Streak</Text>
-                                <Text className="text-orange-400 font-semibold">{season.teamRecord.longestWinStreak}</Text>
-                              </View>
-                            )}
-                            {season.teamRecord.longestLosingStreak !== undefined && season.teamRecord.longestLosingStreak > 0 && (
-                              <View className="w-1/3 mb-2">
-                                <Text className="text-slate-500 text-xs">Lose Streak</Text>
-                                <Text className="text-red-400 font-semibold">{season.teamRecord.longestLosingStreak}</Text>
-                              </View>
-                            )}
-                            {season.teamRecord.teamGoals !== undefined && season.teamRecord.teamGoals > 0 && (
-                              <View className="w-1/3 mb-2">
-                                <Text className="text-slate-500 text-xs">Team Goals</Text>
-                                <Text className="text-green-400 font-semibold">{season.teamRecord.teamGoals}</Text>
-                              </View>
-                            )}
                           </View>
                         </View>
+
+                        {/* Roster Summary */}
+                        <View className="flex-row px-4 py-3 border-b border-slate-700/50">
+                          <View className="flex-1 bg-slate-700/30 rounded-xl p-3 mr-2 flex-row items-center">
+                            <View className="w-10 h-10 rounded-full bg-green-500/20 items-center justify-center mr-3">
+                              <Users size={18} color="#22c55e" />
+                            </View>
+                            <View>
+                              <Text className="text-slate-400 text-xs">Active Players</Text>
+                              <Text className="text-white text-2xl font-bold">{nonGoalies.length}</Text>
+                              <Text className="text-slate-500 text-[10px]">On roster</Text>
+                            </View>
+                          </View>
+                          <View className="flex-1 bg-slate-700/30 rounded-xl p-3 ml-2 flex-row items-center">
+                            <View className="w-10 h-10 rounded-full bg-purple-500/20 items-center justify-center mr-3">
+                              <Trophy size={18} color="#a78bfa" />
+                            </View>
+                            <View>
+                              <Text className="text-slate-400 text-xs">Total Roster</Text>
+                              <Text className="text-white text-2xl font-bold">{season.playerStats.length}</Text>
+                              <Text className="text-slate-500 text-[10px]">Including reserves</Text>
+                            </View>
+                          </View>
+                        </View>
+
+                        {/* Team Records (Streaks, Goals) */}
+                        {((season.teamRecord.longestWinStreak !== undefined && season.teamRecord.longestWinStreak > 0) ||
+                          (season.teamRecord.longestLosingStreak !== undefined && season.teamRecord.longestLosingStreak > 0) ||
+                          (season.teamRecord.teamGoals !== undefined && season.teamRecord.teamGoals > 0)) && (
+                          <View className="px-4 py-3 bg-slate-700/20 border-b border-slate-700/50">
+                            <Text className="text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">
+                              Team Records
+                            </Text>
+                            <View className="flex-row flex-wrap">
+                              {season.teamRecord.longestWinStreak !== undefined && season.teamRecord.longestWinStreak > 0 && (
+                                <View className="w-1/3 mb-2">
+                                  <Text className="text-slate-500 text-xs">Win Streak</Text>
+                                  <Text className="text-orange-400 font-semibold">{season.teamRecord.longestWinStreak}</Text>
+                                </View>
+                              )}
+                              {season.teamRecord.longestLosingStreak !== undefined && season.teamRecord.longestLosingStreak > 0 && (
+                                <View className="w-1/3 mb-2">
+                                  <Text className="text-slate-500 text-xs">Lose Streak</Text>
+                                  <Text className="text-red-400 font-semibold">{season.teamRecord.longestLosingStreak}</Text>
+                                </View>
+                              )}
+                              {season.teamRecord.teamGoals !== undefined && season.teamRecord.teamGoals > 0 && (
+                                <View className="w-1/3 mb-2">
+                                  <Text className="text-slate-500 text-xs">Team Goals</Text>
+                                  <Text className="text-green-400 font-semibold">{season.teamRecord.teamGoals}</Text>
+                                </View>
+                              )}
+                            </View>
+                          </View>
+                        )}
 
                         {/* Player Stats Table */}
                         {season.playerStats.length > 0 && (
