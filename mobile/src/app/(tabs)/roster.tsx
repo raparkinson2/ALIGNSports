@@ -362,9 +362,9 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
         {/* Player Stats */}
         {showStats && (
           <View className="mt-2 pt-2 border-t border-slate-700/40">
-            {/* Label for skater stats when showing both */}
+            {/* Label for skater/player stats when showing both */}
             {showBothGoalieStats && (
-              <Text className="text-cyan-400 text-[10px] font-medium mb-1">Skater</Text>
+              <Text className="text-cyan-400 text-[10px] font-medium mb-1">{sport === 'hockey' ? 'Skater' : 'Player'}</Text>
             )}
             {/* Label for batting stats when showing both */}
             {showBothBaseballStats && (
