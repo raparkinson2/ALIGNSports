@@ -226,7 +226,10 @@ function getGameStatValuesForPlayer(
     statType = 'skater';
   }
 
-  const gameLog = gameLogs.find(log => log.id.startsWith(gameId) && log.statType === statType);
+  // Find by gameId field first, then fall back to id prefix match for backwards compatibility
+  const gameLog = gameLogs.find(log =>
+    (log.gameId === gameId || log.id.startsWith(gameId)) && log.statType === statType
+  );
 
   if (!gameLog) {
     // Return zeros based on sport/type
@@ -318,7 +321,7 @@ function getGameStatValuesForPlayer(
 // Check if player has stats entered for this game
 function playerHasGameStats(player: Player, gameId: string): boolean {
   const gameLogs = player.gameLogs || [];
-  return gameLogs.some(log => log.id.startsWith(gameId));
+  return gameLogs.some(log => log.gameId === gameId || log.id.startsWith(gameId));
 }
 
 // Get stat field definitions based on sport and position
@@ -502,6 +505,8 @@ export default function GameDetailScreen() {
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const releaseScheduledGameInvites = useTeamStore((s) => s.releaseScheduledGameInvites);
   const addGameLog = useTeamStore((s) => s.addGameLog);
+  const updateGameLog = useTeamStore((s) => s.updateGameLog);
+  const removeGameLog = useTeamStore((s) => s.removeGameLog);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
 
   // Get current player and check their roles for stats permissions
@@ -670,7 +675,7 @@ export default function GameDetailScreen() {
 
   // Open game stats modal for a player
   const openGameStatsModal = (player: Player, mode: GameStatEditMode) => {
-    if (!canEditPlayerStats(player.id)) return;
+    if (!canEditPlayerStats(player.id) || !game) return;
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedStatsPlayer(player);
@@ -678,21 +683,44 @@ export default function GameDetailScreen() {
 
     // Determine which position to use for getting stat fields based on mode
     let positionForStats: string;
+    let statType: string;
     if (mode === 'pitcher') {
       positionForStats = 'P';
+      statType = 'pitcher';
     } else if (mode === 'goalie' || mode === 'lacrosse_goalie') {
       positionForStats = teamSettings.sport === 'soccer' ? 'GK' : 'G';
+      statType = mode === 'lacrosse_goalie' ? 'lacrosse_goalie' : 'goalie';
+    } else if (mode === 'lacrosse') {
+      positionForStats = 'batter';
+      statType = 'lacrosse';
+    } else if (mode === 'batter') {
+      positionForStats = 'batter';
+      statType = 'batter';
     } else {
       positionForStats = 'batter';
+      statType = 'skater';
     }
 
     const statFields = getGameStatFields(teamSettings.sport, positionForStats);
 
-    // Start with empty stats (zeros) for entering this game's stats
+    // Check if there's existing stats for this game
+    const existingLog = (player.gameLogs || []).find(
+      log => (log.gameId === game.id || log.id.startsWith(game.id)) && log.statType === statType
+    );
+
     const statsObj: Record<string, string> = {};
-    statFields.forEach((field) => {
-      statsObj[field.key] = '0';
-    });
+    if (existingLog) {
+      // Load existing stats
+      const existingStats = existingLog.stats as unknown as Record<string, number>;
+      statFields.forEach((field) => {
+        statsObj[field.key] = String(existingStats[field.key] ?? 0);
+      });
+    } else {
+      // Start with empty stats (zeros) for entering this game's stats
+      statFields.forEach((field) => {
+        statsObj[field.key] = '0';
+      });
+    }
     setEditGameStats(statsObj);
     setIsGameStatsModalVisible(true);
   };
@@ -733,23 +761,51 @@ export default function GameDetailScreen() {
       newStats[field.key] = parseInt(editGameStats[field.key] || '0', 10) || 0;
     });
 
-    // Create game log entry with the game's date
-    const gameLogEntry: GameLogEntry = {
-      id: `${game.id}-${Date.now()}`,
-      date: game.date, // Use the game's date
-      stats: newStats as unknown as PlayerStats,
-      statType,
-    };
+    // Check if there's an existing game log for this game and stat type
+    const existingLog = (selectedStatsPlayer.gameLogs || []).find(
+      log => (log.gameId === game.id || log.id.startsWith(game.id)) && log.statType === statType
+    );
 
-    // Add game log
-    addGameLog(selectedStatsPlayer.id, gameLogEntry);
+    if (existingLog) {
+      // Update existing log
+      updateGameLog(selectedStatsPlayer.id, existingLog.id, {
+        stats: newStats as unknown as PlayerStats,
+      });
+    } else {
+      // Create new game log entry with the game's date and gameId
+      const gameLogEntry: GameLogEntry = {
+        id: `${game.id}-${Date.now()}`,
+        gameId: game.id, // Store the game ID for reliable matching
+        date: game.date, // Use the game's date
+        stats: newStats as unknown as PlayerStats,
+        statType,
+      };
+
+      // Add game log
+      addGameLog(selectedStatsPlayer.id, gameLogEntry);
+    }
 
     // Recalculate cumulative stats from all game logs of this type
-    const updatedPlayer = players.find(p => p.id === selectedStatsPlayer.id);
-    const allLogs = [...(updatedPlayer?.gameLogs || []), gameLogEntry].filter(log => log.statType === statType);
+    const currentPlayer = players.find(p => p.id === selectedStatsPlayer.id);
+    const currentLogs = currentPlayer?.gameLogs || [];
+
+    // Build list of logs after the update
+    let allLogsOfType: GameLogEntry[];
+    if (existingLog) {
+      // Replace the existing log's stats in our calculation
+      allLogsOfType = currentLogs
+        .filter(log => log.statType === statType)
+        .map(log => log.id === existingLog.id ? { ...log, stats: newStats as unknown as PlayerStats } : log);
+    } else {
+      // Add the new log to our calculation
+      allLogsOfType = [
+        ...currentLogs.filter(log => log.statType === statType),
+        { id: `${game.id}-new`, gameId: game.id, date: game.date, stats: newStats as unknown as PlayerStats, statType }
+      ];
+    }
 
     const cumulativeStats: Record<string, number> = {};
-    allLogs.forEach(log => {
+    allLogsOfType.forEach(log => {
       const logStats = log.stats as unknown as Record<string, number>;
       Object.keys(logStats).forEach(key => {
         cumulativeStats[key] = (cumulativeStats[key] || 0) + (logStats[key] || 0);
@@ -758,9 +814,9 @@ export default function GameDetailScreen() {
 
     // Add games played count (each log = 1 game)
     if (gameStatsEditMode === 'goalie' || gameStatsEditMode === 'lacrosse_goalie') {
-      cumulativeStats.games = allLogs.length;
+      cumulativeStats.games = allLogsOfType.length;
     } else {
-      cumulativeStats.gamesPlayed = allLogs.length;
+      cumulativeStats.gamesPlayed = allLogsOfType.length;
     }
 
     // Save cumulative stats to the appropriate stats field based on edit mode
@@ -777,7 +833,7 @@ export default function GameDetailScreen() {
     setSelectedStatsPlayer(null);
 
     // Show success
-    Alert.alert('Stats Saved', `Game stats saved for ${selectedStatsPlayer.firstName} ${selectedStatsPlayer.lastName}.`);
+    Alert.alert('Stats Saved', `Game stats ${existingLog ? 'updated' : 'saved'} for ${selectedStatsPlayer.firstName} ${selectedStatsPlayer.lastName}.`);
   };
 
   // Get stat fields for the currently selected player

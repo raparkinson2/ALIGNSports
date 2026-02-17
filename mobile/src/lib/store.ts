@@ -287,6 +287,7 @@ export type PlayerStats = HockeyStats | HockeyGoalieStats | BaseballStats | Base
 // Game log entry for tracking individual game stats
 export interface GameLogEntry {
   id: string;
+  gameId?: string; // ID of the game this log is for
   date: string; // ISO string
   stats: PlayerStats;
   statType: 'skater' | 'goalie' | 'batter' | 'pitcher' | 'lacrosse' | 'lacrosse_goalie'; // Which type of stats this log is for
@@ -860,6 +861,7 @@ interface TeamStore {
 
   // Game Logs
   addGameLog: (playerId: string, gameLog: GameLogEntry) => void;
+  updateGameLog: (playerId: string, gameLogId: string, updates: Partial<GameLogEntry>) => void;
   removeGameLog: (playerId: string, gameLogId: string) => void;
 
   // Reset all data
@@ -2271,6 +2273,13 @@ export const useTeamStore = create<TeamStore>()(
         players: state.players.map((p) =>
           p.id === playerId
             ? { ...p, gameLogs: [...(p.gameLogs || []), gameLog] }
+            : p
+        ),
+      })),
+      updateGameLog: (playerId, gameLogId, updates) => set((state) => ({
+        players: state.players.map((p) =>
+          p.id === playerId
+            ? { ...p, gameLogs: (p.gameLogs || []).map((g) => g.id === gameLogId ? { ...g, ...updates } : g) }
             : p
         ),
       })),
