@@ -650,9 +650,14 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
   };
 
   // Get games, events, and practices for selected date
+  // For past dates, only show games (not events/practices)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const isSelectedDatePast = selectedDate ? selectedDate < today : false;
+
   const selectedDateGames = selectedDate ? getGamesForDate(selectedDate) : [];
-  const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : [];
-  const selectedDatePractices = selectedDate ? getPracticesForDate(selectedDate) : [];
+  const selectedDateEvents = selectedDate && !isSelectedDatePast ? getEventsForDate(selectedDate) : [];
+  const selectedDatePractices = selectedDate && !isSelectedDatePast ? getPracticesForDate(selectedDate) : [];
 
   // Count items in current month
   const gamesThisMonth = games.filter((game) => {
@@ -755,13 +760,15 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
           const dayGames = getGamesForDate(date);
           const dayEvents = getEventsForDate(date);
           const dayPractices = getPracticesForDate(date);
-          const hasGames = dayGames.length > 0;
-          const hasEvents = dayEvents.length > 0;
-          const hasPractices = dayPractices.length > 0;
-          const hasItems = hasGames || hasEvents || hasPractices;
-          const isSelected = selectedDate && isSameDay(selectedDate, date);
           const isTodayDate = isToday(date);
           const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+
+          // For past dates, only show games (grey), not events/practices
+          const hasGames = dayGames.length > 0;
+          const hasEvents = !isPast && dayEvents.length > 0;
+          const hasPractices = !isPast && dayPractices.length > 0;
+          const hasItems = hasGames || hasEvents || hasPractices;
+          const isSelected = selectedDate && isSameDay(selectedDate, date);
 
           return (
             <Pressable
@@ -789,14 +796,14 @@ function CalendarView({ games, events, onSelectGame, onSelectEvent, onViewLines,
                 >
                   {format(date, 'd')}
                 </Text>
-                {/* Indicator bars - green for games, orange for practices, blue for events */}
+                {/* Indicator bars - green for games (grey if past), orange for practices, blue for events */}
                 {hasItems && (
                   <View className="flex-row mt-1 gap-0.5">
                     {hasGames && (
                       <View
                         className={cn(
                           'h-1.5 rounded-full',
-                          isSelected ? 'bg-cyan-400' : 'bg-emerald-500',
+                          isSelected ? 'bg-cyan-400' : isPast ? 'bg-slate-500' : 'bg-emerald-500',
                           dayGames.length === 1 ? 'w-4' : dayGames.length === 2 ? 'w-6' : 'w-8'
                         )}
                       />
@@ -1494,7 +1501,7 @@ export default function ScheduleScreen() {
             </>
           ) : (
             <CalendarView
-              games={upcomingGames}
+              games={sortedGames}
               events={upcomingEvents}
               onSelectGame={(game) => router.push(`/game/${game.id}`)}
               onSelectEvent={(event) => router.push(`/event/${event.id}`)}

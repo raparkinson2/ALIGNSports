@@ -62,9 +62,11 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **View Toggle**: Switch between List and Calendar views
   - List view shows items in a scrollable list
   - Calendar view shows a monthly calendar with indicators:
-    - Green: Games
-    - Orange: Practices
-    - Blue: Events
+    - Green: Upcoming Games
+    - Grey: Past Games (historical record)
+    - Orange: Practices (upcoming only)
+    - Blue: Events (upcoming only)
+  - **Past Games**: Previous games remain visible on the calendar with grey indicators for historical reference
   - **Persistent Preference**: Your last selected view is remembered and restored on app reopen
 
 ### Creating Games, Practices & Events (Admin/Captain)
