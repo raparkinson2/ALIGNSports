@@ -176,7 +176,7 @@ function getGameStatHeaders(sport: Sport): string[] {
       return ['G', 'A', 'P', 'PIM', '+/-'];
     case 'baseball':
     case 'softball':
-      return ['AB', 'H', 'RBI', 'R', 'HR'];
+      return ['AB', 'H', 'BB', 'K', 'RBI', 'R', 'HR'];
     case 'basketball':
       return ['PTS', 'REB', 'AST', 'STL', 'BLK'];
     case 'soccer':
@@ -196,9 +196,9 @@ function getGameGoalieHeaders(sport: Sport): string[] {
   return ['MP', 'SA', 'SV', 'GA', 'GAA', 'SV%'];
 }
 
-// Get pitcher stat headers for table display
+// Get pitcher stat headers for table display (includes ERA calculated)
 function getGamePitcherHeaders(): string[] {
-  return ['IP', 'K', 'BB', 'H', 'ER'];
+  return ['IP', 'K', 'BB', 'H', 'HR', 'ER', 'ERA'];
 }
 
 // Get stat values for a player for this specific game
@@ -233,13 +233,13 @@ function getGameStatValuesForPlayer(
 
   if (!gameLog) {
     // Return zeros based on sport/type
-    if (isPitcherStats) return [0, 0, 0, 0, 0];
+    if (isPitcherStats) return [0, 0, 0, 0, 0, 0, '-'];
     if (isGoalieStats && sport === 'lacrosse') return [0, 0, 0, 0, '-', '-', 0];
     if (isGoalieStats) return [0, 0, 0, 0, '-', '-'];
     switch (sport) {
       case 'hockey': return [0, 0, 0, 0, 0];
       case 'baseball':
-      case 'softball': return [0, 0, 0, 0, 0];
+      case 'softball': return [0, 0, 0, 0, 0, 0, 0];
       case 'basketball': return [0, 0, 0, 0, 0];
       case 'soccer': return [0, 0, 0];
       case 'lacrosse': return [0, 0, 0, 0];
@@ -251,12 +251,19 @@ function getGameStatValuesForPlayer(
 
   // Return values in the correct order for headers
   if (isPitcherStats) {
+    const innings = stats.innings ?? 0;
+    const earnedRuns = stats.earnedRuns ?? 0;
+    // Calculate ERA (Earned Run Average) - earned runs per 9 innings
+    const era = innings > 0 ? ((earnedRuns / innings) * 9).toFixed(2) : '-';
+
     return [
-      stats.innings ?? 0,
+      innings,
       stats.strikeouts ?? 0,
       stats.walks ?? 0,
       stats.hits ?? 0,
-      stats.earnedRuns ?? 0
+      stats.homeRuns ?? 0,
+      earnedRuns,
+      era
     ];
   }
 
@@ -307,6 +314,8 @@ function getGameStatValuesForPlayer(
       return [
         stats.atBats ?? 0,
         stats.hits ?? 0,
+        stats.walks ?? 0,
+        stats.strikeouts ?? 0,
         stats.rbi ?? 0,
         stats.runs ?? 0,
         stats.homeRuns ?? 0
