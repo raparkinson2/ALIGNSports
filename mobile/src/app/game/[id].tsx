@@ -256,7 +256,7 @@ export default function GameDetailScreen() {
   // Final score state
   const [scoreUs, setScoreUs] = useState('');
   const [scoreThem, setScoreThem] = useState('');
-  const [selectedResult, setSelectedResult] = useState<'win' | 'loss' | 'tie' | null>(null);
+  const [selectedResult, setSelectedResult] = useState<'win' | 'loss' | 'tie' | 'otLoss' | null>(null);
   const [isFinalScoreExpanded, setIsFinalScoreExpanded] = useState(false);
 
   const game = games.find((g) => g.id === id);
@@ -734,6 +734,8 @@ export default function GameDetailScreen() {
         newRecord.losses = (newRecord.losses || 0) + 1;
       } else if (selectedResult === 'tie') {
         newRecord.ties = (newRecord.ties || 0) + 1;
+      } else if (selectedResult === 'otLoss') {
+        newRecord.otLosses = (newRecord.otLosses || 0) + 1;
       }
 
       setTeamSettings({ record: newRecord });
@@ -763,6 +765,8 @@ export default function GameDetailScreen() {
                 newRecord.losses = Math.max(0, (newRecord.losses || 0) - 1);
               } else if (game.gameResult === 'tie') {
                 newRecord.ties = Math.max(0, (newRecord.ties || 0) - 1);
+              } else if (game.gameResult === 'otLoss') {
+                newRecord.otLosses = Math.max(0, (newRecord.otLosses || 0) - 1);
               }
 
               setTeamSettings({ record: newRecord });
@@ -1163,20 +1167,20 @@ export default function GameDetailScreen() {
                 className="bg-slate-800/80 rounded-xl py-2.5 px-3 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center">
-                  <Trophy size={18} color={game.gameResult ? (game.gameResult === 'win' ? '#22c55e' : game.gameResult === 'loss' ? '#ef4444' : '#94a3b8') : '#f59e0b'} />
+                  <Trophy size={18} color={game.gameResult ? (game.gameResult === 'win' ? '#22c55e' : game.gameResult === 'loss' ? '#ef4444' : game.gameResult === 'otLoss' ? '#f97316' : '#94a3b8') : '#f59e0b'} />
                   <View className="flex-1 ml-2.5">
                     <Text className="text-white font-medium text-sm">
                       Final Score
                     </Text>
                     <Text className="text-slate-400 text-xs">
                       {game.gameResult
-                        ? `${game.gameResult === 'win' ? 'Win' : game.gameResult === 'loss' ? 'Loss' : 'Tie'}${(game.finalScoreUs !== undefined && game.finalScoreThem !== undefined) ? ` ${game.finalScoreUs}-${game.finalScoreThem}` : ''}`
+                        ? `${game.gameResult === 'win' ? 'Win' : game.gameResult === 'loss' ? 'Loss' : game.gameResult === 'otLoss' ? 'OT Loss' : 'Tie'}${(game.finalScoreUs !== undefined && game.finalScoreThem !== undefined) ? ` ${game.finalScoreUs}-${game.finalScoreThem}` : ''}`
                         : 'Tap to enter result'}
                     </Text>
                   </View>
                   <ChevronDown
                     size={16}
-                    color={game.gameResult === 'win' ? '#22c55e' : game.gameResult === 'loss' ? '#ef4444' : game.gameResult === 'tie' ? '#94a3b8' : '#f59e0b'}
+                    color={game.gameResult === 'win' ? '#22c55e' : game.gameResult === 'loss' ? '#ef4444' : game.gameResult === 'otLoss' ? '#f97316' : game.gameResult === 'tie' ? '#94a3b8' : '#f59e0b'}
                     style={{ transform: [{ rotate: isFinalScoreExpanded ? '180deg' : '0deg' }] }}
                   />
                 </View>
@@ -1214,7 +1218,7 @@ export default function GameDetailScreen() {
                     </View>
                   </View>
 
-                  {/* Win/Loss/Tie toggle */}
+                  {/* Win/Loss/Tie/OT Loss toggle */}
                   <View className="flex-row rounded-lg overflow-hidden mb-3">
                     <Pressable
                       onPress={() => {
@@ -1257,6 +1261,7 @@ export default function GameDetailScreen() {
                       }}
                       className={cn(
                         'flex-1 py-2 items-center',
+                        teamSettings.sport === 'hockey' ? 'border-r border-slate-600' : '',
                         selectedResult === 'tie' ? 'bg-slate-500' : 'bg-slate-700/80'
                       )}
                     >
@@ -1267,6 +1272,25 @@ export default function GameDetailScreen() {
                         Tie
                       </Text>
                     </Pressable>
+                    {teamSettings.sport === 'hockey' && (
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setSelectedResult('otLoss');
+                        }}
+                        className={cn(
+                          'flex-1 py-2 items-center',
+                          selectedResult === 'otLoss' ? 'bg-orange-500' : 'bg-slate-700/80'
+                        )}
+                      >
+                        <Text className={cn(
+                          'text-sm font-semibold',
+                          selectedResult === 'otLoss' ? 'text-white' : 'text-slate-400'
+                        )}>
+                          OT Loss
+                        </Text>
+                      </Pressable>
+                    )}
                   </View>
 
                   {/* Save/Clear buttons */}

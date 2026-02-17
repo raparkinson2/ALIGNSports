@@ -528,7 +528,7 @@ export interface Game {
   // Final score and result
   finalScoreUs?: number; // Our team's final score
   finalScoreThem?: number; // Opponent's final score
-  gameResult?: 'win' | 'loss' | 'tie'; // Game result for record tracking
+  gameResult?: 'win' | 'loss' | 'tie' | 'otLoss'; // Game result for record tracking
   resultRecorded?: boolean; // Whether the result has been added to team record
 }
 

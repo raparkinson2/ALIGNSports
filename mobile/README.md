@@ -100,7 +100,7 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - **Refreshment Duty**: Admin toggle to show/hide who's bringing drinks (age-appropriate toggle)
 - **Final Score**: Captains/Admins can record game results
   - Enter final score for both teams
-  - Select Win (green), Loss (red), or Tie (grey) result
+  - Select Win (green), Loss (red), Tie (grey), or OT Loss (orange, hockey only) result
   - Saves result and automatically updates team record
   - Can clear/update results if needed (adjusts record accordingly)
 - **Hockey Lines** (Hockey only): Captains/Admins can set line combinations
