@@ -281,6 +281,15 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
     - Sport-specific records (goals, assists, points, etc.)
     - Shows player name, value, and which season they set the record
   - Records persist across archived seasons and show the year set
+- **Season History**: View all archived seasons with complete stats
+  - Tap any season to expand and see detailed records
+  - View team record (wins, losses, ties, streaks, goals)
+  - View full roster with player stats from that season
+  - View attendance summary for each player
+  - **Restore Season** (Admin): Undo an accidental archive
+    - Restores player stats and team record from the archived season
+    - Removes the season from history
+    - Only available when current season has no games or stats recorded
 - **Feature Request**: Submit suggestions for new app features via email
 - **Report Bug**: Report issues and bugs via email
 - **My Availability**: Set dates when you're unavailable

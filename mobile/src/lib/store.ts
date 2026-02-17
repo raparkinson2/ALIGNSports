@@ -824,6 +824,7 @@ interface TeamStore {
   // Season Management
   setCurrentSeasonName: (name: string) => void;
   archiveAndStartNewSeason: (seasonName: string) => { success: boolean; newBestRecord: boolean };
+  unarchiveSeason: (seasonId: string) => { success: boolean; message: string };
 
   currentPlayerId: string | null;
   setCurrentPlayerId: (id: string | null) => void;
@@ -1791,6 +1792,72 @@ export const useTeamStore = create<TeamStore>()(
         });
 
         return { success: true, newBestRecord };
+      },
+
+      unarchiveSeason: (seasonId) => {
+        const state = get();
+        const seasonHistory = state.teamSettings.seasonHistory || [];
+
+        // Find the season to unarchive
+        const seasonToRestore = seasonHistory.find(s => s.id === seasonId);
+        if (!seasonToRestore) {
+          return { success: false, message: 'Season not found' };
+        }
+
+        // Check if current season has any data (games played, stats recorded)
+        const currentRecord = state.teamSettings.record;
+        const hasCurrentSeasonData = (currentRecord?.wins ?? 0) > 0 ||
+                                     (currentRecord?.losses ?? 0) > 0 ||
+                                     (currentRecord?.ties ?? 0) > 0 ||
+                                     state.games.length > 0;
+
+        if (hasCurrentSeasonData) {
+          return {
+            success: false,
+            message: 'Cannot restore archived season while current season has data. Please archive the current season first.'
+          };
+        }
+
+        // Remove the season from history
+        const updatedHistory = seasonHistory.filter(s => s.id !== seasonId);
+
+        // Restore player stats from the archived season
+        const updatedPlayers = state.players.map(player => {
+          const archivedStats = seasonToRestore.playerStats.find(ps => ps.playerId === player.id);
+          if (archivedStats) {
+            return {
+              ...player,
+              stats: archivedStats.stats,
+              goalieStats: archivedStats.goalieStats as HockeyGoalieStats | SoccerGoalieStats | undefined,
+              pitcherStats: archivedStats.pitcherStats,
+            };
+          }
+          return player;
+        });
+
+        // Restore team record
+        const restoredRecord: TeamRecord = {
+          wins: seasonToRestore.teamRecord.wins,
+          losses: seasonToRestore.teamRecord.losses,
+          ties: seasonToRestore.teamRecord.ties,
+          otLosses: seasonToRestore.teamRecord.otLosses,
+          longestWinStreak: seasonToRestore.teamRecord.longestWinStreak,
+          longestLosingStreak: seasonToRestore.teamRecord.longestLosingStreak,
+          teamGoals: seasonToRestore.teamRecord.teamGoals,
+        };
+
+        // Update state
+        set({
+          teamSettings: {
+            ...state.teamSettings,
+            seasonHistory: updatedHistory,
+            record: restoredRecord,
+            currentSeasonName: seasonToRestore.seasonName,
+          },
+          players: updatedPlayers,
+        });
+
+        return { success: true, message: `Season "${seasonToRestore.seasonName}" has been restored.` };
       },
 
       currentPlayerId: null, // No default player

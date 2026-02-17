@@ -1,8 +1,8 @@
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Calendar, Trophy, ChevronDown, ChevronUp, Users } from 'lucide-react-native';
+import { ArrowLeft, Calendar, Trophy, ChevronDown, ChevronUp, Users, RotateCcw } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
@@ -113,6 +113,9 @@ export default function SeasonHistoryScreen() {
   const router = useRouter();
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const currentPlayers = useTeamStore((s) => s.players);
+  const unarchiveSeason = useTeamStore((s) => s.unarchiveSeason);
+  const isAdminFn = useTeamStore((s) => s.isAdmin);
+  const isAdmin = isAdminFn();
   const seasonHistory = teamSettings.seasonHistory || [];
 
   const [expandedSeasonId, setExpandedSeasonId] = useState<string | null>(null);
@@ -120,6 +123,31 @@ export default function SeasonHistoryScreen() {
   const toggleExpanded = (seasonId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setExpandedSeasonId(expandedSeasonId === seasonId ? null : seasonId);
+  };
+
+  const handleUnarchive = (season: ArchivedSeason) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(
+      'Restore Season',
+      `Are you sure you want to restore "${season.seasonName}"? This will:\n\n• Remove it from season history\n• Restore all player stats from that season\n• Restore the team record\n\nThis can only be done if the current season has no games or stats recorded.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Restore',
+          style: 'default',
+          onPress: () => {
+            const result = unarchiveSeason(season.id);
+            if (result.success) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert('Season Restored', result.message);
+            } else {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Cannot Restore', result.message);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const formatRecord = (season: ArchivedSeason): string => {
@@ -411,6 +439,19 @@ export default function SeasonHistoryScreen() {
                                 </View>
                               </View>
                             )}
+                          </View>
+                        )}
+
+                        {/* Restore Season Button - Admin Only */}
+                        {isAdmin && (
+                          <View className="px-4 pb-4">
+                            <Pressable
+                              onPress={() => handleUnarchive(season)}
+                              className="flex-row items-center justify-center bg-amber-600/20 border border-amber-500/30 rounded-xl py-3 active:bg-amber-600/30"
+                            >
+                              <RotateCcw size={16} color="#fbbf24" />
+                              <Text className="text-amber-400 font-semibold ml-2">Restore This Season</Text>
+                            </Pressable>
                           </View>
                         )}
                       </View>
