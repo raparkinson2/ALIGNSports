@@ -1332,18 +1332,19 @@ export default function GameDetailScreen() {
           {teamSettings.sport === 'basketball' && teamSettings.showLineups !== false && canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(115).springify()}
-              className="mx-4 mb-4"
+              className="mx-4 mb-3"
             >
               <Pressable
                 onPress={() => setIsBasketballLineupModalVisible(true)}
-                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30 active:bg-emerald-500/30"
+                className="bg-slate-800/80 rounded-xl py-2.5 px-3 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center">
-                  <ListOrdered size={24} color="#10b981" />
-                  <View className="flex-1 ml-3">
-                    <Text className="text-emerald-400 font-semibold">Starting 5</Text>
+                  <ListOrdered size={18} color="#10b981" />
+                  <View className="flex-1 ml-2.5">
+                    <Text className="text-white font-medium text-sm">Starting 5</Text>
+                    <Text className="text-slate-400 text-xs">Tap to edit lineup</Text>
                   </View>
-                  <ChevronDown size={20} color="#10b981" />
+                  <ChevronDown size={16} color="#10b981" />
                 </View>
               </Pressable>
             </Animated.View>
@@ -1353,18 +1354,19 @@ export default function GameDetailScreen() {
           {teamSettings.sport === 'baseball' && teamSettings.showLineups !== false && canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(115).springify()}
-              className="mx-4 mb-4"
+              className="mx-4 mb-3"
             >
               <Pressable
                 onPress={() => setIsBattingOrderModalVisible(true)}
-                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30 active:bg-emerald-500/30"
+                className="bg-slate-800/80 rounded-xl py-2.5 px-3 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center">
-                  <ListOrdered size={24} color="#10b981" />
-                  <View className="flex-1 ml-3">
-                    <Text className="text-emerald-400 font-semibold">Set Batting Order</Text>
+                  <ListOrdered size={18} color="#10b981" />
+                  <View className="flex-1 ml-2.5">
+                    <Text className="text-white font-medium text-sm">Set Batting Order</Text>
+                    <Text className="text-slate-400 text-xs">Tap to edit lineup</Text>
                   </View>
-                  <ChevronDown size={20} color="#10b981" />
+                  <ChevronDown size={16} color="#10b981" />
                 </View>
               </Pressable>
             </Animated.View>
@@ -1374,18 +1376,19 @@ export default function GameDetailScreen() {
           {teamSettings.sport === 'softball' && teamSettings.showLineups !== false && canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(115).springify()}
-              className="mx-4 mb-4"
+              className="mx-4 mb-3"
             >
               <Pressable
                 onPress={() => setIsBattingOrderModalVisible(true)}
-                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30 active:bg-emerald-500/30"
+                className="bg-slate-800/80 rounded-xl py-2.5 px-3 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center">
-                  <ListOrdered size={24} color="#10b981" />
-                  <View className="flex-1 ml-3">
-                    <Text className="text-emerald-400 font-semibold">Set Batting Order</Text>
+                  <ListOrdered size={18} color="#10b981" />
+                  <View className="flex-1 ml-2.5">
+                    <Text className="text-white font-medium text-sm">Set Batting Order</Text>
+                    <Text className="text-slate-400 text-xs">Tap to edit lineup</Text>
                   </View>
-                  <ChevronDown size={20} color="#10b981" />
+                  <ChevronDown size={16} color="#10b981" />
                 </View>
               </Pressable>
             </Animated.View>
@@ -1395,18 +1398,19 @@ export default function GameDetailScreen() {
           {teamSettings.sport === 'soccer' && teamSettings.showLineups !== false && canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(115).springify()}
-              className="mx-4 mb-4"
+              className="mx-4 mb-3"
             >
               <Pressable
                 onPress={() => setIsSoccerFormationModalVisible(true)}
-                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30 active:bg-emerald-500/30"
+                className="bg-slate-800/80 rounded-xl py-2.5 px-3 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center">
-                  <ListOrdered size={24} color="#10b981" />
-                  <View className="flex-1 ml-3">
-                    <Text className="text-emerald-400 font-semibold">Set Lineup</Text>
+                  <ListOrdered size={18} color="#10b981" />
+                  <View className="flex-1 ml-2.5">
+                    <Text className="text-white font-medium text-sm">Set Lineup</Text>
+                    <Text className="text-slate-400 text-xs">Tap to edit lineup</Text>
                   </View>
-                  <ChevronDown size={20} color="#10b981" />
+                  <ChevronDown size={16} color="#10b981" />
                 </View>
               </Pressable>
             </Animated.View>
@@ -1416,18 +1420,19 @@ export default function GameDetailScreen() {
           {teamSettings.sport === 'lacrosse' && teamSettings.showLineups !== false && canManageTeam() && (
             <Animated.View
               entering={FadeInUp.delay(115).springify()}
-              className="mx-4 mb-4"
+              className="mx-4 mb-3"
             >
               <Pressable
                 onPress={() => setIsLacrosseLineupModalVisible(true)}
-                className="bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30 active:bg-emerald-500/30"
+                className="bg-slate-800/80 rounded-xl py-2.5 px-3 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center">
-                  <ListOrdered size={24} color="#10b981" />
-                  <View className="flex-1 ml-3">
-                    <Text className="text-emerald-400 font-semibold">Set Lineup</Text>
+                  <ListOrdered size={18} color="#10b981" />
+                  <View className="flex-1 ml-2.5">
+                    <Text className="text-white font-medium text-sm">Set Lineup</Text>
+                    <Text className="text-slate-400 text-xs">Tap to edit lineup</Text>
                   </View>
-                  <ChevronDown size={20} color="#10b981" />
+                  <ChevronDown size={16} color="#10b981" />
                 </View>
               </Pressable>
             </Animated.View>
