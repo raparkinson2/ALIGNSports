@@ -214,9 +214,11 @@ function getGameStatFields(sport: Sport, position: string): { key: string; label
       return [
         { key: 'atBats', label: 'At Bats' },
         { key: 'hits', label: 'Hits' },
-        { key: 'homeRuns', label: 'Home Runs' },
-        { key: 'rbi', label: 'RBI' },
+        { key: 'walks', label: 'Walks' },
         { key: 'strikeouts', label: 'Strikeouts' },
+        { key: 'rbi', label: 'RBI' },
+        { key: 'runs', label: 'Runs' },
+        { key: 'homeRuns', label: 'Home Runs' },
       ];
     case 'basketball':
       return [
