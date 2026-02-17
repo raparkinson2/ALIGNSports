@@ -78,7 +78,7 @@ function getStatHeaders(sport: Sport): string[] {
       return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
     case 'baseball':
     case 'softball':
-      return ['GP', 'AB', 'H', 'HR', 'RBI', 'K', 'BA'];
+      return ['AB', 'H', 'BB', 'K', 'RBI', 'R', 'HR'];
     case 'basketball':
       return ['GP', 'PTS', 'PPG', 'REB', 'AST', 'STL', 'BLK'];
     case 'soccer':
@@ -123,7 +123,7 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
       return [0, '0-0', 0, 0, 0, 0, 0, 0, '0.00'];
     }
     if (sport === 'hockey') return [0, 0, 0, 0, 0, 0];
-    if (sport === 'baseball' || sport === 'softball') return [0, 0, 0, 0, 0, 0, '.000'];
+    if (sport === 'baseball' || sport === 'softball') return [0, 0, 0, 0, 0, 0, 0];
     if (sport === 'basketball') return [0, 0, '0.0', 0, 0, 0, 0];
     if (sport === 'soccer') return [0, 0, 0, 0];
     if (sport === 'lacrosse') return [0, 0, 0, 0, 0, 0];
@@ -187,10 +187,7 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
       // For pitcher/position players, stats object may be BaseballPitcherStats
       // but we need to read the batting fields which are stored separately
       const s = stats as BaseballStats;
-      const atBats = s.atBats ?? 0;
-      const hits = s.hits ?? 0;
-      const ba = atBats > 0 ? (hits / atBats).toFixed(3) : '.000';
-      return [s.gamesPlayed ?? 0, atBats, hits, s.homeRuns ?? 0, s.rbi ?? 0, s.strikeouts ?? 0, ba];
+      return [s.atBats ?? 0, s.hits ?? 0, s.walks ?? 0, s.strikeouts ?? 0, s.rbi ?? 0, s.runs ?? 0, s.homeRuns ?? 0];
     }
     case 'basketball': {
       const s = stats as BasketballStats;

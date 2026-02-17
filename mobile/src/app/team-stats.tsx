@@ -109,7 +109,7 @@ function getStatHeaders(sport: Sport): string[] {
       return ['GP', 'G', 'A', 'P', 'PIM', '+/-'];
     case 'baseball':
     case 'softball':
-      return ['GP', 'AB', 'H', 'HR', 'RBI', 'K', 'BA'];
+      return ['AB', 'H', 'BB', 'K', 'RBI', 'R', 'HR'];
     case 'basketball':
       return ['GP', 'PTS', 'PPG', 'REB', 'AST', 'STL', 'BLK'];
     case 'soccer':
@@ -142,7 +142,7 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
       return [0, '0-0', 0, 0, 0, 0, 0, 0, '0.00'];
     }
     if (sport === 'hockey') return [0, 0, 0, 0, 0, 0];
-    if (sport === 'baseball' || sport === 'softball') return [0, 0, 0, 0, 0, 0, '.000'];
+    if (sport === 'baseball' || sport === 'softball') return [0, 0, 0, 0, 0, 0, 0];
     if (sport === 'basketball') return [0, 0, '0.0', 0, 0, 0, 0];
     if (sport === 'soccer') return [0, 0, 0, 0];
     if (sport === 'lacrosse') return [0, 0, 0, 0, 0, 0];
@@ -203,10 +203,7 @@ function getStatValues(sport: Sport, stats: PlayerStats | undefined, position: s
     case 'baseball':
     case 'softball': {
       const s = stats as BaseballStats;
-      const atBats = s.atBats ?? 0;
-      const hits = s.hits ?? 0;
-      const ba = atBats > 0 ? (hits / atBats).toFixed(3) : '.000';
-      return [s.gamesPlayed ?? 0, atBats, hits, s.homeRuns ?? 0, s.rbi ?? 0, s.strikeouts ?? 0, ba];
+      return [s.atBats ?? 0, s.hits ?? 0, s.walks ?? 0, s.strikeouts ?? 0, s.rbi ?? 0, s.runs ?? 0, s.homeRuns ?? 0];
     }
     case 'basketball': {
       const s = stats as BasketballStats;
@@ -421,9 +418,11 @@ function getStatFields(sport: Sport, position: string): { key: string; label: st
       return [
         { key: 'atBats', label: 'At Bats' },
         { key: 'hits', label: 'Hits' },
-        { key: 'homeRuns', label: 'Home Runs' },
-        { key: 'rbi', label: 'RBI' },
+        { key: 'walks', label: 'Walks' },
         { key: 'strikeouts', label: 'Strikeouts' },
+        { key: 'rbi', label: 'RBI' },
+        { key: 'runs', label: 'Runs' },
+        { key: 'homeRuns', label: 'Home Runs' },
       ];
     case 'basketball':
       return [
@@ -478,7 +477,7 @@ function getDefaultStats(sport: Sport, position: string): PlayerStats {
       return { gamesPlayed: 0, goals: 0, assists: 0, pim: 0, plusMinus: 0 };
     case 'baseball':
     case 'softball':
-      return { gamesPlayed: 0, atBats: 0, hits: 0, homeRuns: 0, rbi: 0, strikeouts: 0 };
+      return { gamesPlayed: 0, atBats: 0, hits: 0, walks: 0, strikeouts: 0, rbi: 0, runs: 0, homeRuns: 0 };
     case 'basketball':
       return { gamesPlayed: 0, points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0 };
     case 'soccer':
@@ -1241,10 +1240,10 @@ export default function TeamStatsScreen() {
                   const getStatKey = (header: string): string => {
                     const keyMap: Record<string, string> = {
                       'G': 'goals', 'A': 'assists', 'PIM': 'pim', '+/-': 'plusMinus',
-                      'AB': 'atBats', 'H': 'hits', 'HR': 'homeRuns', 'RBI': 'rbi', 'K': 'strikeouts',
+                      'AB': 'atBats', 'H': 'hits', 'HR': 'homeRuns', 'RBI': 'rbi', 'K': 'strikeouts', 'BB': 'walks', 'R': 'runs',
                       'PTS': 'points', 'REB': 'rebounds', 'AST': 'assists', 'STL': 'steals', 'BLK': 'blocks',
                       'YC': 'yellowCards',
-                      'IP': 'innings', 'BB': 'walks', 'ER': 'earnedRuns',
+                      'IP': 'innings', 'ER': 'earnedRuns',
                       'MP': 'minutesPlayed', 'SA': 'shotsAgainst', 'SV': 'saves', 'GA': 'goalsAgainst',
                       'GB': 'groundBalls', 'CT': 'causedTurnovers',
                     };

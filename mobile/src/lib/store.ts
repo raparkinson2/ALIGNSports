@@ -207,9 +207,11 @@ export interface BaseballStats {
   gamesPlayed: number;
   atBats: number;
   hits: number;
-  homeRuns: number;
-  rbi: number;
+  walks: number;
   strikeouts: number;
+  rbi: number;
+  runs: number;
+  homeRuns: number;
 }
 
 export interface BaseballPitcherStats {
