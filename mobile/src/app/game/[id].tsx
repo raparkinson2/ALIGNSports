@@ -1675,7 +1675,7 @@ export default function GameDetailScreen() {
                                   <Text className="text-slate-400 text-xs">#{player.number}</Text>
                                 </View>
                                 <View className="flex-row">
-                                  {/* Skater/Batter/Field button */}
+                                  {/* Skater/Batter/Field/Player button */}
                                   <Pressable
                                     onPress={() => {
                                       if (!canEdit) return;
@@ -1689,7 +1689,7 @@ export default function GameDetailScreen() {
                                     )}
                                   >
                                     <Text className={cn('text-xs font-medium', canEdit ? 'text-violet-400' : 'text-slate-500')}>
-                                      {teamSettings.sport === 'baseball' || teamSettings.sport === 'softball' ? 'Batter' : teamSettings.sport === 'lacrosse' ? 'Field' : 'Skater'}
+                                      {teamSettings.sport === 'baseball' || teamSettings.sport === 'softball' ? 'Batter' : teamSettings.sport === 'lacrosse' ? 'Field' : teamSettings.sport === 'hockey' ? 'Skater' : 'Player'}
                                     </Text>
                                   </Pressable>
                                   {/* Goalie/Pitcher button */}
