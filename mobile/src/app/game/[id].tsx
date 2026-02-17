@@ -1901,14 +1901,14 @@ export default function GameDetailScreen() {
 
                       {/* Table Header for Players */}
                       <View className="flex-row items-center px-2 py-2 bg-slate-700/50 border-b border-slate-700">
-                        <View className="flex-1" style={{ minWidth: 70 }}>
-                          <Text className="text-slate-300 font-semibold text-[11px]">Player</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text className="text-slate-300 font-semibold text-xs">Player</Text>
                         </View>
-                        <View style={{ width: 26 }}>
+                        <View style={{ width: 32 }}>
                           <Text className="text-slate-300 font-semibold text-center text-[10px]">Pos</Text>
                         </View>
                         {getGameStatHeaders(teamSettings.sport).map((header) => (
-                          <View key={header} style={{ width: 26 }}>
+                          <View key={header} style={{ width: 28 }}>
                             <Text className="text-slate-300 font-semibold text-center text-[10px]">{header}</Text>
                           </View>
                         ))}
@@ -1948,19 +1948,19 @@ export default function GameDetailScreen() {
                                 showBorder ? 'border-b border-slate-700/50' : ''
                               )}
                             >
-                              <View className="flex-1 flex-row items-center" style={{ minWidth: 70 }}>
-                                <Text className="text-violet-400 font-semibold text-[10px] mr-0.5">#{player.number}</Text>
-                                <Text className="text-white text-xs font-medium" numberOfLines={1} style={{ flex: 1 }}>
+                              <View className="flex-row items-center" style={{ flex: 1 }}>
+                                <Text className="text-violet-400 font-semibold text-xs mr-1">#{player.number}</Text>
+                                <Text className="text-white text-sm font-medium" numberOfLines={1} style={{ flex: 1 }}>
                                   {formatShortName(getPlayerName(player))}
                                 </Text>
                               </View>
-                              <View style={{ width: 26 }}>
-                                <Text className="text-slate-400 text-center text-[10px]">{getDisplayPosition(player)}</Text>
+                              <View style={{ width: 32 }}>
+                                <Text className="text-slate-400 text-center text-xs">{getDisplayPosition(player)}</Text>
                               </View>
                               {statValues.map((value, i) => (
-                                <View key={i} style={{ width: 26 }}>
+                                <View key={i} style={{ width: 28 }}>
                                   <Text className={cn(
-                                    'text-center text-[11px]',
+                                    'text-center text-xs',
                                     hasStats ? 'text-white font-medium' : 'text-slate-500'
                                   )}>
                                     {value}
@@ -1977,12 +1977,12 @@ export default function GameDetailScreen() {
                         <>
                           {/* Goalie Header */}
                           <View className="flex-row items-center px-2 py-2 bg-slate-700/50 border-b border-slate-700">
-                            <View className="flex-1" style={{ minWidth: 70 }}>
-                              <Text className="text-slate-300 font-semibold text-[11px]">Goalies</Text>
+                            <View style={{ flex: 1 }}>
+                              <Text className="text-slate-300 font-semibold text-xs">Goalies</Text>
                             </View>
-                            <View style={{ width: 26 }} />
+                            <View style={{ width: 32 }} />
                             {getGameGoalieHeaders(teamSettings.sport).map((header) => (
-                              <View key={header} style={{ width: 26 }}>
+                              <View key={header} style={{ width: 28 }}>
                                 <Text className="text-slate-300 font-semibold text-center text-[10px]">{header}</Text>
                               </View>
                             ))}
@@ -2009,19 +2009,19 @@ export default function GameDetailScreen() {
                                   index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
                                 )}
                               >
-                                <View className="flex-1 flex-row items-center" style={{ minWidth: 70 }}>
-                                  <Text className="text-violet-400 font-semibold text-[10px] mr-0.5">#{player.number}</Text>
-                                  <Text className="text-white text-xs font-medium" numberOfLines={1} style={{ flex: 1 }}>
+                                <View className="flex-row items-center" style={{ flex: 1 }}>
+                                  <Text className="text-violet-400 font-semibold text-xs mr-1">#{player.number}</Text>
+                                  <Text className="text-white text-sm font-medium" numberOfLines={1} style={{ flex: 1 }}>
                                     {formatShortName(getPlayerName(player))}
                                   </Text>
                                 </View>
-                                <View style={{ width: 26 }}>
-                                  <Text className="text-slate-400 text-center text-[10px]">G</Text>
+                                <View style={{ width: 32 }}>
+                                  <Text className="text-slate-400 text-center text-xs">G</Text>
                                 </View>
                                 {statValues.map((value, i) => (
-                                  <View key={i} style={{ width: 26 }}>
+                                  <View key={i} style={{ width: 28 }}>
                                     <Text className={cn(
-                                      'text-center text-[11px]',
+                                      'text-center text-xs',
                                       hasStats ? 'text-white font-medium' : 'text-slate-500'
                                     )}>
                                       {value}
@@ -2040,12 +2040,12 @@ export default function GameDetailScreen() {
                         <>
                           {/* Pitcher Header */}
                           <View className="flex-row items-center px-2 py-2 bg-slate-700/50 border-b border-slate-700">
-                            <View className="flex-1" style={{ minWidth: 70 }}>
-                              <Text className="text-slate-300 font-semibold text-[11px]">Pitchers</Text>
+                            <View style={{ flex: 1 }}>
+                              <Text className="text-slate-300 font-semibold text-xs">Pitchers</Text>
                             </View>
-                            <View style={{ width: 26 }} />
+                            <View style={{ width: 32 }} />
                             {getGamePitcherHeaders().map((header) => (
-                              <View key={header} style={{ width: 26 }}>
+                              <View key={header} style={{ width: 28 }}>
                                 <Text className="text-slate-300 font-semibold text-center text-[10px]">{header}</Text>
                               </View>
                             ))}
@@ -2071,19 +2071,19 @@ export default function GameDetailScreen() {
                                   index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
                                 )}
                               >
-                                <View className="flex-1 flex-row items-center" style={{ minWidth: 70 }}>
-                                  <Text className="text-violet-400 font-semibold text-[10px] mr-0.5">#{player.number}</Text>
-                                  <Text className="text-white text-xs font-medium" numberOfLines={1} style={{ flex: 1 }}>
+                                <View className="flex-row items-center" style={{ flex: 1 }}>
+                                  <Text className="text-violet-400 font-semibold text-xs mr-1">#{player.number}</Text>
+                                  <Text className="text-white text-sm font-medium" numberOfLines={1} style={{ flex: 1 }}>
                                     {formatShortName(getPlayerName(player))}
                                   </Text>
                                 </View>
-                                <View style={{ width: 26 }}>
-                                  <Text className="text-slate-400 text-center text-[10px]">P</Text>
+                                <View style={{ width: 32 }}>
+                                  <Text className="text-slate-400 text-center text-xs">P</Text>
                                 </View>
                                 {statValues.map((value, i) => (
-                                  <View key={i} style={{ width: 26 }}>
+                                  <View key={i} style={{ width: 28 }}>
                                     <Text className={cn(
-                                      'text-center text-[11px]',
+                                      'text-center text-xs',
                                       hasStats ? 'text-white font-medium' : 'text-slate-500'
                                     )}>
                                       {value}
