@@ -315,7 +315,7 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
               {player.isInjured && (
                 <View className="flex-row items-center ml-1.5">
                   <Text className="text-red-400 font-black text-xs">+</Text>
-                  {player.statusEndDate ? (
+                  {player.statusEndDate && player.statusEndDate.length >= 10 ? (
                     <Text className="text-red-400/80 text-[10px] ml-0.5">
                       (until {format(parseISO(player.statusEndDate), 'MMM d')})
                     </Text>
@@ -330,7 +330,7 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
               {player.isSuspended && (
                 <View className="flex-row items-center ml-1.5">
                   <Text className="text-red-400 font-bold text-[10px]">SUS</Text>
-                  {player.statusEndDate ? (
+                  {player.statusEndDate && player.statusEndDate.length >= 10 ? (
                     <Text className="text-red-400/80 text-[10px] ml-0.5">
                       (until {format(parseISO(player.statusEndDate), 'MMM d')})
                     </Text>
@@ -1127,7 +1127,7 @@ export default function RosterScreen() {
                       >
                         <Calendar size={18} color="#f59e0b" />
                         <Text className="text-white ml-3 flex-1">
-                          {statusEndDate
+                          {statusEndDate && statusEndDate.length >= 10
                             ? format(parseISO(statusEndDate), 'MMM d, yyyy')
                             : 'Select end date'}
                         </Text>
@@ -1149,7 +1149,7 @@ export default function RosterScreen() {
                       {showEndDatePicker && (
                         <View className="mt-3">
                           <DateTimePicker
-                            value={statusEndDate ? parseISO(statusEndDate) : new Date()}
+                            value={statusEndDate && statusEndDate.length >= 10 ? parseISO(statusEndDate) : new Date()}
                             mode="date"
                             display={Platform.OS === 'ios' ? 'inline' : 'default'}
                             onChange={(event, selectedDate) => {

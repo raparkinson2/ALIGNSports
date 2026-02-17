@@ -1926,7 +1926,7 @@ export default function AdminScreen() {
                       >
                         <Calendar size={18} color="#f59e0b" />
                         <Text className="text-white ml-3 flex-1">
-                          {selectedPlayer.statusEndDate
+                          {selectedPlayer.statusEndDate && selectedPlayer.statusEndDate.length >= 10
                             ? format(parseISO(selectedPlayer.statusEndDate), 'MMM d, yyyy')
                             : 'Select end date'}
                         </Text>
@@ -1949,7 +1949,7 @@ export default function AdminScreen() {
                       {showSelectedPlayerEndDatePicker && (
                         <View className="mt-3">
                           <DateTimePicker
-                            value={selectedPlayer.statusEndDate ? parseISO(selectedPlayer.statusEndDate) : new Date()}
+                            value={selectedPlayer.statusEndDate && selectedPlayer.statusEndDate.length >= 10 ? parseISO(selectedPlayer.statusEndDate) : new Date()}
                             mode="date"
                             display={Platform.OS === 'ios' ? 'inline' : 'default'}
                             onChange={(event, selectedDate) => {
@@ -2631,7 +2631,7 @@ export default function AdminScreen() {
                     >
                       <Calendar size={18} color="#f59e0b" />
                       <Text className="text-white ml-3 flex-1">
-                        {newPlayerStatusEndDate
+                        {newPlayerStatusEndDate && newPlayerStatusEndDate.length >= 10
                           ? format(parseISO(newPlayerStatusEndDate), 'MMM d, yyyy')
                           : 'Select end date'}
                       </Text>
@@ -2653,7 +2653,7 @@ export default function AdminScreen() {
                     {showNewPlayerEndDatePicker && (
                       <View className="mt-3">
                         <DateTimePicker
-                          value={newPlayerStatusEndDate ? parseISO(newPlayerStatusEndDate) : new Date()}
+                          value={newPlayerStatusEndDate && newPlayerStatusEndDate.length >= 10 ? parseISO(newPlayerStatusEndDate) : new Date()}
                           mode="date"
                           display={Platform.OS === 'ios' ? 'inline' : 'default'}
                           onChange={(event, selectedDate) => {
