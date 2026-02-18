@@ -2569,7 +2569,7 @@ export const useTeamStore = create<TeamStore>()(
     {
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 11, // Bumped version for multi-team support
+      version: 12, // Bumped version to fix payment status calculation
       // Migration function to preserve user data during app updates
       // CRITICAL: Without this, version changes would reset all user data!
       migrate: (persistedState: unknown, version: number) => {
@@ -2577,7 +2577,62 @@ export const useTeamStore = create<TeamStore>()(
 
         // Always preserve existing data - just add any new fields with defaults
         // This ensures users never lose their data during updates
-        console.log(`Migrating store from version ${version} to version 11`);
+        console.log(`Migrating store from version ${version} to version 12`);
+
+        // Fix payment statuses - recalculate based on actual amounts paid
+        if (version < 12) {
+          // Fix paymentPeriods in root state
+          const paymentPeriods = state.paymentPeriods as Array<{
+            id: string;
+            amount: number;
+            playerPayments: Array<{
+              playerId: string;
+              status: string;
+              amount?: number;
+              entries?: Array<{ amount: number }>;
+            }>;
+          }> | undefined;
+
+          if (paymentPeriods) {
+            state.paymentPeriods = paymentPeriods.map((period) => ({
+              ...period,
+              playerPayments: period.playerPayments.map((pp) => {
+                const totalPaid = pp.entries?.reduce((sum, e) => sum + e.amount, 0) ?? pp.amount ?? 0;
+                const correctStatus = totalPaid >= period.amount ? 'paid' : totalPaid > 0 ? 'partial' : 'unpaid';
+                return { ...pp, status: correctStatus, amount: totalPaid };
+              }),
+            }));
+          }
+
+          // Also fix paymentPeriods in teams array
+          const teams = state.teams as Array<{
+            id: string;
+            paymentPeriods?: Array<{
+              id: string;
+              amount: number;
+              playerPayments: Array<{
+                playerId: string;
+                status: string;
+                amount?: number;
+                entries?: Array<{ amount: number }>;
+              }>;
+            }>;
+          }> | undefined;
+
+          if (teams) {
+            state.teams = teams.map((team) => ({
+              ...team,
+              paymentPeriods: team.paymentPeriods?.map((period) => ({
+                ...period,
+                playerPayments: period.playerPayments.map((pp) => {
+                  const totalPaid = pp.entries?.reduce((sum, e) => sum + e.amount, 0) ?? pp.amount ?? 0;
+                  const correctStatus = totalPaid >= period.amount ? 'paid' : totalPaid > 0 ? 'partial' : 'unpaid';
+                  return { ...pp, status: correctStatus, amount: totalPaid };
+                }),
+              })),
+            }));
+          }
+        }
 
         // Return the existing state - Zustand will merge with defaults
         // Any new fields not in persisted state will use initial values
