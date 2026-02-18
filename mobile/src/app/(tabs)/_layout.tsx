@@ -61,7 +61,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Games',
+          title: 'Events',
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
