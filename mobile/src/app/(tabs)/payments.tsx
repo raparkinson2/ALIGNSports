@@ -43,6 +43,14 @@ import { useResponsive } from '@/lib/useResponsive';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 
+// Helper to calculate correct payment status from actual payment amounts
+const calculatePaymentStatus = (paidAmount: number | undefined, periodAmount: number): 'paid' | 'partial' | 'unpaid' => {
+  const paid = paidAmount ?? 0;
+  if (paid >= periodAmount) return 'paid';
+  if (paid > 0) return 'partial';
+  return 'unpaid';
+};
+
 // Helper to get due date color based on urgency
 const getDueDateColor = (dueDate: string, allPaid: boolean): { text: string; hex: string } => {
   if (allPaid) {
@@ -1980,6 +1988,7 @@ export default function PaymentsScreen() {
                       const daysOverdue = selectedPeriod.dueDate ? Math.max(0, differenceInDays(new Date(), parseISO(selectedPeriod.dueDate))) : 0;
 
                       // Group players by status: partial/owing first, unpaid second, paid last
+                      // Calculate correct status based on actual amounts, not stored status
                       const groupedPayments = [...selectedPeriod.playerPayments]
                         .filter(pp => {
                           const player = players.find(p => p.id === pp.playerId);
@@ -1992,18 +2001,24 @@ export default function PaymentsScreen() {
                             if (status === 'unpaid') return 2;
                             return 3; // paid
                           };
-                          return getOrder(a.status) - getOrder(b.status);
+                          // Calculate actual status for sorting
+                          const statusA = calculatePaymentStatus(a.amount, selectedPeriod.amount);
+                          const statusB = calculatePaymentStatus(b.amount, selectedPeriod.amount);
+                          return getOrder(statusA) - getOrder(statusB);
                         });
 
                       return groupedPayments.map((pp) => {
                         const player = players.find((p) => p.id === pp.playerId);
                         if (!player) return null;
 
+                        // Calculate correct status based on actual amounts
+                        const correctStatus = calculatePaymentStatus(pp.amount, selectedPeriod.amount);
+
                         return (
                           <SwipeablePlayerPaymentRow
                             key={pp.playerId}
                             player={player}
-                            status={pp.status}
+                            status={correctStatus}
                             paidAmount={pp.amount}
                             totalAmount={selectedPeriod.amount}
                             periodType={selectedPeriod.type ?? 'dues'}
