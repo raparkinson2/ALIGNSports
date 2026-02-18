@@ -61,7 +61,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Schedule',
+          title: 'Games',
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
@@ -152,7 +152,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="payments"
         options={{
-          title: 'Payments',
+          title: 'Pay',
           href: showPayments ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
             <View
