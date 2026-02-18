@@ -2593,14 +2593,17 @@ export const useTeamStore = create<TeamStore>()(
             }>;
           }> | undefined;
 
-          if (paymentPeriods) {
+          if (paymentPeriods && Array.isArray(paymentPeriods)) {
             state.paymentPeriods = paymentPeriods.map((period) => ({
               ...period,
-              playerPayments: period.playerPayments.map((pp) => {
-                const totalPaid = pp.entries?.reduce((sum, e) => sum + e.amount, 0) ?? pp.amount ?? 0;
-                const correctStatus = totalPaid >= period.amount ? 'paid' : totalPaid > 0 ? 'partial' : 'unpaid';
-                return { ...pp, status: correctStatus, amount: totalPaid };
-              }),
+              playerPayments: Array.isArray(period?.playerPayments)
+                ? period.playerPayments.map((pp) => {
+                    const totalPaid = pp?.entries?.reduce((sum, e) => sum + (e?.amount ?? 0), 0) ?? pp?.amount ?? 0;
+                    const periodAmount = period?.amount ?? 0;
+                    const correctStatus = totalPaid >= periodAmount ? 'paid' : totalPaid > 0 ? 'partial' : 'unpaid';
+                    return { ...pp, status: correctStatus, amount: totalPaid };
+                  })
+                : [],
             }));
           }
 
@@ -2619,17 +2622,22 @@ export const useTeamStore = create<TeamStore>()(
             }>;
           }> | undefined;
 
-          if (teams) {
+          if (teams && Array.isArray(teams)) {
             state.teams = teams.map((team) => ({
               ...team,
-              paymentPeriods: team.paymentPeriods?.map((period) => ({
-                ...period,
-                playerPayments: period.playerPayments.map((pp) => {
-                  const totalPaid = pp.entries?.reduce((sum, e) => sum + e.amount, 0) ?? pp.amount ?? 0;
-                  const correctStatus = totalPaid >= period.amount ? 'paid' : totalPaid > 0 ? 'partial' : 'unpaid';
-                  return { ...pp, status: correctStatus, amount: totalPaid };
-                }),
-              })),
+              paymentPeriods: Array.isArray(team?.paymentPeriods)
+                ? team.paymentPeriods.map((period) => ({
+                    ...period,
+                    playerPayments: Array.isArray(period?.playerPayments)
+                      ? period.playerPayments.map((pp) => {
+                          const totalPaid = pp?.entries?.reduce((sum, e) => sum + (e?.amount ?? 0), 0) ?? pp?.amount ?? 0;
+                          const periodAmount = period?.amount ?? 0;
+                          const correctStatus = totalPaid >= periodAmount ? 'paid' : totalPaid > 0 ? 'partial' : 'unpaid';
+                          return { ...pp, status: correctStatus, amount: totalPaid };
+                        })
+                      : [],
+                  }))
+                : undefined,
             }));
           }
         }
