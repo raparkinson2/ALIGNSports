@@ -53,7 +53,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: '#67e8f9',
         tabBarInactiveTintColor: '#64748b',
         tabBarLabelStyle: {
-          fontSize: 10,
+          fontSize: 9,
           fontWeight: '600',
         },
       }}
@@ -152,7 +152,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="payments"
         options={{
-          title: 'Pay',
+          title: 'Payments',
           href: showPayments ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
             <View
