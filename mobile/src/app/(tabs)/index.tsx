@@ -2205,17 +2205,15 @@ export default function ScheduleScreen() {
               <Text className="text-white text-lg font-semibold">Team Record</Text>
               <Pressable
                 onPress={() => {
-                  const winStreak = parseInt(recordWinStreak, 10) || 0;
-                  const losingStreak = parseInt(recordLosingStreak, 10) || 0;
-                  const teamGoals = parseInt(recordTeamGoals, 10) || 0;
                   const newRecord: TeamRecord = {
                     wins: parseInt(recordWins, 10) || 0,
                     losses: parseInt(recordLosses, 10) || 0,
                     ties: (sport === 'hockey' || sport === 'soccer') ? (parseInt(recordTies, 10) || 0) : undefined,
                     otLosses: sport === 'hockey' ? (parseInt(recordOtLosses, 10) || 0) : undefined,
-                    longestWinStreak: winStreak > 0 ? winStreak : undefined,
-                    longestLosingStreak: losingStreak > 0 ? losingStreak : undefined,
-                    teamGoals: (sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') && teamGoals > 0 ? teamGoals : undefined,
+                    // Preserve existing streak and goals values (edited in Stats & Analytics)
+                    longestWinStreak: teamSettings.record?.longestWinStreak,
+                    longestLosingStreak: teamSettings.record?.longestLosingStreak,
+                    teamGoals: teamSettings.record?.teamGoals,
                   };
                   setTeamSettings({ record: newRecord });
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -2280,47 +2278,6 @@ export default function ScheduleScreen() {
                     <TextInput
                       value={recordOtLosses}
                       onChangeText={setRecordOtLosses}
-                      keyboardType="number-pad"
-                      placeholder="0"
-                      placeholderTextColor="#64748b"
-                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-xl text-center font-bold"
-                    />
-                  </View>
-                )}
-
-                {/* Longest Win Streak */}
-                <View className="w-1/2 pr-2 mb-4">
-                  <Text className="text-slate-400 text-sm mb-2">Win Streak</Text>
-                  <TextInput
-                    value={recordWinStreak}
-                    onChangeText={setRecordWinStreak}
-                    keyboardType="number-pad"
-                    placeholder="0"
-                    placeholderTextColor="#64748b"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-xl text-center font-bold"
-                  />
-                </View>
-
-                {/* Longest Losing Streak */}
-                <View className="w-1/2 pl-2 mb-4">
-                  <Text className="text-slate-400 text-sm mb-2">Losing Streak</Text>
-                  <TextInput
-                    value={recordLosingStreak}
-                    onChangeText={setRecordLosingStreak}
-                    keyboardType="number-pad"
-                    placeholder="0"
-                    placeholderTextColor="#64748b"
-                    className="bg-slate-800 rounded-xl px-4 py-3 text-white text-xl text-center font-bold"
-                  />
-                </View>
-
-                {/* Team Goals (Hockey, Soccer, Lacrosse) */}
-                {(sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') && (
-                  <View className="w-1/2 pr-2 mb-4">
-                    <Text className="text-slate-400 text-sm mb-2">Team Goals</Text>
-                    <TextInput
-                      value={recordTeamGoals}
-                      onChangeText={setRecordTeamGoals}
                       keyboardType="number-pad"
                       placeholder="0"
                       placeholderTextColor="#64748b"

@@ -2,7 +2,7 @@ import { View, Text, ScrollView, Pressable, TextInput, Modal, KeyboardAvoidingVi
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Trophy, Target, Crosshair, Calendar, Shield, Award, Plus, X, Star, TrendingUp, Users, Flame, TrendingDown } from 'lucide-react-native';
+import { ArrowLeft, Trophy, Target, Crosshair, Calendar, Shield, Award, Plus, X, Star, TrendingUp, Users, Flame, TrendingDown, Edit3 } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useMemo, useState } from 'react';
@@ -35,6 +35,7 @@ export default function TeamRecordsScreen() {
   const router = useRouter();
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore((s) => s.teamSettings);
+  const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const addChampionship = useTeamStore((s) => s.addChampionship);
   const removeChampionship = useTeamStore((s) => s.removeChampionship);
   const isAdmin = useTeamStore((s) => s.isAdmin);
@@ -44,6 +45,12 @@ export default function TeamRecordsScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newYear, setNewYear] = useState('');
   const [newTitle, setNewTitle] = useState('');
+
+  // Edit current season stats modal
+  const [showEditStatsModal, setShowEditStatsModal] = useState(false);
+  const [editWinStreak, setEditWinStreak] = useState('');
+  const [editLosingStreak, setEditLosingStreak] = useState('');
+  const [editTeamGoals, setEditTeamGoals] = useState('');
 
   const seasonHistory = teamSettings.seasonHistory || [];
 
@@ -557,6 +564,32 @@ export default function TeamRecordsScreen() {
     removeChampionship(id);
   };
 
+  const handleOpenEditStatsModal = () => {
+    const currentRecord = teamSettings.record;
+    setEditWinStreak((currentRecord?.longestWinStreak ?? 0).toString());
+    setEditLosingStreak((currentRecord?.longestLosingStreak ?? 0).toString());
+    setEditTeamGoals((currentRecord?.teamGoals ?? 0).toString());
+    setShowEditStatsModal(true);
+  };
+
+  const handleSaveStats = () => {
+    const winStreak = parseInt(editWinStreak, 10) || 0;
+    const losingStreak = parseInt(editLosingStreak, 10) || 0;
+    const teamGoals = parseInt(editTeamGoals, 10) || 0;
+
+    const currentRecord = teamSettings.record || { wins: 0, losses: 0 };
+    setTeamSettings({
+      record: {
+        ...currentRecord,
+        longestWinStreak: winStreak > 0 ? winStreak : undefined,
+        longestLosingStreak: losingStreak > 0 ? losingStreak : undefined,
+        teamGoals: (sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') && teamGoals > 0 ? teamGoals : undefined,
+      },
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowEditStatsModal(false);
+  };
+
   return (
     <View className="flex-1 bg-slate-900">
       <Stack.Screen options={{ headerShown: false }} />
@@ -658,6 +691,17 @@ export default function TeamRecordsScreen() {
               <Text className="text-slate-300 text-xs font-semibold uppercase tracking-wider ml-2">
                 Team Records
               </Text>
+              {isAdmin() && (
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    handleOpenEditStatsModal();
+                  }}
+                  className="ml-auto bg-green-500/20 rounded-full p-1.5"
+                >
+                  <Edit3 size={14} color="#22c55e" />
+                </Pressable>
+              )}
             </View>
 
             <View className="bg-slate-800/60 rounded-xl border border-slate-700/50 overflow-hidden">
@@ -822,6 +866,87 @@ export default function TeamRecordsScreen() {
                   placeholderTextColor="#64748b"
                   className="bg-slate-800 rounded-xl px-4 py-3 text-white"
                 />
+              </View>
+            </KeyboardAvoidingView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Edit Current Season Stats Modal */}
+      <Modal
+        visible={showEditStatsModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowEditStatsModal(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              className="flex-1"
+            >
+              <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setShowEditStatsModal(false);
+                  }}
+                >
+                  <X size={24} color="#64748b" />
+                </Pressable>
+                <Text className="text-white text-lg font-semibold">Edit Season Stats</Text>
+                <Pressable onPress={handleSaveStats}>
+                  <Text className="text-green-400 font-semibold">Save</Text>
+                </Pressable>
+              </View>
+
+              <View className="px-5 pt-6">
+                <Text className="text-slate-400 text-sm mb-4">
+                  Edit stats for the current season ({teamSettings.currentSeasonName || 'Current'})
+                </Text>
+
+                <View className="flex-row flex-wrap">
+                  {/* Win Streak */}
+                  <View className="w-1/2 pr-2 mb-4">
+                    <Text className="text-slate-400 text-sm mb-2">Longest Win Streak</Text>
+                    <TextInput
+                      value={editWinStreak}
+                      onChangeText={setEditWinStreak}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      placeholderTextColor="#64748b"
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-xl text-center font-bold"
+                    />
+                  </View>
+
+                  {/* Losing Streak */}
+                  <View className="w-1/2 pl-2 mb-4">
+                    <Text className="text-slate-400 text-sm mb-2">Longest Losing Streak</Text>
+                    <TextInput
+                      value={editLosingStreak}
+                      onChangeText={setEditLosingStreak}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      placeholderTextColor="#64748b"
+                      className="bg-slate-800 rounded-xl px-4 py-3 text-white text-xl text-center font-bold"
+                    />
+                  </View>
+
+                  {/* Team Goals (Hockey, Soccer, Lacrosse) */}
+                  {(sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') && (
+                    <View className="w-1/2 pr-2 mb-4">
+                      <Text className="text-slate-400 text-sm mb-2">Team Goals</Text>
+                      <TextInput
+                        value={editTeamGoals}
+                        onChangeText={setEditTeamGoals}
+                        keyboardType="number-pad"
+                        placeholder="0"
+                        placeholderTextColor="#64748b"
+                        className="bg-slate-800 rounded-xl px-4 py-3 text-white text-xl text-center font-bold"
+                      />
+                    </View>
+                  )}
+                </View>
               </View>
             </KeyboardAvoidingView>
           </SafeAreaView>
