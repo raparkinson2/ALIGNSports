@@ -8,14 +8,13 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { useTeamStore, Sport } from '@/lib/store';
+import { useTeamStore, Sport, Team } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import { signUpWithEmail } from '@/lib/supabase-auth';
 import { secureRegisterInvitedPlayer, secureRegisterInvitedPlayerByPhone, secureLoginWithEmail, secureLoginWithPhone } from '@/lib/secure-auth';
 import { signInWithEmail } from '@/lib/supabase-auth';
 import { checkPendingInvitation, acceptTeamInvitation, TeamInvitation } from '@/lib/team-invitations';
-import { downloadTeamFromSupabase } from '@/lib/team-sync';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -302,16 +301,26 @@ export default function RegisterScreen() {
         }
       }
 
-      // If this is a Supabase invitation (cross-device), download team data from Supabase
+      // If this is a Supabase invitation (cross-device), use team data from the invitation
       if (supabaseInvitation) {
         console.log('REGISTER: Joining team from Supabase invitation:', supabaseInvitation.team_name);
         console.log('REGISTER: Team ID:', supabaseInvitation.team_id);
 
-        // Try to download the existing team data from Supabase
-        const downloadResult = await downloadTeamFromSupabase(supabaseInvitation.team_id);
+        // Parse team data from the invitation (stored as JSON string)
+        let teamData: Team | null = null;
+        if (supabaseInvitation.team_data) {
+          try {
+            teamData = typeof supabaseInvitation.team_data === 'string'
+              ? JSON.parse(supabaseInvitation.team_data)
+              : supabaseInvitation.team_data as unknown as Team;
+            console.log('REGISTER: Parsed team data with', teamData?.players?.length || 0, 'players');
+          } catch (parseErr) {
+            console.error('REGISTER: Failed to parse team_data:', parseErr);
+          }
+        }
 
-        if (downloadResult.success && downloadResult.team) {
-          console.log('REGISTER: Downloaded team data from Supabase');
+        if (teamData && teamData.players) {
+          console.log('REGISTER: Using team data from invitation');
 
           // Create the new player to add to the team
           const newPlayerId = `player-${Date.now()}`;
@@ -330,12 +339,12 @@ export default function RegisterScreen() {
             status: 'active' as const,
           };
 
-          // Merge the new player into the downloaded team's players
-          const teamPlayers = downloadResult.team.players || [];
+          // Merge the new player into the team's players
+          const teamPlayers = teamData.players || [];
           const fullTeam = {
-            ...downloadResult.team,
+            ...teamData,
             id: supabaseInvitation.team_id,
-            teamName: downloadResult.team.teamName || supabaseInvitation.team_name,
+            teamName: teamData.teamName || supabaseInvitation.team_name,
             players: [...teamPlayers, newPlayer],
           };
 
@@ -357,8 +366,8 @@ export default function RegisterScreen() {
           setIsLoading(false);
           return;
         } else {
-          // Team data not found in Supabase - fall back to creating a new team
-          console.log('REGISTER: Team not found in Supabase, creating new team');
+          // Team data not found in invitation - fall back to creating a new team
+          console.log('REGISTER: No team data in invitation, creating new team');
 
           const newPlayerId = `player-${Date.now()}`;
           const newPlayer = {
@@ -444,16 +453,26 @@ export default function RegisterScreen() {
         }
       }
 
-      // If this is a Supabase invitation (cross-device), download team data and join
+      // If this is a Supabase invitation (cross-device), use team data from the invitation
       if (supabaseInvitation) {
         console.log('REGISTER: Existing user joining team from Supabase invitation:', supabaseInvitation.team_name);
         console.log('REGISTER: Team ID:', supabaseInvitation.team_id);
 
-        // Try to download the existing team data from Supabase
-        const downloadResult = await downloadTeamFromSupabase(supabaseInvitation.team_id);
+        // Parse team data from the invitation (stored as JSON string)
+        let teamData: Team | null = null;
+        if (supabaseInvitation.team_data) {
+          try {
+            teamData = typeof supabaseInvitation.team_data === 'string'
+              ? JSON.parse(supabaseInvitation.team_data)
+              : supabaseInvitation.team_data as unknown as Team;
+            console.log('REGISTER: Parsed team data with', teamData?.players?.length || 0, 'players');
+          } catch (parseErr) {
+            console.error('REGISTER: Failed to parse team_data:', parseErr);
+          }
+        }
 
-        if (downloadResult.success && downloadResult.team) {
-          console.log('REGISTER: Downloaded team data from Supabase for existing user');
+        if (teamData && teamData.players) {
+          console.log('REGISTER: Using team data from invitation for existing user');
 
           // Create a new player object for the new team
           const newPlayerId = `player-${Date.now()}`;
@@ -472,12 +491,12 @@ export default function RegisterScreen() {
             status: 'active' as const,
           };
 
-          // Merge the new player into the downloaded team's players
-          const teamPlayers = downloadResult.team.players || [];
+          // Merge the new player into the team's players
+          const teamPlayers = teamData.players || [];
           const fullTeam = {
-            ...downloadResult.team,
+            ...teamData,
             id: supabaseInvitation.team_id,
-            teamName: downloadResult.team.teamName || supabaseInvitation.team_name,
+            teamName: teamData.teamName || supabaseInvitation.team_name,
             players: [...teamPlayers, newPlayer],
           };
 
@@ -505,8 +524,8 @@ export default function RegisterScreen() {
           setIsLoading(false);
           return;
         } else {
-          // Team data not found in Supabase - fall back to creating new team
-          console.log('REGISTER: Team not found in Supabase for existing user, creating new team');
+          // Team data not found in invitation - fall back to creating new team
+          console.log('REGISTER: No team data in invitation for existing user, creating new team');
 
           const newPlayerId = `player-${Date.now()}`;
           const newPlayer = {

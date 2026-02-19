@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import type { Team } from './store';
 
 export interface TeamInvitation {
   id: string;
@@ -14,6 +15,7 @@ export interface TeamInvitation {
   invited_by_email?: string;
   created_at: string;
   accepted_at?: string;
+  team_data?: string; // JSON string of full team data
 }
 
 /**
@@ -107,13 +109,27 @@ export async function createTeamInvitation(invitation: {
   position?: string;
   roles?: string[];
   invited_by_email?: string;
+  team_data?: Team; // Full team data to store
 }): Promise<{ success: boolean; invitationId?: string; error?: string }> {
   try {
+    console.log('INVITATION: Creating invitation for team:', invitation.team_name, 'team_id:', invitation.team_id);
+
     const normalizedData = {
-      ...invitation,
+      team_id: invitation.team_id,
+      team_name: invitation.team_name,
       email: invitation.email?.toLowerCase(),
       phone: invitation.phone?.replace(/\D/g, ''), // Store normalized phone
+      first_name: invitation.first_name,
+      last_name: invitation.last_name,
+      jersey_number: invitation.jersey_number,
+      position: invitation.position,
+      roles: invitation.roles,
+      invited_by_email: invitation.invited_by_email,
+      // Store full team data as JSON string
+      team_data: invitation.team_data ? JSON.stringify(invitation.team_data) : null,
     };
+
+    console.log('INVITATION: Inserting into Supabase with team_data:', !!normalizedData.team_data);
 
     const { data, error } = await supabase
       .from('team_invitations')
@@ -122,17 +138,19 @@ export async function createTeamInvitation(invitation: {
       .single();
 
     if (error) {
-      console.error('Error creating invitation:', error);
+      console.error('INVITATION: Error creating invitation:', error.message, error.code);
       // If table doesn't exist, return gracefully
       if (error.message?.includes('does not exist') || error.code === '42P01') {
+        console.log('INVITATION: Table does not exist, returning gracefully');
         return { success: true }; // Gracefully handle missing table
       }
       return { success: false, error: error.message };
     }
 
+    console.log('INVITATION: Created successfully with ID:', data?.id);
     return { success: true, invitationId: data?.id };
-  } catch (err) {
-    console.error('createTeamInvitation error:', err);
+  } catch (err: any) {
+    console.error('INVITATION: createTeamInvitation error:', err?.message || err);
     return { success: false, error: 'Failed to create invitation' };
   }
 }
@@ -160,7 +178,7 @@ export async function acceptTeamInvitation(invitationId: string): Promise<{ succ
 }
 
 /**
- * Get team data for an invitation (minimal info needed for joining)
+ * Get team data for an invitation (includes full team data if available)
  */
 export async function getTeamDataForInvitation(invitationId: string): Promise<{
   success: boolean;
@@ -176,6 +194,7 @@ export async function getTeamDataForInvitation(invitationId: string): Promise<{
     position?: string;
     roles?: string[];
   };
+  fullTeamData?: Team; // Full team data from JSON
   error?: string;
 }> {
   try {
@@ -187,6 +206,19 @@ export async function getTeamDataForInvitation(invitationId: string): Promise<{
 
     if (error || !data) {
       return { success: false, error: error?.message || 'Invitation not found' };
+    }
+
+    // Parse full team data if available
+    let fullTeamData: Team | undefined;
+    if (data.team_data) {
+      try {
+        fullTeamData = typeof data.team_data === 'string'
+          ? JSON.parse(data.team_data)
+          : data.team_data;
+        console.log('INVITATION: Parsed full team data with', fullTeamData?.players?.length || 0, 'players');
+      } catch (parseErr) {
+        console.error('INVITATION: Failed to parse team_data JSON:', parseErr);
+      }
     }
 
     return {
@@ -203,6 +235,7 @@ export async function getTeamDataForInvitation(invitationId: string): Promise<{
         position: data.position,
         roles: data.roles,
       },
+      fullTeamData,
     };
   } catch (err) {
     console.error('getTeamDataForInvitation error:', err);

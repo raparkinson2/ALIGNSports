@@ -29,7 +29,6 @@ import { format, parseISO } from 'date-fns';
 import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, PlayerStats, getPlayerPositions, getPrimaryPosition, getPlayerName, StatusDuration, DurationUnit } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { createTeamInvitation } from '@/lib/team-invitations';
-import { uploadTeamToSupabase } from '@/lib/team-sync';
 import { useResponsive } from '@/lib/useResponsive';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -623,12 +622,12 @@ export default function RosterScreen() {
 
       // Also create a Supabase invitation for cross-device joining
       if (rawPhone || rawEmail) {
-        // Generate a consistent team ID to use for both upload and invitation
+        // Generate a consistent team ID
         const teamId = activeTeamId || `team-${Date.now()}`;
 
         // Use a small timeout to ensure state is updated with new player
         setTimeout(async () => {
-          // Upload the team data to Supabase so the invited player can join with data
+          // Get the current team data to include in the invitation
           const state = useTeamStore.getState();
 
           // Try to get team from multi-team structure first
@@ -636,9 +635,9 @@ export default function RosterScreen() {
 
           // If no team found in teams array, construct team from root state (legacy mode)
           if (!currentTeam && state.teamName) {
-            console.log('ROSTER: Using legacy single-team mode for upload');
+            console.log('ROSTER: Using legacy single-team mode');
             currentTeam = {
-              id: teamId, // Use the consistent team ID
+              id: teamId,
               teamName: state.teamName,
               teamSettings: state.teamSettings,
               players: state.players,
@@ -654,37 +653,27 @@ export default function RosterScreen() {
             };
           }
 
-          if (currentTeam) {
-            try {
-              console.log('ROSTER: Uploading team with ID:', currentTeam.id);
-              const uploadResult = await uploadTeamToSupabase(currentTeam);
-              console.log('ROSTER: Team data uploaded to Supabase:', uploadResult);
-            } catch (err) {
-              console.error('ROSTER: Failed to upload team data:', err);
-            }
-          } else {
-            console.warn('ROSTER: No team found to upload');
+          // Create the invitation with the team data embedded
+          console.log('ROSTER: Creating invitation for team ID:', teamId, 'with team data:', !!currentTeam);
+          try {
+            const result = await createTeamInvitation({
+              team_id: teamId,
+              team_name: teamName,
+              email: rawEmail || undefined,
+              phone: rawPhone || undefined,
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              jersey_number: number.trim() || undefined,
+              position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : selectedPositions[0]),
+              roles: isAdmin() ? roles : [],
+              invited_by_email: userEmail || undefined,
+              team_data: currentTeam, // Include full team data
+            });
+            console.log('ROSTER: Supabase invitation created:', result);
+          } catch (err) {
+            console.error('ROSTER: Failed to create Supabase invitation:', err);
           }
         }, 100);
-
-        // Create the invitation with the same team ID
-        console.log('ROSTER: Creating invitation for team ID:', teamId);
-        createTeamInvitation({
-          team_id: teamId,
-          team_name: teamName,
-          email: rawEmail || undefined,
-          phone: rawPhone || undefined,
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          jersey_number: number.trim() || undefined,
-          position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : selectedPositions[0]),
-          roles: isAdmin() ? roles : [],
-          invited_by_email: userEmail || undefined,
-        }).then((result) => {
-          console.log('ROSTER: Supabase invitation created:', result);
-        }).catch((err) => {
-          console.error('ROSTER: Failed to create Supabase invitation:', err);
-        });
       }
 
       setIsModalVisible(false);

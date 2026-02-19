@@ -62,7 +62,6 @@ import { useResponsive } from '@/lib/useResponsive';
 import { formatPhoneNumber, formatPhoneInput, unformatPhone } from '@/lib/phone';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { createTeamInvitation } from '@/lib/team-invitations';
-import { uploadTeamToSupabase } from '@/lib/team-sync';
 
 interface PlayerManageCardProps {
   player: Player;
@@ -563,12 +562,12 @@ export default function AdminScreen() {
     addPlayer(newPlayer);
 
     // Also create a Supabase invitation for cross-device joining
-    // Generate a consistent team ID to use for both upload and invitation
+    // Generate a consistent team ID
     const teamId = activeTeamId || `team-${Date.now()}`;
 
     // Use a small timeout to ensure state is updated with new player
     setTimeout(async () => {
-      // Upload the team data to Supabase so the invited player can join with data
+      // Get the current team data to include in the invitation
       const state = useTeamStore.getState();
 
       // Try to get team from multi-team structure first
@@ -576,9 +575,9 @@ export default function AdminScreen() {
 
       // If no team found in teams array, construct team from root state (legacy mode)
       if (!currentTeam && state.teamName) {
-        console.log('ADMIN: Using legacy single-team mode for upload');
+        console.log('ADMIN: Using legacy single-team mode');
         currentTeam = {
-          id: teamId, // Use the consistent team ID
+          id: teamId,
           teamName: state.teamName,
           teamSettings: state.teamSettings,
           players: state.players,
@@ -594,37 +593,27 @@ export default function AdminScreen() {
         };
       }
 
-      if (currentTeam) {
-        try {
-          console.log('ADMIN: Uploading team with ID:', currentTeam.id);
-          const uploadResult = await uploadTeamToSupabase(currentTeam);
-          console.log('ADMIN: Team data uploaded to Supabase:', uploadResult);
-        } catch (err) {
-          console.error('ADMIN: Failed to upload team data:', err);
-        }
-      } else {
-        console.warn('ADMIN: No team found to upload');
+      // Create the invitation with the team data embedded
+      console.log('ADMIN: Creating invitation for team ID:', teamId, 'with team data:', !!currentTeam);
+      try {
+        const result = await createTeamInvitation({
+          team_id: teamId,
+          team_name: teamName,
+          email: newPlayerEmail.trim() || undefined,
+          phone: rawPhone || undefined,
+          first_name: newPlayerFirstName.trim(),
+          last_name: newPlayerLastName.trim(),
+          jersey_number: (isCoachRole || isParentRole) ? undefined : newPlayerNumber.trim(),
+          position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : newPlayerPositions[0]),
+          roles: roles,
+          invited_by_email: userEmail || undefined,
+          team_data: currentTeam, // Include full team data
+        });
+        console.log('ADMIN: Supabase invitation created:', result);
+      } catch (err) {
+        console.error('ADMIN: Failed to create Supabase invitation:', err);
       }
     }, 100);
-
-    // Create the invitation with the same team ID
-    console.log('ADMIN: Creating invitation for team ID:', teamId);
-    createTeamInvitation({
-      team_id: teamId,
-      team_name: teamName,
-      email: newPlayerEmail.trim() || undefined,
-      phone: rawPhone || undefined,
-      first_name: newPlayerFirstName.trim(),
-      last_name: newPlayerLastName.trim(),
-      jersey_number: (isCoachRole || isParentRole) ? undefined : newPlayerNumber.trim(),
-      position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : newPlayerPositions[0]),
-      roles: roles,
-      invited_by_email: userEmail || undefined,
-    }).then((result) => {
-      console.log('ADMIN: Supabase invitation created:', result);
-    }).catch((err) => {
-      console.error('ADMIN: Failed to create Supabase invitation:', err);
-    });
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsNewPlayerModalVisible(false);
