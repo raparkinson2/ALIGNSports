@@ -12,7 +12,8 @@ import { useTeamStore } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import { signUpWithEmail } from '@/lib/supabase-auth';
-import { secureRegisterInvitedPlayer, secureRegisterInvitedPlayerByPhone } from '@/lib/secure-auth';
+import { secureRegisterInvitedPlayer, secureRegisterInvitedPlayerByPhone, secureLoginWithEmail, secureLoginWithPhone } from '@/lib/secure-auth';
+import { signInWithEmail } from '@/lib/supabase-auth';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -32,6 +33,7 @@ export default function RegisterScreen() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [foundPlayer, setFoundPlayer] = useState<{ id: string; firstName: string; lastName: string; number: string } | null>(null);
+  const [existingPassword, setExistingPassword] = useState(''); // For existing users joining new team
 
   const hasTeam = players.length > 0;
 
@@ -94,8 +96,10 @@ export default function RegisterScreen() {
       }
 
       if (player.password) {
-        setError('An account already exists for this phone number. Please sign in instead.');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        // Existing user - redirect to sign in with context about new team
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
+        setStep(4); // Go to existing user sign-in step
         return;
       }
     } else {
@@ -112,8 +116,10 @@ export default function RegisterScreen() {
       }
 
       if (player.password) {
-        setError('An account already exists for this email. Please sign in instead.');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        // Existing user - redirect to sign in with context about new team
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
+        setStep(4); // Go to existing user sign-in step
         return;
       }
     }
@@ -225,6 +231,56 @@ export default function RegisterScreen() {
     setIsLoading(false);
   };
 
+  // Handler for existing users signing in to join a new team
+  const handleExistingUserLogin = async () => {
+    setError('');
+
+    if (!existingPassword.trim()) {
+      setError('Please enter your password');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const trimmedIdentifier = identifier.trim();
+
+      // For email users, also verify with Supabase
+      if (!isPhoneNumber(trimmedIdentifier)) {
+        const supabaseResult = await signInWithEmail(trimmedIdentifier, existingPassword);
+        if (!supabaseResult.success) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setError(supabaseResult.error || 'Incorrect password');
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Also login locally to set up multi-team state
+      const result = isPhoneNumber(trimmedIdentifier)
+        ? await secureLoginWithPhone(unformatPhone(trimmedIdentifier), existingPassword)
+        : await secureLoginWithEmail(trimmedIdentifier, existingPassword);
+
+      if (result.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        // If user has multiple teams, go to team selector
+        if (result.multipleTeams) {
+          router.replace('/select-team');
+        } else {
+          router.replace('/(tabs)');
+        }
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setError(result.error || 'Incorrect password');
+      }
+    } catch (err) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError('Something went wrong. Please try again.');
+    }
+
+    setIsLoading(false);
+  };
+
   return (
     <View className="flex-1 bg-slate-900">
       <Stack.Screen options={{ headerShown: false }} />
@@ -247,7 +303,12 @@ export default function RegisterScreen() {
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                if (step === 3) {
+                if (step === 4) {
+                  setStep(1);
+                  setError('');
+                  setFoundPlayer(null);
+                  setExistingPassword('');
+                } else if (step === 3) {
                   setStep(2);
                   setError('');
                 } else if (step === 2) {
@@ -531,6 +592,79 @@ export default function RegisterScreen() {
                     <Text className="text-slate-400 font-medium ml-2">Skip for now</Text>
                   </Pressable>
                 )}
+              </Animated.View>
+            )}
+
+            {/* Step 4: Existing User Sign In to Join New Team */}
+            {step === 4 && foundPlayer && (
+              <Animated.View entering={FadeInDown.delay(150).springify()}>
+                {/* Found Player Card */}
+                <View className="bg-green-500/10 rounded-xl p-4 mb-6 border border-green-500/30">
+                  <View className="flex-row items-center">
+                    <View className="w-10 h-10 rounded-full bg-green-500/20 items-center justify-center">
+                      <Check size={20} color="#22c55e" />
+                    </View>
+                    <View className="ml-3">
+                      <Text className="text-green-400 font-semibold">Invitation Found!</Text>
+                      <Text className="text-slate-400 text-sm">
+                        Welcome back, {foundPlayer.firstName} {foundPlayer.lastName}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View className="items-center mb-8">
+                  <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
+                    <Lock size={32} color="#67e8f9" />
+                  </View>
+                  <Text className="text-white text-2xl font-bold">Sign In to Join</Text>
+                  <Text className="text-slate-400 text-center mt-2">
+                    You already have an account. Enter your password to join {teamName || 'the new team'}.
+                  </Text>
+                </View>
+
+                <View className="mb-6">
+                  <Text className="text-slate-400 text-sm mb-2">Password</Text>
+                  <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
+                    <Lock size={20} color="#64748b" />
+                    <TextInput
+                      value={existingPassword}
+                      onChangeText={setExistingPassword}
+                      placeholder="Enter your password"
+                      placeholderTextColor="#64748b"
+                      secureTextEntry
+                      className="flex-1 py-4 px-3 text-white text-base"
+                    />
+                  </View>
+                </View>
+
+                {/* Error Message */}
+                {error ? (
+                  <Animated.View entering={FadeInDown.springify()}>
+                    <Text className="text-red-400 text-center mb-4">{error}</Text>
+                  </Animated.View>
+                ) : null}
+
+                {/* Sign In Button */}
+                <Pressable
+                  onPress={handleExistingUserLogin}
+                  disabled={isLoading}
+                  className="bg-cyan-500 rounded-xl py-4 flex-row items-center justify-center active:bg-cyan-600 disabled:opacity-50 mb-4"
+                >
+                  <Text className="text-white font-semibold text-lg">
+                    {isLoading ? 'Signing In...' : 'Sign In & Join Team'}
+                  </Text>
+                </Pressable>
+
+                {/* Forgot Password Link */}
+                <Pressable
+                  onPress={() => router.push('/login')}
+                  className="py-3"
+                >
+                  <Text className="text-slate-400 text-center">
+                    Forgot your password? <Text className="text-cyan-400">Reset it here</Text>
+                  </Text>
+                </Pressable>
               </Animated.View>
             )}
           </ScrollView>
