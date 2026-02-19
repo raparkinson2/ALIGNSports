@@ -44,6 +44,10 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
   - You can join from any device by entering your email/phone in "Invited to Join a Team"
   - The app will find your invitation and download the full team data
   - You'll see all the team's existing games, events, and players
+- **Re-send Invite**: Admins can re-send invitations to players who didn't receive the original invite
+  - Open the player's profile in Admin > Manage Players
+  - Tap "Re-send Invite" at the bottom of the edit screen
+  - Choose to send via text message or email
 - **Existing Users Joining New Teams**: If you already have an account on another team:
   - Enter your email/phone to find the invitation
   - You'll see "Welcome back" and can sign in with your existing password

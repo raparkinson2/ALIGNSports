@@ -264,6 +264,7 @@ export default function AdminScreen() {
   // Invite modal state
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
   const [newlyCreatedPlayer, setNewlyCreatedPlayer] = useState<Player | null>(null);
+  const [isReinviteMode, setIsReinviteMode] = useState(false);
 
   // Sport change confirmation modal
   const [isSportChangeModalVisible, setIsSportChangeModalVisible] = useState(false);
@@ -627,27 +628,30 @@ export default function AdminScreen() {
   // Placeholder for App Store URL - will be updated once app is published
   const APP_STORE_URL = 'https://apps.apple.com/app/your-app-id';
 
+  // Get the player to invite (either newly created or selected for re-invite)
+  const playerToInvite = isReinviteMode ? selectedPlayer : newlyCreatedPlayer;
+
   const getInviteMessage = (method: 'sms' | 'email') => {
-    const playerName = newlyCreatedPlayer ? getPlayerName(newlyCreatedPlayer) : '';
+    const playerName = playerToInvite ? getPlayerName(playerToInvite) : '';
     const contactInfo = method === 'sms'
-      ? newlyCreatedPlayer?.phone
-        ? `\n\nLog in with your phone number: ${formatPhoneNumber(newlyCreatedPlayer.phone)}`
+      ? playerToInvite?.phone
+        ? `\n\nLog in with your phone number: ${formatPhoneNumber(playerToInvite.phone)}`
         : ''
-      : newlyCreatedPlayer?.email
-        ? `\n\nLog in with your email: ${newlyCreatedPlayer.email}`
+      : playerToInvite?.email
+        ? `\n\nLog in with your email: ${playerToInvite.email}`
         : '';
 
-    return `Hey ${playerName}!\n\nYou've been added to ${teamName}! Download the app and log in using your info to view the schedule, check in for games, and stay connected with the team.\n\nDownload here: ${APP_STORE_URL}${contactInfo}\n\nYour jersey number is #${newlyCreatedPlayer?.number}\n\nSee you at the next game!`;
+    return `Hey ${playerName}!\n\nYou've been added to ${teamName}! Download the app and log in using your info to view the schedule, check in for games, and stay connected with the team.\n\nDownload here: ${APP_STORE_URL}${contactInfo}\n\nYour jersey number is #${playerToInvite?.number}\n\nSee you at the next game!`;
   };
 
   const handleSendTextInvite = () => {
-    if (!newlyCreatedPlayer?.phone) {
+    if (!playerToInvite?.phone) {
       Alert.alert('No Phone Number', 'This player does not have a phone number.');
       return;
     }
 
     const message = encodeURIComponent(getInviteMessage('sms'));
-    const phoneNumber = newlyCreatedPlayer.phone;
+    const phoneNumber = playerToInvite.phone;
 
     const smsUrl = Platform.select({
       ios: `sms:${phoneNumber}&body=${message}`,
@@ -661,10 +665,11 @@ export default function AdminScreen() {
 
     setIsInviteModalVisible(false);
     setNewlyCreatedPlayer(null);
+    setIsReinviteMode(false);
   };
 
   const handleSendEmailInvite = async () => {
-    if (!newlyCreatedPlayer?.email) {
+    if (!playerToInvite?.email) {
       Alert.alert('No Email', 'This player does not have an email address.');
       return;
     }
@@ -683,11 +688,11 @@ export default function AdminScreen() {
             'Authorization': `Bearer ${supabaseAnonKey}`,
           },
           body: JSON.stringify({
-            to: newlyCreatedPlayer.email,
+            to: playerToInvite.email,
             teamName: teamName,
-            firstName: newlyCreatedPlayer.firstName,
-            userEmail: newlyCreatedPlayer.email,
-            jerseyNumber: newlyCreatedPlayer.number || '00',
+            firstName: playerToInvite.firstName,
+            userEmail: playerToInvite.email,
+            jerseyNumber: playerToInvite.number || '00',
             appLink: 'https://apps.apple.com/app/id6740043565',
           }),
         }
@@ -695,7 +700,7 @@ export default function AdminScreen() {
 
       if (response.ok) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Email Sent', `Invite email sent to ${getPlayerName(newlyCreatedPlayer)}!`);
+        Alert.alert('Email Sent', `Invite email sent to ${playerToInvite ? getPlayerName(playerToInvite) : 'player'}!`);
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to send email');
@@ -708,11 +713,20 @@ export default function AdminScreen() {
 
     setIsInviteModalVisible(false);
     setNewlyCreatedPlayer(null);
+    setIsReinviteMode(false);
   };
 
   const handleSkipInvite = () => {
     setIsInviteModalVisible(false);
     setNewlyCreatedPlayer(null);
+    setIsReinviteMode(false);
+  };
+
+  const handleReinvitePlayer = () => {
+    if (!selectedPlayer) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsReinviteMode(true);
+    setIsInviteModalVisible(true);
   };
 
   const handleToggleRole = (role: PlayerRole) => {
@@ -2137,6 +2151,22 @@ export default function AdminScreen() {
                       : 'Tap to toggle roles. Members can have multiple roles.'}
                   </Text>
                 </View>
+
+                {/* Re-send Invite Button */}
+                {(selectedPlayer?.phone || selectedPlayer?.email) && (
+                  <View className="mb-6 mt-3">
+                    <Pressable
+                      onPress={handleReinvitePlayer}
+                      className="flex-row items-center justify-center bg-cyan-500/20 border border-cyan-500/40 rounded-xl py-4 active:bg-cyan-500/30"
+                    >
+                      <Send size={18} color="#22d3ee" />
+                      <Text className="text-cyan-400 font-semibold ml-2">Re-send Invite</Text>
+                    </Pressable>
+                    <Text className="text-slate-500 text-xs mt-2 text-center">
+                      Send another invite if the player didn't receive the first one
+                    </Text>
+                  </View>
+                )}
               </ScrollView>
             )}
           </SafeAreaView>
@@ -2885,20 +2915,22 @@ export default function AdminScreen() {
           <View className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-700">
             {/* Header */}
             <View className="items-center mb-6">
-              <View className="w-16 h-16 rounded-full bg-green-500/20 items-center justify-center mb-4">
-                <Send size={32} color="#22c55e" />
+              <View className={`w-16 h-16 rounded-full ${isReinviteMode ? 'bg-cyan-500/20' : 'bg-green-500/20'} items-center justify-center mb-4`}>
+                <Send size={32} color={isReinviteMode ? '#22d3ee' : '#22c55e'} />
               </View>
               <Text className="text-white text-xl font-bold text-center">
-                Player Added!
+                {isReinviteMode ? 'Re-send Invite' : 'Player Added!'}
               </Text>
               <Text className="text-slate-400 text-center mt-2">
-                Send {newlyCreatedPlayer ? getPlayerName(newlyCreatedPlayer) : ''} an invite to register and join the team?
+                {isReinviteMode
+                  ? `Send ${playerToInvite ? getPlayerName(playerToInvite) : ''} another invite?`
+                  : `Send ${playerToInvite ? getPlayerName(playerToInvite) : ''} an invite to register and join the team?`}
               </Text>
             </View>
 
             {/* Invite Options */}
             <View>
-              {newlyCreatedPlayer?.phone && (
+              {playerToInvite?.phone && (
                 <Pressable
                   onPress={handleSendTextInvite}
                   className="flex-row items-center justify-center bg-cyan-500 rounded-xl py-4 mb-3 active:bg-cyan-600"
@@ -2908,7 +2940,7 @@ export default function AdminScreen() {
                 </Pressable>
               )}
 
-              {newlyCreatedPlayer?.email && (
+              {playerToInvite?.email && (
                 <Pressable
                   onPress={handleSendEmailInvite}
                   className="flex-row items-center justify-center bg-purple-500 rounded-xl py-4 mb-3 active:bg-purple-600"
