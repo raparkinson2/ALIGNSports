@@ -733,16 +733,13 @@ export default function RosterScreen() {
       return;
     }
 
-    const subject = `Welcome to ${teamName}!`;
-    const body = getInviteMessage('email');
-
     try {
-      // Call Supabase Edge Function to send email
+      // Call Supabase Edge Function to send invitation email
       const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PUBLIC_URL;
       const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLIC_ANON;
 
       const response = await fetch(
-        `${supabaseUrl}/functions/v1/send-team-email`,
+        `${supabaseUrl}/functions/v1/send-invitation-email`,
         {
           method: 'POST',
           headers: {
@@ -750,10 +747,12 @@ export default function RosterScreen() {
             'Authorization': `Bearer ${supabaseAnonKey}`,
           },
           body: JSON.stringify({
-            to: [newlyCreatedPlayer.email],
-            subject: subject,
-            body: body,
+            to: newlyCreatedPlayer.email,
             teamName: teamName,
+            firstName: newlyCreatedPlayer.firstName,
+            userEmail: newlyCreatedPlayer.email,
+            jerseyNumber: newlyCreatedPlayer.number || '00',
+            appLink: 'https://apps.apple.com/app/id6740043565',
           }),
         }
       );
