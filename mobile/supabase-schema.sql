@@ -528,3 +528,25 @@ CREATE POLICY "Anyone can create invitations" ON team_invitations
 CREATE POLICY "Anyone can accept invitations" ON team_invitations
   FOR UPDATE USING (true);
 
+-- =============================================
+-- STORAGE BUCKET FOR TEAM PHOTOS
+-- =============================================
+-- Note: Run this in Supabase SQL Editor to create the storage bucket
+
+-- Create the storage bucket for team photos
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('team-photos', 'team-photos', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Allow anyone to upload photos (authenticated or anonymous)
+CREATE POLICY "Anyone can upload photos" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'team-photos');
+
+-- Allow anyone to view photos (public bucket)
+CREATE POLICY "Anyone can view photos" ON storage.objects
+  FOR SELECT USING (bucket_id = 'team-photos');
+
+-- Allow anyone to delete their uploaded photos
+CREATE POLICY "Anyone can delete photos" ON storage.objects
+  FOR DELETE USING (bucket_id = 'team-photos');
+

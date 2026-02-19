@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { Team, Player, Game, Event, Photo, TeamSettings } from './store';
+import { uploadPhotoToStorage } from './photo-storage';
 
 /**
  * Team Sync Service
@@ -195,6 +196,47 @@ export async function uploadTeamToSupabase(team: Team): Promise<SyncResult> {
       }
     }
 
+    // Upload photos (upload to storage first, then save metadata)
+    if (team.photos && team.photos.length > 0) {
+      console.log('TEAM_SYNC: Uploading', team.photos.length, 'photos');
+
+      for (const photo of team.photos) {
+        try {
+          // Upload photo to Supabase Storage if it's a local file
+          let cloudUri = photo.uri;
+          if (photo.uri.startsWith('file://') || photo.uri.startsWith('data:')) {
+            const uploadResult = await uploadPhotoToStorage(photo.uri, supabaseTeamId!, photo.id);
+            if (uploadResult.success && uploadResult.url) {
+              cloudUri = uploadResult.url;
+            } else {
+              console.error('TEAM_SYNC: Failed to upload photo to storage:', photo.id);
+              continue; // Skip this photo if storage upload fails
+            }
+          }
+
+          // Save photo metadata to database
+          const { error: photoError } = await supabase
+            .from('photos')
+            .upsert({
+              id: photo.id,
+              team_id: supabaseTeamId,
+              game_id: photo.gameId || null,
+              uri: cloudUri,
+              uploaded_by: photo.uploadedBy || null,
+              uploaded_at: photo.uploadedAt,
+            }, { onConflict: 'id' });
+
+          if (photoError) {
+            console.error('TEAM_SYNC: Error saving photo metadata:', photoError);
+          }
+        } catch (photoErr) {
+          console.error('TEAM_SYNC: Exception uploading photo:', photo.id, photoErr);
+        }
+      }
+
+      console.log('TEAM_SYNC: Photos upload complete');
+    }
+
     console.log('TEAM_SYNC: Team upload complete');
     return { success: true, teamId: supabaseTeamId };
   } catch (err: any) {
@@ -285,6 +327,19 @@ export async function downloadTeamFromSupabase(teamId: string): Promise<{
       console.error('TEAM_SYNC: Error fetching events:', eventsError);
     }
 
+    // Fetch photos
+    const { data: photosData, error: photosError } = await supabase
+      .from('photos')
+      .select('*')
+      .eq('team_id', teamId)
+      .order('uploaded_at', { ascending: false });
+
+    if (photosError) {
+      console.error('TEAM_SYNC: Error fetching photos:', photosError);
+    } else {
+      console.log('TEAM_SYNC: Fetched', photosData?.length || 0, 'photos');
+    }
+
     // Transform Supabase data to local store format
     const players: Player[] = (playersData || []).map(p => ({
       id: p.id,
@@ -347,6 +402,15 @@ export async function downloadTeamFromSupabase(teamId: string): Promise<{
       confirmedPlayers: [],
     }));
 
+    // Transform photos
+    const photos: Photo[] = (photosData || []).map(p => ({
+      id: p.id,
+      gameId: p.game_id || '',
+      uri: p.uri, // Cloud URL from Supabase Storage
+      uploadedBy: p.uploaded_by || '',
+      uploadedAt: p.uploaded_at,
+    }));
+
     const teamSettings: TeamSettings = {
       sport: teamData.sport || 'hockey',
       showTeamStats: teamData.show_team_stats ?? true,
@@ -367,7 +431,7 @@ export async function downloadTeamFromSupabase(teamId: string): Promise<{
       players,
       games,
       events,
-      photos: [],
+      photos,
       notifications: [],
       chatMessages: [],
       chatLastReadAt: {},
@@ -376,7 +440,7 @@ export async function downloadTeamFromSupabase(teamId: string): Promise<{
       teamLinks: [],
     };
 
-    console.log('TEAM_SYNC: Download complete -', players.length, 'players,', games.length, 'games,', events.length, 'events');
+    console.log('TEAM_SYNC: Download complete -', players.length, 'players,', games.length, 'games,', events.length, 'events,', photos.length, 'photos');
     return { success: true, team };
   } catch (err: any) {
     console.error('TEAM_SYNC: Exception during download:', err?.message || err);
@@ -397,6 +461,91 @@ export async function checkTeamExistsInSupabase(teamId: string): Promise<boolean
 
     return !error && !!data;
   } catch {
+    return false;
+  }
+}
+
+/**
+ * Upload a single photo to Supabase (storage + database)
+ * Returns the cloud URL if successful
+ */
+export async function uploadSinglePhoto(
+  photo: Photo,
+  teamId: string
+): Promise<{ success: boolean; cloudUrl?: string; error?: string }> {
+  try {
+    console.log('TEAM_SYNC: Uploading single photo:', photo.id);
+
+    // Check if team exists in Supabase first
+    const teamExists = await checkTeamExistsInSupabase(teamId);
+    if (!teamExists) {
+      console.log('TEAM_SYNC: Team not in Supabase, skipping cloud upload');
+      return { success: false, error: 'Team not synced to cloud' };
+    }
+
+    // Upload photo to storage if it's a local file
+    let cloudUri = photo.uri;
+    if (photo.uri.startsWith('file://') || photo.uri.startsWith('data:')) {
+      const uploadResult = await uploadPhotoToStorage(photo.uri, teamId, photo.id);
+      if (uploadResult.success && uploadResult.url) {
+        cloudUri = uploadResult.url;
+      } else {
+        return { success: false, error: uploadResult.error || 'Storage upload failed' };
+      }
+    }
+
+    // Save photo metadata to database
+    const { error: photoError } = await supabase
+      .from('photos')
+      .upsert({
+        id: photo.id,
+        team_id: teamId,
+        game_id: photo.gameId || null,
+        uri: cloudUri,
+        uploaded_by: photo.uploadedBy || null,
+        uploaded_at: photo.uploadedAt,
+      }, { onConflict: 'id' });
+
+    if (photoError) {
+      console.error('TEAM_SYNC: Error saving photo metadata:', photoError);
+      return { success: false, error: photoError.message };
+    }
+
+    console.log('TEAM_SYNC: Photo uploaded successfully:', cloudUri);
+    return { success: true, cloudUrl: cloudUri };
+  } catch (err: any) {
+    console.error('TEAM_SYNC: Exception uploading photo:', err);
+    return { success: false, error: err?.message || 'Upload failed' };
+  }
+}
+
+/**
+ * Delete a photo from Supabase (storage + database)
+ */
+export async function deleteSinglePhoto(
+  photoId: string,
+  teamId: string
+): Promise<boolean> {
+  try {
+    console.log('TEAM_SYNC: Deleting photo:', photoId);
+
+    // Delete from database
+    const { error } = await supabase
+      .from('photos')
+      .delete()
+      .eq('id', photoId);
+
+    if (error) {
+      console.error('TEAM_SYNC: Error deleting photo from database:', error);
+    }
+
+    // Also try to delete from storage (ignore errors)
+    const { deletePhotoFromStorage } = await import('./photo-storage');
+    await deletePhotoFromStorage(teamId, photoId);
+
+    return true;
+  } catch (err) {
+    console.error('TEAM_SYNC: Exception deleting photo:', err);
     return false;
   }
 }

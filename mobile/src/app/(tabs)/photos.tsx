@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Dimensions, Modal } from 'react-native';
+import { View, Text, ScrollView, Pressable, Dimensions, Modal, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
@@ -8,6 +8,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Photo } from '@/lib/store';
+import { uploadSinglePhoto, deleteSinglePhoto } from '@/lib/team-sync';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -19,11 +20,15 @@ export default function PhotosScreen() {
   const storePhotos = useTeamStore((s) => s.photos);
   const addPhoto = useTeamStore((s) => s.addPhoto);
   const removePhoto = useTeamStore((s) => s.removePhoto);
+  const updatePhoto = useTeamStore((s) => s.updatePhoto);
   const games = useTeamStore((s) => s.games);
+  const teamId = useTeamStore((s) => s.activeTeamId);
+  const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
 
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [viewerPhoto, setViewerPhoto] = useState<Photo | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handlePhotoPress = (photo: Photo) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -40,13 +45,50 @@ export default function PhotosScreen() {
     setShowDeleteModal(true);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (selectedPhoto) {
       removePhoto(selectedPhoto.id);
+      // Also delete from cloud
+      if (teamId) {
+        deleteSinglePhoto(selectedPhoto.id, teamId).catch(console.error);
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
     setShowDeleteModal(false);
     setSelectedPhoto(null);
+  };
+
+  const uploadAndSavePhoto = async (uri: string) => {
+    const photoId = Date.now().toString();
+    const newPhoto: Photo = {
+      id: photoId,
+      gameId: games[0]?.id || '',
+      uri,
+      uploadedBy: currentPlayerId || '1',
+      uploadedAt: new Date().toISOString(),
+    };
+
+    // Add to local store immediately
+    addPhoto(newPhoto);
+
+    // Upload to cloud in background
+    if (teamId) {
+      setIsUploading(true);
+      try {
+        const result = await uploadSinglePhoto(newPhoto, teamId);
+        if (result.success && result.cloudUrl) {
+          // Update local photo with cloud URL
+          updatePhoto(photoId, { uri: result.cloudUrl });
+          console.log('Photo uploaded to cloud:', result.cloudUrl);
+        }
+      } catch (err) {
+        console.error('Failed to upload photo to cloud:', err);
+      } finally {
+        setIsUploading(false);
+      }
+    }
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const pickImage = async () => {
@@ -65,17 +107,7 @@ export default function PhotosScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      const uri = result.assets[0].uri;
-      const newPhoto: Photo = {
-        id: Date.now().toString(),
-        gameId: games[0]?.id || '',
-        uri,
-        uploadedBy: '1',
-        uploadedAt: new Date().toISOString(),
-      };
-      addPhoto(newPhoto);
-
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await uploadAndSavePhoto(result.assets[0].uri);
     }
   };
 
@@ -92,17 +124,7 @@ export default function PhotosScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      const uri = result.assets[0].uri;
-      const newPhoto: Photo = {
-        id: Date.now().toString(),
-        gameId: games[0]?.id || '',
-        uri,
-        uploadedBy: '1',
-        uploadedAt: new Date().toISOString(),
-      };
-      addPhoto(newPhoto);
-
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await uploadAndSavePhoto(result.assets[0].uri);
     }
   };
 
@@ -123,19 +145,29 @@ export default function PhotosScreen() {
             <View className="flex-row items-center">
               <ImageIcon size={20} color="#67e8f9" />
               <Text className="text-cyan-400 text-sm font-medium ml-2">Photos</Text>
+              {isUploading && (
+                <View className="flex-row items-center ml-2">
+                  <ActivityIndicator size="small" color="#67e8f9" />
+                  <Text className="text-cyan-400 text-xs ml-1">Uploading...</Text>
+                </View>
+              )}
             </View>
             <Text className="text-white text-3xl font-bold">Team Photos</Text>
           </View>
           <View className="flex-row items-center">
             <Pressable
               onPress={takePhoto}
+              disabled={isUploading}
               className="bg-slate-800 w-10 h-10 rounded-full items-center justify-center mr-2 active:bg-slate-700"
+              style={{ opacity: isUploading ? 0.5 : 1 }}
             >
               <Camera size={20} color="#67e8f9" />
             </Pressable>
             <Pressable
               onPress={pickImage}
+              disabled={isUploading}
               className="bg-green-500 w-10 h-10 rounded-full items-center justify-center active:bg-green-600"
+              style={{ opacity: isUploading ? 0.5 : 1 }}
             >
               <Plus size={20} color="white" />
             </Pressable>

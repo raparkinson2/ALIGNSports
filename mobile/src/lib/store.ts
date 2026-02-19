@@ -781,6 +781,7 @@ interface TeamStore {
 
   photos: Photo[];
   addPhoto: (photo: Photo) => void;
+  updatePhoto: (id: string, updates: Partial<Photo>) => void;
   removePhoto: (id: string) => void;
 
   // Notifications
@@ -1387,6 +1388,24 @@ export const useTeamStore = create<TeamStore>()(
       photos: [],
       addPhoto: (photo) => set((state) => {
         const newPhotos = [...state.photos, photo];
+        // Also update in teams array if activeTeamId exists
+        let updatedTeams = state.teams;
+        if (state.activeTeamId) {
+          updatedTeams = state.teams.map((team) =>
+            team.id === state.activeTeamId
+              ? { ...team, photos: newPhotos }
+              : team
+          );
+        }
+        return {
+          photos: newPhotos,
+          teams: updatedTeams,
+        };
+      }),
+      updatePhoto: (id, updates) => set((state) => {
+        const newPhotos = state.photos.map((p) =>
+          p.id === id ? { ...p, ...updates } : p
+        );
         // Also update in teams array if activeTeamId exists
         let updatedTeams = state.teams;
         if (state.activeTeamId) {
