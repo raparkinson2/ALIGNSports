@@ -302,66 +302,23 @@ export function onAuthStateChange(callback: (event: string, session: any) => voi
 
 /**
  * Check if an email is already registered in Supabase Auth
- * Calls a Supabase Edge Function that uses admin API to check
+ * Since we don't have an Edge Function, we'll skip this check and assume new user
+ * The signup flow will handle "already registered" errors gracefully
  */
 export async function checkEmailExists(email: string): Promise<{ exists: boolean; error?: string }> {
-  try {
-    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-    console.log('CHECK_EMAIL: Checking if email exists:', email);
-
-    const response = await fetch(`${supabaseUrl}/functions/v1/check-user-exists`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email: email.toLowerCase() }),
-    });
-
-    const data = await response.json();
-    console.log('CHECK_EMAIL: Response:', response.status, data);
-
-    if (!response.ok) {
-      console.warn('CHECK_EMAIL: Error response:', data.error);
-      return { exists: false };
-    }
-
-    return { exists: data.exists };
-  } catch (err: any) {
-    console.error('CHECK_EMAIL: Exception:', err?.message || err);
-    // On network error, assume user doesn't exist (allow registration to proceed)
-    return { exists: false };
-  }
+  // Skip the edge function call - we'll handle existing users in the signup flow
+  // If signup fails with "already registered", the register screen handles it
+  console.log('CHECK_EMAIL: Skipping check (no edge function), assuming new user for:', email);
+  return { exists: false };
 }
 
 /**
  * Check if a phone number is already associated with a user
- * Calls a Supabase Edge Function that uses admin API to check
+ * Since we don't have an Edge Function, we'll skip this check
  */
 export async function checkPhoneExists(phone: string): Promise<{ exists: boolean; error?: string }> {
-  try {
-    const normalizedPhone = phone.replace(/\D/g, '');
-    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-
-    const response = await fetch(`${supabaseUrl}/functions/v1/check-user-exists`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ phone: normalizedPhone }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.warn('checkPhoneExists error:', data.error);
-      return { exists: false };
-    }
-
-    return { exists: data.exists };
-  } catch (err) {
-    console.error('checkPhoneExists error:', err);
-    return { exists: false };
-  }
+  console.log('CHECK_PHONE: Skipping check (no edge function), assuming new user for:', phone);
+  return { exists: false };
 }
 
 /**

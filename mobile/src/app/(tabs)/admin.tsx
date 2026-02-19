@@ -563,22 +563,49 @@ export default function AdminScreen() {
     addPlayer(newPlayer);
 
     // Also create a Supabase invitation for cross-device joining
-    // First, upload the team data to Supabase so the invited player can join with data
-    const state = useTeamStore.getState();
-    const currentTeam = state.teams.find(t => t.id === activeTeamId);
+    // Use a small timeout to ensure state is updated with new player
+    setTimeout(async () => {
+      // Upload the team data to Supabase so the invited player can join with data
+      const state = useTeamStore.getState();
 
-    if (currentTeam) {
-      // Upload team data to Supabase (async, don't wait)
-      uploadTeamToSupabase(currentTeam).then((uploadResult) => {
-        console.log('ADMIN: Team data uploaded to Supabase:', uploadResult);
-      }).catch((err) => {
-        console.error('ADMIN: Failed to upload team data:', err);
-      });
-    }
+      // Try to get team from multi-team structure first
+      let currentTeam = state.teams.find(t => t.id === activeTeamId);
+
+      // If no team found in teams array, construct team from root state (legacy mode)
+      if (!currentTeam && state.teamName) {
+        console.log('ADMIN: Using legacy single-team mode for upload');
+        currentTeam = {
+          id: activeTeamId || `team-${Date.now()}`,
+          teamName: state.teamName,
+          teamSettings: state.teamSettings,
+          players: state.players,
+          games: state.games,
+          events: state.events,
+          photos: state.photos || [],
+          notifications: state.notifications || [],
+          chatMessages: state.chatMessages || [],
+          chatLastReadAt: state.chatLastReadAt || {},
+          paymentPeriods: state.paymentPeriods || [],
+          polls: state.polls || [],
+          teamLinks: state.teamLinks || [],
+        };
+      }
+
+      if (currentTeam) {
+        try {
+          const uploadResult = await uploadTeamToSupabase(currentTeam);
+          console.log('ADMIN: Team data uploaded to Supabase:', uploadResult);
+        } catch (err) {
+          console.error('ADMIN: Failed to upload team data:', err);
+        }
+      } else {
+        console.warn('ADMIN: No team found to upload');
+      }
+    }, 100);
 
     // Create the invitation
     createTeamInvitation({
-      team_id: activeTeamId || 'unknown',
+      team_id: activeTeamId || `team-${Date.now()}`,
       team_name: teamName,
       email: newPlayerEmail.trim() || undefined,
       phone: rawPhone || undefined,
