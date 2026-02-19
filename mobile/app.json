@@ -3,14 +3,14 @@
     "name": "Align Sports",
     "slug": "align-sports",
     "scheme": "vibecode",
-    "version": "3.3.0",
+    "version": "3.3.1",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.vibecode.alignsports-jy5wjr",
-      "buildNumber": "38",
+      "buildNumber": "39",
       "infoPlist": {
         "NSCameraUsageDescription": "Align Sports uses the camera to capture photos inside the app before you publish them.",
         "NSPhotoLibraryUsageDescription": "Align Sports accesses your photo library to let you choose media that appears in the app.",
