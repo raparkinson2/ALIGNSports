@@ -29,6 +29,7 @@ import { format, parseISO } from 'date-fns';
 import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, PlayerStats, getPlayerPositions, getPrimaryPosition, getPlayerName, StatusDuration, DurationUnit } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { createTeamInvitation } from '@/lib/team-invitations';
+import { uploadTeamToSupabase } from '@/lib/team-sync';
 import { useResponsive } from '@/lib/useResponsive';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -622,6 +623,20 @@ export default function RosterScreen() {
 
       // Also create a Supabase invitation for cross-device joining
       if (rawPhone || rawEmail) {
+        // First, upload the team data to Supabase so the invited player can join with data
+        const state = useTeamStore.getState();
+        const currentTeam = state.teams.find(t => t.id === activeTeamId);
+
+        if (currentTeam) {
+          // Upload team data to Supabase (async, don't wait)
+          uploadTeamToSupabase(currentTeam).then((uploadResult) => {
+            console.log('ROSTER: Team data uploaded to Supabase:', uploadResult);
+          }).catch((err) => {
+            console.error('ROSTER: Failed to upload team data:', err);
+          });
+        }
+
+        // Create the invitation
         createTeamInvitation({
           team_id: activeTeamId || 'unknown',
           team_name: teamName,

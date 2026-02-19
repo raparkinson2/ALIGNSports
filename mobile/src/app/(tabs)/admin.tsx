@@ -62,6 +62,7 @@ import { useResponsive } from '@/lib/useResponsive';
 import { formatPhoneNumber, formatPhoneInput, unformatPhone } from '@/lib/phone';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { createTeamInvitation } from '@/lib/team-invitations';
+import { uploadTeamToSupabase } from '@/lib/team-sync';
 
 interface PlayerManageCardProps {
   player: Player;
@@ -562,6 +563,20 @@ export default function AdminScreen() {
     addPlayer(newPlayer);
 
     // Also create a Supabase invitation for cross-device joining
+    // First, upload the team data to Supabase so the invited player can join with data
+    const state = useTeamStore.getState();
+    const currentTeam = state.teams.find(t => t.id === activeTeamId);
+
+    if (currentTeam) {
+      // Upload team data to Supabase (async, don't wait)
+      uploadTeamToSupabase(currentTeam).then((uploadResult) => {
+        console.log('ADMIN: Team data uploaded to Supabase:', uploadResult);
+      }).catch((err) => {
+        console.error('ADMIN: Failed to upload team data:', err);
+      });
+    }
+
+    // Create the invitation
     createTeamInvitation({
       team_id: activeTeamId || 'unknown',
       team_name: teamName,

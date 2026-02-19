@@ -15,6 +15,7 @@ import { signUpWithEmail } from '@/lib/supabase-auth';
 import { secureRegisterInvitedPlayer, secureRegisterInvitedPlayerByPhone, secureLoginWithEmail, secureLoginWithPhone } from '@/lib/secure-auth';
 import { signInWithEmail } from '@/lib/supabase-auth';
 import { checkPendingInvitation, acceptTeamInvitation, TeamInvitation } from '@/lib/team-invitations';
+import { downloadTeamFromSupabase } from '@/lib/team-sync';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -85,6 +86,7 @@ export default function RegisterScreen() {
     setIsLoading(true);
 
     const trimmedIdentifier = identifier.trim();
+    console.log('REGISTER: handleCheckInvitation called for:', trimmedIdentifier);
 
     if (!trimmedIdentifier) {
       setError('Please enter your email or phone number');
@@ -95,15 +97,19 @@ export default function RegisterScreen() {
     // Validate format first
     if (isPhoneNumber(trimmedIdentifier)) {
       const rawPhone = unformatPhone(trimmedIdentifier);
+      console.log('REGISTER: Detected phone number, raw:', rawPhone);
       if (rawPhone.length < 10) {
         setError('Please enter a valid phone number');
         setIsLoading(false);
         return;
       }
     } else if (!trimmedIdentifier.includes('@')) {
+      console.log('REGISTER: Invalid email format');
       setError('Please enter a valid email address');
       setIsLoading(false);
       return;
+    } else {
+      console.log('REGISTER: Detected email address');
     }
 
     // FIRST: Check Supabase for pending invitations (cross-device invitations)
@@ -114,6 +120,7 @@ export default function RegisterScreen() {
     if (supabaseResult.success && supabaseResult.invitation) {
       // Found a Supabase invitation - this is an invitation from another device/team
       const invitation = supabaseResult.invitation;
+      console.log('REGISTER: Found Supabase invitation for team:', invitation.team_name);
       setSupabaseInvitation(invitation);
       setInvitedTeamName(invitation.team_name);
       setFoundPlayer({
@@ -133,8 +140,10 @@ export default function RegisterScreen() {
       const isEmail = trimmedIdentifier.includes('@');
       if (isEmail) {
         // Check if email exists in Supabase Auth
+        console.log('REGISTER: Checking if email exists in Supabase Auth');
         const { checkEmailExists } = await import('@/lib/supabase-auth');
         const existsResult = await checkEmailExists(trimmedIdentifier);
+        console.log('REGISTER: Email exists check result:', existsResult.exists);
         if (existsResult.exists) {
           // Existing user - prompt for password to join new team
           setStep(4);
@@ -144,16 +153,20 @@ export default function RegisterScreen() {
       }
 
       // New user - create account flow
+      console.log('REGISTER: New user, going to step 2');
       setStep(2);
       setIsLoading(false);
       return;
     }
+
+    console.log('REGISTER: No Supabase invitation found, checking local store');
 
     // FALLBACK: Check local store (for invitations on the same device)
     let player;
     if (isPhoneNumber(trimmedIdentifier)) {
       const rawPhone = unformatPhone(trimmedIdentifier);
       player = findPlayerByPhone(rawPhone);
+      console.log('REGISTER: Local phone lookup result:', player ? player.firstName : 'not found');
 
       if (!player) {
         setError('No invitation found for this phone number. Please ask your team admin to add you first.');
@@ -175,6 +188,7 @@ export default function RegisterScreen() {
       }
     } else {
       player = findPlayerByEmail(trimmedIdentifier);
+      console.log('REGISTER: Local email lookup result:', player ? player.firstName : 'not found');
 
       if (!player) {
         setError('No invitation found for this email. Please ask your team admin to add you first.');
@@ -198,6 +212,7 @@ export default function RegisterScreen() {
 
     setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    console.log('REGISTER: Found local player, going to step 2');
     setStep(2);
     setIsLoading(false);
   };
@@ -273,48 +288,114 @@ export default function RegisterScreen() {
       if (!isPhoneNumber(trimmedIdentifier)) {
         const supabaseResult = await signUpWithEmail(trimmedIdentifier, password);
         if (!supabaseResult.success) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          setError(supabaseResult.error || 'Failed to create account');
-          setIsLoading(false);
-          return;
+          // Check if user already exists but just needs to sign in
+          if (supabaseResult.alreadyRegistered) {
+            // User exists, try to sign in instead
+            const signInResult = await signInWithEmail(trimmedIdentifier, password);
+            if (!signInResult.success) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              setError(signInResult.error || 'Failed to sign in. Please check your password.');
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            setError(supabaseResult.error || 'Failed to create account');
+            setIsLoading(false);
+            return;
+          }
         }
       }
 
-      // If this is a Supabase invitation (cross-device), create the team and player locally
+      // If this is a Supabase invitation (cross-device), download team data from Supabase
       if (supabaseInvitation) {
-        console.log('REGISTER: Creating team from Supabase invitation:', supabaseInvitation.team_name);
+        console.log('REGISTER: Joining team from Supabase invitation:', supabaseInvitation.team_name);
+        console.log('REGISTER: Team ID:', supabaseInvitation.team_id);
 
-        // Create a new player object for the new team
-        const newPlayerId = `player-${Date.now()}`;
-        const newPlayer = {
-          id: newPlayerId,
-          firstName: supabaseInvitation.first_name,
-          lastName: supabaseInvitation.last_name,
-          email: !isPhoneNumber(trimmedIdentifier) ? trimmedIdentifier : undefined,
-          phone: isPhoneNumber(trimmedIdentifier) ? unformatPhone(trimmedIdentifier) : undefined,
-          number: supabaseInvitation.jersey_number || '',
-          position: supabaseInvitation.position || 'C',
-          positions: supabaseInvitation.position ? [supabaseInvitation.position] : ['C'],
-          roles: supabaseInvitation.roles || [],
-          password: password, // Will be hashed by the store
-          avatar: avatar || undefined,
-          status: 'active' as const,
-        };
+        // Try to download the existing team data from Supabase
+        const downloadResult = await downloadTeamFromSupabase(supabaseInvitation.team_id);
 
-        // Create a new team with this player
-        const newTeamId = createNewTeam(
-          supabaseInvitation.team_name,
-          (teamSettings?.sport || 'hockey') as Sport,
-          newPlayer as any
-        );
+        if (downloadResult.success && downloadResult.team) {
+          console.log('REGISTER: Downloaded team data from Supabase');
 
-        // Mark the invitation as accepted
-        await acceptTeamInvitation(supabaseInvitation.id);
+          // Create the new player to add to the team
+          const newPlayerId = `player-${Date.now()}`;
+          const newPlayer = {
+            id: newPlayerId,
+            firstName: supabaseInvitation.first_name,
+            lastName: supabaseInvitation.last_name,
+            email: !isPhoneNumber(trimmedIdentifier) ? trimmedIdentifier : undefined,
+            phone: isPhoneNumber(trimmedIdentifier) ? unformatPhone(trimmedIdentifier) : undefined,
+            number: supabaseInvitation.jersey_number || '',
+            position: supabaseInvitation.position || 'C',
+            positions: supabaseInvitation.position ? [supabaseInvitation.position] : ['C'],
+            roles: supabaseInvitation.roles || [],
+            password: password, // Will be hashed by the store
+            avatar: avatar || undefined,
+            status: 'active' as const,
+          };
 
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace('/(tabs)');
-        setIsLoading(false);
-        return;
+          // Merge the new player into the downloaded team's players
+          const teamPlayers = downloadResult.team.players || [];
+          const fullTeam = {
+            ...downloadResult.team,
+            id: supabaseInvitation.team_id,
+            teamName: downloadResult.team.teamName || supabaseInvitation.team_name,
+            players: [...teamPlayers, newPlayer],
+          };
+
+          // Add the team to local store using addTeam
+          const addTeam = useTeamStore.getState().addTeam;
+          const switchTeam = useTeamStore.getState().switchTeam;
+          addTeam(fullTeam as any);
+          switchTeam(supabaseInvitation.team_id);
+
+          // Set the current player and logged in state
+          setCurrentPlayerId(newPlayerId);
+          setIsLoggedIn(true);
+
+          // Mark the invitation as accepted
+          await acceptTeamInvitation(supabaseInvitation.id);
+
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          router.replace('/(tabs)');
+          setIsLoading(false);
+          return;
+        } else {
+          // Team data not found in Supabase - fall back to creating a new team
+          console.log('REGISTER: Team not found in Supabase, creating new team');
+
+          const newPlayerId = `player-${Date.now()}`;
+          const newPlayer = {
+            id: newPlayerId,
+            firstName: supabaseInvitation.first_name,
+            lastName: supabaseInvitation.last_name,
+            email: !isPhoneNumber(trimmedIdentifier) ? trimmedIdentifier : undefined,
+            phone: isPhoneNumber(trimmedIdentifier) ? unformatPhone(trimmedIdentifier) : undefined,
+            number: supabaseInvitation.jersey_number || '',
+            position: supabaseInvitation.position || 'C',
+            positions: supabaseInvitation.position ? [supabaseInvitation.position] : ['C'],
+            roles: supabaseInvitation.roles || [],
+            password: password,
+            avatar: avatar || undefined,
+            status: 'active' as const,
+          };
+
+          // Create a new team with this player
+          createNewTeam(
+            supabaseInvitation.team_name,
+            (teamSettings?.sport || 'hockey') as Sport,
+            newPlayer as any
+          );
+
+          // Mark the invitation as accepted
+          await acceptTeamInvitation(supabaseInvitation.id);
+
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          router.replace('/(tabs)');
+          setIsLoading(false);
+          return;
+        }
       }
 
       // Local invitation flow (same device)
@@ -368,42 +449,102 @@ export default function RegisterScreen() {
         }
       }
 
-      // If this is a Supabase invitation (cross-device), create the team and player locally
+      // If this is a Supabase invitation (cross-device), download team data and join
       if (supabaseInvitation) {
         console.log('REGISTER: Existing user joining team from Supabase invitation:', supabaseInvitation.team_name);
+        console.log('REGISTER: Team ID:', supabaseInvitation.team_id);
 
-        // Create a new player object for the new team
-        const newPlayerId = `player-${Date.now()}`;
-        const newPlayer = {
-          id: newPlayerId,
-          firstName: supabaseInvitation.first_name,
-          lastName: supabaseInvitation.last_name,
-          email: !isPhoneNumber(trimmedIdentifier) ? trimmedIdentifier : undefined,
-          phone: isPhoneNumber(trimmedIdentifier) ? unformatPhone(trimmedIdentifier) : undefined,
-          number: supabaseInvitation.jersey_number || '',
-          position: supabaseInvitation.position || 'C',
-          positions: supabaseInvitation.position ? [supabaseInvitation.position] : ['C'],
-          roles: supabaseInvitation.roles || [],
-          password: existingPassword, // Will be hashed by the store
-          avatar: undefined,
-          status: 'active' as const,
-        };
+        // Try to download the existing team data from Supabase
+        const downloadResult = await downloadTeamFromSupabase(supabaseInvitation.team_id);
 
-        // Create a new team with this player
-        const newTeamId = createNewTeam(
-          supabaseInvitation.team_name,
-          (teamSettings?.sport || 'hockey') as Sport,
-          newPlayer as any
-        );
+        if (downloadResult.success && downloadResult.team) {
+          console.log('REGISTER: Downloaded team data from Supabase for existing user');
 
-        // Mark the invitation as accepted
-        await acceptTeamInvitation(supabaseInvitation.id);
+          // Create a new player object for the new team
+          const newPlayerId = `player-${Date.now()}`;
+          const newPlayer = {
+            id: newPlayerId,
+            firstName: supabaseInvitation.first_name,
+            lastName: supabaseInvitation.last_name,
+            email: !isPhoneNumber(trimmedIdentifier) ? trimmedIdentifier : undefined,
+            phone: isPhoneNumber(trimmedIdentifier) ? unformatPhone(trimmedIdentifier) : undefined,
+            number: supabaseInvitation.jersey_number || '',
+            position: supabaseInvitation.position || 'C',
+            positions: supabaseInvitation.position ? [supabaseInvitation.position] : ['C'],
+            roles: supabaseInvitation.roles || [],
+            password: existingPassword,
+            avatar: undefined,
+            status: 'active' as const,
+          };
 
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        // User now has multiple teams - go to team selector
-        router.replace('/select-team');
-        setIsLoading(false);
-        return;
+          // Merge the new player into the downloaded team's players
+          const teamPlayers = downloadResult.team.players || [];
+          const fullTeam = {
+            ...downloadResult.team,
+            id: supabaseInvitation.team_id,
+            teamName: downloadResult.team.teamName || supabaseInvitation.team_name,
+            players: [...teamPlayers, newPlayer],
+          };
+
+          // Add the team to local store
+          const addTeam = useTeamStore.getState().addTeam;
+          const switchTeam = useTeamStore.getState().switchTeam;
+          addTeam(fullTeam as any);
+          switchTeam(supabaseInvitation.team_id);
+
+          // Set the current player and logged in state
+          setCurrentPlayerId(newPlayerId);
+          setIsLoggedIn(true);
+
+          // Mark the invitation as accepted
+          await acceptTeamInvitation(supabaseInvitation.id);
+
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          // User now has multiple teams - go to team selector or tabs
+          const teamCount = useTeamStore.getState().getUserTeamCount();
+          if (teamCount > 1) {
+            router.replace('/select-team');
+          } else {
+            router.replace('/(tabs)');
+          }
+          setIsLoading(false);
+          return;
+        } else {
+          // Team data not found in Supabase - fall back to creating new team
+          console.log('REGISTER: Team not found in Supabase for existing user, creating new team');
+
+          const newPlayerId = `player-${Date.now()}`;
+          const newPlayer = {
+            id: newPlayerId,
+            firstName: supabaseInvitation.first_name,
+            lastName: supabaseInvitation.last_name,
+            email: !isPhoneNumber(trimmedIdentifier) ? trimmedIdentifier : undefined,
+            phone: isPhoneNumber(trimmedIdentifier) ? unformatPhone(trimmedIdentifier) : undefined,
+            number: supabaseInvitation.jersey_number || '',
+            position: supabaseInvitation.position || 'C',
+            positions: supabaseInvitation.position ? [supabaseInvitation.position] : ['C'],
+            roles: supabaseInvitation.roles || [],
+            password: existingPassword,
+            avatar: undefined,
+            status: 'active' as const,
+          };
+
+          // Create a new team with this player
+          createNewTeam(
+            supabaseInvitation.team_name,
+            (teamSettings?.sport || 'hockey') as Sport,
+            newPlayer as any
+          );
+
+          // Mark the invitation as accepted
+          await acceptTeamInvitation(supabaseInvitation.id);
+
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          // User now has multiple teams - go to team selector
+          router.replace('/select-team');
+          setIsLoading(false);
+          return;
+        }
       }
 
       // Local invitation flow - login locally to set up multi-team state

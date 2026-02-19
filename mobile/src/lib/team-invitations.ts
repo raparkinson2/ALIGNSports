@@ -31,6 +31,8 @@ export async function checkPendingInvitation(identifier: string): Promise<{
       ? identifier.replace(/\D/g, '') // Remove non-digits for phone
       : identifier.toLowerCase();
 
+    console.log('INVITATION: Checking for identifier:', normalizedIdentifier, 'isPhone:', isPhone);
+
     // Query for pending (not accepted) invitations
     let query = supabase
       .from('team_invitations')
@@ -46,18 +48,30 @@ export async function checkPendingInvitation(identifier: string): Promise<{
 
     const { data, error } = await query.maybeSingle();
 
+    console.log('INVITATION: Query result - data:', data, 'error:', error);
+
     if (error) {
-      console.error('Error checking invitation:', error);
-      // If table doesn't exist, return gracefully
-      if (error.message?.includes('does not exist') || error.code === '42P01') {
+      console.error('INVITATION: Error checking invitation:', error.message, error.code);
+      // If table doesn't exist, return gracefully (no invitation found)
+      if (error.message?.includes('does not exist') ||
+          error.message?.includes('relation') ||
+          error.code === '42P01' ||
+          error.code === 'PGRST116') {
+        console.log('INVITATION: Table does not exist, returning no invitation');
         return { success: true, invitation: undefined };
       }
       return { success: false, error: error.message };
     }
 
+    console.log('INVITATION: Found invitation:', data ? 'yes' : 'no');
     return { success: true, invitation: data || undefined };
-  } catch (err) {
-    console.error('checkPendingInvitation error:', err);
+  } catch (err: any) {
+    console.error('INVITATION: checkPendingInvitation exception:', err?.message || err);
+    // Handle network errors gracefully - treat as no invitation found
+    if (err?.message?.includes('Network') || err?.message?.includes('fetch')) {
+      console.log('INVITATION: Network error, treating as no invitation found');
+      return { success: true, invitation: undefined };
+    }
     return { success: false, error: 'Failed to check invitation' };
   }
 }

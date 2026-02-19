@@ -61,13 +61,20 @@ export async function signUpWithEmail(email: string, password: string): Promise<
  */
 export async function signInWithEmail(email: string, password: string): Promise<AuthResult & { emailNotConfirmed?: boolean }> {
   try {
-    // Clear any invalid sessions before attempting login
-    await clearInvalidSession().catch(() => {});
+    console.log('SUPABASE_AUTH: Starting signInWithEmail for:', email);
 
+    // Clear any invalid sessions before attempting login
+    await clearInvalidSession().catch((e) => {
+      console.log('SUPABASE_AUTH: clearInvalidSession error (ignored):', e);
+    });
+
+    console.log('SUPABASE_AUTH: Calling supabase.auth.signInWithPassword');
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+
+    console.log('SUPABASE_AUTH: signInWithPassword result - error:', error?.message, 'user:', data?.user?.id);
 
     if (error) {
       // Handle refresh token errors by clearing session and retrying
@@ -87,11 +94,13 @@ export async function signInWithEmail(email: string, password: string): Promise<
     }
 
     if (!data.user) {
+      console.log('SUPABASE_AUTH: No user returned');
       return { success: false, error: 'Failed to sign in' };
     }
 
     // Double-check email confirmation status
     if (!data.user.email_confirmed_at) {
+      console.log('SUPABASE_AUTH: Email not confirmed, signing out');
       // Sign out the user since they haven't confirmed their email
       await supabase.auth.signOut();
       return {
@@ -101,8 +110,10 @@ export async function signInWithEmail(email: string, password: string): Promise<
       };
     }
 
+    console.log('SUPABASE_AUTH: Login successful for user:', data.user.id);
     return { success: true, userId: data.user.id };
   } catch (err: any) {
+    console.error('SUPABASE_AUTH: signInWithEmail exception:', err?.message || err);
     // Handle refresh token errors in catch block
     if (err?.message?.includes('Refresh Token') ||
         err?.message?.includes('refresh_token')) {
@@ -296,6 +307,7 @@ export function onAuthStateChange(callback: (event: string, session: any) => voi
 export async function checkEmailExists(email: string): Promise<{ exists: boolean; error?: string }> {
   try {
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+    console.log('CHECK_EMAIL: Checking if email exists:', email);
 
     const response = await fetch(`${supabaseUrl}/functions/v1/check-user-exists`, {
       method: 'POST',
@@ -306,15 +318,17 @@ export async function checkEmailExists(email: string): Promise<{ exists: boolean
     });
 
     const data = await response.json();
+    console.log('CHECK_EMAIL: Response:', response.status, data);
 
     if (!response.ok) {
-      console.warn('checkEmailExists error:', data.error);
+      console.warn('CHECK_EMAIL: Error response:', data.error);
       return { exists: false };
     }
 
     return { exists: data.exists };
-  } catch (err) {
-    console.error('checkEmailExists error:', err);
+  } catch (err: any) {
+    console.error('CHECK_EMAIL: Exception:', err?.message || err);
+    // On network error, assume user doesn't exist (allow registration to proceed)
     return { exists: false };
   }
 }

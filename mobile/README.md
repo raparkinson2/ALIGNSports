@@ -40,13 +40,15 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 
 ### Joining a Team (Cross-Device Invitations)
 - **Invited Players**: When an admin adds you to their team, the invitation is stored in Supabase
+  - The team's data (games, events, players, etc.) is also synced to Supabase
   - You can join from any device by entering your email/phone in "Invited to Join a Team"
-  - The app will find your invitation and show the correct team name you're joining
+  - The app will find your invitation and download the full team data
+  - You'll see all the team's existing games, events, and players
 - **Existing Users Joining New Teams**: If you already have an account on another team:
   - Enter your email/phone to find the invitation
   - You'll see "Welcome back" and can sign in with your existing password
   - The correct invited team name is displayed (not your current team)
-  - After signing in, the new team is added to your account
+  - After signing in, the new team is added to your account with all its data
   - You'll be taken to the team selector to choose which team to view
 
 ### Team Creation

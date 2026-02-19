@@ -281,13 +281,16 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     console.log('LOGIN: handleLogin called');
     console.log('LOGIN: identifier:', identifier, 'password length:', password.length);
+    console.log('LOGIN: isPhoneNumber check:', isPhoneNumber(identifier.trim()));
     setError('');
 
     if (!identifier.trim()) {
-      setError('Please enter your email');
+      console.log('LOGIN: No identifier provided');
+      setError('Please enter your email or phone number');
       return;
     }
     if (!password.trim()) {
+      console.log('LOGIN: No password provided');
       setError('Please enter your password');
       return;
     }
@@ -299,7 +302,7 @@ export default function LoginScreen() {
 
       // Try Supabase authentication first (for email)
       if (!isPhoneNumber(trimmedIdentifier)) {
-        console.log('LOGIN: Attempting Supabase auth for:', trimmedIdentifier);
+        console.log('LOGIN: Attempting Supabase auth for email:', trimmedIdentifier);
         const supabaseResult = await signInWithEmail(trimmedIdentifier, password);
         console.log('LOGIN: Supabase result:', JSON.stringify(supabaseResult));
 
@@ -348,12 +351,17 @@ export default function LoginScreen() {
           setIsLoading(false);
           return;
         }
+      } else {
+        console.log('LOGIN: Using phone-based login for:', trimmedIdentifier);
       }
 
       // Fallback to local authentication (for phone or if Supabase fails)
+      console.log('LOGIN: Attempting local auth');
       const result = isPhoneNumber(trimmedIdentifier)
         ? await secureLoginWithPhone(unformatPhone(trimmedIdentifier), password)
         : await secureLoginWithEmail(trimmedIdentifier, password);
+
+      console.log('LOGIN: Local auth result:', JSON.stringify(result));
 
       if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -367,7 +375,8 @@ export default function LoginScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError(result.error || 'Invalid email or password');
       }
-    } catch (err) {
+    } catch (err: any) {
+      console.error('LOGIN: Exception:', err?.message || err);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError('Something went wrong. Please try again.');
     }
