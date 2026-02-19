@@ -84,11 +84,13 @@ export default function RegisterScreen() {
   const handleCheckInvitation = async () => {
     setError('');
     setIsLoading(true);
+    console.log('REGISTER: ========== handleCheckInvitation START ==========');
 
     const trimmedIdentifier = identifier.trim();
-    console.log('REGISTER: handleCheckInvitation called for:', trimmedIdentifier);
+    console.log('REGISTER: Checking identifier:', trimmedIdentifier);
 
     if (!trimmedIdentifier) {
+      console.log('REGISTER: Empty identifier');
       setError('Please enter your email or phone number');
       setIsLoading(false);
       return;
@@ -112,109 +114,102 @@ export default function RegisterScreen() {
       console.log('REGISTER: Detected email address');
     }
 
-    // FIRST: Check Supabase for pending invitations (cross-device invitations)
-    console.log('REGISTER: Checking Supabase for invitation:', trimmedIdentifier);
-    const supabaseResult = await checkPendingInvitation(trimmedIdentifier);
-    console.log('REGISTER: Supabase invitation result:', JSON.stringify(supabaseResult));
+    try {
+      // FIRST: Check Supabase for pending invitations (cross-device invitations)
+      console.log('REGISTER: Calling checkPendingInvitation...');
+      const supabaseResult = await checkPendingInvitation(trimmedIdentifier);
+      console.log('REGISTER: Supabase invitation result:', JSON.stringify(supabaseResult));
 
-    if (supabaseResult.success && supabaseResult.invitation) {
-      // Found a Supabase invitation - this is an invitation from another device/team
-      const invitation = supabaseResult.invitation;
-      console.log('REGISTER: Found Supabase invitation for team:', invitation.team_name);
-      setSupabaseInvitation(invitation);
-      setInvitedTeamName(invitation.team_name);
-      setFoundPlayer({
-        id: invitation.id,
-        firstName: invitation.first_name,
-        lastName: invitation.last_name,
-        number: invitation.jersey_number || '',
-      });
+      if (supabaseResult.success && supabaseResult.invitation) {
+        // Found a Supabase invitation - this is an invitation from another device/team
+        const invitation = supabaseResult.invitation;
+        console.log('REGISTER: Found Supabase invitation for team:', invitation.team_name);
+        setSupabaseInvitation(invitation);
+        setInvitedTeamName(invitation.team_name);
+        setFoundPlayer({
+          id: invitation.id,
+          firstName: invitation.first_name,
+          lastName: invitation.last_name,
+          number: invitation.jersey_number || '',
+        });
 
-      // Check if this user already has an account (password set in Supabase Auth)
-      // We'll do this by checking if they can sign in
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        // Check if this user already has an account (password set in Supabase Auth)
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      // For now, assume new users need to create a password (step 2)
-      // Existing users will be prompted for their password (step 4)
-      // We'll check existing account status by trying Supabase auth lookup
-      const isEmail = trimmedIdentifier.includes('@');
-      if (isEmail) {
-        // Check if email exists in Supabase Auth
-        console.log('REGISTER: Checking if email exists in Supabase Auth');
-        const { checkEmailExists } = await import('@/lib/supabase-auth');
-        const existsResult = await checkEmailExists(trimmedIdentifier);
-        console.log('REGISTER: Email exists check result:', existsResult.exists);
-        if (existsResult.exists) {
-          // Existing user - prompt for password to join new team
-          setStep(4);
+        // For email users, check if they already exist in Supabase Auth
+        const isEmail = trimmedIdentifier.includes('@');
+        if (isEmail) {
+          console.log('REGISTER: Email user - skipping auth check, going to step 2 (new user flow)');
+        }
+
+        // New user - create account flow
+        console.log('REGISTER: Going to step 2');
+        setStep(2);
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('REGISTER: No Supabase invitation found, checking local store');
+
+      // FALLBACK: Check local store (for invitations on the same device)
+      let player;
+      if (isPhoneNumber(trimmedIdentifier)) {
+        const rawPhone = unformatPhone(trimmedIdentifier);
+        player = findPlayerByPhone(rawPhone);
+        console.log('REGISTER: Local phone lookup result:', player ? player.firstName : 'not found');
+
+        if (!player) {
+          setError('No invitation found for this phone number. Please ask your team admin to add you first.');
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setIsLoading(false);
+          return;
+        }
+
+        // Set invited team name from local team
+        setInvitedTeamName(teamName);
+
+        if (player.password) {
+          // Existing user - redirect to sign in with context about new team
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
+          setStep(4); // Go to existing user sign-in step
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        player = findPlayerByEmail(trimmedIdentifier);
+        console.log('REGISTER: Local email lookup result:', player ? player.firstName : 'not found');
+
+        if (!player) {
+          setError('No invitation found for this email. Please ask your team admin to add you first.');
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setIsLoading(false);
+          return;
+        }
+
+        // Set invited team name from local team
+        setInvitedTeamName(teamName);
+
+        if (player.password) {
+          // Existing user - redirect to sign in with context about new team
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
+          setStep(4); // Go to existing user sign-in step
           setIsLoading(false);
           return;
         }
       }
 
-      // New user - create account flow
-      console.log('REGISTER: New user, going to step 2');
+      setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      console.log('REGISTER: Found local player, going to step 2');
       setStep(2);
       setIsLoading(false);
-      return;
+    } catch (err: any) {
+      console.error('REGISTER: handleCheckInvitation error:', err?.message || err);
+      setError('Something went wrong. Please try again.');
+      setIsLoading(false);
     }
-
-    console.log('REGISTER: No Supabase invitation found, checking local store');
-
-    // FALLBACK: Check local store (for invitations on the same device)
-    let player;
-    if (isPhoneNumber(trimmedIdentifier)) {
-      const rawPhone = unformatPhone(trimmedIdentifier);
-      player = findPlayerByPhone(rawPhone);
-      console.log('REGISTER: Local phone lookup result:', player ? player.firstName : 'not found');
-
-      if (!player) {
-        setError('No invitation found for this phone number. Please ask your team admin to add you first.');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setIsLoading(false);
-        return;
-      }
-
-      // Set invited team name from local team
-      setInvitedTeamName(teamName);
-
-      if (player.password) {
-        // Existing user - redirect to sign in with context about new team
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
-        setStep(4); // Go to existing user sign-in step
-        setIsLoading(false);
-        return;
-      }
-    } else {
-      player = findPlayerByEmail(trimmedIdentifier);
-      console.log('REGISTER: Local email lookup result:', player ? player.firstName : 'not found');
-
-      if (!player) {
-        setError('No invitation found for this email. Please ask your team admin to add you first.');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setIsLoading(false);
-        return;
-      }
-
-      // Set invited team name from local team
-      setInvitedTeamName(teamName);
-
-      if (player.password) {
-        // Existing user - redirect to sign in with context about new team
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
-        setStep(4); // Go to existing user sign-in step
-        setIsLoading(false);
-        return;
-      }
-    }
-
-    setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    console.log('REGISTER: Found local player, going to step 2');
-    setStep(2);
-    setIsLoading(false);
   };
 
   const handleCreateAccount = () => {
@@ -676,9 +671,15 @@ export default function RegisterScreen() {
                 {/* Continue Button */}
                 <Pressable
                   onPress={handleCheckInvitation}
-                  className="bg-cyan-500 rounded-xl py-4 flex-row items-center justify-center active:bg-cyan-600 mb-4"
+                  disabled={isLoading}
+                  className={cn(
+                    "bg-cyan-500 rounded-xl py-4 flex-row items-center justify-center mb-4",
+                    isLoading ? "opacity-60" : "active:bg-cyan-600"
+                  )}
                 >
-                  <Text className="text-white font-semibold text-lg">Check Invitation</Text>
+                  <Text className="text-white font-semibold text-lg">
+                    {isLoading ? 'Checking...' : 'Check Invitation'}
+                  </Text>
                 </Pressable>
 
                 {/* Already have account */}

@@ -17,6 +17,16 @@ export interface TeamInvitation {
 }
 
 /**
+ * Helper to add timeout to promises
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Request timed out')), ms)
+  );
+  return Promise.race([promise, timeout]);
+}
+
+/**
  * Check if there's a pending team invitation for this email or phone
  * This queries the Supabase team_invitations table
  */
@@ -33,7 +43,7 @@ export async function checkPendingInvitation(identifier: string): Promise<{
 
     console.log('INVITATION: Checking for identifier:', normalizedIdentifier, 'isPhone:', isPhone);
 
-    // Query for pending (not accepted) invitations
+    // Query for pending (not accepted) invitations with a timeout
     let query = supabase
       .from('team_invitations')
       .select('*')
@@ -46,9 +56,13 @@ export async function checkPendingInvitation(identifier: string): Promise<{
       query = query.ilike('email', normalizedIdentifier);
     }
 
-    const { data, error } = await query.maybeSingle();
+    // Add 8 second timeout to prevent hanging
+    const queryPromise = new Promise<{ data: TeamInvitation | null; error: any }>((resolve) => {
+      query.maybeSingle().then(resolve);
+    });
+    const { data, error } = await withTimeout(queryPromise, 8000);
 
-    console.log('INVITATION: Query result - data:', data, 'error:', error);
+    console.log('INVITATION: Query result - data:', JSON.stringify(data), 'error:', error?.message);
 
     if (error) {
       console.error('INVITATION: Error checking invitation:', error.message, error.code);
@@ -67,9 +81,11 @@ export async function checkPendingInvitation(identifier: string): Promise<{
     return { success: true, invitation: data || undefined };
   } catch (err: any) {
     console.error('INVITATION: checkPendingInvitation exception:', err?.message || err);
-    // Handle network errors gracefully - treat as no invitation found
-    if (err?.message?.includes('Network') || err?.message?.includes('fetch')) {
-      console.log('INVITATION: Network error, treating as no invitation found');
+    // Handle network errors and timeouts gracefully - treat as no invitation found
+    if (err?.message?.includes('Network') ||
+        err?.message?.includes('fetch') ||
+        err?.message?.includes('timed out')) {
+      console.log('INVITATION: Network error or timeout, treating as no invitation found');
       return { success: true, invitation: undefined };
     }
     return { success: false, error: 'Failed to check invitation' };

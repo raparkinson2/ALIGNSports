@@ -563,6 +563,9 @@ export default function AdminScreen() {
     addPlayer(newPlayer);
 
     // Also create a Supabase invitation for cross-device joining
+    // Generate a consistent team ID to use for both upload and invitation
+    const teamId = activeTeamId || `team-${Date.now()}`;
+
     // Use a small timeout to ensure state is updated with new player
     setTimeout(async () => {
       // Upload the team data to Supabase so the invited player can join with data
@@ -575,7 +578,7 @@ export default function AdminScreen() {
       if (!currentTeam && state.teamName) {
         console.log('ADMIN: Using legacy single-team mode for upload');
         currentTeam = {
-          id: activeTeamId || `team-${Date.now()}`,
+          id: teamId, // Use the consistent team ID
           teamName: state.teamName,
           teamSettings: state.teamSettings,
           players: state.players,
@@ -593,6 +596,7 @@ export default function AdminScreen() {
 
       if (currentTeam) {
         try {
+          console.log('ADMIN: Uploading team with ID:', currentTeam.id);
           const uploadResult = await uploadTeamToSupabase(currentTeam);
           console.log('ADMIN: Team data uploaded to Supabase:', uploadResult);
         } catch (err) {
@@ -603,9 +607,10 @@ export default function AdminScreen() {
       }
     }, 100);
 
-    // Create the invitation
+    // Create the invitation with the same team ID
+    console.log('ADMIN: Creating invitation for team ID:', teamId);
     createTeamInvitation({
-      team_id: activeTeamId || `team-${Date.now()}`,
+      team_id: teamId,
       team_name: teamName,
       email: newPlayerEmail.trim() || undefined,
       phone: rawPhone || undefined,
