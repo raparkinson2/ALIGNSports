@@ -726,7 +726,11 @@ export default function AdminScreen() {
     if (!selectedPlayer) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsReinviteMode(true);
-    setIsInviteModalVisible(true);
+    // Close player modal first, then open invite modal
+    setIsPlayerModalVisible(false);
+    setTimeout(() => {
+      setIsInviteModalVisible(true);
+    }, 300);
   };
 
   const handleToggleRole = (role: PlayerRole) => {
