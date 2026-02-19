@@ -61,6 +61,7 @@ import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
 import { formatPhoneNumber, formatPhoneInput, unformatPhone } from '@/lib/phone';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { createTeamInvitation } from '@/lib/team-invitations';
 
 interface PlayerManageCardProps {
   player: Player;
@@ -221,6 +222,8 @@ export default function AdminScreen() {
   const updateGame = useTeamStore((s) => s.updateGame);
   const archiveAndStartNewSeason = useTeamStore((s) => s.archiveAndStartNewSeason);
   const setCurrentSeasonName = useTeamStore((s) => s.setCurrentSeasonName);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
+  const userEmail = useTeamStore((s) => s.userEmail);
 
   const positions = SPORT_POSITIONS[teamSettings.sport];
 
@@ -557,6 +560,25 @@ export default function AdminScreen() {
     };
 
     addPlayer(newPlayer);
+
+    // Also create a Supabase invitation for cross-device joining
+    createTeamInvitation({
+      team_id: activeTeamId || 'unknown',
+      team_name: teamName,
+      email: newPlayerEmail.trim() || undefined,
+      phone: rawPhone || undefined,
+      first_name: newPlayerFirstName.trim(),
+      last_name: newPlayerLastName.trim(),
+      jersey_number: (isCoachRole || isParentRole) ? undefined : newPlayerNumber.trim(),
+      position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : newPlayerPositions[0]),
+      roles: roles,
+      invited_by_email: userEmail || undefined,
+    }).then((result) => {
+      console.log('ADMIN: Supabase invitation created:', result);
+    }).catch((err) => {
+      console.error('ADMIN: Failed to create Supabase invitation:', err);
+    });
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsNewPlayerModalVisible(false);
     resetNewPlayerForm();

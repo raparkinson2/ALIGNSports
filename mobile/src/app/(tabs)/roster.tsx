@@ -28,6 +28,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, parseISO } from 'date-fns';
 import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, PlayerStats, getPlayerPositions, getPrimaryPosition, getPlayerName, StatusDuration, DurationUnit } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { createTeamInvitation } from '@/lib/team-invitations';
 import { useResponsive } from '@/lib/useResponsive';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -426,6 +427,8 @@ export default function RosterScreen() {
   const canEditPlayers = useTeamStore((s) => s.canEditPlayers);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
+  const userEmail = useTeamStore((s) => s.userEmail);
   const showTeamStats = teamSettings.showTeamStats !== false;
   const allowPlayerSelfStats = teamSettings.allowPlayerSelfStats === true;
 
@@ -616,6 +619,27 @@ export default function RosterScreen() {
         statusEndDate: isAdmin() && (isInjured || isSuspended) ? (statusEndDate || undefined) : undefined,
       };
       addPlayer(newPlayer);
+
+      // Also create a Supabase invitation for cross-device joining
+      if (rawPhone || rawEmail) {
+        createTeamInvitation({
+          team_id: activeTeamId || 'unknown',
+          team_name: teamName,
+          email: rawEmail || undefined,
+          phone: rawPhone || undefined,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          jersey_number: number.trim() || undefined,
+          position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : selectedPositions[0]),
+          roles: isAdmin() ? roles : [],
+          invited_by_email: userEmail || undefined,
+        }).then((result) => {
+          console.log('ROSTER: Supabase invitation created:', result);
+        }).catch((err) => {
+          console.error('ROSTER: Failed to create Supabase invitation:', err);
+        });
+      }
+
       setIsModalVisible(false);
       resetForm();
 

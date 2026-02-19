@@ -486,3 +486,45 @@ CREATE TRIGGER games_updated_at BEFORE UPDATE ON games
 
 CREATE TRIGGER events_updated_at BEFORE UPDATE ON events
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- =============================================
+-- TEAM INVITATIONS TABLE (for cross-device invitations)
+-- =============================================
+CREATE TABLE team_invitations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  team_id TEXT NOT NULL, -- Local team ID from the inviting device
+  team_name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  jersey_number TEXT,
+  position TEXT,
+  roles TEXT[] DEFAULT '{}',
+  sport TEXT DEFAULT 'hockey',
+  invited_by_email TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  accepted_at TIMESTAMPTZ, -- NULL means pending, set when accepted
+  CONSTRAINT team_invitations_contact_check CHECK (email IS NOT NULL OR phone IS NOT NULL)
+);
+
+-- Indexes for fast lookup
+CREATE INDEX idx_team_invitations_email ON team_invitations(lower(email)) WHERE email IS NOT NULL;
+CREATE INDEX idx_team_invitations_phone ON team_invitations(phone) WHERE phone IS NOT NULL;
+CREATE INDEX idx_team_invitations_pending ON team_invitations(accepted_at) WHERE accepted_at IS NULL;
+
+-- Enable RLS
+ALTER TABLE team_invitations ENABLE ROW LEVEL SECURITY;
+
+-- Allow anyone to read invitations (needed for users to check their invitations)
+CREATE POLICY "Anyone can view pending invitations" ON team_invitations
+  FOR SELECT USING (accepted_at IS NULL);
+
+-- Allow anyone to create invitations (admins creating invitations for their team)
+CREATE POLICY "Anyone can create invitations" ON team_invitations
+  FOR INSERT WITH CHECK (true);
+
+-- Allow updating invitations (for marking as accepted)
+CREATE POLICY "Anyone can accept invitations" ON team_invitations
+  FOR UPDATE USING (true);
+

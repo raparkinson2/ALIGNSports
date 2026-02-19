@@ -8,12 +8,13 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { useTeamStore } from '@/lib/store';
+import { useTeamStore, Sport } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import { signUpWithEmail } from '@/lib/supabase-auth';
 import { secureRegisterInvitedPlayer, secureRegisterInvitedPlayerByPhone, secureLoginWithEmail, secureLoginWithPhone } from '@/lib/secure-auth';
 import { signInWithEmail } from '@/lib/supabase-auth';
+import { checkPendingInvitation, acceptTeamInvitation, TeamInvitation } from '@/lib/team-invitations';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -24,6 +25,11 @@ export default function RegisterScreen() {
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
   const teamName = useTeamStore((s) => s.teamName);
   const players = useTeamStore((s) => s.players);
+  const createNewTeam = useTeamStore((s) => s.createNewTeam);
+  const addPlayer = useTeamStore((s) => s.addPlayer);
+  const setCurrentPlayerId = useTeamStore((s) => s.setCurrentPlayerId);
+  const setIsLoggedIn = useTeamStore((s) => s.setIsLoggedIn);
+  const teamSettings = useTeamStore((s) => s.teamSettings);
 
   const [step, setStep] = useState(1);
   const [identifier, setIdentifier] = useState(''); // Can be email or phone
@@ -34,6 +40,10 @@ export default function RegisterScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [foundPlayer, setFoundPlayer] = useState<{ id: string; firstName: string; lastName: string; number: string } | null>(null);
   const [existingPassword, setExistingPassword] = useState(''); // For existing users joining new team
+
+  // State for Supabase-based invitations (cross-device)
+  const [supabaseInvitation, setSupabaseInvitation] = useState<TeamInvitation | null>(null);
+  const [invitedTeamName, setInvitedTeamName] = useState<string>(''); // Team being joined (may be different from current)
 
   const hasTeam = players.length > 0;
 
@@ -70,56 +80,118 @@ export default function RegisterScreen() {
   const passwordErrors = password.length > 0 ? validatePassword(password) : [];
   const isPasswordValid = passwordErrors.length === 0 && password.length > 0;
 
-  const handleCheckInvitation = () => {
+  const handleCheckInvitation = async () => {
     setError('');
+    setIsLoading(true);
 
     const trimmedIdentifier = identifier.trim();
 
     if (!trimmedIdentifier) {
       setError('Please enter your email or phone number');
+      setIsLoading(false);
       return;
     }
 
-    let player;
+    // Validate format first
     if (isPhoneNumber(trimmedIdentifier)) {
       const rawPhone = unformatPhone(trimmedIdentifier);
       if (rawPhone.length < 10) {
         setError('Please enter a valid phone number');
+        setIsLoading(false);
         return;
       }
+    } else if (!trimmedIdentifier.includes('@')) {
+      setError('Please enter a valid email address');
+      setIsLoading(false);
+      return;
+    }
+
+    // FIRST: Check Supabase for pending invitations (cross-device invitations)
+    console.log('REGISTER: Checking Supabase for invitation:', trimmedIdentifier);
+    const supabaseResult = await checkPendingInvitation(trimmedIdentifier);
+    console.log('REGISTER: Supabase invitation result:', JSON.stringify(supabaseResult));
+
+    if (supabaseResult.success && supabaseResult.invitation) {
+      // Found a Supabase invitation - this is an invitation from another device/team
+      const invitation = supabaseResult.invitation;
+      setSupabaseInvitation(invitation);
+      setInvitedTeamName(invitation.team_name);
+      setFoundPlayer({
+        id: invitation.id,
+        firstName: invitation.first_name,
+        lastName: invitation.last_name,
+        number: invitation.jersey_number || '',
+      });
+
+      // Check if this user already has an account (password set in Supabase Auth)
+      // We'll do this by checking if they can sign in
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // For now, assume new users need to create a password (step 2)
+      // Existing users will be prompted for their password (step 4)
+      // We'll check existing account status by trying Supabase auth lookup
+      const isEmail = trimmedIdentifier.includes('@');
+      if (isEmail) {
+        // Check if email exists in Supabase Auth
+        const { checkEmailExists } = await import('@/lib/supabase-auth');
+        const existsResult = await checkEmailExists(trimmedIdentifier);
+        if (existsResult.exists) {
+          // Existing user - prompt for password to join new team
+          setStep(4);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // New user - create account flow
+      setStep(2);
+      setIsLoading(false);
+      return;
+    }
+
+    // FALLBACK: Check local store (for invitations on the same device)
+    let player;
+    if (isPhoneNumber(trimmedIdentifier)) {
+      const rawPhone = unformatPhone(trimmedIdentifier);
       player = findPlayerByPhone(rawPhone);
 
       if (!player) {
         setError('No invitation found for this phone number. Please ask your team admin to add you first.');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setIsLoading(false);
         return;
       }
+
+      // Set invited team name from local team
+      setInvitedTeamName(teamName);
 
       if (player.password) {
         // Existing user - redirect to sign in with context about new team
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
         setStep(4); // Go to existing user sign-in step
+        setIsLoading(false);
         return;
       }
     } else {
-      if (!trimmedIdentifier.includes('@')) {
-        setError('Please enter a valid email address');
-        return;
-      }
       player = findPlayerByEmail(trimmedIdentifier);
 
       if (!player) {
         setError('No invitation found for this email. Please ask your team admin to add you first.');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setIsLoading(false);
         return;
       }
+
+      // Set invited team name from local team
+      setInvitedTeamName(teamName);
 
       if (player.password) {
         // Existing user - redirect to sign in with context about new team
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
         setStep(4); // Go to existing user sign-in step
+        setIsLoading(false);
         return;
       }
     }
@@ -127,6 +199,7 @@ export default function RegisterScreen() {
     setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setStep(2);
+    setIsLoading(false);
   };
 
   const handleCreateAccount = () => {
@@ -207,6 +280,44 @@ export default function RegisterScreen() {
         }
       }
 
+      // If this is a Supabase invitation (cross-device), create the team and player locally
+      if (supabaseInvitation) {
+        console.log('REGISTER: Creating team from Supabase invitation:', supabaseInvitation.team_name);
+
+        // Create a new player object for the new team
+        const newPlayerId = `player-${Date.now()}`;
+        const newPlayer = {
+          id: newPlayerId,
+          firstName: supabaseInvitation.first_name,
+          lastName: supabaseInvitation.last_name,
+          email: !isPhoneNumber(trimmedIdentifier) ? trimmedIdentifier : undefined,
+          phone: isPhoneNumber(trimmedIdentifier) ? unformatPhone(trimmedIdentifier) : undefined,
+          number: supabaseInvitation.jersey_number || '',
+          position: supabaseInvitation.position || 'C',
+          positions: supabaseInvitation.position ? [supabaseInvitation.position] : ['C'],
+          roles: supabaseInvitation.roles || [],
+          password: password, // Will be hashed by the store
+          avatar: avatar || undefined,
+          status: 'active' as const,
+        };
+
+        // Create a new team with this player
+        const newTeamId = createNewTeam(
+          supabaseInvitation.team_name,
+          (teamSettings?.sport || 'hockey') as Sport,
+          newPlayer as any
+        );
+
+        // Mark the invitation as accepted
+        await acceptTeamInvitation(supabaseInvitation.id);
+
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.replace('/(tabs)');
+        setIsLoading(false);
+        return;
+      }
+
+      // Local invitation flow (same device)
       // Register locally with hashed password
       const result = isPhoneNumber(trimmedIdentifier)
         ? await secureRegisterInvitedPlayerByPhone(unformatPhone(trimmedIdentifier), password)
@@ -224,6 +335,7 @@ export default function RegisterScreen() {
         setError(result.error || 'Failed to create account');
       }
     } catch (err) {
+      console.error('REGISTER: Error completing registration:', err);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError('Something went wrong. Please try again.');
     }
@@ -245,7 +357,7 @@ export default function RegisterScreen() {
     try {
       const trimmedIdentifier = identifier.trim();
 
-      // For email users, also verify with Supabase
+      // For email users, verify with Supabase Auth
       if (!isPhoneNumber(trimmedIdentifier)) {
         const supabaseResult = await signInWithEmail(trimmedIdentifier, existingPassword);
         if (!supabaseResult.success) {
@@ -256,7 +368,45 @@ export default function RegisterScreen() {
         }
       }
 
-      // Also login locally to set up multi-team state
+      // If this is a Supabase invitation (cross-device), create the team and player locally
+      if (supabaseInvitation) {
+        console.log('REGISTER: Existing user joining team from Supabase invitation:', supabaseInvitation.team_name);
+
+        // Create a new player object for the new team
+        const newPlayerId = `player-${Date.now()}`;
+        const newPlayer = {
+          id: newPlayerId,
+          firstName: supabaseInvitation.first_name,
+          lastName: supabaseInvitation.last_name,
+          email: !isPhoneNumber(trimmedIdentifier) ? trimmedIdentifier : undefined,
+          phone: isPhoneNumber(trimmedIdentifier) ? unformatPhone(trimmedIdentifier) : undefined,
+          number: supabaseInvitation.jersey_number || '',
+          position: supabaseInvitation.position || 'C',
+          positions: supabaseInvitation.position ? [supabaseInvitation.position] : ['C'],
+          roles: supabaseInvitation.roles || [],
+          password: existingPassword, // Will be hashed by the store
+          avatar: undefined,
+          status: 'active' as const,
+        };
+
+        // Create a new team with this player
+        const newTeamId = createNewTeam(
+          supabaseInvitation.team_name,
+          (teamSettings?.sport || 'hockey') as Sport,
+          newPlayer as any
+        );
+
+        // Mark the invitation as accepted
+        await acceptTeamInvitation(supabaseInvitation.id);
+
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        // User now has multiple teams - go to team selector
+        router.replace('/select-team');
+        setIsLoading(false);
+        return;
+      }
+
+      // Local invitation flow - login locally to set up multi-team state
       const result = isPhoneNumber(trimmedIdentifier)
         ? await secureLoginWithPhone(unformatPhone(trimmedIdentifier), existingPassword)
         : await secureLoginWithEmail(trimmedIdentifier, existingPassword);
@@ -274,6 +424,7 @@ export default function RegisterScreen() {
         setError(result.error || 'Incorrect password');
       }
     } catch (err) {
+      console.error('REGISTER: Error in existing user login:', err);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError('Something went wrong. Please try again.');
     }
@@ -619,7 +770,7 @@ export default function RegisterScreen() {
                   </View>
                   <Text className="text-white text-2xl font-bold">Sign In to Join</Text>
                   <Text className="text-slate-400 text-center mt-2">
-                    You already have an account. Enter your password to join {teamName || 'the new team'}.
+                    You already have an account. Enter your password to join {invitedTeamName || 'the new team'}.
                   </Text>
                 </View>
 
