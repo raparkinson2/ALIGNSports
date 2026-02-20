@@ -1,7 +1,7 @@
 import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView, Modal, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, ShieldQuestion, Phone, MailCheck, RefreshCw, KeySquare } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -55,6 +55,7 @@ function PlayerLoginCard({ player, index, onSelect }: PlayerLoginCardProps) {
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { registered } = useLocalSearchParams<{ registered?: string }>();
   const loginWithEmail = useTeamStore((s) => s.loginWithEmail);
   const loginWithPhone = useTeamStore((s) => s.loginWithPhone);
   const players = useTeamStore((s) => s.players);
@@ -584,6 +585,13 @@ export default function LoginScreen() {
                 />
               </View>
             </View>
+
+            {/* Success banner after registration */}
+            {registered === '1' && (
+              <Animated.View entering={FadeInDown.springify()} className="bg-green-500/20 border border-green-500/40 rounded-xl px-4 py-3 mb-4">
+                <Text className="text-green-400 text-center text-sm font-medium">Account created! Sign in to continue.</Text>
+              </Animated.View>
+            )}
 
             {/* Error Message */}
             {error ? (

@@ -381,8 +381,12 @@ export default function RegisterScreen() {
         // Mark the invitation as accepted
         await acceptTeamInvitation(supabaseInvitation.id);
 
+        // Clear login state — send user to login screen to sign in properly
+        // Login handles 1-team → tabs and multi-team → select-team automatically
+        useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null, activeTeamId: null });
+
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace('/(tabs)');
+        router.replace({ pathname: '/login', params: { registered: '1', email: !isPhoneNumber(trimmedIdentifier) ? trimmedIdentifier : undefined } });
         setIsLoading(false);
         return;
       }
@@ -411,7 +415,9 @@ export default function RegisterScreen() {
         }
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace('/(tabs)');
+        // Clear login state — send user to login screen to sign in properly
+        useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null });
+        router.replace({ pathname: '/login', params: { registered: '1' } });
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError(result.error || 'Failed to create account');
@@ -524,8 +530,11 @@ export default function RegisterScreen() {
 
         await acceptTeamInvitation(supabaseInvitation.id);
 
+        // Clear login state — send to login so it handles 1 vs multi-team routing
+        useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null, activeTeamId: null });
+
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace('/(tabs)');
+        router.replace({ pathname: '/login', params: { registered: '1' } });
         setIsLoading(false);
         return;
       }
