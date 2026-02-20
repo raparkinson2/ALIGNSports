@@ -2,6 +2,7 @@ import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Pla
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { MessageSquare, Send, ImageIcon, X, Search, Users, RefreshCw } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, SlideInDown, FadeOut } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -318,14 +319,16 @@ export default function ChatScreen() {
     };
   }, [activeTeamId, currentPlayerId]);
 
-  // Mark chat as read when entering the screen
-  useEffect(() => {
-    if (currentPlayerId) {
-      markChatAsRead(currentPlayerId);
-    }
-  }, [currentPlayerId, markChatAsRead]);
+  // Mark chat as read whenever the tab is focused (handles tab switches)
+  useFocusEffect(
+    useCallback(() => {
+      if (currentPlayerId) {
+        markChatAsRead(currentPlayerId);
+      }
+    }, [currentPlayerId, markChatAsRead])
+  );
 
-  // Also mark as read when new messages arrive (user is viewing)
+  // Also mark as read when new messages arrive while user is viewing
   useEffect(() => {
     if (currentPlayerId) {
       markChatAsRead(currentPlayerId);

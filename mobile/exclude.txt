@@ -1,3 +1,4 @@
+assets/app-logo.png
 assets/image-1767991066.jpeg
 assets/image-1767991070.jpeg
 assets/image-1767990997.jpeg
