@@ -28,7 +28,7 @@ import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, getPlayerName, AppNotification, InviteReleaseOption } from '@/lib/store';
-import { pushEventToSupabase, pushEventResponseToSupabase } from '@/lib/realtime-sync';
+import { pushEventToSupabase, pushEventResponseToSupabase, pushNotificationToSupabase } from '@/lib/realtime-sync';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -314,6 +314,7 @@ export default function EventDetailScreen() {
           createdAt: new Date().toISOString(),
         };
         addNotification(notification);
+        if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
       });
     }
 
@@ -362,6 +363,7 @@ export default function EventDetailScreen() {
       createdAt: new Date().toISOString(),
     };
     addNotification(notification);
+    if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
@@ -391,6 +393,7 @@ export default function EventDetailScreen() {
         createdAt: new Date().toISOString(),
       };
       addNotification(notification);
+      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
     });
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -421,6 +424,7 @@ export default function EventDetailScreen() {
         createdAt: new Date().toISOString(),
       };
       addNotification(notification);
+      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
     });
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

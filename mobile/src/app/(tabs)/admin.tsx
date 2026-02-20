@@ -62,6 +62,7 @@ import { useResponsive } from '@/lib/useResponsive';
 import { formatPhoneNumber, formatPhoneInput, unformatPhone } from '@/lib/phone';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { createTeamInvitation } from '@/lib/team-invitations';
+import { pushPlayerToSupabase, pushTeamToSupabase, deletePlayerFromSupabase } from '@/lib/realtime-sync';
 
 interface PlayerManageCardProps {
   player: Player;
@@ -225,6 +226,36 @@ export default function AdminScreen() {
   const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const userEmail = useTeamStore((s) => s.userEmail);
 
+  // Helper to sync a player to Supabase after any local update
+  const syncPlayerToCloud = (playerId: string) => {
+    if (!activeTeamId) return;
+    const p = useTeamStore.getState().players.find((pl) => pl.id === playerId);
+    if (p) pushPlayerToSupabase(p, activeTeamId).catch(console.error);
+  };
+
+  // Wrapper around setTeamSettings that also syncs to Supabase
+  const setTeamSettingsAndSync = (updates: Parameters<typeof setTeamSettings>[0]) => {
+    setTeamSettings(updates);
+    if (activeTeamId) {
+      // Use a small timeout so store has updated before we read it
+      setTimeout(() => {
+        const s = useTeamStore.getState();
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+      }, 50);
+    }
+  };
+
+  // Wrapper around setTeamName that also syncs to Supabase
+  const setTeamNameAndSync = (name: string) => {
+    setTeamName(name);
+    if (activeTeamId) {
+      setTimeout(() => {
+        const s = useTeamStore.getState();
+        pushTeamToSupabase(activeTeamId, name, s.teamSettings).catch(console.error);
+      }, 50);
+    }
+  };
+
   const positions = SPORT_POSITIONS[teamSettings.sport];
 
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
@@ -343,17 +374,14 @@ export default function AdminScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const firstName = editPlayerFirstName.trim();
     const lastName = editPlayerLastName.trim();
-    updatePlayer(selectedPlayer.id, {
-      firstName,
-      lastName
-    });
+    updatePlayer(selectedPlayer.id, { firstName, lastName });
     setSelectedPlayer({ ...selectedPlayer, firstName, lastName });
+    syncPlayerToCloud(selectedPlayer.id);
   };
 
   const handleSavePlayerNumber = () => {
     if (!selectedPlayer || !editPlayerNumber.trim()) return;
     const newNumber = editPlayerNumber.trim();
-    // Check for jersey number conflict (skip coaches/parents)
     const isCoachOrParent = selectedPlayer.roles?.includes('coach') || selectedPlayer.roles?.includes('parent');
     if (!isCoachOrParent) {
       const conflict = players.find((p) => p.id !== selectedPlayer.id && p.number === newNumber && !p.roles?.includes('coach') && !p.roles?.includes('parent'));
@@ -365,6 +393,7 @@ export default function AdminScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     updatePlayer(selectedPlayer.id, { number: newNumber });
     setSelectedPlayer({ ...selectedPlayer, number: newNumber });
+    syncPlayerToCloud(selectedPlayer.id);
   };
 
   const handleSavePlayerPhone = () => {
@@ -373,6 +402,7 @@ export default function AdminScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     updatePlayer(selectedPlayer.id, { phone: rawPhone || undefined });
     setSelectedPlayer({ ...selectedPlayer, phone: rawPhone || undefined });
+    syncPlayerToCloud(selectedPlayer.id);
   };
 
   const handleSavePlayerEmail = () => {
@@ -380,16 +410,15 @@ export default function AdminScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     updatePlayer(selectedPlayer.id, { email: editPlayerEmail.trim() || undefined });
     setSelectedPlayer({ ...selectedPlayer, email: editPlayerEmail.trim() || undefined });
+    syncPlayerToCloud(selectedPlayer.id);
   };
 
   const handleSavePlayerPositions = (newPositions: string[]) => {
     if (!selectedPlayer) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updatePlayer(selectedPlayer.id, {
-      position: newPositions[0],
-      positions: newPositions
-    });
+    updatePlayer(selectedPlayer.id, { position: newPositions[0], positions: newPositions });
     setSelectedPlayer({ ...selectedPlayer, position: newPositions[0], positions: newPositions });
+    syncPlayerToCloud(selectedPlayer.id);
   };
 
   const handleToggleEditCoach = () => {
@@ -600,6 +629,11 @@ export default function AdminScreen() {
     };
 
     addPlayer(newPlayer);
+
+    // Push new player to Supabase immediately
+    if (activeTeamId) {
+      pushPlayerToSupabase(newPlayer, activeTeamId).catch(console.error);
+    }
 
     // Also create a Supabase invitation for cross-device joining
     // Generate a consistent team ID
@@ -844,7 +878,7 @@ export default function AdminScreen() {
   const confirmChangeSport = () => {
     if (!pendingSport) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setTeamSettings({ sport: pendingSport });
+    setTeamSettingsAndSync({ sport: pendingSport });
     setIsSportChangeModalVisible(false);
     setPendingSport(null);
   };
@@ -873,7 +907,7 @@ export default function AdminScreen() {
     if (!newColorName.trim()) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const newColors = [...teamSettings.jerseyColors, { name: newColorName.trim(), color: newColorHex }];
-    setTeamSettings({ jerseyColors: newColors });
+    setTeamSettingsAndSync({ jerseyColors: newColors });
     setNewColorName('');
     setNewColorHex('#ffffff');
   };
@@ -890,7 +924,7 @@ export default function AdminScreen() {
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             const newColors = teamSettings.jerseyColors.filter((c) => c.name !== name);
-            setTeamSettings({ jerseyColors: newColors });
+            setTeamSettingsAndSync({ jerseyColors: newColors });
           },
         },
       ]
@@ -914,7 +948,7 @@ export default function AdminScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const newColors = [...teamSettings.jerseyColors];
     newColors[editingColorIndex] = { name: newColorName, color: editColorHex };
-    setTeamSettings({ jerseyColors: newColors });
+    setTeamSettingsAndSync({ jerseyColors: newColors });
 
     // Update all games that use the old color name
     if (oldColorName !== newColorName) {
@@ -950,7 +984,7 @@ export default function AdminScreen() {
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             const newColors = teamSettings.jerseyColors.filter((_, i) => i !== editingColorIndex);
-            setTeamSettings({ jerseyColors: newColors });
+            setTeamSettingsAndSync({ jerseyColors: newColors });
             setEditingColorIndex(null);
             setEditColorName('');
             setEditColorHex('#ffffff');
@@ -962,7 +996,7 @@ export default function AdminScreen() {
 
   const handleSaveTeamName = () => {
     if (!editTeamName.trim()) return;
-    setTeamName(editTeamName.trim());
+    setTeamNameAndSync(editTeamName.trim());
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsSettingsModalVisible(false);
   };
@@ -991,7 +1025,7 @@ export default function AdminScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      setTeamSettings({ teamLogo: result.assets[0].uri });
+      setTeamSettingsAndSync({ teamLogo: result.assets[0].uri });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
@@ -1006,7 +1040,7 @@ export default function AdminScreen() {
           text: 'Remove',
           style: 'destructive',
           onPress: () => {
-            setTeamSettings({ teamLogo: undefined });
+            setTeamSettingsAndSync({ teamLogo: undefined });
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           },
         },
@@ -1260,7 +1294,7 @@ export default function AdminScreen() {
                   value={teamSettings.showLineups !== false}
                   onValueChange={(value) => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setTeamSettings({ showLineups: value });
+                    setTeamSettingsAndSync({ showLineups: value });
                   }}
                   trackColor={{ false: '#334155', true: '#22c55e' }}
                   thumbColor="#ffffff"
@@ -1287,7 +1321,7 @@ export default function AdminScreen() {
                     value={teamSettings.isSoftball === true}
                     onValueChange={(value) => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setTeamSettings({ isSoftball: value });
+                      setTeamSettingsAndSync({ isSoftball: value });
                     }}
                     trackColor={{ false: '#334155', true: '#22c55e' }}
                     thumbColor="#ffffff"
@@ -1321,7 +1355,7 @@ export default function AdminScreen() {
                   value={teamSettings.showTeamChat !== false}
                   onValueChange={(value) => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setTeamSettings({ showTeamChat: value });
+                    setTeamSettingsAndSync({ showTeamChat: value });
                   }}
                   trackColor={{ false: '#334155', true: '#22c55e' }}
                   thumbColor="#ffffff"
@@ -1451,7 +1485,7 @@ export default function AdminScreen() {
                   value={teamSettings.showPhotos !== false}
                   onValueChange={(value) => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setTeamSettings({ showPhotos: value });
+                    setTeamSettingsAndSync({ showPhotos: value });
                   }}
                   trackColor={{ false: '#334155', true: '#22c55e' }}
                   thumbColor="#ffffff"
@@ -1482,7 +1516,7 @@ export default function AdminScreen() {
                   value={teamSettings.showPayments !== false}
                   onValueChange={(value) => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setTeamSettings({ showPayments: value });
+                    setTeamSettingsAndSync({ showPayments: value });
                   }}
                   trackColor={{ false: '#334155', true: '#22c55e' }}
                   thumbColor="#ffffff"
@@ -1513,7 +1547,7 @@ export default function AdminScreen() {
                   value={teamSettings.showTeamStats !== false}
                   onValueChange={(value) => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setTeamSettings({ showTeamStats: value });
+                    setTeamSettingsAndSync({ showTeamStats: value });
                   }}
                   trackColor={{ false: '#334155', true: '#22c55e' }}
                   thumbColor="#ffffff"
@@ -1540,7 +1574,7 @@ export default function AdminScreen() {
                     value={teamSettings.allowPlayerSelfStats === true}
                     onValueChange={(value) => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setTeamSettings({ allowPlayerSelfStats: value });
+                      setTeamSettingsAndSync({ allowPlayerSelfStats: value });
                     }}
                     trackColor={{ false: '#334155', true: '#22c55e' }}
                     thumbColor="#ffffff"
@@ -1568,7 +1602,7 @@ export default function AdminScreen() {
                     value={teamSettings.showTeamRecords === true}
                     onValueChange={(value) => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setTeamSettings({ showTeamRecords: value });
+                      setTeamSettingsAndSync({ showTeamRecords: value });
                     }}
                     trackColor={{ false: '#334155', true: '#22c55e' }}
                     thumbColor="#ffffff"
@@ -1656,7 +1690,7 @@ export default function AdminScreen() {
                   value={teamSettings.showRefreshmentDuty !== false}
                   onValueChange={(value) => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setTeamSettings({ showRefreshmentDuty: value });
+                    setTeamSettingsAndSync({ showRefreshmentDuty: value });
                   }}
                   trackColor={{ false: '#334155', true: '#22c55e' }}
                   thumbColor="#ffffff"
@@ -1683,7 +1717,7 @@ export default function AdminScreen() {
                     value={teamSettings.refreshmentDutyIs21Plus === true}
                     onValueChange={(value) => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setTeamSettings({ refreshmentDutyIs21Plus: value });
+                      setTeamSettingsAndSync({ refreshmentDutyIs21Plus: value });
                     }}
                     trackColor={{ false: '#334155', true: '#22c55e' }}
                     thumbColor="#ffffff"
@@ -2443,9 +2477,9 @@ export default function AdminScreen() {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       const currentRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
                       if (isEnabled) {
-                        setTeamSettings({ enabledRoles: currentRoles.filter(r => r !== role.id) });
+                        setTeamSettingsAndSync({ enabledRoles: currentRoles.filter(r => r !== role.id) });
                       } else {
-                        setTeamSettings({ enabledRoles: [...currentRoles, role.id] });
+                        setTeamSettingsAndSync({ enabledRoles: [...currentRoles, role.id] });
                       }
                     }}
                     className={cn(
@@ -3144,6 +3178,7 @@ export default function AdminScreen() {
                           style: 'destructive',
                           onPress: () => {
                             removePlayer(player.id);
+                            deletePlayerFromSupabase(player.id).catch(console.error);
                             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                           },
                         },

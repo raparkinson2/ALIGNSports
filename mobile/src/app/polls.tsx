@@ -35,6 +35,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { useTeamStore, Poll, getPlayerName, Player } from '@/lib/store';
+import { pushPollToSupabase } from '@/lib/realtime-sync';
 
 const SWIPE_THRESHOLD = -80;
 
@@ -891,6 +892,9 @@ export default function PollsScreen() {
         expiresAt: endsAt,
       };
       addPoll(newPoll);
+      if (useTeamStore.getState().activeTeamId) {
+        pushPollToSupabase(newPoll, useTeamStore.getState().activeTeamId!).catch(console.error);
+      }
     });
 
     if (sendNotification) {
@@ -914,6 +918,14 @@ export default function PollsScreen() {
       unvotePoll(pollId, optionId, currentPlayerId);
     } else {
       votePoll(pollId, optionId, currentPlayerId);
+      // Sync updated poll options to Supabase
+      setTimeout(() => {
+        const s = useTeamStore.getState();
+        const updatedPoll = s.polls.find(p => p.id === pollId);
+        if (updatedPoll && s.activeTeamId) {
+          pushPollToSupabase(updatedPoll, s.activeTeamId).catch(console.error);
+        }
+      }, 50);
     }
   };
 

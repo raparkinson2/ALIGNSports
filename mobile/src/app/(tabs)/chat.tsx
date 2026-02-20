@@ -13,7 +13,7 @@ import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { sendChatMentionNotification, sendChatMessageNotification } from '@/lib/notifications';
-import { sendChatMessage, fetchChatMessages, subscribeToChatMessages, deleteChatMessage as deleteChatMessageFromSupabase } from '@/lib/chat-sync';
+import { sendChatMessage, deleteChatMessage as deleteChatMessageFromSupabase } from '@/lib/chat-sync';
 import { uploadPhotoToStorageBase64, uploadPhotoToStorage } from '@/lib/photo-storage';
 
 // GIPHY API key
@@ -276,45 +276,11 @@ export default function ChatScreen() {
 
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
 
-  // Fetch chat messages from Supabase on mount and subscribe to real-time updates
+  // Chat messages are loaded by startRealtimeSync in _layout.tsx when user logs in.
+  // This effect just plays a haptic when a new message arrives while chat is open.
   useEffect(() => {
     if (!activeTeamId || !currentPlayerId) return;
-
-    // Fetch from Supabase in background — local cached messages show immediately
-    const loadMessages = async () => {
-      const result = await fetchChatMessages(activeTeamId);
-      if (result.success && result.messages) {
-        // Replace local messages with the full cloud list (source of truth)
-        const localMessages = useTeamStore.getState().chatMessages;
-        const mergedIds = new Set(localMessages.map((m) => m.id));
-        const newMessages = result.messages.filter((m) => !mergedIds.has(m.id));
-        newMessages.forEach((msg) => addChatMessage(msg));
-      }
-    };
-
-    // Don't await — let local messages render first
-    loadMessages().catch(console.error);
-
-    // Subscribe to real-time updates
-    const unsubscribe = subscribeToChatMessages(
-      activeTeamId,
-      currentPlayerId,
-      (newMessage) => {
-        // Check if message already exists locally
-        const exists = chatMessages.some(m => m.id === newMessage.id);
-        if (!exists) {
-          addChatMessage(newMessage);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-      },
-      (deletedMessageId) => {
-        deleteChatMessage(deletedMessageId);
-      }
-    );
-
-    return () => {
-      unsubscribe();
-    };
+    // No separate subscription needed — realtime-sync.ts handles all incoming messages
   }, [activeTeamId, currentPlayerId]);
 
   // Mark chat as read whenever the tab is focused (handles tab switches)

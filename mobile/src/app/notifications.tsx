@@ -22,6 +22,7 @@ import Animated, {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, AppNotification } from '@/lib/store';
+import { markNotificationReadInSupabase } from '@/lib/realtime-sync';
 import { cn } from '@/lib/cn';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 
@@ -177,6 +178,7 @@ export default function NotificationsScreen() {
   const handleNotificationPress = (notification: AppNotification) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     markNotificationRead(notification.id);
+    markNotificationReadInSupabase(notification.id).catch(console.error);
 
     // Navigate to event if it's an event/practice notification
     if (notification.eventId) {
@@ -195,7 +197,10 @@ export default function NotificationsScreen() {
   const handleMarkAllRead = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     myNotifications.forEach((n) => {
-      if (!n.read) markNotificationRead(n.id);
+      if (!n.read) {
+        markNotificationRead(n.id);
+        markNotificationReadInSupabase(n.id).catch(console.error);
+      }
     });
   };
 

@@ -1939,39 +1939,26 @@ export const useTeamStore = create<TeamStore>()(
       isLoggedIn: false,
       setIsLoggedIn: (loggedIn) => set({ isLoggedIn: loggedIn }),
       logout: () => {
-        const state = get();
-        // Sync active team data back to teams array before logging out
-        if (state.activeTeamId) {
-          const syncedTeams = state.teams.map((team) =>
-            team.id === state.activeTeamId
-              ? {
-                  ...team,
-                  teamName: state.teamName,
-                  teamSettings: state.teamSettings,
-                  players: state.players,
-                  games: state.games,
-                  events: state.events,
-                  photos: state.photos,
-                  notifications: state.notifications,
-                  chatMessages: state.chatMessages,
-                  chatLastReadAt: state.chatLastReadAt,
-                  paymentPeriods: state.paymentPeriods,
-                  polls: state.polls,
-                  teamLinks: state.teamLinks,
-                }
-              : team
-          );
-          set({
-            teams: syncedTeams,
-            isLoggedIn: false,
-            currentPlayerId: null,
-            userEmail: null,
-            userPhone: null,
-            pendingTeamIds: null
-          });
-        } else {
-          set({ isLoggedIn: false, currentPlayerId: null, userEmail: null, userPhone: null, pendingTeamIds: null });
-        }
+        // Clear all in-memory team data — it will be loaded fresh from Supabase on next login.
+        // Only session fields persist to AsyncStorage (via partialize).
+        set({
+          isLoggedIn: false,
+          currentPlayerId: null,
+          userEmail: null,
+          userPhone: null,
+          pendingTeamIds: null,
+          // Clear all in-memory team data
+          players: [],
+          games: [],
+          events: [],
+          photos: [],
+          notifications: [],
+          chatMessages: [],
+          paymentPeriods: [],
+          polls: [],
+          teamLinks: [],
+          teamName: 'My Team',
+        });
       },
 
       deleteAccount: () => {
@@ -2742,9 +2729,8 @@ export const useTeamStore = create<TeamStore>()(
     {
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 12, // Bumped version to fix payment status calculation
-      // Migration function to preserve user data during app updates
-      // CRITICAL: Without this, version changes would reset all user data!
+      version: 13, // v13: Supabase-first architecture — team data no longer persisted locally
+      // Migration: preserve only session fields, discard old local team data
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
 
@@ -2819,56 +2805,35 @@ export const useTeamStore = create<TeamStore>()(
         // Any new fields not in persisted state will use initial values
         return state;
       },
-      // Persist login state so users stay logged in
-      // Also sync active team data back to teams array
-      partialize: (state) => {
-        // Sync active team data back to teams array before persisting
-        let syncedTeams = state.teams;
-        if (state.activeTeamId) {
-          syncedTeams = state.teams.map((team) =>
-            team.id === state.activeTeamId
-              ? {
-                  ...team,
-                  teamName: state.teamName,
-                  teamSettings: state.teamSettings,
-                  players: state.players,
-                  games: state.games,
-                  events: state.events,
-                  photos: state.photos,
-                  notifications: state.notifications,
-                  chatMessages: state.chatMessages,
-                  chatLastReadAt: state.chatLastReadAt,
-                  paymentPeriods: state.paymentPeriods,
-                  polls: state.polls,
-                  teamLinks: state.teamLinks,
-                }
-              : team
-          );
-        }
-
-        return {
-          teamName: state.teamName,
-          teamSettings: state.teamSettings,
-          players: state.players,
-          games: state.games,
-          events: state.events,
-          photos: state.photos,
-          notifications: state.notifications,
-          chatMessages: state.chatMessages,
-          chatLastReadAt: state.chatLastReadAt,
-          paymentPeriods: state.paymentPeriods,
-          polls: state.polls,
-          teamLinks: state.teamLinks,
-          currentPlayerId: state.currentPlayerId,
-          isLoggedIn: state.isLoggedIn,
-          // Multi-team data (with synced teams)
-          teams: syncedTeams,
-          activeTeamId: state.activeTeamId,
-          userEmail: state.userEmail,
-          userPhone: state.userPhone,
-          pendingTeamIds: state.pendingTeamIds,
-        };
-      },
+      // Only persist session/identity fields.
+      // ALL team data (games, events, players, chat, payments, etc.) is loaded
+      // fresh from Supabase on every login — the local store is just a cache.
+      partialize: (state) => ({
+        currentPlayerId: state.currentPlayerId,
+        isLoggedIn: state.isLoggedIn,
+        activeTeamId: state.activeTeamId,
+        userEmail: state.userEmail,
+        userPhone: state.userPhone,
+        pendingTeamIds: state.pendingTeamIds,
+        // Keep chatLastReadAt locally so unread badge works immediately on load
+        chatLastReadAt: state.chatLastReadAt,
+        // Keep teams array only for multi-team identity (team IDs + names, not full data)
+        teams: state.teams.map((t) => ({
+          id: t.id,
+          teamName: t.teamName,
+          teamSettings: { sport: t.teamSettings.sport } as any,
+          players: [],
+          games: [],
+          events: [],
+          photos: [],
+          notifications: [],
+          chatMessages: [],
+          chatLastReadAt: {},
+          paymentPeriods: [],
+          polls: [],
+          teamLinks: [],
+        })),
+      }),
     }
   )
 );

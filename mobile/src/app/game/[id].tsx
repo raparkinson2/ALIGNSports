@@ -45,7 +45,7 @@ import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, BattingOrderLineup, SoccerLineup, SoccerDiamondLineup, LacrosseLineup, getPlayerName, InviteReleaseOption, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, PlayerStats, GameLogEntry, getPlayerPositions } from '@/lib/store';
 import { cn } from '@/lib/cn';
-import { pushGameToSupabase, pushGameResponseToSupabase } from '@/lib/realtime-sync';
+import { pushGameToSupabase, pushGameResponseToSupabase, pushNotificationToSupabase } from '@/lib/realtime-sync';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
@@ -956,6 +956,7 @@ export default function GameDetailScreen() {
         read: false,
       };
       addNotification(notification);
+      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
     });
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -1010,6 +1011,7 @@ export default function GameDetailScreen() {
         read: false,
       };
       addNotification(notification);
+      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -1061,6 +1063,7 @@ export default function GameDetailScreen() {
         read: false,
       };
       addNotification(notification);
+      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
     });
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -1244,6 +1247,7 @@ export default function GameDetailScreen() {
           createdAt: new Date().toISOString(),
         };
         addNotification(notification);
+        if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
       });
     }
 

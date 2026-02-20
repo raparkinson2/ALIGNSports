@@ -15,6 +15,7 @@ import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg'
 import { signUpWithEmail, checkEmailExists, checkPhoneExists } from '@/lib/supabase-auth';
 import { ParentChildIcon } from '@/components/ParentChildIcon';
 import { hashPassword } from '@/lib/crypto';
+import { pushTeamToSupabase, pushPlayerToSupabase } from '@/lib/realtime-sync';
 
 // Preset jersey colors for quick selection
 const PRESET_COLORS = [
@@ -632,13 +633,19 @@ export default function CreateTeamScreen() {
 
       // Update team settings with jersey colors and logo
       const currentState = useTeamStore.getState();
-      useTeamStore.setState({
-        teamSettings: {
-          ...currentState.teamSettings,
-          jerseyColors,
-          teamLogo: teamLogo ?? undefined,
-        },
-      });
+      const finalSettings = {
+        ...currentState.teamSettings,
+        jerseyColors,
+        teamLogo: teamLogo ?? undefined,
+      };
+      useTeamStore.setState({ teamSettings: finalSettings });
+
+      // Write team + admin player to Supabase (source of truth)
+      const newTeamId = currentState.activeTeamId;
+      if (newTeamId) {
+        await pushTeamToSupabase(newTeamId, teamNameInput.trim(), finalSettings);
+        await pushPlayerToSupabase({ ...adminPlayer, password: undefined }, newTeamId);
+      }
 
       // Clear the persisted form data on success
       formStore.clearFormData();

@@ -47,6 +47,7 @@ import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone'
 import { APP_VERSION } from '@/config/app';
 import { sendTestNotification, registerForPushNotificationsAsync } from '@/lib/notifications';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { pushTeamLinkToSupabase, deleteTeamLinkFromSupabase } from '@/lib/realtime-sync';
 
 interface MenuItemProps {
   icon: React.ReactNode;
@@ -1466,9 +1467,23 @@ export default function MoreScreen() {
         visible={linksModalVisible}
         onClose={() => setLinksModalVisible(false)}
         links={teamLinks}
-        onAdd={addTeamLink}
-        onUpdate={updateTeamLink}
-        onRemove={removeTeamLink}
+        onAdd={(link) => {
+          addTeamLink(link);
+          const teamId = useTeamStore.getState().activeTeamId;
+          if (teamId) pushTeamLinkToSupabase(link, teamId).catch(console.error);
+        }}
+        onUpdate={(id, updates) => {
+          updateTeamLink(id, updates);
+          const s = useTeamStore.getState();
+          if (s.activeTeamId) {
+            const updated = s.teamLinks.find(l => l.id === id);
+            if (updated) pushTeamLinkToSupabase({ ...updated, ...updates }, s.activeTeamId).catch(console.error);
+          }
+        }}
+        onRemove={(id) => {
+          removeTeamLink(id);
+          deleteTeamLinkFromSupabase(id).catch(console.error);
+        }}
         canManage={canManageTeam || false}
         currentPlayerId={effectivePlayerId}
       />
