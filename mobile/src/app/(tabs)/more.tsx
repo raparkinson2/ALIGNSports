@@ -43,6 +43,7 @@ import * as Notifications from 'expo-notifications';
 import * as Clipboard from 'expo-clipboard';
 import { useState, useEffect } from 'react';
 import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences, getPlayerName, getPlayerInitials, TeamLink } from '@/lib/store';
+import { pushPlayerToSupabase } from '@/lib/realtime-sync';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 import { APP_VERSION } from '@/config/app';
 import { sendTestNotification, registerForPushNotificationsAsync } from '@/lib/notifications';
@@ -1008,6 +1009,7 @@ export default function MoreScreen() {
   const games = useTeamStore((s) => s.games);
   const notifications = useTeamStore((s) => s.notifications);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const updateNotificationPreferences = useTeamStore((s) => s.updateNotificationPreferences);
   const getNotificationPreferences = useTeamStore((s) => s.getNotificationPreferences);
   const showTeamStats = useTeamStore((s) => s.teamSettings.showTeamStats !== false);
@@ -1069,6 +1071,11 @@ export default function MoreScreen() {
   const handleSaveProfile = (updates: Partial<Player>) => {
     if (playerToEdit) {
       updatePlayer(playerToEdit.id, updates);
+      // Sync to Supabase so changes appear on all devices
+      if (activeTeamId) {
+        const updated = { ...useTeamStore.getState().players.find(p => p.id === playerToEdit.id), ...updates };
+        pushPlayerToSupabase(updated as Player, activeTeamId).catch(console.error);
+      }
     }
   };
 

@@ -27,6 +27,7 @@ import * as Linking from 'expo-linking';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, parseISO } from 'date-fns';
 import { useTeamStore, Player, SPORT_POSITIONS, SPORT_POSITION_NAMES, PlayerRole, PlayerStatus, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, PlayerStats, getPlayerPositions, getPrimaryPosition, getPlayerName, StatusDuration, DurationUnit } from '@/lib/store';
+import { pushPlayerToSupabase } from '@/lib/realtime-sync';
 import { cn } from '@/lib/cn';
 import { createTeamInvitation } from '@/lib/team-invitations';
 import { useResponsive } from '@/lib/useResponsive';
@@ -600,6 +601,11 @@ export default function RosterScreen() {
       }
 
       updatePlayer(editingPlayer.id, updates);
+      // Sync to Supabase so changes appear on all devices
+      if (activeTeamId) {
+        const updated = { ...useTeamStore.getState().players.find(p => p.id === editingPlayer.id), ...updates };
+        pushPlayerToSupabase(updated as Player, activeTeamId).catch(console.error);
+      }
       setIsModalVisible(false);
       resetForm();
     } else {

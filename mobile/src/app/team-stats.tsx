@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, Player, PlayerStats, getPlayerPositions, GameLogEntry, getPlayerName } from '@/lib/store';
+import { pushPlayerToSupabase } from '@/lib/realtime-sync';
 
 // Edit mode type - determines which stats to show/edit
 type EditMode = 'batter' | 'pitcher' | 'skater' | 'goalie';
@@ -505,6 +506,7 @@ export default function TeamStatsScreen() {
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const teamName = useTeamStore((s) => s.teamName);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const addGameLog = useTeamStore((s) => s.addGameLog);
   const removeGameLog = useTeamStore((s) => s.removeGameLog);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
@@ -664,6 +666,12 @@ export default function TeamStatsScreen() {
       updatePlayer(selectedPlayer.id, { goalieStats: cumulativeStats as unknown as HockeyGoalieStats });
     } else {
       updatePlayer(selectedPlayer.id, { stats: cumulativeStats as unknown as PlayerStats });
+    }
+
+    // Sync updated stats to Supabase
+    if (activeTeamId) {
+      const updated = useTeamStore.getState().players.find(p => p.id === selectedPlayer.id);
+      if (updated) pushPlayerToSupabase(updated, activeTeamId).catch(console.error);
     }
 
     // Reset form for next entry

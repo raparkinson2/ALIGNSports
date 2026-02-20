@@ -45,7 +45,7 @@ import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, BattingOrderLineup, SoccerLineup, SoccerDiamondLineup, LacrosseLineup, getPlayerName, InviteReleaseOption, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, PlayerStats, GameLogEntry, getPlayerPositions } from '@/lib/store';
 import { cn } from '@/lib/cn';
-import { pushGameToSupabase, pushGameResponseToSupabase, pushNotificationToSupabase } from '@/lib/realtime-sync';
+import { pushGameToSupabase, pushGameResponseToSupabase, pushNotificationToSupabase, pushPlayerToSupabase } from '@/lib/realtime-sync';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
@@ -872,6 +872,12 @@ export default function GameDetailScreen() {
       updatePlayer(selectedStatsPlayer.id, { goalieStats: cumulativeStats as unknown as HockeyGoalieStats });
     } else {
       updatePlayer(selectedStatsPlayer.id, { stats: cumulativeStats as unknown as PlayerStats });
+    }
+
+    // Sync updated stats to Supabase
+    if (activeTeamId) {
+      const updated = useTeamStore.getState().players.find(p => p.id === selectedStatsPlayer.id);
+      if (updated) pushPlayerToSupabase(updated, activeTeamId).catch(console.error);
     }
 
     // Close modal
