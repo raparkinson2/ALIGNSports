@@ -14,6 +14,7 @@ import { useResponsive } from '@/lib/useResponsive';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { sendChatMentionNotification, sendChatMessageNotification } from '@/lib/notifications';
 import { sendChatMessage, fetchChatMessages, subscribeToChatMessages, deleteChatMessage as deleteChatMessageFromSupabase } from '@/lib/chat-sync';
+import { uploadPhotoToStorageBase64, uploadPhotoToStorage } from '@/lib/photo-storage';
 
 // GIPHY API key
 const GIPHY_API_KEY = 'mUSMkXeohjZdAa2fSpTRGq7ljx5h00fI';
@@ -548,25 +549,51 @@ export default function ChatScreen() {
       mediaTypes: ['images'],
       allowsEditing: true,
       quality: 0.8,
+      base64: true, // Required for real iOS devices (ph:// URIs)
     });
 
     if (!result.canceled && result.assets[0]) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      const photoId = `chat-img-${Date.now()}`;
+      const localUri = result.assets[0].uri;
+      const base64Data = result.assets[0].base64;
+
+      // Add message immediately with local URI so sender sees it right away
       const newMessage: ChatMessage = {
         id: Date.now().toString(),
         senderId: currentPlayerId,
         message: '',
-        imageUrl: result.assets[0].uri,
+        imageUrl: localUri,
         createdAt: new Date().toISOString(),
       };
       addChatMessage(newMessage);
 
-      // Send to Supabase (note: image URLs are local, won't work for other users without upload)
+      // Upload image to Supabase Storage in background, then sync the cloud URL
       if (activeTeamId && currentPlayer) {
         const senderName = getPlayerName(currentPlayer);
-        sendChatMessage(newMessage, activeTeamId, senderName).catch(err => {
-          console.error('Failed to sync image message to cloud:', err);
-        });
+        (async () => {
+          try {
+            let uploadResult;
+            if (base64Data) {
+              uploadResult = await uploadPhotoToStorageBase64(base64Data, activeTeamId, photoId);
+            } else {
+              uploadResult = await uploadPhotoToStorage(localUri, activeTeamId, photoId);
+            }
+
+            const cloudUrl = uploadResult.success && uploadResult.url ? uploadResult.url : localUri;
+
+            // Update local message with cloud URL
+            const updatedMessage = { ...newMessage, imageUrl: cloudUrl };
+            sendChatMessage(updatedMessage, activeTeamId, senderName).catch(err => {
+              console.error('Failed to sync image message to cloud:', err);
+            });
+          } catch (err) {
+            console.error('Failed to upload chat image:', err);
+            // Still sync even if upload failed (other users won't see it but sender has it)
+            sendChatMessage(newMessage, activeTeamId, senderName).catch(() => {});
+          }
+        })();
       }
     }
   };

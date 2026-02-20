@@ -781,6 +781,7 @@ interface TeamStore {
   invitePlayersToEvent: (eventId: string, playerIds: string[]) => void;
 
   photos: Photo[];
+  setPhotos: (photos: Photo[]) => void;
   addPhoto: (photo: Photo) => void;
   updatePhoto: (id: string, updates: Partial<Photo>) => void;
   removePhoto: (id: string) => void;
@@ -1465,6 +1466,18 @@ export const useTeamStore = create<TeamStore>()(
           photos: newPhotos,
           teams: updatedTeams,
         };
+      }),
+
+      setPhotos: (photos) => set((state) => {
+        let updatedTeams = state.teams;
+        if (state.activeTeamId) {
+          updatedTeams = state.teams.map((team) =>
+            team.id === state.activeTeamId
+              ? { ...team, photos }
+              : team
+          );
+        }
+        return { photos, teams: updatedTeams };
       }),
 
       // Notifications - start empty

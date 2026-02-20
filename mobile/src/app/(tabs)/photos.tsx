@@ -23,6 +23,7 @@ export default function PhotosScreen() {
   const addPhoto = useTeamStore((s) => s.addPhoto);
   const removePhoto = useTeamStore((s) => s.removePhoto);
   const updatePhoto = useTeamStore((s) => s.updatePhoto);
+  const setPhotos = useTeamStore((s) => s.setPhotos);
   const games = useTeamStore((s) => s.games);
   const teamId = useTeamStore((s) => s.activeTeamId);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
@@ -36,7 +37,7 @@ export default function PhotosScreen() {
   // Track synced photo IDs to avoid duplicates
   const syncedIdsRef = useRef<Set<string>>(new Set(storePhotos.map(p => p.id)));
 
-  // Fetch photos from Supabase to sync with other team members
+  // Fetch photos from Supabase and fully replace local store
   const syncPhotos = useCallback(async () => {
     if (!teamId) return;
 
@@ -44,21 +45,18 @@ export default function PhotosScreen() {
     try {
       const result = await fetchTeamPhotos(teamId);
       if (result.success && result.photos) {
-        // Add new photos from cloud that we don't have locally
-        result.photos.forEach(photo => {
-          if (!syncedIdsRef.current.has(photo.id)) {
-            syncedIdsRef.current.add(photo.id);
-            addPhoto(photo);
-            console.log('Synced new photo from cloud:', photo.id);
-          }
-        });
+        // Full replace — ensures all cloud photos are visible regardless of local state
+        setPhotos(result.photos);
+        // Rebuild the realtime dedup set from the fresh list
+        syncedIdsRef.current = new Set(result.photos.map(p => p.id));
+        console.log('PHOTOS: Synced', result.photos.length, 'photos from cloud');
       }
     } catch (err) {
       console.error('Failed to sync photos:', err);
     } finally {
       setIsSyncing(false);
     }
-  }, [teamId, addPhoto]);
+  }, [teamId, setPhotos]);
 
   // Sync photos when tab gains focus
   useFocusEffect(
