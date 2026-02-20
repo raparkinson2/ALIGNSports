@@ -1,14 +1,14 @@
 import { View, Text, ScrollView, Pressable, Dimensions, Modal, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState } from 'react';
-import { Camera, Plus, ImageIcon, Trash2, X } from 'lucide-react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { Camera, Plus, ImageIcon, Trash2, X, RefreshCw } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Photo } from '@/lib/store';
-import { uploadSinglePhoto, deleteSinglePhoto } from '@/lib/team-sync';
+import { uploadSinglePhoto, deleteSinglePhoto, fetchTeamPhotos } from '@/lib/team-sync';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -29,6 +29,38 @@ export default function PhotosScreen() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [viewerPhoto, setViewerPhoto] = useState<Photo | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Fetch photos from Supabase to sync with other team members
+  const syncPhotos = useCallback(async () => {
+    if (!teamId) return;
+
+    setIsSyncing(true);
+    try {
+      const result = await fetchTeamPhotos(teamId);
+      if (result.success && result.photos) {
+        // Merge cloud photos with local photos (avoid duplicates)
+        const existingIds = new Set(storePhotos.map(p => p.id));
+        const newPhotos = result.photos.filter(p => !existingIds.has(p.id));
+
+        // Add new photos from cloud
+        newPhotos.forEach(photo => addPhoto(photo));
+
+        if (newPhotos.length > 0) {
+          console.log('Synced', newPhotos.length, 'new photos from cloud');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to sync photos:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [teamId, storePhotos, addPhoto]);
+
+  // Sync photos on mount and when returning to tab
+  useEffect(() => {
+    syncPhotos();
+  }, [teamId]);
 
   const handlePhotoPress = (photo: Photo) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -145,16 +177,29 @@ export default function PhotosScreen() {
             <View className="flex-row items-center">
               <ImageIcon size={20} color="#67e8f9" />
               <Text className="text-cyan-400 text-sm font-medium ml-2">Photos</Text>
-              {isUploading && (
+              {(isUploading || isSyncing) && (
                 <View className="flex-row items-center ml-2">
                   <ActivityIndicator size="small" color="#67e8f9" />
-                  <Text className="text-cyan-400 text-xs ml-1">Uploading...</Text>
+                  <Text className="text-cyan-400 text-xs ml-1">
+                    {isUploading ? 'Uploading...' : 'Syncing...'}
+                  </Text>
                 </View>
               )}
             </View>
             <Text className="text-white text-3xl font-bold">Team Photos</Text>
           </View>
           <View className="flex-row items-center">
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                syncPhotos();
+              }}
+              disabled={isSyncing || isUploading}
+              className="bg-slate-800 w-10 h-10 rounded-full items-center justify-center mr-2 active:bg-slate-700"
+              style={{ opacity: isSyncing ? 0.5 : 1 }}
+            >
+              <RefreshCw size={20} color="#67e8f9" />
+            </Pressable>
             <Pressable
               onPress={takePhoto}
               disabled={isUploading}

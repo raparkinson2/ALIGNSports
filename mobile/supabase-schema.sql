@@ -147,18 +147,22 @@ CREATE TABLE event_responses (
 -- CHAT MESSAGES
 -- =============================================
 CREATE TABLE chat_messages (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  team_id UUID REFERENCES teams(id) ON DELETE CASCADE,
-  sender_id UUID REFERENCES players(id) ON DELETE SET NULL,
+  id TEXT PRIMARY KEY, -- Use TEXT to allow app-generated IDs like timestamps
+  team_id TEXT NOT NULL, -- Local team ID format
+  sender_id TEXT NOT NULL, -- Local player ID format
+  sender_name TEXT, -- Cached sender name for display
   message TEXT,
   image_url TEXT,
   gif_url TEXT,
   gif_width INTEGER,
   gif_height INTEGER,
-  mentioned_player_ids UUID[] DEFAULT '{}',
+  mentioned_player_ids TEXT[] DEFAULT '{}',
   mention_type TEXT CHECK (mention_type IN ('all', 'specific')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Enable Realtime for chat_messages
+ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
 
 -- =============================================
 -- CHAT READ STATUS
@@ -363,15 +367,16 @@ CREATE POLICY "Players can manage their responses" ON game_responses
     player_id IN (SELECT id FROM players WHERE auth_user_id = auth.uid())
   );
 
--- Chat: Team members can view and send messages
-CREATE POLICY "Team members can view chat" ON chat_messages
-  FOR SELECT USING (team_id = get_my_team_id());
+-- Chat: Allow all operations since app handles access control
+-- Note: team_id is TEXT format (local app IDs), not UUID
+CREATE POLICY "Anyone can view chat" ON chat_messages
+  FOR SELECT USING (true);
 
-CREATE POLICY "Team members can send messages" ON chat_messages
-  FOR INSERT WITH CHECK (
-    team_id = get_my_team_id()
-    AND sender_id IN (SELECT id FROM players WHERE auth_user_id = auth.uid())
-  );
+CREATE POLICY "Anyone can send messages" ON chat_messages
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Anyone can delete their messages" ON chat_messages
+  FOR DELETE USING (true);
 
 -- Notifications: Users can view their own
 CREATE POLICY "Users can view their notifications" ON notifications

@@ -549,3 +549,42 @@ export async function deleteSinglePhoto(
     return false;
   }
 }
+
+/**
+ * Fetch photos from Supabase for a team
+ * Used to sync photos from other team members
+ */
+export async function fetchTeamPhotos(teamId: string): Promise<{
+  success: boolean;
+  photos?: Photo[];
+  error?: string;
+}> {
+  try {
+    console.log('TEAM_SYNC: Fetching photos for team:', teamId);
+
+    const { data, error } = await supabase
+      .from('photos')
+      .select('*')
+      .eq('team_id', teamId)
+      .order('uploaded_at', { ascending: false });
+
+    if (error) {
+      console.error('TEAM_SYNC: Error fetching photos:', error);
+      return { success: false, error: error.message };
+    }
+
+    const photos: Photo[] = (data || []).map(p => ({
+      id: p.id,
+      gameId: p.game_id || '',
+      uri: p.uri,
+      uploadedBy: p.uploaded_by || '',
+      uploadedAt: p.uploaded_at,
+    }));
+
+    console.log('TEAM_SYNC: Fetched', photos.length, 'photos');
+    return { success: true, photos };
+  } catch (err: any) {
+    console.error('TEAM_SYNC: Exception fetching photos:', err);
+    return { success: false, error: err?.message || 'Failed to fetch photos' };
+  }
+}

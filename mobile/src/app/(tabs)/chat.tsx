@@ -2,7 +2,7 @@ import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Pla
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { MessageSquare, Send, ImageIcon, X, Search, Users } from 'lucide-react-native';
+import { MessageSquare, Send, ImageIcon, X, Search, Users, RefreshCw } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, SlideInDown, FadeOut } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
@@ -12,6 +12,7 @@ import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { sendChatMentionNotification, sendChatMessageNotification } from '@/lib/notifications';
+import { sendChatMessage, fetchChatMessages, subscribeToChatMessages, deleteChatMessage as deleteChatMessageFromSupabase } from '@/lib/chat-sync';
 
 // GIPHY API key
 const GIPHY_API_KEY = 'mUSMkXeohjZdAa2fSpTRGq7ljx5h00fI';
@@ -253,12 +254,14 @@ export default function ChatScreen() {
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const teamName = useTeamStore((s) => s.teamName);
   const markChatAsRead = useTeamStore((s) => s.markChatAsRead);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
 
   const [messageText, setMessageText] = useState('');
   const [isGifModalVisible, setIsGifModalVisible] = useState(false);
   const [gifSearchQuery, setGifSearchQuery] = useState('');
   const [gifs, setGifs] = useState<GiphyGif[]>([]);
   const [isLoadingGifs, setIsLoadingGifs] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Mention autocomplete state
@@ -270,6 +273,50 @@ export default function ChatScreen() {
   const { isTablet, containerPadding } = useResponsive();
 
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
+
+  // Fetch chat messages from Supabase on mount and subscribe to real-time updates
+  useEffect(() => {
+    if (!activeTeamId || !currentPlayerId) return;
+
+    // Fetch existing messages
+    const loadMessages = async () => {
+      setIsSyncing(true);
+      const result = await fetchChatMessages(activeTeamId);
+      if (result.success && result.messages) {
+        // Merge with local messages (keep unique by ID)
+        const existingIds = new Set(chatMessages.map(m => m.id));
+        const newMessages = result.messages.filter(m => !existingIds.has(m.id));
+        if (newMessages.length > 0) {
+          // Add new messages from cloud
+          newMessages.forEach(msg => addChatMessage(msg));
+        }
+      }
+      setIsSyncing(false);
+    };
+
+    loadMessages();
+
+    // Subscribe to real-time updates
+    const unsubscribe = subscribeToChatMessages(
+      activeTeamId,
+      currentPlayerId,
+      (newMessage) => {
+        // Check if message already exists locally
+        const exists = chatMessages.some(m => m.id === newMessage.id);
+        if (!exists) {
+          addChatMessage(newMessage);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      },
+      (deletedMessageId) => {
+        deleteChatMessage(deletedMessageId);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [activeTeamId, currentPlayerId]);
 
   // Mark chat as read when entering the screen
   useEffect(() => {
@@ -462,7 +509,16 @@ export default function ChatScreen() {
       createdAt: new Date().toISOString(),
     };
 
+    // Add locally first for instant feedback
     addChatMessage(newMessage);
+
+    // Send to Supabase for real-time sync with other users
+    if (activeTeamId && currentPlayer) {
+      const senderName = getPlayerName(currentPlayer);
+      sendChatMessage(newMessage, activeTeamId, senderName).catch(err => {
+        console.error('Failed to sync message to cloud:', err);
+      });
+    }
 
     // Send push notification for mentions
     if (mentionType && currentPlayer) {
@@ -501,6 +557,14 @@ export default function ChatScreen() {
         createdAt: new Date().toISOString(),
       };
       addChatMessage(newMessage);
+
+      // Send to Supabase (note: image URLs are local, won't work for other users without upload)
+      if (activeTeamId && currentPlayer) {
+        const senderName = getPlayerName(currentPlayer);
+        sendChatMessage(newMessage, activeTeamId, senderName).catch(err => {
+          console.error('Failed to sync image message to cloud:', err);
+        });
+      }
     }
   };
 
@@ -518,6 +582,15 @@ export default function ChatScreen() {
       createdAt: new Date().toISOString(),
     };
     addChatMessage(newMessage);
+
+    // Send to Supabase for real-time sync
+    if (activeTeamId && currentPlayer) {
+      const senderName = getPlayerName(currentPlayer);
+      sendChatMessage(newMessage, activeTeamId, senderName).catch(err => {
+        console.error('Failed to sync GIF message to cloud:', err);
+      });
+    }
+
     setIsGifModalVisible(false);
     setGifSearchQuery('');
   };
@@ -599,7 +672,13 @@ export default function ChatScreen() {
                         senderName={sender ? getPlayerName(sender) : 'Unknown'}
                         senderAvatar={sender?.avatar}
                         index={groupIndex * 10 + msgIndex}
-                        onDelete={isOwnMessage ? () => deleteChatMessage(message.id) : undefined}
+                        onDelete={isOwnMessage ? () => {
+                          deleteChatMessage(message.id);
+                          // Also delete from Supabase
+                          deleteChatMessageFromSupabase(message.id).catch(err => {
+                            console.error('Failed to delete message from cloud:', err);
+                          });
+                        } : undefined}
                         players={players}
                         currentPlayerId={currentPlayerId}
                       />

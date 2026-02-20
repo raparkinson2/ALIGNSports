@@ -197,6 +197,10 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - See who sent each message with avatars
 - Messages grouped by date
 - Modern chat interface with message bubbles
+- **Real-Time Sync**: Chat messages sync across all team members' devices via Supabase
+  - Messages are instantly delivered to all team members
+  - When a teammate sends a message, you see it immediately
+  - Messages persist in the cloud and sync when you rejoin
 - **@Mentions**: Tag teammates to notify them
   - Type **@** to open the autocomplete dropdown
   - Type **@everyone** to notify all team members
@@ -347,6 +351,8 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
   - Photos sync across all team members' devices
   - When a player joins the team, they see all existing photos
   - Upload progress indicator shows when photos are being synced
+  - **Refresh Button**: Tap the refresh icon to manually sync new photos from other teammates
+  - Photos uploaded by any team member appear for everyone after sync
 
 ## Player Status
 - **Active**: Regular roster players, auto-invited to games
