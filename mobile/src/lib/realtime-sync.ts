@@ -1051,5 +1051,83 @@ export async function deleteTeamLinkFromSupabase(linkId: string): Promise<void> 
   }
 }
 
+/**
+ * Wipe all team content from Supabase (games, events, chat, photos, payments, polls, links)
+ * but leave the team row and players intact. Used by "Erase All Data".
+ */
+export async function eraseTeamContentFromSupabase(teamId: string): Promise<void> {
+  try {
+    await Promise.all([
+      supabase.from('games').delete().eq('team_id', teamId),
+      supabase.from('events').delete().eq('team_id', teamId),
+      supabase.from('chat_messages').delete().eq('team_id', teamId),
+      supabase.from('photos').delete().eq('team_id', teamId),
+      supabase.from('payment_periods').delete().eq('team_id', teamId),
+      supabase.from('polls').delete().eq('team_id', teamId),
+      supabase.from('team_links').delete().eq('team_id', teamId),
+      supabase.from('notifications').delete().eq('team_id', teamId),
+    ]);
+    console.log('SYNC: eraseTeamContentFromSupabase complete for', teamId);
+  } catch (err) {
+    console.error('SYNC: eraseTeamContentFromSupabase error:', err);
+  }
+}
+
+/**
+ * Delete the entire team and all its players from Supabase.
+ * Used by "Delete Team" nuclear option.
+ * The CASCADE on the DB will clean up related rows (games, events, etc.)
+ */
+export async function deleteTeamFromSupabase(teamId: string): Promise<void> {
+  try {
+    // Delete the team row — CASCADE will wipe all related rows
+    await supabase.from('teams').delete().eq('id', teamId);
+    console.log('SYNC: deleteTeamFromSupabase complete for', teamId);
+  } catch (err) {
+    console.error('SYNC: deleteTeamFromSupabase error:', err);
+  }
+}
+
+/**
+ * Delete a player's Supabase auth account via the backend admin endpoint.
+ */
+export async function deleteAuthUser(email: string): Promise<void> {
+  const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+  if (!backendUrl) {
+    console.warn('SYNC: deleteAuthUser - no backend URL configured');
+    return;
+  }
+  try {
+    await fetch(`${backendUrl}/api/auth/delete-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+  } catch (err) {
+    console.error('SYNC: deleteAuthUser error:', err);
+  }
+}
+
+/**
+ * Delete multiple players' Supabase auth accounts via the backend admin endpoint.
+ */
+export async function deleteAuthUsers(emails: string[]): Promise<void> {
+  if (!emails.length) return;
+  const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+  if (!backendUrl) {
+    console.warn('SYNC: deleteAuthUsers - no backend URL configured');
+    return;
+  }
+  try {
+    await fetch(`${backendUrl}/api/auth/delete-users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emails }),
+    });
+  } catch (err) {
+    console.error('SYNC: deleteAuthUsers error:', err);
+  }
+}
+
 // Legacy export name kept for compatibility
 export { loadTeamFromSupabase as fetchAndApplyFullTeamSync };

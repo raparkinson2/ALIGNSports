@@ -9,6 +9,9 @@ const envSchema = z.object({
   PORT: z.string().optional().default("3000"),
   NODE_ENV: z.string().optional(),
   BACKEND_URL: z.url("BACKEND_URL must be a valid URL").default("http://localhost:3000"), // Set via the Vibecode enviroment at run-time
+  // Supabase (service role for admin operations like deleting auth users)
+  SUPABASE_URL: z.string().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
 });
 
 /**

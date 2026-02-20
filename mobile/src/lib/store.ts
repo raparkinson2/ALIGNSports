@@ -1965,6 +1965,12 @@ export const useTeamStore = create<TeamStore>()(
         const state = get();
         const { userEmail, userPhone, currentPlayerId } = state;
 
+        // Fire-and-forget: delete player from Supabase + delete auth user
+        import('./realtime-sync').then(({ deletePlayerFromSupabase, deleteAuthUser }) => {
+          if (currentPlayerId) deletePlayerFromSupabase(currentPlayerId);
+          if (userEmail) deleteAuthUser(userEmail);
+        });
+
         // Remove the current player from all teams they belong to
         const updatedTeams = state.teams.map((team) => {
           const playerInTeam = team.players.find(
@@ -2451,12 +2457,22 @@ export const useTeamStore = create<TeamStore>()(
         ),
       })),
 
-      // Reset all data to defaults - completely wipes everything and signs everyone out
-      resetAllData: () => set(() => {
+      // Reset all data to defaults - wipes team content but keeps player accounts
+      resetAllData: () => {
+        const state = get();
+        const { activeTeamId } = state;
+
+        // Fire-and-forget: wipe all team content from Supabase but leave players/auth intact
+        if (activeTeamId) {
+          import('./realtime-sync').then(({ eraseTeamContentFromSupabase }) => {
+            eraseTeamContentFromSupabase(activeTeamId);
+          });
+        }
+
         // Clear AsyncStorage completely to ensure no data remains
         AsyncStorage.clear().catch((err) => console.log('Error clearing AsyncStorage:', err));
 
-        return {
+        set({
           teamName: 'My Team',
           teamSettings: {
             sport: 'hockey',
@@ -2475,35 +2491,47 @@ export const useTeamStore = create<TeamStore>()(
             refreshmentDutyIs21Plus: true,
             showLineups: true,
           },
-          players: [], // Delete ALL players
-          games: [], // Delete ALL games
-          events: [], // Delete ALL events
-          photos: [], // Delete ALL photos
-          notifications: [], // Delete ALL notifications
-          chatMessages: [], // Delete ALL chat messages
-          chatLastReadAt: {}, // Reset all read tracking
-          paymentPeriods: [], // Delete ALL payment records
-          polls: [], // Delete ALL polls
-          // Sign EVERYONE out
-          currentPlayerId: null,
-          isLoggedIn: false,
-          // Reset multi-team data
+          games: [],
+          events: [],
+          photos: [],
+          notifications: [],
+          chatMessages: [],
+          chatLastReadAt: {},
+          paymentPeriods: [],
+          polls: [],
+          teamLinks: [],
+          // Keep players in local state so they can still log back in
+          // Keep teams array but clear active team content
           teams: [],
           activeTeamId: null,
+          // Sign everyone out — they need to log back in
+          currentPlayerId: null,
+          isLoggedIn: false,
           userEmail: null,
           userPhone: null,
           pendingTeamIds: null,
-        };
-      }),
+        });
+      },
 
       // Delete only the current team, preserve other teams user belongs to
-      deleteCurrentTeam: () => set((state) => {
+      deleteCurrentTeam: () => {
+        const state = get();
         const { activeTeamId, teams, userEmail, userPhone } = state;
 
-        if (!activeTeamId) {
-          // No active team, nothing to delete
-          return state;
-        }
+        if (!activeTeamId) return;
+
+        // Get all players on this team so we can delete them from Supabase auth
+        const currentTeam = teams.find(t => t.id === activeTeamId);
+        const teamPlayerEmails = (currentTeam?.players || [])
+          .map(p => p.email)
+          .filter((e): e is string => !!e);
+
+        // Fire-and-forget: delete entire team from Supabase (CASCADE wipes all content)
+        // Then delete all player auth accounts
+        import('./realtime-sync').then(({ deleteTeamFromSupabase, deleteAuthUsers }) => {
+          deleteTeamFromSupabase(activeTeamId);
+          if (teamPlayerEmails.length) deleteAuthUsers(teamPlayerEmails);
+        });
 
         // Remove the current team from the teams array
         const remainingTeams = teams.filter(t => t.id !== activeTeamId);
@@ -2519,7 +2547,7 @@ export const useTeamStore = create<TeamStore>()(
         if (userTeams.length > 0) {
           // User has other teams - switch to the first one
           const newActiveTeam = userTeams[0];
-          return {
+          set({
             teams: remainingTeams,
             activeTeamId: newActiveTeam.id,
             teamName: newActiveTeam.teamName,
@@ -2534,17 +2562,16 @@ export const useTeamStore = create<TeamStore>()(
             paymentPeriods: newActiveTeam.paymentPeriods || [],
             polls: newActiveTeam.polls || [],
             teamLinks: newActiveTeam.teamLinks || [],
-            // Keep user logged in since they have other teams
             isLoggedIn: true,
             currentPlayerId: newActiveTeam.players.find(p =>
               (userEmail && p.email?.toLowerCase() === userEmail.toLowerCase()) ||
               (userPhone && p.phone?.replace(/\D/g, '') === userPhone.replace(/\D/g, ''))
             )?.id || null,
             pendingTeamIds: userTeams.length > 1 ? userTeams.map(t => t.id) : null,
-          };
+          });
         } else {
-          // User has no other teams - log them out but preserve other teams data
-          return {
+          // User has no other teams - log them out completely
+          set({
             teams: remainingTeams,
             activeTeamId: null,
             teamName: 'My Team',
@@ -2578,9 +2605,9 @@ export const useTeamStore = create<TeamStore>()(
             currentPlayerId: null,
             isLoggedIn: false,
             pendingTeamIds: null,
-          };
+          });
         }
-      }),
+      },
 
       // Multi-team support
       teams: [],
