@@ -76,10 +76,9 @@ export async function secureLoginWithEmail(email: string, password: string): Pro
     return { success: false, error: 'Incorrect password' };
   }
 
-  // Password verified - use the store's login to handle team selection
-  // Pass the original password since the store will do its own comparison
-  // But we've already verified it, so this should succeed
-  return state.loginWithEmail(email, playerToCheck.password);
+  // Password verified - use the store's verified login to handle team selection
+  // This skips password re-comparison since we've already verified it
+  return state.loginWithEmailVerified(email);
 }
 
 /**
@@ -137,8 +136,9 @@ export async function secureLoginWithPhone(phone: string, password: string): Pro
     return { success: false, error: 'Incorrect password' };
   }
 
-  // Password verified - use the store's login
-  return state.loginWithPhone(phone, playerToCheck.password);
+  // Password verified - use the store's verified login to handle team selection
+  // This skips password re-comparison since we've already verified it
+  return state.loginWithPhoneVerified(phone);
 }
 
 /**

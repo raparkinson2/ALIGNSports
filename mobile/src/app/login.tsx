@@ -231,7 +231,9 @@ export default function LoginScreen() {
         'Your password has been reset successfully. You can now sign in with your new password.',
         [{ text: 'OK', onPress: () => {
           setShowForgotPassword(false);
-          setIdentifier(foundPlayer?.email || '');
+          // Preserve the identifier they used (phone or email)
+          // resetEmail contains the phone number used for SMS OTP
+          setIdentifier(foundPlayer?.email || formatPhoneInput(resetEmail) || '');
           setPassword('');
         }}]
       );

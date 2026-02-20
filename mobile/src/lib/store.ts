@@ -845,6 +845,9 @@ interface TeamStore {
   // Authentication
   loginWithEmail: (email: string, password: string) => { success: boolean; error?: string; playerId?: string; multipleTeams?: boolean; teamCount?: number };
   loginWithPhone: (phone: string, password: string) => { success: boolean; error?: string; playerId?: string; multipleTeams?: boolean; teamCount?: number };
+  // Verified login functions - skip password check (for use after secure-auth has verified)
+  loginWithEmailVerified: (email: string) => { success: boolean; error?: string; playerId?: string; multipleTeams?: boolean; teamCount?: number };
+  loginWithPhoneVerified: (phone: string) => { success: boolean; error?: string; playerId?: string; multipleTeams?: boolean; teamCount?: number };
   registerAdmin: (name: string, email: string, password: string, teamName: string, options?: { phone?: string; jerseyNumber?: string; isCoach?: boolean }) => { success: boolean; error?: string };
   registerInvitedPlayer: (email: string, password: string) => { success: boolean; error?: string; playerId?: string };
   registerInvitedPlayerByPhone: (phone: string, password: string) => { success: boolean; error?: string; playerId?: string };
@@ -2122,6 +2125,117 @@ export const useTeamStore = create<TeamStore>()(
         // Password is valid - check if user exists in MULTIPLE teams
         if (teamsWithPhone.length > 1) {
           console.log('LOGIN PHONE: User exists in multiple teams, showing team selection');
+          set({
+            userPhone: normalizedPhone,
+            pendingTeamIds: teamsWithPhone.map((t) => t.team.id),
+          });
+          return { success: true, multipleTeams: true, teamCount: teamsWithPhone.length };
+        }
+
+        // User exists in exactly one team
+        const { team, player } = teamsWithPhone[0];
+        set({
+          activeTeamId: team.id,
+          teamName: team.teamName,
+          teamSettings: team.teamSettings,
+          players: team.players,
+          games: team.games,
+          events: team.events,
+          photos: team.photos,
+          notifications: team.notifications,
+          chatMessages: team.chatMessages,
+          chatLastReadAt: team.chatLastReadAt,
+          paymentPeriods: team.paymentPeriods,
+          currentPlayerId: player.id,
+          isLoggedIn: true,
+          userPhone: normalizedPhone,
+          pendingTeamIds: null,
+        });
+        return { success: true, playerId: player.id };
+      },
+
+      // Verified login - skips password comparison (for use after secure-auth has verified password)
+      loginWithEmailVerified: (email) => {
+        const state = get();
+
+        // Find ALL teams where this email exists
+        const teamsWithEmail: { team: Team; player: Player }[] = [];
+
+        state.teams.forEach((team) => {
+          const player = team.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+          if (player) {
+            teamsWithEmail.push({ team, player });
+          }
+        });
+
+        // If no teams found with this email, check fallback
+        if (teamsWithEmail.length === 0) {
+          const player = state.players.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+          if (!player) {
+            return { success: false, error: 'No account found with this email' };
+          }
+          set({ currentPlayerId: player.id, isLoggedIn: true, userEmail: email.toLowerCase() });
+          return { success: true, playerId: player.id };
+        }
+
+        // Check if user exists in MULTIPLE teams
+        if (teamsWithEmail.length > 1) {
+          set({
+            userEmail: email.toLowerCase(),
+            pendingTeamIds: teamsWithEmail.map((t) => t.team.id),
+          });
+          return { success: true, multipleTeams: true, teamCount: teamsWithEmail.length };
+        }
+
+        // User exists in exactly one team
+        const { team, player } = teamsWithEmail[0];
+        set({
+          activeTeamId: team.id,
+          teamName: team.teamName,
+          teamSettings: team.teamSettings,
+          players: team.players,
+          games: team.games,
+          events: team.events,
+          photos: team.photos,
+          notifications: team.notifications,
+          chatMessages: team.chatMessages,
+          chatLastReadAt: team.chatLastReadAt,
+          paymentPeriods: team.paymentPeriods,
+          currentPlayerId: player.id,
+          isLoggedIn: true,
+          userEmail: email.toLowerCase(),
+          pendingTeamIds: null,
+        });
+        return { success: true, playerId: player.id };
+      },
+
+      // Verified login by phone - skips password comparison
+      loginWithPhoneVerified: (phone) => {
+        const state = get();
+        const normalizedPhone = phone.replace(/\D/g, '');
+
+        // Find ALL teams where this phone number exists
+        const teamsWithPhone: { team: Team; player: Player }[] = [];
+
+        state.teams.forEach((team) => {
+          const player = team.players.find((p) => p.phone?.replace(/\D/g, '') === normalizedPhone);
+          if (player) {
+            teamsWithPhone.push({ team, player });
+          }
+        });
+
+        // If no teams found with this phone, check fallback
+        if (teamsWithPhone.length === 0) {
+          const player = state.players.find((p) => p.phone?.replace(/\D/g, '') === normalizedPhone);
+          if (!player) {
+            return { success: false, error: 'No account found with this phone number' };
+          }
+          set({ currentPlayerId: player.id, isLoggedIn: true, userPhone: normalizedPhone });
+          return { success: true, playerId: player.id };
+        }
+
+        // Check if user exists in MULTIPLE teams
+        if (teamsWithPhone.length > 1) {
           set({
             userPhone: normalizedPhone,
             pendingTeamIds: teamsWithPhone.map((t) => t.team.id),
