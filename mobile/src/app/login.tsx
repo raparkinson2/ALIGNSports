@@ -509,7 +509,7 @@ export default function LoginScreen() {
   return (
     <View className="flex-1 bg-slate-900">
       <LinearGradient
-        colors={['#0c4a6e', '#0f172a', '#0f172a']}
+        colors={['#0a0f1e', '#0d1b2e', '#0f172a']}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
@@ -527,16 +527,13 @@ export default function LoginScreen() {
           {/* Header */}
           <Animated.View
             entering={FadeInUp.delay(50).springify()}
-            className="items-center pt-8 pb-6"
+            className="items-center pt-6 pb-4"
           >
             <Image
-              source={require('../../assets/app-logo.png')}
-              style={{ width: 160, height: 160, marginBottom: 24 }}
+              source={require('../../assets/align-sports-logo.png')}
+              style={{ width: 240, height: 240 }}
               contentFit="contain"
             />
-            <Text className="text-slate-300 text-lg text-center px-10 leading-relaxed">
-              Sign in or create a new team to get started
-            </Text>
           </Animated.View>
 
           {/* Login Form */}
