@@ -8,26 +8,81 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase credentials not found. Please add SUPABASE_PUBLIC_URL and SUPABASE_PUBLIC_ANON to your environment variables.');
 }
 
+/**
+ * Custom storage adapter that validates session data before returning it.
+ * If the stored session's refresh_token is missing or the session is expired,
+ * we wipe it so Supabase never attempts a doomed token refresh (which would
+ * throw an unhandled AuthApiError on startup).
+ */
+const safeStorage = {
+  getItem: async (key: string): Promise<string | null> => {
+    try {
+      const value = await AsyncStorage.getItem(key);
+      if (!value) return null;
+
+      // Validate session data before handing it to Supabase
+      try {
+        const parsed = JSON.parse(value);
+        // Supabase stores the session under the key that ends with 'auth-token'
+        if (key.includes('auth-token') && parsed) {
+          const session = parsed.currentSession || parsed;
+          const hasRefreshToken = !!session?.refresh_token;
+          const expiresAt = session?.expires_at;
+          const isExpired = expiresAt ? expiresAt * 1000 < Date.now() : false;
+
+          if (!hasRefreshToken || isExpired) {
+            console.log('Supabase: clearing stale/expired session from storage');
+            await AsyncStorage.removeItem(key);
+            return null;
+          }
+        }
+      } catch {
+        // JSON parse failed — not a session object, pass through as-is
+      }
+
+      return value;
+    } catch {
+      return null;
+    }
+  },
+  setItem: async (key: string, value: string): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(key, value);
+    } catch {
+      // Ignore storage errors
+    }
+  },
+  removeItem: async (key: string): Promise<void> => {
+    try {
+      await AsyncStorage.removeItem(key);
+    } catch {
+      // Ignore storage errors
+    }
+  },
+};
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage,
+    storage: safeStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
   },
 });
 
-// Handle auth errors globally - clear invalid sessions
+// Handle auth state changes
 supabase.auth.onAuthStateChange(async (event, session) => {
   if (event === 'TOKEN_REFRESHED') {
-    // Token was successfully refreshed
     console.log('Auth token refreshed');
   } else if (event === 'SIGNED_OUT') {
-    // Clear any stale auth data
     try {
-      await AsyncStorage.removeItem('supabase.auth.token');
-    } catch (e) {
-      // Ignore storage errors
+      const keys = await AsyncStorage.getAllKeys();
+      const supabaseKeys = keys.filter(key => key.startsWith('sb-') || key.startsWith('supabase'));
+      if (supabaseKeys.length > 0) {
+        await AsyncStorage.multiRemove(supabaseKeys);
+      }
+    } catch {
+      // Ignore
     }
   }
 });
@@ -40,7 +95,7 @@ export async function clearInvalidSession(): Promise<void> {
     await supabase.auth.signOut();
     // Also clear any cached auth data
     const keys = await AsyncStorage.getAllKeys();
-    const supabaseKeys = keys.filter(key => key.startsWith('supabase'));
+    const supabaseKeys = keys.filter(key => key.startsWith('sb-') || key.startsWith('supabase'));
     if (supabaseKeys.length > 0) {
       await AsyncStorage.multiRemove(supabaseKeys);
     }
