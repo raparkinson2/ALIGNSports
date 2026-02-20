@@ -2520,17 +2520,25 @@ export const useTeamStore = create<TeamStore>()(
 
         if (!activeTeamId) return;
 
-        // Get all players on this team so we can delete them from Supabase auth
+        // Get all players on this team
         const currentTeam = teams.find(t => t.id === activeTeamId);
-        const teamPlayerEmails = (currentTeam?.players || [])
+        const teamPlayers = currentTeam?.players || [];
+
+        // Only delete auth accounts for players who are NOT on any other team.
+        // A player on multiple teams should keep their auth account.
+        const otherTeams = teams.filter(t => t.id !== activeTeamId);
+        const emailsOnOtherTeams = new Set(
+          otherTeams.flatMap(t => t.players.map(p => p.email?.toLowerCase()).filter(Boolean))
+        );
+        const emailsToDelete = teamPlayers
           .map(p => p.email)
-          .filter((e): e is string => !!e);
+          .filter((e): e is string => !!e && !emailsOnOtherTeams.has(e.toLowerCase()));
 
         // Fire-and-forget: delete entire team from Supabase (CASCADE wipes all content)
-        // Then delete all player auth accounts
+        // Then delete auth accounts only for players exclusive to this team
         import('./realtime-sync').then(({ deleteTeamFromSupabase, deleteAuthUsers }) => {
           deleteTeamFromSupabase(activeTeamId);
-          if (teamPlayerEmails.length) deleteAuthUsers(teamPlayerEmails);
+          if (emailsToDelete.length) deleteAuthUsers(emailsToDelete);
         });
 
         // Remove the current team from the teams array
