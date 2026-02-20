@@ -59,7 +59,6 @@ export default function LoginScreen() {
   const teamName = useTeamStore((s) => s.teamName);
   const setCurrentPlayerId = useTeamStore((s) => s.setCurrentPlayerId);
   const setIsLoggedIn = useTeamStore((s) => s.setIsLoggedIn);
-  const updatePlayer = useTeamStore((s) => s.updatePlayer);
   const findPlayerByEmail = useTeamStore((s) => s.findPlayerByEmail);
   const findPlayerByPhone = useTeamStore((s) => s.findPlayerByPhone);
 
@@ -220,10 +219,10 @@ export default function LoginScreen() {
     setIsLoading(false);
 
     if (result.success) {
-      // Also update local store password
+      // Also update local store password with hashed password
       const player = foundPlayer || findPlayerByPhone(resetEmail);
       if (player) {
-        updatePlayer(player.id, { password: newPassword });
+        await secureResetPassword(player.id, newPassword);
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
