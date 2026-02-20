@@ -348,11 +348,10 @@ A mobile app for recreational sports teams to manage schedules, rosters, check-i
 - Add photos from your camera roll
 - All players can view and add photos
 - **Cloud Sync**: Photos are automatically uploaded to Supabase Storage
-  - Photos sync across all team members' devices
+  - Photos sync across all team members' devices in real-time
+  - When a teammate uploads a photo, it appears automatically
   - When a player joins the team, they see all existing photos
   - Upload progress indicator shows when photos are being synced
-  - **Refresh Button**: Tap the refresh icon to manually sync new photos from other teammates
-  - Photos uploaded by any team member appear for everyone after sync
 
 ## Player Status
 - **Active**: Regular roster players, auto-invited to games
