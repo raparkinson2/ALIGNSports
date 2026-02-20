@@ -459,12 +459,22 @@ export default function RegisterScreen() {
     try {
       const trimmedIdentifier = identifier.trim();
 
-      // For email users, verify with Supabase Auth
+      // Verify the password before proceeding
       if (!isPhoneNumber(trimmedIdentifier)) {
+        // Email: verify with Supabase Auth
         const supabaseResult = await signInWithEmail(trimmedIdentifier, existingPassword);
         if (!supabaseResult.success) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           setError(supabaseResult.error || 'Incorrect password');
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        // Phone: verify against local store (phone accounts use local hashed passwords)
+        const phoneVerifyResult = await secureLoginWithPhone(unformatPhone(trimmedIdentifier), existingPassword);
+        if (!phoneVerifyResult.success) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setError(phoneVerifyResult.error || 'Incorrect password');
           setIsLoading(false);
           return;
         }
