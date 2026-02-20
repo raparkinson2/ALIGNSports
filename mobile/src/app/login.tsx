@@ -333,9 +333,22 @@ export default function LoginScreen() {
             setIsLoading(false);
             return;
           }
-          // If local store doesn't have the user, still proceed
-          // The user exists in Supabase but may need to sync locally
-          console.log('LOGIN: Local login failed, proceeding with Supabase-only auth');
+          // Local password check failed (password not stored locally — Supabase is the source of truth).
+          // Use loginWithEmailVerified to match the player by email without requiring a local password.
+          console.log('LOGIN: Local login failed, using email-verified login');
+          const verifiedResult = useTeamStore.getState().loginWithEmailVerified(trimmedIdentifier);
+          if (verifiedResult.success) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            if (verifiedResult.multipleTeams) {
+              router.replace('/select-team');
+            } else {
+              router.replace('/(tabs)');
+            }
+            setIsLoading(false);
+            return;
+          }
+          // Player not found in local store yet — set logged in and let tabs load from Supabase
+          console.log('LOGIN: Player not in local store, proceeding with Supabase-only auth');
           setCurrentPlayerId('');
           setIsLoggedIn(true);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
