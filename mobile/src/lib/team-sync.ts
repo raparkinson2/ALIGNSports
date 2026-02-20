@@ -476,11 +476,22 @@ export async function uploadSinglePhoto(
   try {
     console.log('TEAM_SYNC: Uploading single photo:', photo.id);
 
-    // Check if team exists in Supabase first
+    // Ensure team exists in Supabase - create minimal entry if not
     const teamExists = await checkTeamExistsInSupabase(teamId);
     if (!teamExists) {
-      console.log('TEAM_SYNC: Team not in Supabase, skipping cloud upload');
-      return { success: false, error: 'Team not synced to cloud' };
+      console.log('TEAM_SYNC: Team not in Supabase, creating minimal team record');
+      const { error: teamError } = await supabase
+        .from('teams')
+        .insert({
+          id: teamId,
+          name: 'Team', // Placeholder - will be updated on full sync
+          sport: 'hockey',
+        });
+
+      if (teamError && teamError.code !== '23505') { // Ignore if already exists
+        console.error('TEAM_SYNC: Error creating team:', teamError);
+        return { success: false, error: 'Failed to create team in cloud' };
+      }
     }
 
     // Upload photo to storage if it's a local file

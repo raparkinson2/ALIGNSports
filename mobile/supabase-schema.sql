@@ -10,9 +10,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- TEAMS TABLE
 -- =============================================
 CREATE TABLE teams (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id TEXT PRIMARY KEY, -- Use TEXT to allow app-generated IDs like "team-1234567890"
   name TEXT NOT NULL,
-  sport TEXT NOT NULL DEFAULT 'hockey' CHECK (sport IN ('hockey', 'baseball', 'basketball', 'soccer')),
+  sport TEXT NOT NULL DEFAULT 'hockey' CHECK (sport IN ('hockey', 'baseball', 'basketball', 'soccer', 'lacrosse', 'softball')),
   team_logo TEXT,
   -- Team record
   wins INTEGER DEFAULT 0,
@@ -195,11 +195,11 @@ CREATE TABLE notifications (
 -- PHOTOS
 -- =============================================
 CREATE TABLE photos (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  team_id UUID REFERENCES teams(id) ON DELETE CASCADE,
-  game_id UUID REFERENCES games(id) ON DELETE SET NULL,
+  id TEXT PRIMARY KEY, -- Use TEXT to allow app-generated IDs
+  team_id TEXT NOT NULL, -- Local team ID format
+  game_id TEXT, -- Local game ID format (optional)
   uri TEXT NOT NULL,
-  uploaded_by UUID REFERENCES players(id) ON DELETE SET NULL,
+  uploaded_by TEXT, -- Local player ID format
   uploaded_at TIMESTAMPTZ DEFAULT NOW()
 );
 
