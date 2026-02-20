@@ -1287,6 +1287,14 @@ export const useTeamStore = create<TeamStore>()(
             }),
           }));
 
+          // Cancel any pending OS notifications for these games to prevent duplicates
+          // Import dynamically to avoid circular dependency issues
+          import('./notifications').then(({ cancelGameInviteNotification }) => {
+            gamesToRelease.forEach((game) => {
+              cancelGameInviteNotification(game.id).catch(() => {});
+            });
+          }).catch(() => {});
+
           // Create in-app notifications for each game
           gamesToRelease.forEach((game) => {
             const gameDate = new Date(game.date);

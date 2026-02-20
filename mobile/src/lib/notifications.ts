@@ -160,7 +160,12 @@ export async function sendGameInviteNotification(
   gameTime: string
 ): Promise<void> {
   try {
+    // Cancel any existing scheduled notification for this game first
+    // to prevent duplicate/stale notifications
+    await cancelGameInviteNotification(gameId);
+
     await Notifications.scheduleNotificationAsync({
+      identifier: `game-invite-${gameId}`, // Stable ID prevents duplicates
       content: {
         title: 'New Game Added!',
         body: `You've been invited to play vs ${opponent} on ${gameDate} at ${gameTime}. Make sure to check in or out in the app.`,
@@ -175,6 +180,17 @@ export async function sendGameInviteNotification(
 }
 
 /**
+ * Cancel any pending OS notification for a specific game invite
+ */
+export async function cancelGameInviteNotification(gameId: string): Promise<void> {
+  try {
+    await Notifications.cancelScheduledNotificationAsync(`game-invite-${gameId}`);
+  } catch {
+    // Ignore - notification may not exist
+  }
+}
+
+/**
  * Schedule a game invite notification for a future date
  */
 export async function scheduleGameInviteNotification(
@@ -184,6 +200,9 @@ export async function scheduleGameInviteNotification(
   gameTime: string,
   releaseDate: Date
 ): Promise<string | null> {
+  // Cancel any existing scheduled notification for this game first
+  await cancelGameInviteNotification(gameId);
+
   // Don't schedule if the date is in the past
   if (releaseDate <= new Date()) {
     console.log('Release date is in the past, sending notification immediately');
@@ -193,6 +212,7 @@ export async function scheduleGameInviteNotification(
 
   try {
     const identifier = await Notifications.scheduleNotificationAsync({
+      identifier: `game-invite-${gameId}`, // Stable ID prevents duplicates
       content: {
         title: 'New Game Added!',
         body: `You've been invited to play vs ${opponent} on ${gameDate} at ${gameTime}. Make sure to check in or out in the app.`,
