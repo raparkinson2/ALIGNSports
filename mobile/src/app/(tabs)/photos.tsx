@@ -181,13 +181,17 @@ export default function PhotosScreen() {
         if (result.success && result.cloudUrl) {
           // Update local photo with cloud URL
           updatePhoto(photoId, { uri: result.cloudUrl });
-          console.log('Photo uploaded to cloud:', result.cloudUrl);
+          console.log('PHOTOS: Photo uploaded to cloud:', result.cloudUrl);
+        } else {
+          console.error('PHOTOS: Upload failed:', result.error);
         }
       } catch (err) {
-        console.error('Failed to upload photo to cloud:', err);
+        console.error('PHOTOS: Failed to upload photo to cloud:', err);
       } finally {
         setIsUploading(false);
       }
+    } else {
+      console.warn('PHOTOS: No teamId, skipping cloud upload');
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
