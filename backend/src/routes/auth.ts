@@ -2,165 +2,249 @@ import { Hono } from "hono";
 
 const authRouter = new Hono();
 
-/**
- * DELETE /api/auth/delete-user
- * Deletes a single user from Supabase Auth using the service role key.
- * Called by "Delete Account" flow.
- * Body: { email: string }
- */
-authRouter.post("/delete-user", async (c) => {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+function getSupabaseConfig() {
+  return {
+    url: process.env.SUPABASE_URL,
+    serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  };
+}
 
-  if (!supabaseUrl || !serviceRoleKey) {
+async function deleteAuthUserById(supabaseUrl: string, serviceKey: string, userId: string): Promise<boolean> {
+  const res = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${serviceKey}`,
+      apikey: serviceKey,
+    },
+  });
+  return res.ok;
+}
+
+async function getAuthUserByEmail(supabaseUrl: string, serviceKey: string, email: string): Promise<{ id: string; email: string } | null> {
+  const res = await fetch(
+    `${supabaseUrl}/auth/v1/admin/users?email=${encodeURIComponent(email)}&per_page=50`,
+    {
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        apikey: serviceKey,
+      },
+    }
+  );
+  if (!res.ok) return null;
+  const data = await res.json() as { users?: any[] };
+  const user = (data.users || []).find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
+  return user ? { id: user.id, email: user.email } : null;
+}
+
+async function getAllAuthUsers(supabaseUrl: string, serviceKey: string): Promise<{ id: string; email: string }[]> {
+  const res = await fetch(`${supabaseUrl}/auth/v1/admin/users?per_page=1000`, {
+    headers: {
+      Authorization: `Bearer ${serviceKey}`,
+      apikey: serviceKey,
+    },
+  });
+  if (!res.ok) return [];
+  const data = await res.json() as { users?: any[] };
+  return (data.users || []).filter((u: any) => u.email).map((u: any) => ({ id: u.id, email: u.email }));
+}
+
+/**
+ * POST /api/auth/delete-account
+ * "Delete Account" — removes the player from Supabase players table
+ * and deletes their auth account. Uses playerId + email from the request.
+ */
+authRouter.post("/delete-account", async (c) => {
+  const { url: supabaseUrl, serviceKey } = getSupabaseConfig();
+  if (!supabaseUrl || !serviceKey) {
     return c.json({ error: "Supabase admin not configured" }, 503);
   }
 
+  let playerId: string | undefined;
   let email: string | undefined;
   try {
     const body = await c.req.json();
+    playerId = body.playerId;
     email = body.email;
   } catch {
     return c.json({ error: "Invalid request body" }, 400);
   }
 
-  if (!email) {
-    return c.json({ error: "email is required" }, 400);
+  if (!playerId && !email) {
+    return c.json({ error: "playerId or email is required" }, 400);
   }
 
   try {
-    // Look up the user by email via Admin API
-    const listRes = await fetch(
-      `${supabaseUrl}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${serviceRoleKey}`,
-          apikey: serviceRoleKey,
-        },
-      }
-    );
-
-    if (!listRes.ok) {
-      const err = await listRes.text();
-      console.error("delete-user: list users error:", err);
-      return c.json({ error: "Failed to look up user" }, 500);
-    }
-
-    const listData = await listRes.json() as { users?: any[] };
-    const users = listData.users || [];
-    const user = users.find((u: any) => u.email?.toLowerCase() === email!.toLowerCase());
-
-    if (!user) {
-      // User not found in auth — treat as success (already deleted or never created)
-      return c.json({ success: true, message: "User not found in auth (already deleted)" });
-    }
-
-    // Delete the user
-    const deleteRes = await fetch(
-      `${supabaseUrl}/auth/v1/admin/users/${user.id}`,
-      {
+    // 1. Delete player row from Supabase (this handles all other teams too via the players table)
+    if (playerId) {
+      await fetch(`${supabaseUrl}/rest/v1/players?id=eq.${encodeURIComponent(playerId)}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${serviceRoleKey}`,
-          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceKey}`,
+          apikey: serviceKey,
+          "Content-Type": "application/json",
         },
-      }
-    );
-
-    if (!deleteRes.ok) {
-      const err = await deleteRes.text();
-      console.error("delete-user: delete error:", err);
-      return c.json({ error: "Failed to delete user from auth" }, 500);
+      });
+      console.log(`delete-account: deleted player row ${playerId}`);
     }
 
-    console.log(`delete-user: deleted auth user ${user.id} (${email})`);
+    // 2. Delete auth user by email
+    if (email) {
+      const authUser = await getAuthUserByEmail(supabaseUrl, serviceKey, email);
+      if (authUser) {
+        await deleteAuthUserById(supabaseUrl, serviceKey, authUser.id);
+        console.log(`delete-account: deleted auth user ${authUser.id} (${email})`);
+      }
+    }
+
     return c.json({ success: true });
   } catch (err) {
-    console.error("delete-user: unexpected error:", err);
+    console.error("delete-account: unexpected error:", err);
     return c.json({ error: "Unexpected error" }, 500);
   }
 });
 
 /**
- * POST /api/auth/delete-users
- * Deletes multiple users from Supabase Auth using the service role key.
- * Called by "Delete Team" nuclear option.
- * Body: { emails: string[] }
+ * POST /api/auth/erase-team-data
+ * "Erase All Data" — deletes all team content (games, events, chat, photos,
+ * payments, polls, links, notifications) but leaves the team row and players intact.
+ * All data is fetched from Supabase server-side — no client data trusted.
  */
-authRouter.post("/delete-users", async (c) => {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
+authRouter.post("/erase-team-data", async (c) => {
+  const { url: supabaseUrl, serviceKey } = getSupabaseConfig();
+  if (!supabaseUrl || !serviceKey) {
     return c.json({ error: "Supabase admin not configured" }, 503);
   }
 
-  let emails: string[] = [];
+  let teamId: string | undefined;
   try {
     const body = await c.req.json();
-    emails = body.emails || [];
+    teamId = body.teamId;
   } catch {
     return c.json({ error: "Invalid request body" }, 400);
   }
 
-  if (!emails.length) {
-    return c.json({ success: true, deleted: 0 });
+  if (!teamId) {
+    return c.json({ error: "teamId is required" }, 400);
   }
 
+  const headers = {
+    Authorization: `Bearer ${serviceKey}`,
+    apikey: serviceKey,
+    "Content-Type": "application/json",
+  };
+
+  const tables = [
+    "games",
+    "events",
+    "chat_messages",
+    "photos",
+    "payment_periods",
+    "polls",
+    "team_links",
+    "notifications",
+  ];
+
   try {
-    // Fetch all auth users (paginated, up to 1000)
-    const listRes = await fetch(
-      `${supabaseUrl}/auth/v1/admin/users?per_page=1000`,
-      {
-        headers: {
-          Authorization: `Bearer ${serviceRoleKey}`,
-          apikey: serviceRoleKey,
-        },
-      }
-    );
-
-    if (!listRes.ok) {
-      const err = await listRes.text();
-      console.error("delete-users: list error:", err);
-      return c.json({ error: "Failed to list users" }, 500);
-    }
-
-    const listData = await listRes.json() as { users?: any[] };
-    const allUsers: any[] = listData.users || [];
-
-    const emailsLower = emails.map((e) => e.toLowerCase());
-    const toDelete = allUsers.filter((u) =>
-      u.email && emailsLower.includes(u.email.toLowerCase())
-    );
-
-    let deleted = 0;
-    const errors: string[] = [];
-
-    for (const user of toDelete) {
-      const deleteRes = await fetch(
-        `${supabaseUrl}/auth/v1/admin/users/${user.id}`,
-        {
+    await Promise.all(
+      tables.map((table) =>
+        fetch(`${supabaseUrl}/rest/v1/${table}?team_id=eq.${encodeURIComponent(teamId!)}`, {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${serviceRoleKey}`,
-            apikey: serviceRoleKey,
-          },
-        }
-      );
+          headers,
+        })
+      )
+    );
+    console.log(`erase-team-data: wiped all content for team ${teamId}`);
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("erase-team-data: unexpected error:", err);
+    return c.json({ error: "Unexpected error" }, 500);
+  }
+});
 
-      if (deleteRes.ok) {
-        deleted++;
-        console.log(`delete-users: deleted auth user ${user.id} (${user.email})`);
-      } else {
-        const err = await deleteRes.text();
-        console.error(`delete-users: failed to delete ${user.email}:`, err);
-        errors.push(user.email);
-      }
+/**
+ * POST /api/auth/delete-team
+ * "Delete Team" — nuclear option.
+ * 1. Fetches all players on the team from Supabase.
+ * 2. Finds players NOT on any other team (server-side check).
+ * 3. Deletes their auth accounts.
+ * 4. Deletes the team row (CASCADE removes all content).
+ */
+authRouter.post("/delete-team", async (c) => {
+  const { url: supabaseUrl, serviceKey } = getSupabaseConfig();
+  if (!supabaseUrl || !serviceKey) {
+    return c.json({ error: "Supabase admin not configured" }, 503);
+  }
+
+  let teamId: string | undefined;
+  try {
+    const body = await c.req.json();
+    teamId = body.teamId;
+  } catch {
+    return c.json({ error: "Invalid request body" }, 400);
+  }
+
+  if (!teamId) {
+    return c.json({ error: "teamId is required" }, 400);
+  }
+
+  const headers = {
+    Authorization: `Bearer ${serviceKey}`,
+    apikey: serviceKey,
+    "Content-Type": "application/json",
+  };
+
+  try {
+    // 1. Fetch all players on this team
+    const playersRes = await fetch(
+      `${supabaseUrl}/rest/v1/players?team_id=eq.${encodeURIComponent(teamId)}&select=id,email`,
+      { headers }
+    );
+    const teamPlayers: { id: string; email: string | null }[] = playersRes.ok
+      ? (await playersRes.json() as { id: string; email: string | null }[])
+      : [];
+
+    const teamEmails = teamPlayers
+      .map((p) => p.email?.toLowerCase())
+      .filter((e): e is string => !!e);
+
+    // 2. For each email, check if that player exists on ANY other team
+    //    by looking up players with that email excluding this team_id
+    const emailsExclusiveToThisTeam: string[] = [];
+    await Promise.all(
+      teamEmails.map(async (email) => {
+        const res = await fetch(
+          `${supabaseUrl}/rest/v1/players?email=ilike.${encodeURIComponent(email)}&team_id=neq.${encodeURIComponent(teamId!)}&select=id`,
+          { headers }
+        );
+        if (res.ok) {
+          const others = await res.json() as any[];
+          if (others.length === 0) {
+            // Not on any other team — safe to delete auth
+            emailsExclusiveToThisTeam.push(email);
+          }
+        }
+      })
+    );
+
+    // 3. Delete auth accounts for exclusive players
+    if (emailsExclusiveToThisTeam.length > 0) {
+      const allAuthUsers = await getAllAuthUsers(supabaseUrl, serviceKey);
+      const emailsLower = new Set(emailsExclusiveToThisTeam);
+      const toDelete = allAuthUsers.filter((u) => emailsLower.has(u.email.toLowerCase()));
+      await Promise.all(toDelete.map((u) => deleteAuthUserById(supabaseUrl, serviceKey, u.id)));
+      console.log(`delete-team: deleted ${toDelete.length} auth accounts for team ${teamId}`);
     }
 
-    return c.json({ success: true, deleted, errors });
+    // 4. Delete the team row — CASCADE wipes all related rows
+    await fetch(
+      `${supabaseUrl}/rest/v1/teams?id=eq.${encodeURIComponent(teamId)}`,
+      { method: "DELETE", headers }
+    );
+    console.log(`delete-team: deleted team ${teamId}`);
+
+    return c.json({ success: true });
   } catch (err) {
-    console.error("delete-users: unexpected error:", err);
+    console.error("delete-team: unexpected error:", err);
     return c.json({ error: "Unexpected error" }, 500);
   }
 });

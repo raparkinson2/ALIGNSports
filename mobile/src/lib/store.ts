@@ -1965,11 +1965,15 @@ export const useTeamStore = create<TeamStore>()(
         const state = get();
         const { userEmail, userPhone, currentPlayerId } = state;
 
-        // Fire-and-forget: delete player from Supabase + delete auth user
-        import('./realtime-sync').then(({ deletePlayerFromSupabase, deleteAuthUser }) => {
-          if (currentPlayerId) deletePlayerFromSupabase(currentPlayerId);
-          if (userEmail) deleteAuthUser(userEmail);
-        });
+        // Fire-and-forget: backend handles deleting the player row + auth account from Supabase
+        const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+        if (backendUrl && (currentPlayerId || userEmail)) {
+          fetch(`${backendUrl}/api/auth/delete-account`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ playerId: currentPlayerId, email: userEmail }),
+          }).catch(err => console.error('deleteAccount backend call failed:', err));
+        }
 
         // Remove the current player from all teams they belong to
         const updatedTeams = state.teams.map((team) => {
@@ -2462,11 +2466,14 @@ export const useTeamStore = create<TeamStore>()(
         const state = get();
         const { activeTeamId } = state;
 
-        // Fire-and-forget: wipe all team content from Supabase but leave players/auth intact
-        if (activeTeamId) {
-          import('./realtime-sync').then(({ eraseTeamContentFromSupabase }) => {
-            eraseTeamContentFromSupabase(activeTeamId);
-          });
+        // Fire-and-forget: backend wipes all team content from Supabase, leaves players/auth intact
+        const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+        if (backendUrl && activeTeamId) {
+          fetch(`${backendUrl}/api/auth/erase-team-data`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ teamId: activeTeamId }),
+          }).catch(err => console.error('resetAllData backend call failed:', err));
         }
 
         // Clear AsyncStorage completely to ensure no data remains
@@ -2520,26 +2527,17 @@ export const useTeamStore = create<TeamStore>()(
 
         if (!activeTeamId) return;
 
-        // Get all players on this team
-        const currentTeam = teams.find(t => t.id === activeTeamId);
-        const teamPlayers = currentTeam?.players || [];
-
-        // Only delete auth accounts for players who are NOT on any other team.
-        // A player on multiple teams should keep their auth account.
-        const otherTeams = teams.filter(t => t.id !== activeTeamId);
-        const emailsOnOtherTeams = new Set(
-          otherTeams.flatMap(t => t.players.map(p => p.email?.toLowerCase()).filter(Boolean))
-        );
-        const emailsToDelete = teamPlayers
-          .map(p => p.email)
-          .filter((e): e is string => !!e && !emailsOnOtherTeams.has(e.toLowerCase()));
-
-        // Fire-and-forget: delete entire team from Supabase (CASCADE wipes all content)
-        // Then delete auth accounts only for players exclusive to this team
-        import('./realtime-sync').then(({ deleteTeamFromSupabase, deleteAuthUsers }) => {
-          deleteTeamFromSupabase(activeTeamId);
-          if (emailsToDelete.length) deleteAuthUsers(emailsToDelete);
-        });
+        // Fire-and-forget: backend handles everything server-side from Supabase —
+        // checks which players are exclusive to this team, deletes their auth accounts,
+        // then deletes the team row (CASCADE removes all content).
+        const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+        if (backendUrl) {
+          fetch(`${backendUrl}/api/auth/delete-team`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ teamId: activeTeamId }),
+          }).catch(err => console.error('deleteCurrentTeam backend call failed:', err));
+        }
 
         // Remove the current team from the teams array
         const remainingTeams = teams.filter(t => t.id !== activeTeamId);
