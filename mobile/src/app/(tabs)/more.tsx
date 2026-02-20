@@ -44,6 +44,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useState, useEffect } from 'react';
 import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences, getPlayerName, getPlayerInitials, TeamLink } from '@/lib/store';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
+import { APP_VERSION } from '@/config/app';
 import { sendTestNotification, registerForPushNotificationsAsync } from '@/lib/notifications';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 
@@ -1421,7 +1422,7 @@ export default function MoreScreen() {
 
           {/* Version */}
           <View className="items-center mt-8 mb-4">
-            <Text className="text-slate-600 text-xs">Version 1.0.0</Text>
+            <Text className="text-slate-600 text-xs">Version {APP_VERSION}</Text>
           </View>
         </ScrollView>
       </SafeAreaView>
