@@ -1,14 +1,16 @@
 import { View, Text, ScrollView, Pressable, Dimensions, Modal, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect, useCallback } from 'react';
-import { Camera, Plus, ImageIcon, Trash2, X, RefreshCw } from 'lucide-react-native';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Camera, Plus, ImageIcon, Trash2, X } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Photo } from '@/lib/store';
 import { uploadSinglePhoto, deleteSinglePhoto, fetchTeamPhotos } from '@/lib/team-sync';
+import { supabase } from '@/lib/supabase';
+import { useFocusEffect } from 'expo-router';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -31,6 +33,9 @@ export default function PhotosScreen() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Track synced photo IDs to avoid duplicates
+  const syncedIdsRef = useRef<Set<string>>(new Set(storePhotos.map(p => p.id)));
+
   // Fetch photos from Supabase to sync with other team members
   const syncPhotos = useCallback(async () => {
     if (!teamId) return;
@@ -39,28 +44,93 @@ export default function PhotosScreen() {
     try {
       const result = await fetchTeamPhotos(teamId);
       if (result.success && result.photos) {
-        // Merge cloud photos with local photos (avoid duplicates)
-        const existingIds = new Set(storePhotos.map(p => p.id));
-        const newPhotos = result.photos.filter(p => !existingIds.has(p.id));
-
-        // Add new photos from cloud
-        newPhotos.forEach(photo => addPhoto(photo));
-
-        if (newPhotos.length > 0) {
-          console.log('Synced', newPhotos.length, 'new photos from cloud');
-        }
+        // Add new photos from cloud that we don't have locally
+        result.photos.forEach(photo => {
+          if (!syncedIdsRef.current.has(photo.id)) {
+            syncedIdsRef.current.add(photo.id);
+            addPhoto(photo);
+            console.log('Synced new photo from cloud:', photo.id);
+          }
+        });
       }
     } catch (err) {
       console.error('Failed to sync photos:', err);
     } finally {
       setIsSyncing(false);
     }
-  }, [teamId, storePhotos, addPhoto]);
+  }, [teamId, addPhoto]);
 
-  // Sync photos on mount and when returning to tab
+  // Sync photos when tab gains focus
+  useFocusEffect(
+    useCallback(() => {
+      syncPhotos();
+    }, [syncPhotos])
+  );
+
+  // Subscribe to real-time photo updates
   useEffect(() => {
-    syncPhotos();
-  }, [teamId]);
+    if (!teamId) return;
+
+    console.log('PHOTOS: Subscribing to real-time updates for team:', teamId);
+
+    const channel = supabase
+      .channel(`photos:${teamId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'photos',
+          filter: `team_id=eq.${teamId}`,
+        },
+        (payload) => {
+          console.log('PHOTOS: Received new photo from realtime');
+          const p = payload.new as any;
+
+          // Skip if we already have this photo
+          if (syncedIdsRef.current.has(p.id)) {
+            console.log('PHOTOS: Skipping duplicate photo');
+            return;
+          }
+
+          syncedIdsRef.current.add(p.id);
+          const photo: Photo = {
+            id: p.id,
+            gameId: p.game_id || '',
+            uri: p.uri,
+            uploadedBy: p.uploaded_by || '',
+            uploadedAt: p.uploaded_at,
+          };
+          addPhoto(photo);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'photos',
+          filter: `team_id=eq.${teamId}`,
+        },
+        (payload) => {
+          console.log('PHOTOS: Received delete from realtime');
+          const oldPhoto = payload.old as any;
+          if (oldPhoto?.id) {
+            syncedIdsRef.current.delete(oldPhoto.id);
+            removePhoto(oldPhoto.id);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('PHOTOS: Subscription status:', status);
+      });
+
+    return () => {
+      console.log('PHOTOS: Unsubscribing from real-time updates');
+      channel.unsubscribe();
+    };
+  }, [teamId, addPhoto, removePhoto]);
 
   const handlePhotoPress = (photo: Photo) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -189,17 +259,6 @@ export default function PhotosScreen() {
             <Text className="text-white text-3xl font-bold">Team Photos</Text>
           </View>
           <View className="flex-row items-center">
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                syncPhotos();
-              }}
-              disabled={isSyncing || isUploading}
-              className="bg-slate-800 w-10 h-10 rounded-full items-center justify-center mr-2 active:bg-slate-700"
-              style={{ opacity: isSyncing ? 0.5 : 1 }}
-            >
-              <RefreshCw size={20} color="#67e8f9" />
-            </Pressable>
             <Pressable
               onPress={takePhoto}
               disabled={isUploading}

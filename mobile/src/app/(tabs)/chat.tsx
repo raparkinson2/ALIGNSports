@@ -664,12 +664,14 @@ export default function ChatScreen() {
                   {group.messages.map((message, msgIndex) => {
                     const sender = players.find((p) => p.id === message.senderId);
                     const isOwnMessage = message.senderId === currentPlayerId;
+                    // Use local player name if found, otherwise fall back to cached senderName from cloud
+                    const displayName = sender ? getPlayerName(sender) : (message.senderName || 'Unknown');
                     return (
                       <MessageBubble
                         key={message.id}
                         message={message}
                         isOwnMessage={isOwnMessage}
-                        senderName={sender ? getPlayerName(sender) : 'Unknown'}
+                        senderName={displayName}
                         senderAvatar={sender?.avatar}
                         index={groupIndex * 10 + msgIndex}
                         onDelete={isOwnMessage ? () => {

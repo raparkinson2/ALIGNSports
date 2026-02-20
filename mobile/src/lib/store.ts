@@ -553,6 +553,7 @@ export interface AppNotification {
 export interface ChatMessage {
   id: string;
   senderId: string;
+  senderName?: string; // Cached sender name for cross-device display
   message: string;
   imageUrl?: string; // For images from camera/gallery
   gifUrl?: string; // For GIFs from GIPHY

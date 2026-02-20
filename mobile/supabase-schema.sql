@@ -203,6 +203,9 @@ CREATE TABLE photos (
   uploaded_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Enable Realtime for photos
+ALTER PUBLICATION supabase_realtime ADD TABLE photos;
+
 -- =============================================
 -- PAYMENT PERIODS
 -- =============================================

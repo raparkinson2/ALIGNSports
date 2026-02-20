@@ -107,6 +107,7 @@ export async function fetchChatMessages(teamId: string): Promise<{
     const messages: ChatMessage[] = (data || []).map(m => ({
       id: m.id,
       senderId: m.sender_id,
+      senderName: m.sender_name || undefined,
       message: m.message,
       imageUrl: m.image_url || undefined,
       gifUrl: m.gif_url || undefined,
@@ -171,6 +172,7 @@ export function subscribeToChatMessages(
         const message: ChatMessage = {
           id: m.id,
           senderId: m.sender_id,
+          senderName: m.sender_name || undefined,
           message: m.message,
           imageUrl: m.image_url || undefined,
           gifUrl: m.gif_url || undefined,
