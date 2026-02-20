@@ -1418,6 +1418,11 @@ export default function MoreScreen() {
             onPress={() => router.push('/notices')}
             index={13}
           />
+
+          {/* Version */}
+          <View className="items-center mt-8 mb-4">
+            <Text className="text-slate-600 text-xs">Version 1.0.0</Text>
+          </View>
         </ScrollView>
       </SafeAreaView>
 
