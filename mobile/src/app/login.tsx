@@ -638,7 +638,7 @@ export default function LoginScreen() {
             >
               <UserPlus size={20} color="#67e8f9" />
               <Text className="text-cyan-400 font-semibold text-base ml-2">
-                Invited to Join a Team
+                Join a Team
               </Text>
             </Pressable>
           </Animated.View>
