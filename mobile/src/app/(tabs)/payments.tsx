@@ -42,6 +42,7 @@ import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { pushPaymentPeriodToSupabase } from '@/lib/realtime-sync';
 
 // Helper to calculate correct payment status from actual payment amounts
 const calculatePaymentStatus = (paidAmount: number | undefined, periodAmount: number): 'paid' | 'partial' | 'unpaid' => {
@@ -661,6 +662,18 @@ export default function PaymentsScreen() {
   const updatePaymentPeriod = useTeamStore((s) => s.updatePaymentPeriod);
   const reorderPaymentPeriods = useTeamStore((s) => s.reorderPaymentPeriods);
   const isAdmin = useTeamStore((s) => s.isAdmin);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
+
+  // Wrapper: updates locally AND pushes to Supabase
+  const updatePaymentPeriodAndSync = (periodId: string, updates: Parameters<typeof updatePaymentPeriod>[1]) => {
+    updatePaymentPeriodAndSync(periodId, updates);
+    if (activeTeamId) {
+      const updated = useTeamStore.getState().paymentPeriods.find((p) => p.id === periodId);
+      if (updated) {
+        pushPaymentPeriodToSupabase({ ...updated, ...updates }, activeTeamId).catch(console.error);
+      }
+    }
+  };
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
 
   const [isReorderMode, setIsReorderMode] = useState(false);
@@ -774,6 +787,12 @@ export default function PaymentsScreen() {
     };
 
     addPaymentPeriod(newPeriod);
+
+    // Sync to Supabase for other team members
+    if (activeTeamId) {
+      pushPaymentPeriodToSupabase(newPeriod, activeTeamId).catch(console.error);
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setPeriodTitle('');
     setPeriodAmount('');
@@ -789,7 +808,7 @@ export default function PaymentsScreen() {
     const amount = parseFloat(editPeriodAmount);
     if (isNaN(amount) || amount <= 0) return;
 
-    updatePaymentPeriod(editingPeriodId, {
+    updatePaymentPeriodAndSync(editingPeriodId, {
       amount,
       dueDate: editDueDate ? editDueDate.toISOString() : undefined
     });
@@ -805,7 +824,7 @@ export default function PaymentsScreen() {
 
     if (!editTeamTotalAmount.trim()) {
       // Allow clearing the amount
-      updatePaymentPeriod(editingTeamTotalPeriodId, { teamTotalOwed: undefined });
+      updatePaymentPeriodAndSync(editingTeamTotalPeriodId, { teamTotalOwed: undefined });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setIsEditTeamTotalModalVisible(false);
       setEditTeamTotalAmount('');
@@ -815,7 +834,7 @@ export default function PaymentsScreen() {
     const amount = parseFloat(editTeamTotalAmount);
     if (isNaN(amount) || amount < 0) return;
 
-    updatePaymentPeriod(editingTeamTotalPeriodId, { teamTotalOwed: amount });
+    updatePaymentPeriodAndSync(editingTeamTotalPeriodId, { teamTotalOwed: amount });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsEditTeamTotalModalVisible(false);
     setEditTeamTotalAmount('');
@@ -898,7 +917,7 @@ export default function PaymentsScreen() {
       },
     ];
 
-    updatePaymentPeriod(selectedPeriodId, { playerPayments: updatedPayments });
+    updatePaymentPeriodAndSync(selectedPeriodId, { playerPayments: updatedPayments });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
@@ -925,7 +944,7 @@ export default function PaymentsScreen() {
             const updatedPayments = selectedPeriod.playerPayments.filter(
               (pp) => pp.playerId !== playerId
             );
-            updatePaymentPeriod(selectedPeriodId, { playerPayments: updatedPayments });
+            updatePaymentPeriodAndSync(selectedPeriodId, { playerPayments: updatedPayments });
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           },
         },
@@ -1947,7 +1966,7 @@ export default function PaymentsScreen() {
                               </Pressable>
                               <Pressable
                                 onPress={() => {
-                                  updatePaymentPeriod(selectedPeriod.id, {
+                                  updatePaymentPeriodAndSync(selectedPeriod.id, {
                                     dueDate: editDueDate ? editDueDate.toISOString() : undefined
                                   });
                                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -2278,7 +2297,7 @@ export default function PaymentsScreen() {
               <Text className="text-white text-lg font-semibold">Due Date</Text>
               <Pressable onPress={() => {
                 if (selectedPeriodId) {
-                  updatePaymentPeriod(selectedPeriodId, {
+                  updatePaymentPeriodAndSync(selectedPeriodId, {
                     dueDate: editDueDate ? editDueDate.toISOString() : undefined
                   });
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

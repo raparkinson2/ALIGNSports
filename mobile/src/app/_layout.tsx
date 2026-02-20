@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTeamStore, useStoreHydrated } from '@/lib/store';
 import { registerForPushNotificationsAsync } from '@/lib/notifications';
 import { clearInvalidSession, getSafeSession } from '@/lib/supabase';
+import { startRealtimeSync, stopRealtimeSync } from '@/lib/realtime-sync';
 
 export const unstable_settings = {
   initialRouteName: 'login',
@@ -90,6 +91,7 @@ function AuthNavigator() {
     // Additional safety: if somehow isLoggedIn is true but no players exist, force logout
     if (isLoggedIn && players.length === 0) {
       console.log('No players exist but isLoggedIn is true, forcing logout');
+      stopRealtimeSync();
       logout();
       return;
     }
@@ -114,6 +116,19 @@ function AuthNavigator() {
       SplashScreen.hideAsync();
     }
   }, [isHydrated]);
+
+  // Start/stop realtime sync when login state or team changes
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
+  useEffect(() => {
+    if (isLoggedIn && activeTeamId) {
+      startRealtimeSync(activeTeamId);
+    } else {
+      stopRealtimeSync();
+    }
+    return () => {
+      // Don't stop on unmount — keep syncing while logged in
+    };
+  }, [isLoggedIn, activeTeamId]);
 
   // Register for push notifications when logged in
   useEffect(() => {

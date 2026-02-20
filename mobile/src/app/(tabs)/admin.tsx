@@ -352,9 +352,19 @@ export default function AdminScreen() {
 
   const handleSavePlayerNumber = () => {
     if (!selectedPlayer || !editPlayerNumber.trim()) return;
+    const newNumber = editPlayerNumber.trim();
+    // Check for jersey number conflict (skip coaches/parents)
+    const isCoachOrParent = selectedPlayer.roles?.includes('coach') || selectedPlayer.roles?.includes('parent');
+    if (!isCoachOrParent) {
+      const conflict = players.find((p) => p.id !== selectedPlayer.id && p.number === newNumber && !p.roles?.includes('coach') && !p.roles?.includes('parent'));
+      if (conflict) {
+        Alert.alert('Jersey # Taken', `#${newNumber} is already worn by ${conflict.firstName} ${conflict.lastName}.`);
+        return;
+      }
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    updatePlayer(selectedPlayer.id, { number: editPlayerNumber.trim() });
-    setSelectedPlayer({ ...selectedPlayer, number: editPlayerNumber.trim() });
+    updatePlayer(selectedPlayer.id, { number: newNumber });
+    setSelectedPlayer({ ...selectedPlayer, number: newNumber });
   };
 
   const handleSavePlayerPhone = () => {
@@ -529,6 +539,35 @@ export default function AdminScreen() {
     if (!isCoachRole && !isParentRole && newPlayerPositions.length === 0) {
       Alert.alert('Missing Info', 'Please select at least one position.');
       return;
+    }
+
+    // Prevent duplicate phone number on this team
+    if (rawPhone) {
+      const phoneConflict = players.find((p) => p.phone?.replace(/\D/g, '') === rawPhone.replace(/\D/g, ''));
+      if (phoneConflict) {
+        Alert.alert('Already on Team', `${phoneConflict.firstName} ${phoneConflict.lastName} already has this phone number on this team.`);
+        return;
+      }
+    }
+
+    // Prevent duplicate email on this team
+    if (newPlayerEmail.trim()) {
+      const emailConflict = players.find((p) => p.email?.toLowerCase() === newPlayerEmail.trim().toLowerCase());
+      if (emailConflict) {
+        Alert.alert('Already on Team', `${emailConflict.firstName} ${emailConflict.lastName} already has this email address on this team.`);
+        return;
+      }
+    }
+
+    // Prevent duplicate jersey number (skip for coaches/parents)
+    if (!isCoachRole && !isParentRole && newPlayerNumber.trim()) {
+      const jerseyConflict = players.find(
+        (p) => p.number === newPlayerNumber.trim() && !p.roles?.includes('coach') && !p.roles?.includes('parent')
+      );
+      if (jerseyConflict) {
+        Alert.alert('Jersey # Taken', `#${newPlayerNumber.trim()} is already worn by ${jerseyConflict.firstName} ${jerseyConflict.lastName}. Please choose a different number.`);
+        return;
+      }
     }
 
     // Build roles array based on memberRole

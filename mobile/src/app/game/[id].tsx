@@ -45,6 +45,7 @@ import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, BattingOrderLineup, SoccerLineup, SoccerDiamondLineup, LacrosseLineup, getPlayerName, InviteReleaseOption, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, PlayerStats, GameLogEntry, getPlayerPositions } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { pushGameToSupabase, pushGameResponseToSupabase } from '@/lib/realtime-sync';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
@@ -522,8 +523,20 @@ export default function GameDetailScreen() {
   const checkOutFromGame = useTeamStore((s) => s.checkOutFromGame);
   const clearPlayerResponse = useTeamStore((s) => s.clearPlayerResponse);
   const addNotification = useTeamStore((s) => s.addNotification);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const updateGame = useTeamStore((s) => s.updateGame);
   const removeGame = useTeamStore((s) => s.removeGame);
+
+  // Wrapper: updates local store AND pushes to Supabase so other users see changes
+  const updateGameAndSync = (gameId: string, updates: Parameters<typeof updateGame>[1]) => {
+    updateGame(gameId, updates);
+    if (activeTeamId) {
+      const currentGame = useTeamStore.getState().games.find((g) => g.id === gameId);
+      if (currentGame) {
+        pushGameToSupabase({ ...currentGame, ...updates } as any, activeTeamId).catch(console.error);
+      }
+    }
+  };
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
@@ -672,12 +685,21 @@ export default function GameDetailScreen() {
     if (!isIn && !isOut) {
       // Currently no response, mark as IN
       checkInToGame(game.id, playerId);
+      if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'in').catch(console.error);
     } else if (isIn) {
       // Currently IN, mark as OUT
       checkOutFromGame(game.id, playerId);
+      if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'out').catch(console.error);
     } else {
       // Currently OUT, clear response
       clearPlayerResponse(game.id, playerId);
+      // Delete the response row from Supabase
+      if (activeTeamId) {
+        import('@/lib/supabase').then(({ supabase }) => {
+          supabase.from('game_responses').delete()
+            .eq('game_id', game.id).eq('player_id', playerId).then(() => {});
+        });
+      }
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
@@ -947,7 +969,7 @@ export default function GameDetailScreen() {
     const currentInvited = game.invitedPlayers ?? [];
     if (currentInvited.includes(playerId)) return;
 
-    updateGame(game.id, {
+    updateGameAndSync(game.id, {
       invitedPlayers: [...currentInvited, playerId],
     });
 
@@ -998,7 +1020,7 @@ export default function GameDetailScreen() {
     const newInvites = playerIds.filter((id) => !currentInvited.includes(id));
     if (newInvites.length === 0) return;
 
-    updateGame(game.id, {
+    updateGameAndSync(game.id, {
       invitedPlayers: [...currentInvited, ...newInvites],
     });
 
@@ -1047,7 +1069,7 @@ export default function GameDetailScreen() {
   };
 
   const handleSelectBeerDutyPlayer = (playerId: string | undefined) => {
-    updateGame(game.id, { beerDutyPlayerId: playerId });
+    updateGameAndSync(game.id, { beerDutyPlayerId: playerId });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsBeerDutyModalVisible(false);
   };
@@ -1089,7 +1111,7 @@ export default function GameDetailScreen() {
 
     const timeString = format(editTime, 'h:mm a');
 
-    updateGame(game.id, {
+    updateGameAndSync(game.id, {
       opponent: editOpponent.trim(),
       location: editLocation.trim(),
       address: '', // Address is now part of location field
@@ -1117,7 +1139,7 @@ export default function GameDetailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
-    updateGame(game.id, { opponent: editOpponent.trim() });
+    updateGameAndSync(game.id, { opponent: editOpponent.trim() });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsEditOpponentModalVisible(false);
   };
@@ -1128,7 +1150,7 @@ export default function GameDetailScreen() {
   };
 
   const handleSaveDate = () => {
-    updateGame(game.id, { date: editDate.toISOString() });
+    updateGameAndSync(game.id, { date: editDate.toISOString() });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsEditDateModalVisible(false);
   };
@@ -1147,7 +1169,7 @@ export default function GameDetailScreen() {
 
   const handleSaveTime = () => {
     const timeString = format(editTime, 'h:mm a');
-    updateGame(game.id, { time: timeString });
+    updateGameAndSync(game.id, { time: timeString });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsEditTimeModalVisible(false);
   };
@@ -1158,7 +1180,7 @@ export default function GameDetailScreen() {
   };
 
   const handleSaveJersey = (color: string) => {
-    updateGame(game.id, { jerseyColor: color });
+    updateGameAndSync(game.id, { jerseyColor: color });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsEditJerseyModalVisible(false);
   };
@@ -1176,7 +1198,7 @@ export default function GameDetailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
-    updateGame(game.id, { location: editLocation.trim(), address: '' });
+    updateGameAndSync(game.id, { location: editLocation.trim(), address: '' });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsEditLocationModalVisible(false);
   };
@@ -1201,7 +1223,7 @@ export default function GameDetailScreen() {
   };
 
   const handleSaveReleaseInvites = () => {
-    updateGame(game.id, {
+    updateGameAndSync(game.id, {
       inviteReleaseOption: editInviteReleaseOption,
       inviteReleaseDate: editInviteReleaseOption === 'scheduled' ? editInviteReleaseDate.toISOString() : undefined,
       invitesSent: editInviteReleaseOption === 'now' ? true : game.invitesSent,
@@ -1239,7 +1261,7 @@ export default function GameDetailScreen() {
     const themScore = scoreThem ? parseInt(scoreThem, 10) : undefined;
 
     // Update game with final score
-    updateGame(game.id, {
+    updateGameAndSync(game.id, {
       finalScoreUs: usScore,
       finalScoreThem: themScore,
       gameResult: selectedResult,
@@ -1296,7 +1318,7 @@ export default function GameDetailScreen() {
             }
 
             // Clear the game result
-            updateGame(game.id, {
+            updateGameAndSync(game.id, {
               finalScoreUs: undefined,
               finalScoreThem: undefined,
               gameResult: undefined,
@@ -1314,37 +1336,37 @@ export default function GameDetailScreen() {
   };
 
   const handleSaveLineup = (lineup: HockeyLineup) => {
-    updateGame(game.id, { lineup });
+    updateGameAndSync(game.id, { lineup });
     setIsLineupModalVisible(false);
   };
 
   const handleSaveBasketballLineup = (basketballLineup: BasketballLineup) => {
-    updateGame(game.id, { basketballLineup });
+    updateGameAndSync(game.id, { basketballLineup });
     setIsBasketballLineupModalVisible(false);
   };
 
   const handleSaveBaseballLineup = (baseballLineup: BaseballLineup) => {
-    updateGame(game.id, { baseballLineup });
+    updateGameAndSync(game.id, { baseballLineup });
     setIsBaseballLineupModalVisible(false);
   };
 
   const handleSaveSoccerLineup = (soccerLineup: SoccerLineup) => {
-    updateGame(game.id, { soccerLineup });
+    updateGameAndSync(game.id, { soccerLineup });
     setIsSoccerLineupModalVisible(false);
   };
 
   const handleSaveSoccerDiamondLineup = (soccerDiamondLineup: SoccerDiamondLineup) => {
-    updateGame(game.id, { soccerDiamondLineup });
+    updateGameAndSync(game.id, { soccerDiamondLineup });
     setIsSoccerDiamondLineupModalVisible(false);
   };
 
   const handleSaveLacrosseLineup = (lacrosseLineup: LacrosseLineup) => {
-    updateGame(game.id, { lacrosseLineup });
+    updateGameAndSync(game.id, { lacrosseLineup });
     setIsLacrosseLineupModalVisible(false);
   };
 
   const handleSaveBattingOrderLineup = (battingOrderLineup: BattingOrderLineup) => {
-    updateGame(game.id, { battingOrderLineup });
+    updateGameAndSync(game.id, { battingOrderLineup });
     setIsBattingOrderModalVisible(false);
   };
 
@@ -4195,7 +4217,7 @@ export default function GameDetailScreen() {
               </Pressable>
               <Text className="text-white text-lg font-semibold">Edit Notes</Text>
               <Pressable onPress={() => {
-                updateGame(game.id, { notes: editNotes.trim() });
+                updateGameAndSync(game.id, { notes: editNotes.trim() });
                 setIsEditNotesModalVisible(false);
               }}>
                 <Check size={24} color="#22c55e" />

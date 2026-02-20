@@ -280,23 +280,20 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!activeTeamId || !currentPlayerId) return;
 
-    // Fetch existing messages
+    // Fetch from Supabase in background — local cached messages show immediately
     const loadMessages = async () => {
-      setIsSyncing(true);
       const result = await fetchChatMessages(activeTeamId);
       if (result.success && result.messages) {
-        // Merge with local messages (keep unique by ID)
-        const existingIds = new Set(chatMessages.map(m => m.id));
-        const newMessages = result.messages.filter(m => !existingIds.has(m.id));
-        if (newMessages.length > 0) {
-          // Add new messages from cloud
-          newMessages.forEach(msg => addChatMessage(msg));
-        }
+        // Replace local messages with the full cloud list (source of truth)
+        const localMessages = useTeamStore.getState().chatMessages;
+        const mergedIds = new Set(localMessages.map((m) => m.id));
+        const newMessages = result.messages.filter((m) => !mergedIds.has(m.id));
+        newMessages.forEach((msg) => addChatMessage(msg));
       }
-      setIsSyncing(false);
     };
 
-    loadMessages();
+    // Don't await — let local messages render first
+    loadMessages().catch(console.error);
 
     // Subscribe to real-time updates
     const unsubscribe = subscribeToChatMessages(

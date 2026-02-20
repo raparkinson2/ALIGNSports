@@ -28,6 +28,7 @@ import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, getPlayerName, AppNotification, InviteReleaseOption } from '@/lib/store';
+import { pushEventToSupabase, pushEventResponseToSupabase } from '@/lib/realtime-sync';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -109,6 +110,18 @@ export default function EventDetailScreen() {
   const updateEvent = useTeamStore((s) => s.updateEvent);
   const removeEvent = useTeamStore((s) => s.removeEvent);
   const addNotification = useTeamStore((s) => s.addNotification);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
+
+  // Wrapper: updates local store AND pushes to Supabase
+  const updateEventAndSync = (eventId: string, updates: Parameters<typeof updateEvent>[1]) => {
+    updateEvent(eventId, updates);
+    if (activeTeamId) {
+      const currentEvent = useTeamStore.getState().events.find((e) => e.id === eventId);
+      if (currentEvent) {
+        pushEventToSupabase({ ...currentEvent, ...updates } as any, activeTeamId).catch(console.error);
+      }
+    }
+  };
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
@@ -190,7 +203,7 @@ export default function EventDetailScreen() {
       newDeclined = newDeclined.filter((id) => id !== playerId);
     }
 
-    updateEvent(event.id, {
+    updateEventAndSync(event.id, {
       confirmedPlayers: newConfirmed,
       declinedPlayers: newDeclined,
     });
@@ -213,7 +226,7 @@ export default function EventDetailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
-    updateEvent(event.id, { title: editTitle.trim() });
+    updateEventAndSync(event.id, { title: editTitle.trim() });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsEditTitleModalVisible(false);
   };
@@ -224,7 +237,7 @@ export default function EventDetailScreen() {
   };
 
   const handleSaveDate = () => {
-    updateEvent(event.id, { date: editDate.toISOString() });
+    updateEventAndSync(event.id, { date: editDate.toISOString() });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsEditDateModalVisible(false);
   };
@@ -246,7 +259,7 @@ export default function EventDetailScreen() {
 
   const handleSaveTime = () => {
     const timeString = format(editTime, 'h:mm a');
-    updateEvent(event.id, { time: timeString });
+    updateEventAndSync(event.id, { time: timeString });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsEditTimeModalVisible(false);
   };
@@ -261,7 +274,7 @@ export default function EventDetailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
-    updateEvent(event.id, { location: editLocation.trim() });
+    updateEventAndSync(event.id, { location: editLocation.trim() });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsEditLocationModalVisible(false);
   };
@@ -272,13 +285,13 @@ export default function EventDetailScreen() {
   };
 
   const handleSaveNotes = () => {
-    updateEvent(event.id, { notes: editNotes.trim() || undefined });
+    updateEventAndSync(event.id, { notes: editNotes.trim() || undefined });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsEditNotesModalVisible(false);
   };
 
   const handleSaveReleaseInvites = () => {
-    updateEvent(event.id, {
+    updateEventAndSync(event.id, {
       inviteReleaseOption: editInviteReleaseOption,
       inviteReleaseDate: editInviteReleaseOption === 'scheduled' ? editInviteReleaseDate.toISOString() : undefined,
       invitesSent: editInviteReleaseOption === 'now' ? true : event.invitesSent,
@@ -331,7 +344,7 @@ export default function EventDetailScreen() {
     const currentInvited = event.invitedPlayers ?? [];
     if (currentInvited.includes(playerId)) return;
 
-    updateEvent(event.id, {
+    updateEventAndSync(event.id, {
       invitedPlayers: [...currentInvited, playerId],
     });
 
@@ -358,7 +371,7 @@ export default function EventDetailScreen() {
     const newInvites = playerIds.filter((id) => !currentInvited.includes(id));
     if (newInvites.length === 0) return;
 
-    updateEvent(event.id, {
+    updateEventAndSync(event.id, {
       invitedPlayers: [...currentInvited, ...newInvites],
     });
 

@@ -46,6 +46,7 @@ import { hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
 import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
 import { hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
 import { sendGameInviteNotification, scheduleGameInviteNotification, sendEventInviteNotification, scheduleEventReminderDayBefore, scheduleEventReminderHourBefore, scheduleGameReminderDayBefore, scheduleGameReminderHoursBefore } from '@/lib/notifications';
+import { pushGameToSupabase, pushEventToSupabase } from '@/lib/realtime-sync';
 
 const getDateLabel = (dateString: string): string => {
   const date = parseISO(dateString);
@@ -934,6 +935,7 @@ export default function ScheduleScreen() {
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const releaseScheduledGameInvites = useTeamStore((s) => s.releaseScheduledGameInvites);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
 
   // Get current player's notification preferences
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
@@ -1085,6 +1087,11 @@ export default function ScheduleScreen() {
 
     addGame(newGame);
 
+    // Sync to Supabase for other team members
+    if (activeTeamId) {
+      pushGameToSupabase(newGame, activeTeamId).catch(console.error);
+    }
+
     // Handle notifications based on invite release option
     const formattedDate = format(gameDate, 'EEE, MMM d');
 
@@ -1142,6 +1149,11 @@ export default function ScheduleScreen() {
     };
 
     addEvent(newEvent);
+
+    // Sync to Supabase for other team members
+    if (activeTeamId) {
+      pushEventToSupabase(newEvent, activeTeamId).catch(console.error);
+    }
 
     // Send notifications to invited players
     const formattedDate = format(gameDate, 'EEE, MMM d');
@@ -1213,6 +1225,11 @@ export default function ScheduleScreen() {
     };
 
     addEvent(newPractice);
+
+    // Sync to Supabase for other team members
+    if (activeTeamId) {
+      pushEventToSupabase(newPractice, activeTeamId).catch(console.error);
+    }
 
     // Send notifications to invited players
     const formattedDate = format(gameDate, 'EEE, MMM d');
