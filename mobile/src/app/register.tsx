@@ -11,7 +11,7 @@ import { Image } from 'expo-image';
 import { useTeamStore, Sport, Team } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
-import { signUpWithEmail } from '@/lib/supabase-auth';
+import { signUpWithEmail, getCurrentUser } from '@/lib/supabase-auth';
 import { secureRegisterInvitedPlayer, secureRegisterInvitedPlayerByPhone, secureLoginWithEmail, secureLoginWithPhone } from '@/lib/secure-auth';
 import { signInWithEmail } from '@/lib/supabase-auth';
 import { checkPendingInvitation, acceptTeamInvitation, TeamInvitation } from '@/lib/team-invitations';
@@ -132,18 +132,27 @@ export default function RegisterScreen() {
           number: invitation.jersey_number || '',
         });
 
-        // Check if this user already has an account (password set in Supabase Auth)
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-        // For email users, check if they already exist in Supabase Auth
-        const isEmail = trimmedIdentifier.includes('@');
-        if (isEmail) {
-          console.log('REGISTER: Email user - skipping auth check, going to step 2 (new user flow)');
-        }
+        // Check if this user already has an account in Supabase Auth or already has a team locally
+        // If they do, send them to the "sign in with existing password" step (step 4)
+        // rather than the "create new password" step (step 2)
+        const currentStoreState = useTeamStore.getState();
+        // Check both the teams array AND the active players array (legacy single-team users
+        // may have players but not populate the teams array yet)
+        const hasExistingTeams = currentStoreState.teams.length > 0 || currentStoreState.players.length > 0;
 
-        // New user - create account flow
-        console.log('REGISTER: Going to step 2');
-        setStep(2);
+        // Also check if they're already authenticated in Supabase
+        const currentUser = await getCurrentUser();
+        const isAlreadyLoggedInWithEmail = currentUser?.email?.toLowerCase() === trimmedIdentifier.toLowerCase();
+
+        if (hasExistingTeams || isAlreadyLoggedInWithEmail) {
+          console.log('REGISTER: Existing user detected (hasTeams:', hasExistingTeams, ', loggedIn:', isAlreadyLoggedInWithEmail, ') - going to step 4 (sign in flow)');
+          setStep(4);
+        } else {
+          console.log('REGISTER: New user - going to step 2 (create account flow)');
+          setStep(2);
+        }
         setIsLoading(false);
         return;
       }
@@ -509,8 +518,39 @@ export default function RegisterScreen() {
           };
 
           // Add the team to local store
-          const addTeam = useTeamStore.getState().addTeam;
-          const switchTeam = useTeamStore.getState().switchTeam;
+          const storeState = useTeamStore.getState();
+          const addTeam = storeState.addTeam;
+
+          // IMPORTANT: If this user already has an active team (Team A) that is NOT yet
+          // in the teams array (legacy single-team setup), we must save it first.
+          // Otherwise switchTeam won't be able to sync it back and Team A data will be lost.
+          if (storeState.players.length > 0 && !storeState.activeTeamId) {
+            // Derive a stable team ID from the team name or use a timestamp
+            const currentTeamId = `team-legacy-${storeState.teamName.replace(/\s+/g, '-').toLowerCase()}`;
+            const legacyTeam = {
+              id: currentTeamId,
+              teamName: storeState.teamName,
+              teamSettings: storeState.teamSettings,
+              players: storeState.players,
+              games: storeState.games,
+              events: storeState.events,
+              photos: storeState.photos,
+              notifications: storeState.notifications,
+              chatMessages: storeState.chatMessages,
+              chatLastReadAt: storeState.chatLastReadAt,
+              paymentPeriods: storeState.paymentPeriods,
+              polls: storeState.polls || [],
+              teamLinks: storeState.teamLinks || [],
+              currentPlayerId: storeState.currentPlayerId,
+              isLoggedIn: storeState.isLoggedIn,
+            };
+            useTeamStore.setState({
+              teams: [...storeState.teams, legacyTeam as any],
+              activeTeamId: currentTeamId,
+            });
+            console.log('REGISTER: Preserved legacy Team A as:', currentTeamId);
+          }
+
           addTeam(fullTeam as any);
 
           // IMPORTANT: Set userEmail/userPhone BEFORE switchTeam so it can find the user in the new team
@@ -521,7 +561,8 @@ export default function RegisterScreen() {
             userPhone: isPhone ? unformatPhone(trimmedIdentifier) : null,
           });
 
-          switchTeam(supabaseInvitation.team_id);
+          // Get fresh switchTeam reference after all state updates
+          useTeamStore.getState().switchTeam(supabaseInvitation.team_id);
 
           // Set the current player and logged in state
           setCurrentPlayerId(newPlayerId);
