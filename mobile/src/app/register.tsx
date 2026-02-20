@@ -352,6 +352,14 @@ export default function RegisterScreen() {
           const addTeam = useTeamStore.getState().addTeam;
           const switchTeam = useTeamStore.getState().switchTeam;
           addTeam(fullTeam as any);
+
+          // IMPORTANT: Set userEmail/userPhone BEFORE switchTeam so it can find the user in the new team
+          const isPhone = isPhoneNumber(trimmedIdentifier);
+          useTeamStore.setState({
+            userEmail: !isPhone ? trimmedIdentifier.toLowerCase() : null,
+            userPhone: isPhone ? unformatPhone(trimmedIdentifier) : null,
+          });
+
           switchTeam(supabaseInvitation.team_id);
 
           // Set the current player and logged in state
@@ -504,6 +512,15 @@ export default function RegisterScreen() {
           const addTeam = useTeamStore.getState().addTeam;
           const switchTeam = useTeamStore.getState().switchTeam;
           addTeam(fullTeam as any);
+
+          // IMPORTANT: Set userEmail/userPhone BEFORE switchTeam so it can find the user in the new team
+          // This is critical for multi-team users - switchTeam uses userEmail/userPhone to match the player
+          const isPhone = isPhoneNumber(trimmedIdentifier);
+          useTeamStore.setState({
+            userEmail: !isPhone ? trimmedIdentifier.toLowerCase() : null,
+            userPhone: isPhone ? unformatPhone(trimmedIdentifier) : null,
+          });
+
           switchTeam(supabaseInvitation.team_id);
 
           // Set the current player and logged in state
