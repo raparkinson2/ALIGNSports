@@ -136,7 +136,7 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       .from('teams')
       .select('*')
       .eq('id', teamId)
-      .single();
+      .maybeSingle();
 
     if (teamError || !teamData) {
       console.error('SYNC: Failed to load team:', teamError?.message);
