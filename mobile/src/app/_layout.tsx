@@ -100,13 +100,23 @@ function AuthNavigator() {
       // Check if the player still exists in the store
       const playerExists = players.some((p) => p.id === currentPlayerId);
       if (!playerExists) {
-        console.log('Logged in player not found, forcing logout');
-        logout();
+        // Only force logout if there's no active team being loaded
+        // (activeTeamId means realtime sync may still be populating players)
+        const { activeTeamId } = useTeamStore.getState();
+        if (!activeTeamId) {
+          console.log('Logged in player not found and no active team, forcing logout');
+          logout();
+        }
+        // else: player will appear once loadTeamFromSupabase completes
       }
     } else if (isLoggedIn && !currentPlayerId) {
-      // Logged in but no player ID - invalid state
-      console.log('Invalid login state (no player ID), forcing logout');
-      logout();
+      // Logged in but no player ID - only force logout if there's no active team loading
+      const { activeTeamId } = useTeamStore.getState();
+      if (!activeTeamId) {
+        console.log('Invalid login state (no player ID, no team), forcing logout');
+        logout();
+      }
+      // else: currentPlayerId will be set once loadTeamFromSupabase finishes
     }
   }, [isHydrated, isLoggedIn, currentPlayerId, players, logout]);
 

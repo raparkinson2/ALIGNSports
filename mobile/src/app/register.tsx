@@ -15,6 +15,7 @@ import { signUpWithEmail, getCurrentUser } from '@/lib/supabase-auth';
 import { secureRegisterInvitedPlayer, secureRegisterInvitedPlayerByPhone, secureLoginWithEmail, secureLoginWithPhone } from '@/lib/secure-auth';
 import { signInWithEmail } from '@/lib/supabase-auth';
 import { checkPendingInvitation, acceptTeamInvitation, TeamInvitation } from '@/lib/team-invitations';
+import { pushPlayerToSupabase } from '@/lib/realtime-sync';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -362,6 +363,19 @@ export default function RegisterScreen() {
           const switchTeam = useTeamStore.getState().switchTeam;
           addTeam(fullTeam as any);
 
+          // Push new player to Supabase BEFORE setting isLoggedIn, so that
+          // when realtime sync loads the team it will find this player
+          try {
+            const hashedNewPlayer = {
+              ...newPlayer,
+              password: await import('@/lib/crypto').then(m => m.hashPassword(password)),
+            };
+            await pushPlayerToSupabase(hashedNewPlayer as any, supabaseInvitation.team_id);
+          } catch (pushErr) {
+            console.error('REGISTER: Failed to push player to Supabase:', pushErr);
+            // Non-fatal: local state is set, Supabase will sync eventually
+          }
+
           // IMPORTANT: Set userEmail/userPhone BEFORE switchTeam so it can find the user in the new team
           const isPhone = isPhoneNumber(trimmedIdentifier);
           useTeamStore.setState({
@@ -371,9 +385,12 @@ export default function RegisterScreen() {
 
           switchTeam(supabaseInvitation.team_id);
 
-          // Set the current player and logged in state
-          setCurrentPlayerId(newPlayerId);
-          setIsLoggedIn(true);
+          // Set isLoggedIn atomically (switchTeam already set currentPlayerId via userInTeam lookup)
+          // Also explicitly set currentPlayerId in case switchTeam's userInTeam lookup missed it
+          useTeamStore.setState({
+            currentPlayerId: newPlayerId,
+            isLoggedIn: true,
+          });
 
           // Mark the invitation as accepted
           await acceptTeamInvitation(supabaseInvitation.id);
@@ -430,6 +447,18 @@ export default function RegisterScreen() {
         if (avatar) {
           updatePlayer(result.playerId, { avatar });
         }
+
+        // Push player to Supabase so re-login works after app restart
+        try {
+          const storeState = useTeamStore.getState();
+          const savedPlayer = storeState.players.find(p => p.id === result.playerId);
+          if (savedPlayer && storeState.activeTeamId) {
+            await pushPlayerToSupabase(savedPlayer, storeState.activeTeamId);
+          }
+        } catch (pushErr) {
+          console.error('REGISTER: Failed to push local player to Supabase:', pushErr);
+        }
+
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.replace('/(tabs)');
       } else {

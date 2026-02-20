@@ -70,6 +70,8 @@ function mapPlayer(p: any): Player {
     goalieStats: p.goalie_stats || {},
     pitcherStats: p.pitcher_stats || {},
     gameLogs: p.game_logs || [],
+    // Include hashed password for phone-based auth (phone users have no Supabase Auth account)
+    password: p.password || undefined,
   };
 }
 
@@ -388,6 +390,20 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       polls,
       teamLinks,
     });
+
+    // After loading, resolve currentPlayerId if it's missing or stale
+    const storeState = useTeamStore.getState();
+    if (storeState.isLoggedIn && (!storeState.currentPlayerId || !players.some(p => p.id === storeState.currentPlayerId))) {
+      const { userEmail, userPhone } = storeState;
+      const matchingPlayer = players.find(p =>
+        (userEmail && p.email?.toLowerCase() === userEmail.toLowerCase()) ||
+        (userPhone && p.phone?.replace(/\D/g, '') === userPhone.replace(/\D/g, ''))
+      );
+      if (matchingPlayer) {
+        console.log('SYNC: Resolved currentPlayerId from loaded team data:', matchingPlayer.id);
+        useTeamStore.setState({ currentPlayerId: matchingPlayer.id });
+      }
+    }
 
     console.log(`SYNC: Loaded - ${players.length} players, ${games.length} games, ${events.length} events, ${chatMessages.length} msgs`);
     return true;
@@ -783,6 +799,9 @@ export async function pushPlayerToSupabase(player: Player, teamId: string): Prom
       goalie_stats: player.goalieStats || {},
       pitcher_stats: player.pitcherStats || {},
       game_logs: player.gameLogs || [],
+      // Store hashed password for phone-only users (no Supabase Auth account)
+      // This is a hashed value, never plain-text
+      password: player.password || null,
     }, { onConflict: 'id' });
     if (error) console.error('SYNC: pushPlayerToSupabase error:', error.message);
   } catch (err) {

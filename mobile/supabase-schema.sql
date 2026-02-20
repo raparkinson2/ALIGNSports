@@ -69,6 +69,7 @@ CREATE TABLE players (
   pitcher_stats JSONB DEFAULT '{}'::jsonb,
   game_logs JSONB DEFAULT '[]'::jsonb,
   push_token TEXT,
+  password TEXT, -- Hashed password for phone-only users (no Supabase Auth account)
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

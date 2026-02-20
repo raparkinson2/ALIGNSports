@@ -11,6 +11,8 @@ import { useTeamStore, Player, getPlayerName } from '@/lib/store';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import { signInWithEmail, sendPasswordResetSMS, resendConfirmationEmail, verifySMSOtpAndResetPassword } from '@/lib/supabase-auth';
 import { secureLoginWithEmail, secureLoginWithPhone, secureResetPassword, verifyPlayerSecurityAnswer } from '@/lib/secure-auth';
+import { loadTeamFromSupabase } from '@/lib/realtime-sync';
+import { supabase } from '@/lib/supabase';
 
 interface PlayerLoginCardProps {
   player: Player;
@@ -347,12 +349,83 @@ export default function LoginScreen() {
             setIsLoading(false);
             return;
           }
-          // Player not found in local store yet — set logged in and let tabs load from Supabase
-          console.log('LOGIN: Player not in local store, proceeding with Supabase-only auth');
-          setCurrentPlayerId('');
-          setIsLoggedIn(true);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          router.replace('/(tabs)');
+          // Player not found in local store yet — try loading their team from Supabase
+          console.log('LOGIN: Player not in local store, loading team data from Supabase');
+          try {
+            // Find what team this user belongs to in Supabase players table
+            const { data: playerRows } = await supabase
+              .from('players')
+              .select('team_id, id')
+              .eq('email', trimmedIdentifier.toLowerCase())
+              .limit(1);
+
+            if (playerRows && playerRows.length > 0) {
+              const { team_id, id: playerId } = playerRows[0];
+              console.log('LOGIN: Found player in Supabase, loading team:', team_id);
+              await loadTeamFromSupabase(team_id);
+              // After loading, set state
+              useTeamStore.setState({
+                activeTeamId: team_id,
+                userEmail: trimmedIdentifier.toLowerCase(),
+                currentPlayerId: playerId,
+                isLoggedIn: true,
+              });
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              router.replace('/(tabs)');
+              setIsLoading(false);
+              return;
+            }
+
+            // No player row — check if they have an accepted invitation to recover team_id
+            const { data: inviteRows } = await supabase
+              .from('team_invitations')
+              .select('team_id, team_data, first_name, last_name, jersey_number, position, roles')
+              .eq('email', trimmedIdentifier.toLowerCase())
+              .not('accepted_at', 'is', null)
+              .limit(1);
+
+            if (inviteRows && inviteRows.length > 0) {
+              const inv = inviteRows[0];
+              console.log('LOGIN: Found accepted invitation, recovering player for team:', inv.team_id);
+              // Load the team data first
+              await loadTeamFromSupabase(inv.team_id);
+              // Create the player row in Supabase so future logins work
+              const newPlayerId = `player-${Date.now()}`;
+              const { pushPlayerToSupabase: pushPlayer } = await import('@/lib/realtime-sync');
+              const { hashPassword } = await import('@/lib/crypto');
+              const hashedPw = await hashPassword(password);
+              const recoveredPlayer = {
+                id: newPlayerId,
+                firstName: inv.first_name,
+                lastName: inv.last_name,
+                email: trimmedIdentifier.toLowerCase(),
+                number: inv.jersey_number || '',
+                position: inv.position || 'C',
+                positions: inv.position ? [inv.position] : ['C'],
+                roles: inv.roles || [],
+                password: hashedPw,
+                status: 'active' as const,
+              };
+              await pushPlayer(recoveredPlayer as any, inv.team_id);
+              // Add to local store
+              useTeamStore.setState((s) => ({
+                players: [...s.players, recoveredPlayer as any],
+                activeTeamId: inv.team_id,
+                userEmail: trimmedIdentifier.toLowerCase(),
+                currentPlayerId: newPlayerId,
+                isLoggedIn: true,
+              }));
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              router.replace('/(tabs)');
+              setIsLoading(false);
+              return;
+            }
+          } catch (loadErr) {
+            console.error('LOGIN: Failed to load team from Supabase:', loadErr);
+          }
+          // Truly no team data anywhere — show an error rather than getting stuck
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setError('Account found but no team data. Please ask your team admin to re-invite you.');
           setIsLoading(false);
           return;
         }
@@ -385,6 +458,52 @@ export default function LoginScreen() {
         } else {
           router.replace('/(tabs)');
         }
+      } else if (isPhoneNumber(trimmedIdentifier) && result.error?.includes('No account found')) {
+        // Phone user not in local store — try loading from Supabase
+        console.log('LOGIN: Phone user not in local store, checking Supabase');
+        try {
+          const normalizedPhone = unformatPhone(trimmedIdentifier);
+          const { data: phonePlayerRows } = await supabase
+            .from('players')
+            .select('team_id, id, password')
+            .or(`phone.eq.${normalizedPhone},phone.eq.+1${normalizedPhone}`)
+            .limit(1);
+
+          if (phonePlayerRows && phonePlayerRows.length > 0) {
+            const { team_id, id: playerId, password: storedPw } = phonePlayerRows[0];
+            // Verify password against stored hash
+            const { verifyPassword, isAlreadyHashed } = await import('@/lib/crypto');
+            let passwordOk = false;
+            if (storedPw) {
+              if (isAlreadyHashed(storedPw)) {
+                passwordOk = await verifyPassword(password, storedPw);
+              } else {
+                passwordOk = storedPw === password;
+              }
+            }
+            if (!passwordOk) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              setError('Incorrect password');
+              setIsLoading(false);
+              return;
+            }
+            await loadTeamFromSupabase(team_id);
+            useTeamStore.setState({
+              activeTeamId: team_id,
+              userPhone: normalizedPhone,
+              currentPlayerId: playerId,
+              isLoggedIn: true,
+            });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            router.replace('/(tabs)');
+            setIsLoading(false);
+            return;
+          }
+        } catch (phoneLoadErr) {
+          console.error('LOGIN: Phone Supabase lookup failed:', phoneLoadErr);
+        }
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setError(result.error || 'Invalid phone number or password');
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError(result.error || 'Invalid email or password');
