@@ -965,8 +965,15 @@ export const useTeamStore = create<TeamStore>()(
       players: initialPlayers,
       addPlayer: (player) => set((state) => ({ players: [...state.players, player] })),
       updatePlayer: (id, updates) => set((state) => {
-        // Get the updated player data
-        const currentPlayer = state.players.find((p) => p.id === id);
+        // Get the updated player data - check both state.players and active team
+        let currentPlayer = state.players.find((p) => p.id === id);
+
+        // Also check in active team if not found in state.players
+        if (!currentPlayer && state.activeTeamId) {
+          const activeTeam = state.teams.find(t => t.id === state.activeTeamId);
+          currentPlayer = activeTeam?.players.find((p) => p.id === id);
+        }
+
         if (!currentPlayer) {
           return { players: state.players };
         }
@@ -979,10 +986,20 @@ export const useTeamStore = create<TeamStore>()(
           updates.isSuspended !== undefined ||
           updates.statusEndDate !== undefined;
 
+        // Update player in state.players
+        const updatedPlayers = state.players.map((p) => (p.id === id ? updatedPlayer : p));
+
+        // Also update player in teams array if they exist there
+        const updatedTeams = state.teams.map((team) => ({
+          ...team,
+          players: team.players.map((p) => (p.id === id ? updatedPlayer : p)),
+        }));
+
         if (!statusChanged) {
-          // No status change, just update player
+          // No status change, just update player in both places
           return {
-            players: state.players.map((p) => (p.id === id ? updatedPlayer : p)),
+            players: updatedPlayers,
+            teams: updatedTeams,
           };
         }
 
@@ -1072,7 +1089,8 @@ export const useTeamStore = create<TeamStore>()(
         });
 
         return {
-          players: state.players.map((p) => (p.id === id ? updatedPlayer : p)),
+          players: updatedPlayers,
+          teams: updatedTeams,
           games: updatedGames,
           events: updatedEvents,
         };

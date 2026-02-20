@@ -76,9 +76,9 @@ export async function secureLoginWithEmail(email: string, password: string): Pro
     return { success: false, error: 'Incorrect password' };
   }
 
-  // Password verified - use the store's verified login to handle team selection
-  // This skips password re-comparison since we've already verified it
-  return state.loginWithEmailVerified(email);
+  // Password verified - get fresh state and use verified login to handle team selection
+  // Must get fresh state in case password migration updated the store
+  return useTeamStore.getState().loginWithEmailVerified(email);
 }
 
 /**
@@ -136,9 +136,9 @@ export async function secureLoginWithPhone(phone: string, password: string): Pro
     return { success: false, error: 'Incorrect password' };
   }
 
-  // Password verified - use the store's verified login to handle team selection
-  // This skips password re-comparison since we've already verified it
-  return state.loginWithPhoneVerified(phone);
+  // Password verified - get fresh state and use verified login to handle team selection
+  // Must get fresh state in case password migration updated the store
+  return useTeamStore.getState().loginWithPhoneVerified(phone);
 }
 
 /**
