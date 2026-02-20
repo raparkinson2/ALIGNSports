@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import type { Team, Player, Game, Event, Photo, TeamSettings } from './store';
-import { uploadPhotoToStorage } from './photo-storage';
+import { uploadPhotoToStorage, uploadPhotoToStorageBase64 } from './photo-storage';
 
 /**
  * Team Sync Service
@@ -471,7 +471,8 @@ export async function checkTeamExistsInSupabase(teamId: string): Promise<boolean
  */
 export async function uploadSinglePhoto(
   photo: Photo,
-  teamId: string
+  teamId: string,
+  base64Data?: string
 ): Promise<{ success: boolean; cloudUrl?: string; error?: string }> {
   try {
     console.log('TEAM_SYNC: Uploading single photo:', photo.id);
@@ -494,9 +495,18 @@ export async function uploadSinglePhoto(
       }
     }
 
-    // Upload photo to storage if it's a local file
+    // Upload photo to storage
+    // If base64Data is provided, use it directly (handles ph:// URIs on real iOS devices)
+    // Otherwise fall back to reading from file:// URI
     let cloudUri = photo.uri;
-    if (photo.uri.startsWith('file://') || photo.uri.startsWith('data:')) {
+    if (base64Data) {
+      const uploadResult = await uploadPhotoToStorageBase64(base64Data, teamId, photo.id);
+      if (uploadResult.success && uploadResult.url) {
+        cloudUri = uploadResult.url;
+      } else {
+        return { success: false, error: uploadResult.error || 'Storage upload failed' };
+      }
+    } else if (photo.uri.startsWith('file://') || photo.uri.startsWith('data:')) {
       const uploadResult = await uploadPhotoToStorage(photo.uri, teamId, photo.id);
       if (uploadResult.success && uploadResult.url) {
         cloudUri = uploadResult.url;

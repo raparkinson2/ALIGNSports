@@ -160,7 +160,7 @@ export default function PhotosScreen() {
     setSelectedPhoto(null);
   };
 
-  const uploadAndSavePhoto = async (uri: string) => {
+  const uploadAndSavePhoto = async (uri: string, base64Data?: string) => {
     const photoId = Date.now().toString();
     const newPhoto: Photo = {
       id: photoId,
@@ -177,7 +177,7 @@ export default function PhotosScreen() {
     if (teamId) {
       setIsUploading(true);
       try {
-        const result = await uploadSinglePhoto(newPhoto, teamId);
+        const result = await uploadSinglePhoto(newPhoto, teamId, base64Data);
         if (result.success && result.cloudUrl) {
           // Update local photo with cloud URL
           updatePhoto(photoId, { uri: result.cloudUrl });
@@ -210,10 +210,11 @@ export default function PhotosScreen() {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
+      base64: true, // Request base64 so we can upload from real devices (ph:// URIs)
     });
 
     if (!result.canceled && result.assets[0]) {
-      await uploadAndSavePhoto(result.assets[0].uri);
+      await uploadAndSavePhoto(result.assets[0].uri, result.assets[0].base64 || undefined);
     }
   };
 
@@ -227,10 +228,11 @@ export default function PhotosScreen() {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
+      base64: true, // Request base64 so we can upload from real devices
     });
 
     if (!result.canceled && result.assets[0]) {
-      await uploadAndSavePhoto(result.assets[0].uri);
+      await uploadAndSavePhoto(result.assets[0].uri, result.assets[0].base64 || undefined);
     }
   };
 

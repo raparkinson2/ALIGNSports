@@ -16,6 +16,44 @@ export interface UploadResult {
 }
 
 /**
+ * Upload a photo to Supabase Storage using a base64 string
+ * Used for real iOS devices where ImagePicker returns ph:// URIs
+ */
+export async function uploadPhotoToStorageBase64(
+  base64Data: string,
+  teamId: string,
+  photoId: string
+): Promise<UploadResult> {
+  try {
+    console.log('PHOTO_STORAGE: Uploading photo from base64:', photoId);
+
+    const path = `${teamId}/${photoId}.jpg`;
+
+    const { error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(path, decode(base64Data), {
+        contentType: 'image/jpeg',
+        upsert: true,
+      });
+
+    if (error) {
+      console.error('PHOTO_STORAGE: Base64 upload error:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    const { data: urlData } = supabase.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(path);
+
+    console.log('PHOTO_STORAGE: Base64 upload success:', urlData.publicUrl);
+    return { success: true, url: urlData.publicUrl };
+  } catch (err: any) {
+    console.error('PHOTO_STORAGE: Base64 upload exception:', err?.message || err);
+    return { success: false, error: err?.message || 'Failed to upload photo' };
+  }
+}
+
+/**
  * Upload a photo to Supabase Storage
  * Converts local file URI to cloud URL
  */
