@@ -374,20 +374,10 @@ export default function RegisterScreen() {
           await loadTeamFromSupabase(supabaseInvitation.team_id);
         }
 
-        // Set identity and mark logged in
-        useTeamStore.setState({
-          activeTeamId: supabaseInvitation.team_id,
-          userEmail: !isPhone ? trimmedIdentifier.toLowerCase() : undefined,
-          userPhone: isPhone ? unformatPhone(trimmedIdentifier) : undefined,
-          currentPlayerId: playerId,
-          isLoggedIn: true,
-        });
-
         // Mark the invitation as accepted
         await acceptTeamInvitation(supabaseInvitation.id);
 
-        // Clear login state — send user to login screen to sign in properly
-        // Login handles 1-team → tabs and multi-team → select-team automatically
+        // Go straight to login — do not set isLoggedIn: true (triggers auth guard redirect)
         useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null, activeTeamId: null });
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -533,20 +523,11 @@ export default function RegisterScreen() {
           console.log('REGISTER: New player created and pushed');
         }
 
-        console.log('REGISTER: Setting store state...');
-        useTeamStore.setState({
-          activeTeamId: supabaseInvitation.team_id,
-          userEmail: !isPhone ? trimmedIdentifier.toLowerCase() : undefined,
-          userPhone: isPhone ? unformatPhone(trimmedIdentifier) : undefined,
-          currentPlayerId: playerId,
-          isLoggedIn: true,
-        });
-
         console.log('REGISTER: Accepting invitation...');
         await acceptTeamInvitation(supabaseInvitation.id);
         console.log('REGISTER: Invitation accepted, redirecting...');
 
-        // Clear login state — send to login so it handles 1 vs multi-team routing
+        // Go straight to login — do not set isLoggedIn: true (triggers auth guard redirect)
         useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null, activeTeamId: null });
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
