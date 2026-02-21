@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useEffect, useState, useRef } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTeamStore, useStoreHydrated } from '@/lib/store';
@@ -140,6 +141,32 @@ function AuthNavigator() {
     return () => {
       // Don't stop on unmount — keep syncing while logged in
     };
+  }, [isLoggedIn, activeTeamId]);
+
+  // When app returns to foreground, force a full data reload.
+  // This ensures data is fresh after the app was backgrounded and
+  // Supabase Realtime WebSocket connections may have been dropped by iOS.
+  useEffect(() => {
+    if (!isLoggedIn || !activeTeamId) return;
+
+    const appStateRef = { current: AppState.currentState };
+
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      const prevState = appStateRef.current;
+      appStateRef.current = nextState;
+
+      if (prevState !== 'active' && nextState === 'active') {
+        console.log('APP: Returning to foreground — reconnecting realtime and refreshing data');
+        // Force restart realtime subscription to ensure WebSocket is alive after backgrounding.
+        // stopRealtimeSync first so startRealtimeSync doesn't skip due to "already subscribed" guard.
+        // startRealtimeSync will also call loadTeamFromSupabase to catch any missed changes.
+        stopRealtimeSync();
+        startRealtimeSync(activeTeamId);
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
   }, [isLoggedIn, activeTeamId]);
 
   // Register for push notifications when logged in

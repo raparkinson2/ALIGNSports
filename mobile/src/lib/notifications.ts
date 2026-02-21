@@ -285,7 +285,15 @@ export async function sendEventInviteNotification(
   eventTime: string
 ): Promise<void> {
   try {
+    // Cancel any existing notification for this event first to prevent duplicates
+    try {
+      await Notifications.cancelScheduledNotificationAsync(`event-invite-${eventId}`);
+    } catch {
+      // Ignore - notification may not exist
+    }
+
     await Notifications.scheduleNotificationAsync({
+      identifier: `event-invite-${eventId}`, // Stable ID prevents duplicates
       content: {
         title: 'New Event Added!',
         body: `You've been invited to "${eventTitle}" on ${eventDate} at ${eventTime}. Tap to RSVP.`,

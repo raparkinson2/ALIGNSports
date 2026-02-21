@@ -797,6 +797,7 @@ interface TeamStore {
   // Chat
   chatMessages: ChatMessage[];
   addChatMessage: (message: ChatMessage) => void;
+  updateChatMessage: (id: string, updates: Partial<ChatMessage>) => void;
   deleteChatMessage: (messageId: string) => void;
 
   // Chat read tracking
@@ -1535,6 +1536,10 @@ export const useTeamStore = create<TeamStore>()(
           chatMessages: newChatMessages,
           teams: updatedTeams,
         };
+      }),
+      updateChatMessage: (id, updates) => set((state) => {
+        const newChatMessages = state.chatMessages.map((m) => m.id === id ? { ...m, ...updates } : m);
+        return { chatMessages: newChatMessages };
       }),
 
       // Chat read tracking

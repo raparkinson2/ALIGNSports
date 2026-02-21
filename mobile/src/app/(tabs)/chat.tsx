@@ -251,6 +251,7 @@ function DateSeparator({ date }: { date: Date }) {
 export default function ChatScreen() {
   const chatMessages = useTeamStore((s) => s.chatMessages);
   const addChatMessage = useTeamStore((s) => s.addChatMessage);
+  const updateChatMessage = useTeamStore((s) => s.updateChatMessage);
   const deleteChatMessage = useTeamStore((s) => s.deleteChatMessage);
   const players = useTeamStore((s) => s.players);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
@@ -545,6 +546,9 @@ export default function ChatScreen() {
             }
 
             const cloudUrl = uploadResult.success && uploadResult.url ? uploadResult.url : localUri;
+
+            // Update sender's local message with cloud URL so it persists after app restart
+            updateChatMessage(newMessage.id, { imageUrl: cloudUrl });
 
             // Update local message with cloud URL
             const updatedMessage = { ...newMessage, imageUrl: cloudUrl };

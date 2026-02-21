@@ -1570,7 +1570,7 @@ export default function GameDetailScreen() {
                         : 'Refreshment Duty'}
                     </Text>
                     <Text className="text-slate-400 text-xs">
-                      {beerDutyPlayer ? getPlayerName(beerDutyPlayer) : 'Tap to assign'}
+                      {beerDutyPlayer ? getPlayerName(beerDutyPlayer) : (canManageTeam() ? 'Tap to assign' : 'Not assigned')}
                     </Text>
                   </View>
                   {canManageTeam() && (

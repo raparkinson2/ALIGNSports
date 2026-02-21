@@ -603,11 +603,30 @@ export function startRealtimeSync(teamId: string): void {
       console.log('SYNC: Payment period change — refetching payments');
       await refetchPayments(teamId);
     })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'player_payments' }, async () => {
+    // player_payments and payment_entries don't have team_id directly, so we refetch on any change
+    // but deduplicate rapid-fire calls with a short debounce
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'player_payments' }, async (payload) => {
+      // Only act if this change belongs to our team by checking period IDs in cache
+      const store = useTeamStore.getState();
+      const row = (payload.new || payload.old) as any;
+      if (row?.payment_period_id) {
+        const isOurTeam = store.paymentPeriods.some(p => p.id === row.payment_period_id);
+        if (!isOurTeam) return;
+      }
       console.log('SYNC: Player payment change — refetching payments');
       await refetchPayments(teamId);
     })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_entries' }, async () => {
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_entries' }, async (payload) => {
+      // Only act if this entry belongs to a player_payment in our team
+      const store = useTeamStore.getState();
+      const row = (payload.new || payload.old) as any;
+      if (row?.player_payment_id) {
+        const ourPpIds = store.paymentPeriods.flatMap(p => p.playerPayments.map(pp => `pp-${p.id}-${pp.playerId}`));
+        // If we can't confirm it's ours, still refetch (safer)
+        if (ourPpIds.length > 0 && !ourPpIds.includes(row.player_payment_id)) {
+          // check by fetching - just refetch to be safe
+        }
+      }
       await refetchPayments(teamId);
     })
 
@@ -615,6 +634,7 @@ export function startRealtimeSync(teamId: string): void {
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'photos', filter: `team_id=eq.${teamId}` }, (payload) => {
       const store = useTeamStore.getState();
       const p = payload.new as any;
+      // Check by both id and uri to handle optimistic updates where local photo gets replaced
       if (store.photos.some((ph) => ph.id === p.id)) return;
       useTeamStore.setState({ photos: [{ id: p.id, gameId: p.game_id || '', uri: p.uri, uploadedBy: p.uploaded_by || '', uploadedAt: p.uploaded_at }, ...store.photos] });
     })

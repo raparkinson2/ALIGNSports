@@ -168,6 +168,9 @@ export default function PhotosScreen() {
       uploadedAt: new Date().toISOString(),
     };
 
+    // Register ID FIRST so the realtime INSERT doesn't create a duplicate
+    syncedIdsRef.current.add(photoId);
+
     // Add to local store immediately
     addPhoto(newPhoto);
 

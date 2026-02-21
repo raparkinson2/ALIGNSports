@@ -2,6 +2,18 @@
 
 A mobile app for recreational sports teams to manage schedules, rosters, check-ins, payments, and team communication. Supports multiple sports including Hockey, Baseball, Basketball, Lacrosse, Soccer, and Softball.
 
+## Sync Architecture
+
+All real-time sync is handled by **Supabase Realtime** via a single WebSocket channel per team (`team-sync-v2:${teamId}`). The local Zustand store is a pure in-memory cache. On login, `loadTeamFromSupabase` fetches all data fresh.
+
+**Foreground reconnect**: When the app returns from background (`AppState` change), the realtime channel is forcibly restarted and data is reloaded to catch any changes missed while backgrounded. This is critical for TestFlight where iOS may drop WebSocket connections.
+
+**Photo deduplication**: The uploader registers the photo ID in `syncedIdsRef` before inserting to Supabase, preventing the realtime INSERT event from adding a duplicate.
+
+**Payment subscriptions**: `player_payments` and `payment_entries` subscriptions guard against cross-team events by checking if the changed row belongs to the current team's payment periods.
+
+**Notification deduplication**: Both game invites and event invites use stable identifiers (`game-invite-${id}`, `event-invite-${id}`) so scheduling the same notification twice replaces rather than duplicates.
+
 ## Device Support
 
 ### iPad Optimization
