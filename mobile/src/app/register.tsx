@@ -190,10 +190,10 @@ export default function RegisterScreen() {
         setInvitedTeamName(teamName);
 
         if (player.password) {
-          // Existing user - redirect to sign in with context about new team
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
-          setStep(4); // Go to existing user sign-in step
+          // Already registered — tell them clearly instead of silently going to step 4
+          setError('You already have an account. Please sign in instead.');
+          setShowLoginLink(true);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           setIsLoading(false);
           return;
         }
@@ -212,10 +212,10 @@ export default function RegisterScreen() {
         setInvitedTeamName(teamName);
 
         if (player.password) {
-          // Existing user - redirect to sign in with context about new team
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setFoundPlayer({ id: player.id, firstName: player.firstName, lastName: player.lastName, number: player.number });
-          setStep(4); // Go to existing user sign-in step
+          // Already registered — tell them clearly instead of silently going to step 4
+          setError('You already have an account. Please sign in instead.');
+          setShowLoginLink(true);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           setIsLoading(false);
           return;
         }
