@@ -16,6 +16,7 @@ import { secureRegisterInvitedPlayer, secureRegisterInvitedPlayerByPhone, secure
 import { signInWithEmail } from '@/lib/supabase-auth';
 import { checkPendingInvitation, acceptTeamInvitation, TeamInvitation } from '@/lib/team-invitations';
 import { pushPlayerToSupabase, loadTeamFromSupabase } from '@/lib/realtime-sync';
+import { hashPassword } from '@/lib/crypto';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -320,7 +321,6 @@ export default function RegisterScreen() {
         console.log('REGISTER: supabaseInvitation path - team:', supabaseInvitation.team_name);
         console.log('REGISTER: Team ID:', supabaseInvitation.team_id);
 
-        const { hashPassword } = await import('@/lib/crypto');
         const hashedPassword = await hashPassword(password);
         const isPhone = isPhoneNumber(trimmedIdentifier);
 
@@ -500,7 +500,6 @@ export default function RegisterScreen() {
         );
         console.log('REGISTER: existingPlayer found:', existingPlayer ? existingPlayer.id : 'none');
 
-        const { hashPassword } = await import('@/lib/crypto');
         let playerId: string;
 
         if (existingPlayer) {
