@@ -190,23 +190,32 @@ export default function EventDetailScreen() {
     const currentStatus = getPlayerStatus(playerId);
     let newConfirmed = [...confirmedPlayers];
     let newDeclined = [...declinedPlayers];
+    let newResponse: 'confirmed' | 'declined' | 'invited' | null = null;
 
     if (currentStatus === 'none') {
       // No response -> Confirmed
       newConfirmed.push(playerId);
+      newResponse = 'confirmed';
     } else if (currentStatus === 'confirmed') {
       // Confirmed -> Declined
       newConfirmed = newConfirmed.filter((id) => id !== playerId);
       newDeclined.push(playerId);
+      newResponse = 'declined';
     } else {
-      // Declined -> No response
+      // Declined -> No response (back to invited)
       newDeclined = newDeclined.filter((id) => id !== playerId);
+      newResponse = 'invited';
     }
 
-    updateEventAndSync(event.id, {
+    updateEvent(event.id, {
       confirmedPlayers: newConfirmed,
       declinedPlayers: newDeclined,
     });
+
+    // Push the response to Supabase so all other users see the change in real time
+    if (activeTeamId && newResponse) {
+      pushEventResponseToSupabase(event.id, playerId, newResponse).catch(console.error);
+    }
   };
 
   const openInMaps = () => {
@@ -349,6 +358,11 @@ export default function EventDetailScreen() {
       invitedPlayers: [...currentInvited, playerId],
     });
 
+    // Record the invite in event_responses so realtime sync triggers for all clients
+    if (activeTeamId) {
+      pushEventResponseToSupabase(event.id, playerId, 'invited').catch(console.error);
+    }
+
     // Create in-app notification
     const formattedDateShort = format(eventDate, 'EEE, MMM d');
     const notification: AppNotification = {
@@ -379,8 +393,13 @@ export default function EventDetailScreen() {
 
     const formattedDateShort = format(eventDate, 'EEE, MMM d');
 
-    // Create in-app notifications for each player
+    // Create in-app notifications for each player and record event_responses
     newInvites.forEach((playerId) => {
+      // Record invite in event_responses so realtime sync triggers
+      if (activeTeamId) {
+        pushEventResponseToSupabase(event.id, playerId, 'invited').catch(console.error);
+      }
+
       const notification: AppNotification = {
         id: `event-invite-${event.id}-${playerId}-${Date.now()}`,
         type: 'game_invite',
