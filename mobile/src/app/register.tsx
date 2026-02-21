@@ -431,7 +431,8 @@ export default function RegisterScreen() {
         setError(result.error || 'Failed to create account');
       }
     } catch (err: any) {
-      console.error('REGISTER: Error completing registration - message:', err?.message, 'stack:', err?.stack, 'full:', err);
+      const msg = err?.message || String(err);
+      console.log('REGISTER: Error completing registration:', msg);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError('Something went wrong. Please try again.');
     }
@@ -491,26 +492,30 @@ export default function RegisterScreen() {
 
         // Find the existing player row by email or phone
         const freshPlayers = useTeamStore.getState().players;
+        console.log('REGISTER: freshPlayers count:', freshPlayers.length, 'looking for:', trimmedIdentifier);
         const existingPlayer = freshPlayers.find(p =>
           isPhone
             ? p.phone?.replace(/\D/g, '') === unformatPhone(trimmedIdentifier).replace(/\D/g, '')
             : p.email?.toLowerCase() === trimmedIdentifier.toLowerCase()
         );
+        console.log('REGISTER: existingPlayer found:', existingPlayer ? existingPlayer.id : 'none');
 
+        const { hashPassword } = await import('@/lib/crypto');
         let playerId: string;
 
         if (existingPlayer) {
           playerId = existingPlayer.id;
-          // Update the player's password in Supabase
-          const { hashPassword } = await import('@/lib/crypto');
+          console.log('REGISTER: Updating existing player password...');
           const hashedPw = await hashPassword(existingPassword);
-          const updates: any = { password: hashedPw };
+          const updates: { password: string } = { password: hashedPw };
           useTeamStore.getState().updatePlayer(playerId, updates);
+          console.log('REGISTER: Pushing player to Supabase...');
           await pushPlayerToSupabase({ ...existingPlayer, ...updates }, supabaseInvitation.team_id);
+          console.log('REGISTER: Player pushed successfully');
         } else {
-          // Player row doesn't exist yet — create it
-          const { hashPassword } = await import('@/lib/crypto');
+          console.log('REGISTER: Creating new player row...');
           playerId = `player-${Date.now()}`;
+          const hashedPw = await hashPassword(existingPassword);
           const newPlayer = {
             id: playerId,
             firstName: supabaseInvitation.first_name,
@@ -521,13 +526,15 @@ export default function RegisterScreen() {
             position: supabaseInvitation.position || 'C',
             positions: supabaseInvitation.position ? [supabaseInvitation.position] : ['C'],
             roles: supabaseInvitation.roles || [],
-            password: await hashPassword(existingPassword),
+            password: hashedPw,
             status: 'active' as const,
           };
           await pushPlayerToSupabase(newPlayer as any, supabaseInvitation.team_id);
           await loadTeamFromSupabase(supabaseInvitation.team_id);
+          console.log('REGISTER: New player created and pushed');
         }
 
+        console.log('REGISTER: Setting store state...');
         useTeamStore.setState({
           activeTeamId: supabaseInvitation.team_id,
           userEmail: !isPhone ? trimmedIdentifier.toLowerCase() : undefined,
@@ -536,7 +543,9 @@ export default function RegisterScreen() {
           isLoggedIn: true,
         });
 
+        console.log('REGISTER: Accepting invitation...');
         await acceptTeamInvitation(supabaseInvitation.id);
+        console.log('REGISTER: Invitation accepted, redirecting...');
 
         // Clear login state — send to login so it handles 1 vs multi-team routing
         useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null, activeTeamId: null });
@@ -564,8 +573,9 @@ export default function RegisterScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError(result.error || 'Incorrect password');
       }
-    } catch (err) {
-      console.error('REGISTER: Error in existing user login:', err);
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      console.log('REGISTER: Error in existing user login:', msg);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError('Something went wrong. Please try again.');
     }
