@@ -125,11 +125,9 @@ export async function createTeamInvitation(invitation: {
       position: invitation.position,
       roles: invitation.roles,
       invited_by_email: invitation.invited_by_email,
-      // Store full team data as JSON string
-      team_data: invitation.team_data ? JSON.stringify(invitation.team_data) : null,
     };
 
-    console.log('INVITATION: Inserting into Supabase with team_data:', !!normalizedData.team_data);
+    console.log('INVITATION: Inserting into Supabase for team:', normalizedData.team_name);
 
     const { data, error } = await supabase
       .from('team_invitations')
