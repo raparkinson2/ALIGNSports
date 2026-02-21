@@ -90,6 +90,7 @@ CREATE TABLE players (
   unavailable_dates TEXT[] DEFAULT '{}',
   notification_preferences JSONB DEFAULT '{"gameInvites":true,"gameReminderDayBefore":true,"gameReminderHoursBefore":true,"chatMessages":true,"chatMentions":true,"paymentReminders":true}'::jsonb,
   push_token TEXT,
+  password TEXT, -- Hashed password for phone-only users (no Supabase Auth account)
   stats JSONB DEFAULT '{}'::jsonb,
   goalie_stats JSONB DEFAULT '{}'::jsonb,
   pitcher_stats JSONB DEFAULT '{}'::jsonb,
