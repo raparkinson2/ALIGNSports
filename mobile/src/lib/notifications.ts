@@ -151,6 +151,38 @@ export async function cancelScheduledNotification(identifier: string): Promise<v
 }
 
 /**
+ * Send a push notification to specific devices via the backend.
+ * pushTokens: array of Expo push tokens for the recipient devices.
+ */
+export async function sendPushToTokens(
+  pushTokens: string[],
+  title: string,
+  body: string,
+  data?: Record<string, any>
+): Promise<void> {
+  const validTokens = pushTokens.filter(
+    (t) => t && (t.startsWith('ExponentPushToken[') || t.startsWith('ExpoPushToken['))
+  );
+  if (validTokens.length === 0) return;
+
+  const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+  if (!backendUrl) {
+    console.log('sendPushToTokens: no backend URL configured');
+    return;
+  }
+
+  try {
+    await fetch(`${backendUrl}/api/notifications/send-push`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tokens: validTokens, title, body, data: data || {} }),
+    });
+  } catch (err) {
+    console.log('sendPushToTokens error:', err);
+  }
+}
+
+/**
  * Send a game invite notification immediately
  */
 export async function sendGameInviteNotification(

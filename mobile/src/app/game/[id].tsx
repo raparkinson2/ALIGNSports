@@ -46,6 +46,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, BattingOrderLineup, SoccerLineup, SoccerDiamondLineup, LacrosseLineup, getPlayerName, InviteReleaseOption, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, PlayerStats, GameLogEntry, getPlayerPositions } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { pushGameToSupabase, pushGameResponseToSupabase, pushNotificationToSupabase, pushPlayerToSupabase } from '@/lib/realtime-sync';
+import { sendPushToTokens } from '@/lib/notifications';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
@@ -948,6 +949,17 @@ export default function GameDetailScreen() {
       }
     }
 
+    // Collect push tokens for all target players and send real push notifications
+    const pushTokens = targetPlayers
+      .map((p) => p.notificationPreferences?.pushToken)
+      .filter((t): t is string => !!t);
+    if (pushTokens.length > 0) {
+      sendPushToTokens(pushTokens, title, message, {
+        gameId: game.id,
+        type: type === 'invite' ? 'game_invite' : 'game_reminder',
+      }).catch(console.error);
+    }
+
     // Add to in-app notifications for target players only
     targetPlayers.forEach((player) => {
       const notification: AppNotification = {
@@ -1004,6 +1016,13 @@ export default function GameDetailScreen() {
         }
       }
 
+      // Send real push notification to the invited player's device
+      const invitedPlayer = players.find((p) => p.id === playerId);
+      const pushToken = invitedPlayer?.notificationPreferences?.pushToken;
+      if (pushToken) {
+        sendPushToTokens([pushToken], title, message, { gameId: game.id, type: 'game_invite' }).catch(console.error);
+      }
+
       // Add to in-app notifications
       const notification: AppNotification = {
         id: `${Date.now()}-${playerId}`,
@@ -1053,6 +1072,14 @@ export default function GameDetailScreen() {
       } catch (error) {
         console.log('Could not send push notification:', error);
       }
+    }
+
+    // Send real push notifications to all newly invited players
+    const pushTokens = newInvites
+      .map((id) => players.find((p) => p.id === id)?.notificationPreferences?.pushToken)
+      .filter((t): t is string => !!t);
+    if (pushTokens.length > 0) {
+      sendPushToTokens(pushTokens, title, message, { gameId: game.id, type: 'game_invite' }).catch(console.error);
     }
 
     // Add to in-app notifications

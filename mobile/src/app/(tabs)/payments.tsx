@@ -666,7 +666,7 @@ export default function PaymentsScreen() {
 
   // Wrapper: updates locally AND pushes to Supabase
   const updatePaymentPeriodAndSync = (periodId: string, updates: Parameters<typeof updatePaymentPeriod>[1]) => {
-    updatePaymentPeriodAndSync(periodId, updates);
+    updatePaymentPeriod(periodId, updates);
     if (activeTeamId) {
       const updated = useTeamStore.getState().paymentPeriods.find((p) => p.id === periodId);
       if (updated) {
@@ -855,6 +855,18 @@ export default function PaymentsScreen() {
     };
 
     addPaymentEntry(selectedPeriodId, selectedPlayerId, entry);
+
+    // Sync to Supabase so other team members see the update
+    if (activeTeamId) {
+      // Use a small delay to let the store update first
+      setTimeout(() => {
+        const updated = useTeamStore.getState().paymentPeriods.find((p) => p.id === selectedPeriodId);
+        if (updated) {
+          pushPaymentPeriodToSupabase(updated, activeTeamId).catch(console.error);
+        }
+      }, 50);
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setNewPaymentAmount('');
     setNewPaymentNote('');
@@ -863,6 +875,7 @@ export default function PaymentsScreen() {
 
   const handleDeletePaymentEntry = (entryId: string) => {
     if (!selectedPeriodId || !selectedPlayerId) return;
+    const periodIdSnapshot = selectedPeriodId;
     Alert.alert(
       'Delete Payment',
       'Are you sure you want to delete this payment entry?',
@@ -872,7 +885,16 @@ export default function PaymentsScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
-            removePaymentEntry(selectedPeriodId, selectedPlayerId, entryId);
+            removePaymentEntry(periodIdSnapshot, selectedPlayerId, entryId);
+            // Sync to Supabase after removal
+            if (activeTeamId) {
+              setTimeout(() => {
+                const updated = useTeamStore.getState().paymentPeriods.find((p) => p.id === periodIdSnapshot);
+                if (updated) {
+                  pushPaymentPeriodToSupabase(updated, activeTeamId).catch(console.error);
+                }
+              }, 50);
+            }
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           },
         },

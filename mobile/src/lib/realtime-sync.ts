@@ -65,7 +65,9 @@ function mapPlayer(p: any): Player {
     isSuspended: p.is_suspended || false,
     statusEndDate: p.status_end_date || undefined,
     unavailableDates: p.unavailable_dates || [],
-    notificationPreferences: p.notification_preferences || undefined,
+    notificationPreferences: p.notification_preferences
+      ? { ...p.notification_preferences, pushToken: p.push_token || p.notification_preferences?.pushToken || undefined }
+      : p.push_token ? { pushToken: p.push_token } as any : undefined,
     stats: p.stats || {},
     goalieStats: p.goalie_stats || {},
     pitcherStats: p.pitcher_stats || {},
