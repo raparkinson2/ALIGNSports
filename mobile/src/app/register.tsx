@@ -38,7 +38,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [avatar, setAvatar] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [showLoginLink, setShowLoginLink] = useState(false);  const [isLoading, setIsLoading] = useState(false);
   const [foundPlayer, setFoundPlayer] = useState<{ id: string; firstName: string; lastName: string; number: string } | null>(null);
   const [existingPassword, setExistingPassword] = useState(''); // For existing users joining new team
 
@@ -56,6 +56,8 @@ export default function RegisterScreen() {
 
   // Format input as user types
   const handleIdentifierChange = (text: string) => {
+    setShowLoginLink(false);
+    setError('');
     if (text.includes('@')) {
       setIdentifier(text);
       return;
@@ -159,6 +161,16 @@ export default function RegisterScreen() {
       }
 
       console.log('REGISTER: No Supabase invitation found, checking local store');
+
+      // Check if user already has an account (Supabase auth or local)
+      const currentUser = await getCurrentUser();
+      if (currentUser?.email?.toLowerCase() === trimmedIdentifier.toLowerCase()) {
+        setError('You already have an account with this email.');
+        setShowLoginLink(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setIsLoading(false);
+        return;
+      }
 
       // FALLBACK: Check local store (for invitations on the same device)
       let player;
@@ -670,8 +682,16 @@ export default function RegisterScreen() {
 
                 {/* Error Message */}
                 {error ? (
-                  <Animated.View entering={FadeInDown.springify()}>
-                    <Text className="text-red-400 text-center mb-4">{error}</Text>
+                  <Animated.View entering={FadeInDown.springify()} className="mb-1">
+                    <Text className="text-red-400 text-center mb-3">{error}</Text>
+                    {showLoginLink && (
+                      <Pressable
+                        onPress={() => router.replace('/login')}
+                        className="bg-slate-700 rounded-xl py-3 flex-row items-center justify-center active:bg-slate-600"
+                      >
+                        <Text className="text-cyan-400 font-semibold text-base">Go to Sign In</Text>
+                      </Pressable>
+                    )}
                   </Animated.View>
                 ) : null}
 
