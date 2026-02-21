@@ -89,8 +89,10 @@ function AuthNavigator() {
     checkSupabaseSession();
 
     // Additional safety: if somehow isLoggedIn is true but no players exist, force logout
-    if (isLoggedIn && players.length === 0) {
-      console.log('No players exist but isLoggedIn is true, forcing logout');
+    // BUT only if there's no activeTeamId — if there is one, realtime sync will load players shortly
+    const { activeTeamId: currentTeamId } = useTeamStore.getState();
+    if (isLoggedIn && players.length === 0 && !currentTeamId) {
+      console.log('No players exist, no active team, but isLoggedIn is true, forcing logout');
       stopRealtimeSync();
       logout();
       return;
