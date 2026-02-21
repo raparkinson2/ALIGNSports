@@ -286,15 +286,20 @@ export default function RegisterScreen() {
 
     try {
       const trimmedIdentifier = identifier.trim();
+      console.log('REGISTER: handleCompleteRegistration START, identifier:', trimmedIdentifier, 'supabaseInvitation:', !!supabaseInvitation);
 
       // For email users, also register with Supabase
       if (!isPhoneNumber(trimmedIdentifier)) {
+        console.log('REGISTER: Attempting signUpWithEmail...');
         const supabaseResult = await signUpWithEmail(trimmedIdentifier, password);
+        console.log('REGISTER: signUpWithEmail result:', JSON.stringify(supabaseResult));
         if (!supabaseResult.success) {
           // Check if user already exists but just needs to sign in
           if (supabaseResult.alreadyRegistered) {
             // User exists, try to sign in instead
+            console.log('REGISTER: Already registered, attempting signInWithEmail...');
             const signInResult = await signInWithEmail(trimmedIdentifier, password);
+            console.log('REGISTER: signInWithEmail result:', JSON.stringify(signInResult));
             if (!signInResult.success) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               setError(signInResult.error || 'Failed to sign in. Please check your password.');
@@ -312,7 +317,7 @@ export default function RegisterScreen() {
 
       // If this is a Supabase invitation (cross-device), load team fresh from Supabase
       if (supabaseInvitation) {
-        console.log('REGISTER: Joining team from Supabase invitation:', supabaseInvitation.team_name);
+        console.log('REGISTER: supabaseInvitation path - team:', supabaseInvitation.team_name);
         console.log('REGISTER: Team ID:', supabaseInvitation.team_id);
 
         const { hashPassword } = await import('@/lib/crypto');
@@ -393,9 +398,12 @@ export default function RegisterScreen() {
 
       // Local invitation flow (same device)
       // Register locally with hashed password
+      console.log('REGISTER: Local invitation flow, calling secureRegister...');
       const result = isPhoneNumber(trimmedIdentifier)
         ? await secureRegisterInvitedPlayerByPhone(unformatPhone(trimmedIdentifier), password)
         : await secureRegisterInvitedPlayer(trimmedIdentifier, password);
+
+      console.log('REGISTER: secureRegister result:', JSON.stringify(result));
 
       if (result.success && result.playerId) {
         // Save optional avatar
@@ -422,8 +430,8 @@ export default function RegisterScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError(result.error || 'Failed to create account');
       }
-    } catch (err) {
-      console.error('REGISTER: Error completing registration:', err);
+    } catch (err: any) {
+      console.error('REGISTER: Error completing registration - message:', err?.message, 'stack:', err?.stack, 'full:', err);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError('Something went wrong. Please try again.');
     }
