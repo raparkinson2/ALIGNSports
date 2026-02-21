@@ -992,6 +992,9 @@ export default function GameDetailScreen() {
       invitedPlayers: [...currentInvited, playerId],
     });
 
+    // Persist the invite to game_responses so it survives app reloads and syncs to other users
+    if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'invited').catch(console.error);
+
     if (sendNotification) {
       const gameDate = parseISO(game.date);
       const dateStr = format(gameDate, 'EEEE, MMMM d');
@@ -1050,6 +1053,11 @@ export default function GameDetailScreen() {
     updateGameAndSync(game.id, {
       invitedPlayers: [...currentInvited, ...newInvites],
     });
+
+    // Persist each new invite to game_responses so it survives app reloads and syncs to other users
+    if (activeTeamId) {
+      newInvites.forEach((id) => pushGameResponseToSupabase(game.id, id, 'invited').catch(console.error));
+    }
 
     const gameDate = parseISO(game.date);
     const dateStr = format(gameDate, 'EEEE, MMMM d');

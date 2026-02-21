@@ -9,10 +9,10 @@ import { useEffect, useState, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTeamStore, useStoreHydrated } from '@/lib/store';
+import { useTeamStore, useStoreHydrated, defaultNotificationPreferences } from '@/lib/store';
 import { registerForPushNotificationsAsync } from '@/lib/notifications';
 import { clearInvalidSession, getSafeSession } from '@/lib/supabase';
-import { startRealtimeSync, stopRealtimeSync } from '@/lib/realtime-sync';
+import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase } from '@/lib/realtime-sync';
 
 export const unstable_settings = {
   initialRouteName: 'login',
@@ -176,9 +176,23 @@ function AuthNavigator() {
     // Register for push notifications
     registerForPushNotificationsAsync().then((token) => {
       if (token && currentPlayerId) {
-        // Save the push token to the player's preferences
+        // Save the push token to the player's preferences (local store)
         updateNotificationPreferences(currentPlayerId, { pushToken: token });
         console.log('Push token registered for player:', currentPlayerId);
+        // Persist the token to Supabase so other team members can send push notifications to this device
+        const updatedPlayer = useTeamStore.getState().players.find((p) => p.id === currentPlayerId);
+        if (updatedPlayer && useTeamStore.getState().activeTeamId) {
+          const playerWithToken = {
+            ...updatedPlayer,
+            notificationPreferences: {
+              ...defaultNotificationPreferences,
+              ...(updatedPlayer.notificationPreferences || {}),
+              pushToken: token,
+            },
+          };
+          const teamId = useTeamStore.getState().activeTeamId;
+          if (teamId) pushPlayerToSupabase(playerWithToken, teamId).catch(console.error);
+        }
       }
     });
 
