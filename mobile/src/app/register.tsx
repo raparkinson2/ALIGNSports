@@ -347,7 +347,7 @@ export default function RegisterScreen() {
           playerId = existingPlayer.id;
           const updates: any = { password: hashedPassword };
           if (avatar) updates.avatar = avatar;
-          updatePlayer(playerId, updates);
+          useTeamStore.getState().updatePlayer(playerId, updates);
           await pushPlayerToSupabase(
             { ...existingPlayer, ...updates },
             supabaseInvitation.team_id
@@ -408,7 +408,7 @@ export default function RegisterScreen() {
       if (result.success && result.playerId) {
         // Save optional avatar
         if (avatar) {
-          updatePlayer(result.playerId, { avatar });
+          useTeamStore.getState().updatePlayer(result.playerId, { avatar });
         }
 
         // Push player to Supabase so re-login works after app restart
@@ -505,7 +505,7 @@ export default function RegisterScreen() {
           const { hashPassword } = await import('@/lib/crypto');
           const hashedPw = await hashPassword(existingPassword);
           const updates: any = { password: hashedPw };
-          updatePlayer(playerId, updates);
+          useTeamStore.getState().updatePlayer(playerId, updates);
           await pushPlayerToSupabase({ ...existingPlayer, ...updates }, supabaseInvitation.team_id);
         } else {
           // Player row doesn't exist yet — create it
