@@ -377,11 +377,17 @@ export default function RegisterScreen() {
         // Mark the invitation as accepted
         await acceptTeamInvitation(supabaseInvitation.id);
 
-        // Go straight to login — do not set isLoggedIn: true (triggers auth guard redirect)
-        useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null, activeTeamId: null });
+        // Set logged-in state with activeTeamId so auth guard and realtime sync work correctly
+        useTeamStore.setState({
+          activeTeamId: supabaseInvitation.team_id,
+          userEmail: !isPhone ? trimmedIdentifier.toLowerCase() : undefined,
+          userPhone: isPhone ? unformatPhone(trimmedIdentifier) : undefined,
+          currentPlayerId: playerId,
+          isLoggedIn: true,
+        });
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace({ pathname: '/login', params: { registered: '1', email: !isPhoneNumber(trimmedIdentifier) ? trimmedIdentifier : undefined } });
+        router.replace('/(tabs)');
         setIsLoading(false);
         return;
       }
@@ -525,13 +531,19 @@ export default function RegisterScreen() {
 
         console.log('REGISTER: Accepting invitation...');
         await acceptTeamInvitation(supabaseInvitation.id);
-        console.log('REGISTER: Invitation accepted, redirecting...');
+        console.log('REGISTER: Invitation accepted, logging in directly...');
 
-        // Go straight to login — do not set isLoggedIn: true (triggers auth guard redirect)
-        useTeamStore.setState({ isLoggedIn: false, currentPlayerId: null, activeTeamId: null });
+        // Set logged-in state with activeTeamId so auth guard and realtime sync work correctly
+        useTeamStore.setState({
+          activeTeamId: supabaseInvitation.team_id,
+          userEmail: !isPhone ? trimmedIdentifier.toLowerCase() : undefined,
+          userPhone: isPhone ? unformatPhone(trimmedIdentifier) : undefined,
+          currentPlayerId: playerId,
+          isLoggedIn: true,
+        });
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace({ pathname: '/login', params: { registered: '1' } });
+        router.replace('/(tabs)');
         setIsLoading(false);
         return;
       }
