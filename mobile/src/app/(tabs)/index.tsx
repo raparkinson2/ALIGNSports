@@ -46,7 +46,7 @@ import { hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
 import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
 import { hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
 import { sendGameInviteNotification, scheduleGameInviteNotification, sendEventInviteNotification, scheduleEventReminderDayBefore, scheduleEventReminderHourBefore, scheduleGameReminderDayBefore, scheduleGameReminderHoursBefore } from '@/lib/notifications';
-import { pushGameToSupabase, pushEventToSupabase } from '@/lib/realtime-sync';
+import { pushGameToSupabase, pushEventToSupabase, deleteGameFromSupabase } from '@/lib/realtime-sync';
 
 const getDateLabel = (dateString: string): string => {
   const date = parseISO(dateString);
@@ -1493,6 +1493,7 @@ export default function ScheduleScreen() {
                                   style: 'destructive',
                                   onPress: () => {
                                     removeGame(game.id);
+                                    deleteGameFromSupabase(game.id);
                                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                                   },
                                 },
