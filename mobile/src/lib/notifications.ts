@@ -194,8 +194,49 @@ export async function sendPushToTokens(
 }
 
 /**
- * Send a game invite notification immediately
+ * Send a push notification to a list of player IDs.
+ * Always fetches fresh push tokens from Supabase so newly-registered devices are reached.
+ * Falls back to cached store tokens for any player not found in Supabase.
  */
+export async function sendPushToPlayers(
+  playerIds: string[],
+  title: string,
+  body: string,
+  data?: Record<string, any>
+): Promise<void> {
+  if (playerIds.length === 0) return;
+
+  try {
+    // Dynamic import to avoid circular deps
+    const { supabase } = await import('./supabase');
+    const { data: rows, error } = await supabase
+      .from('players')
+      .select('id, push_token')
+      .in('id', playerIds);
+
+    if (error) console.log('sendPushToPlayers: supabase error:', error.message);
+
+    // Build a map of fresh tokens from Supabase
+    const freshTokenMap: Record<string, string> = {};
+    for (const row of rows || []) {
+      if (row.push_token) freshTokenMap[row.id] = row.push_token;
+    }
+
+    // Fall back to cached store tokens for any player not returned
+    const { useTeamStore } = await import('./store');
+    const storePlayers = useTeamStore.getState().players;
+    const tokens: string[] = playerIds.map((id) => {
+      return freshTokenMap[id] || storePlayers.find((p) => p.id === id)?.notificationPreferences?.pushToken || '';
+    }).filter(Boolean);
+
+    console.log(`sendPushToPlayers: ${playerIds.length} players → ${tokens.length} tokens`);
+    await sendPushToTokens(tokens, title, body, data);
+  } catch (err) {
+    console.log('sendPushToPlayers error:', err);
+  }
+}
+
+
 export async function sendGameInviteNotification(
   gameId: string,
   opponent: string,

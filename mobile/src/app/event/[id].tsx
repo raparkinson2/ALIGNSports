@@ -32,7 +32,7 @@ import { pushEventToSupabase, pushEventResponseToSupabase, pushNotificationToSup
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { sendEventInviteNotification, sendPushToTokens } from '@/lib/notifications';
+import { sendEventInviteNotification, sendPushToPlayers } from '@/lib/notifications';
 
 interface PlayerRowProps {
   player: Player;
@@ -394,16 +394,12 @@ export default function EventDetailScreen() {
     if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
 
     // Send real push notification to the invited player's device
-    const invitedPlayer = players.find((p) => p.id === playerId);
-    const pushToken = invitedPlayer?.notificationPreferences?.pushToken;
-    if (pushToken) {
-      sendPushToTokens(
-        [pushToken],
-        'Event Invite',
-        `You're invited to "${event.title}" on ${formattedDateShort} at ${event.time}`,
-        { eventId: event.id, type: 'event_invite' }
-      ).catch(console.error);
-    }
+    sendPushToPlayers(
+      [playerId],
+      'Event Invite',
+      `You're invited to "${event.title}" on ${formattedDateShort} at ${event.time}`,
+      { eventId: event.id, type: 'event_invite' }
+    ).catch(console.error);
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
@@ -418,7 +414,6 @@ export default function EventDetailScreen() {
     });
 
     const formattedDateShort = format(eventDate, 'EEE, MMM d');
-    const pushTokensToNotify: string[] = [];
 
     // Create in-app notifications for each player and record event_responses
     newInvites.forEach((playerId) => {
@@ -441,21 +436,16 @@ export default function EventDetailScreen() {
       addNotification(notification);
       if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
 
-      // Collect push tokens for batch push notification
-      const invitedPlayer = players.find((p) => p.id === playerId);
-      const pushToken = invitedPlayer?.notificationPreferences?.pushToken;
-      if (pushToken) pushTokensToNotify.push(pushToken);
+      // Collect player IDs for batch push notification (token fetched fresh in sendPushToPlayers)
     });
 
-    // Send real push notifications to all invited players at once
-    if (pushTokensToNotify.length > 0) {
-      sendPushToTokens(
-        pushTokensToNotify,
-        'Event Invite',
-        `You're invited to "${event.title}" on ${formattedDateShort} at ${event.time}`,
-        { eventId: event.id, type: 'event_invite' }
-      ).catch(console.error);
-    }
+    // Send real push notifications to all invited players at once using fresh tokens
+    sendPushToPlayers(
+      newInvites,
+      'Event Invite',
+      `You're invited to "${event.title}" on ${formattedDateShort} at ${event.time}`,
+      { eventId: event.id, type: 'event_invite' }
+    ).catch(console.error);
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert('Invites Sent', `${newInvites.length} player${newInvites.length !== 1 ? 's' : ''} invited!`);

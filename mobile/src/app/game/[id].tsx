@@ -47,7 +47,7 @@ import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLine
 import { cn } from '@/lib/cn';
 import { supabase } from '@/lib/supabase';
 import { pushGameToSupabase, pushGameResponseToSupabase, pushNotificationToSupabase, pushPlayerToSupabase, deleteGameFromSupabase } from '@/lib/realtime-sync';
-import { sendPushToTokens } from '@/lib/notifications';
+import { sendPushToPlayers } from '@/lib/notifications';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
@@ -979,16 +979,16 @@ export default function GameDetailScreen() {
       }
     }
 
-    // Collect push tokens for all target players and send real push notifications
-    const pushTokens = targetPlayers
-      .map((p) => p.notificationPreferences?.pushToken)
-      .filter((t): t is string => !!t);
-    if (pushTokens.length > 0) {
-      sendPushToTokens(pushTokens, title, message, {
+    // Send real push notifications to all target players using fresh tokens
+    sendPushToPlayers(
+      targetPlayers.map((p) => p.id),
+      title,
+      message,
+      {
         gameId: game.id,
         type: type === 'invite' ? 'game_invite' : 'game_reminder',
-      }).catch(console.error);
-    }
+      }
+    ).catch(console.error);
 
     // Add to in-app notifications for target players only
     targetPlayers.forEach((player) => {
@@ -1049,25 +1049,8 @@ export default function GameDetailScreen() {
         }
       }
 
-      // Send real push notification to the invited player's device
-      // Fetch fresh token from Supabase to avoid stale cached values
-      supabase
-        .from('players')
-        .select('push_token')
-        .eq('id', playerId)
-        .single()
-        .then(({ data: playerData, error: tokenError }: { data: { push_token: string | null } | null, error: { message: string } | null }) => {
-          if (tokenError) console.log('Push token fetch error:', tokenError.message);
-          const freshToken = playerData?.push_token;
-          const cachedToken = players.find((p) => p.id === playerId)?.notificationPreferences?.pushToken;
-          const pushToken = freshToken || cachedToken;
-          console.log('Sending invite push to player', playerId, '- freshToken:', freshToken, 'cachedToken:', cachedToken);
-          if (pushToken) {
-            sendPushToTokens([pushToken], title, message, { gameId: game.id, type: 'game_invite' }).catch(console.error);
-          } else {
-            console.log('No push token found for player', playerId, '- notification not sent');
-          }
-        });
+      // Send real push notification to the invited player's device using fresh token
+      sendPushToPlayers([playerId], title, message, { gameId: game.id, type: 'game_invite' }).catch(console.error);
 
       // Add to in-app notifications
       const notification: AppNotification = {
@@ -1125,13 +1108,8 @@ export default function GameDetailScreen() {
       }
     }
 
-    // Send real push notifications to all newly invited players
-    const pushTokens = newInvites
-      .map((id) => players.find((p) => p.id === id)?.notificationPreferences?.pushToken)
-      .filter((t): t is string => !!t);
-    if (pushTokens.length > 0) {
-      sendPushToTokens(pushTokens, title, message, { gameId: game.id, type: 'game_invite' }).catch(console.error);
-    }
+    // Send real push notifications to all newly invited players using fresh tokens
+    sendPushToPlayers(newInvites, title, message, { gameId: game.id, type: 'game_invite' }).catch(console.error);
 
     // Add to in-app notifications
     newInvites.forEach((playerId) => {

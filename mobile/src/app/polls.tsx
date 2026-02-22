@@ -35,7 +35,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Poll, getPlayerName, Player, AppNotification } from '@/lib/store';
 import { pushPollToSupabase, pushNotificationToSupabase } from '@/lib/realtime-sync';
-import { sendPushToTokens } from '@/lib/notifications';
+import { sendPushToPlayers } from '@/lib/notifications';
 
 const SWIPE_THRESHOLD = -80;
 
@@ -855,15 +855,12 @@ export default function PollsScreen() {
     const body = `"${pollName}" - Cast your vote now!`;
     const teamId = activeTeamId;
 
-    // Send push notification to all team members
-    const pushTokens = players
+    // Send push notification to all team members using fresh tokens
+    const recipientIds = players
       .filter((p) => p.id !== currentPlayerId)
-      .map((p) => p.notificationPreferences?.pushToken)
-      .filter((t): t is string => !!t);
+      .map((p) => p.id);
 
-    if (pushTokens.length > 0) {
-      sendPushToTokens(pushTokens, title, body, { type: 'poll', pollGroupId }).catch(console.error);
-    }
+    sendPushToPlayers(recipientIds, title, body, { type: 'poll', pollGroupId }).catch(console.error);
 
     // Send in-app notification to each team member
     players
