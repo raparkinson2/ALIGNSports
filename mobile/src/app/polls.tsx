@@ -33,9 +33,9 @@ import Animated, {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
-import * as Notifications from 'expo-notifications';
-import { useTeamStore, Poll, getPlayerName, Player } from '@/lib/store';
-import { pushPollToSupabase } from '@/lib/realtime-sync';
+import { useTeamStore, Poll, getPlayerName, Player, AppNotification } from '@/lib/store';
+import { pushPollToSupabase, pushNotificationToSupabase } from '@/lib/realtime-sync';
+import { sendPushToTokens } from '@/lib/notifications';
 
 const SWIPE_THRESHOLD = -80;
 
@@ -838,6 +838,8 @@ export default function PollsScreen() {
   const unvotePoll = useTeamStore((s) => s.unvotePoll);
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const isAdmin = useTeamStore((s) => s.isAdmin);
+  const addNotification = useTeamStore((s) => s.addNotification);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
 
   const canManage = canManageTeam();
 
@@ -849,19 +851,39 @@ export default function PollsScreen() {
   }, [openPoll]);
 
   const sendPollNotification = async (pollName: string, pollGroupId: string) => {
-    try {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'New Poll!',
-          body: `"${pollName}" - Cast your vote now!`,
-          data: { type: 'poll', pollGroupId },
-          sound: true,
-        },
-        trigger: null,
-      });
-    } catch (error) {
-      console.log('Error sending poll notification:', error);
+    const title = 'New Poll!';
+    const body = `"${pollName}" - Cast your vote now!`;
+    const teamId = activeTeamId;
+
+    // Send push notification to all team members
+    const pushTokens = players
+      .filter((p) => p.id !== currentPlayerId)
+      .map((p) => p.notificationPreferences?.pushToken)
+      .filter((t): t is string => !!t);
+
+    if (pushTokens.length > 0) {
+      sendPushToTokens(pushTokens, title, body, { type: 'poll', pollGroupId }).catch(console.error);
     }
+
+    // Send in-app notification to each team member
+    players
+      .filter((p) => p.id !== currentPlayerId)
+      .forEach((p) => {
+        const notification: AppNotification = {
+          id: `poll-${Date.now()}-${p.id}`,
+          type: 'poll',
+          title,
+          message: body,
+          fromPlayerId: currentPlayerId ?? undefined,
+          toPlayerId: p.id,
+          createdAt: new Date().toISOString(),
+          read: false,
+        };
+        addNotification(notification);
+        if (teamId) {
+          pushNotificationToSupabase(notification, teamId).catch(console.error);
+        }
+      });
   };
 
   const handleCreatePoll = async (
