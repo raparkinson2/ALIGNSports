@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, Pressable, Dimensions, Modal, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Camera, Plus, ImageIcon, Trash2, X } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -9,7 +9,6 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Photo } from '@/lib/store';
 import { uploadSinglePhoto, deleteSinglePhoto, fetchTeamPhotos } from '@/lib/team-sync';
-import { supabase } from '@/lib/supabase';
 import { useFocusEffect } from 'expo-router';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -75,70 +74,6 @@ export default function PhotosScreen() {
     }, [syncPhotos])
   );
 
-  // Subscribe to real-time photo updates
-  useEffect(() => {
-    if (!teamId) return;
-
-    console.log('PHOTOS: Subscribing to real-time updates for team:', teamId);
-
-    const channel = supabase
-      .channel(`photos:${teamId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'photos',
-          filter: `team_id=eq.${teamId}`,
-        },
-        (payload) => {
-          console.log('PHOTOS: Received new photo from realtime');
-          const p = payload.new as any;
-
-          // Skip if we already have this photo
-          if (syncedIdsRef.current.has(p.id)) {
-            console.log('PHOTOS: Skipping duplicate photo');
-            return;
-          }
-
-          syncedIdsRef.current.add(p.id);
-          const photo: Photo = {
-            id: p.id,
-            gameId: p.game_id || '',
-            uri: p.uri,
-            uploadedBy: p.uploaded_by || '',
-            uploadedAt: p.uploaded_at,
-          };
-          addPhoto(photo);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'photos',
-          filter: `team_id=eq.${teamId}`,
-        },
-        (payload) => {
-          console.log('PHOTOS: Received delete from realtime');
-          const oldPhoto = payload.old as any;
-          if (oldPhoto?.id) {
-            syncedIdsRef.current.delete(oldPhoto.id);
-            removePhoto(oldPhoto.id);
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('PHOTOS: Subscription status:', status);
-      });
-
-    return () => {
-      console.log('PHOTOS: Unsubscribing from real-time updates');
-      channel.unsubscribe();
-    };
-  }, [teamId, addPhoto, removePhoto]);
 
   const handlePhotoPress = (photo: Photo) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

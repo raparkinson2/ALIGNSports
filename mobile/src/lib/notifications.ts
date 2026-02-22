@@ -54,7 +54,8 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     const projectId =
       Constants.expoConfig?.extra?.eas?.projectId ||
       (Constants as any).easConfig?.projectId ||
-      (Constants.expoConfig as any)?.projectId;
+      (Constants.expoConfig as any)?.projectId ||
+      '727371d5-f124-42e2-af0e-40f420477bce'; // fallback from app.json
 
     if (!projectId || projectId === 'your-eas-project-id-here') {
       console.log('No valid EAS project ID found - push notifications to other devices unavailable');
