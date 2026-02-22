@@ -42,7 +42,7 @@ import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { pushPaymentPeriodToSupabase } from '@/lib/realtime-sync';
+import { pushPaymentPeriodToSupabase, pushTeamToSupabase } from '@/lib/realtime-sync';
 
 // Helper to calculate correct payment status from actual payment amounts
 const calculatePaymentStatus = (paidAmount: number | undefined, periodAmount: number): 'paid' | 'partial' | 'unpaid' => {
@@ -648,6 +648,17 @@ export default function PaymentsScreen() {
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const activeTeamId = useTeamStore((s) => s.activeTeamId);
 
+  // Wrapper: updates teamSettings locally AND pushes to Supabase
+  const setTeamSettingsAndSync = (updates: Parameters<typeof setTeamSettings>[0]) => {
+    setTeamSettings(updates);
+    if (activeTeamId) {
+      setTimeout(() => {
+        const s = useTeamStore.getState();
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+      }, 50);
+    }
+  };
+
   // Wrapper: updates locally AND pushes to Supabase
   const updatePaymentPeriodAndSync = (periodId: string, updates: Parameters<typeof updatePaymentPeriod>[1]) => {
     updatePaymentPeriod(periodId, updates);
@@ -724,7 +735,7 @@ export default function PaymentsScreen() {
       displayName: paymentDisplayName.trim() || PAYMENT_APP_INFO[selectedApp].name,
     };
 
-    setTeamSettings({
+    setTeamSettingsAndSync({
       paymentMethods: [...paymentMethods, newMethod],
     });
 
@@ -742,7 +753,7 @@ export default function PaymentsScreen() {
         style: 'destructive',
         onPress: () => {
           const newMethods = paymentMethods.filter((_, i) => i !== index);
-          setTeamSettings({ paymentMethods: newMethods });
+          setTeamSettingsAndSync({ paymentMethods: newMethods });
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         },
       },
