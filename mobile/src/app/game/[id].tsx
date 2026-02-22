@@ -45,6 +45,7 @@ import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, BattingOrderLineup, SoccerLineup, SoccerDiamondLineup, LacrosseLineup, getPlayerName, InviteReleaseOption, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, PlayerStats, GameLogEntry, getPlayerPositions } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { supabase } from '@/lib/supabase';
 import { pushGameToSupabase, pushGameResponseToSupabase, pushNotificationToSupabase, pushPlayerToSupabase, deleteGameFromSupabase } from '@/lib/realtime-sync';
 import { sendPushToTokens } from '@/lib/notifications';
 import { AddressSearch } from '@/components/AddressSearch';
@@ -1049,11 +1050,24 @@ export default function GameDetailScreen() {
       }
 
       // Send real push notification to the invited player's device
-      const invitedPlayer = players.find((p) => p.id === playerId);
-      const pushToken = invitedPlayer?.notificationPreferences?.pushToken;
-      if (pushToken) {
-        sendPushToTokens([pushToken], title, message, { gameId: game.id, type: 'game_invite' }).catch(console.error);
-      }
+      // Fetch fresh token from Supabase to avoid stale cached values
+      supabase
+        .from('players')
+        .select('push_token')
+        .eq('id', playerId)
+        .single()
+        .then(({ data: playerData, error: tokenError }: { data: { push_token: string | null } | null, error: { message: string } | null }) => {
+          if (tokenError) console.log('Push token fetch error:', tokenError.message);
+          const freshToken = playerData?.push_token;
+          const cachedToken = players.find((p) => p.id === playerId)?.notificationPreferences?.pushToken;
+          const pushToken = freshToken || cachedToken;
+          console.log('Sending invite push to player', playerId, '- freshToken:', freshToken, 'cachedToken:', cachedToken);
+          if (pushToken) {
+            sendPushToTokens([pushToken], title, message, { gameId: game.id, type: 'game_invite' }).catch(console.error);
+          } else {
+            console.log('No push token found for player', playerId, '- notification not sent');
+          }
+        });
 
       // Add to in-app notifications
       const notification: AppNotification = {

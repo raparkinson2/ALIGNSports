@@ -181,56 +181,42 @@ function AuthNavigator() {
         updateNotificationPreferences(currentPlayerId, { pushToken: token });
         console.log('Push token registered for player:', currentPlayerId, 'token:', token);
 
-        // Save token to Supabase - try with teamId first, fall back to just playerId
-        const saveTokenToSupabase = (teamId: string | null) => {
-          const query = supabase.from('players').update({ push_token: token }).eq('id', currentPlayerId);
-          if (teamId) query.eq('team_id', teamId);
-          query.then(({ error }) => {
-            if (error) console.log('Push token direct update error:', error.message);
-            else console.log('Push token saved to Supabase directly (teamId:', teamId, ')');
+        // Save token to Supabase - only filter by player id (which is globally unique)
+        // Never filter by team_id as it may not match or may not be loaded yet
+        supabase
+          .from('players')
+          .update({ push_token: token })
+          .eq('id', currentPlayerId)
+          .then(({ error, count }) => {
+            if (error) console.log('Push token save error:', error.message);
+            else console.log('Push token saved to Supabase, rows updated:', count);
           });
+
+        // Also do full player upsert once team data is available
+        const doPlayerUpsert = (teamId: string) => {
+          const updatedPlayer = useTeamStore.getState().players.find((p) => p.id === currentPlayerId);
+          if (updatedPlayer) {
+            const playerWithToken = {
+              ...updatedPlayer,
+              notificationPreferences: {
+                ...defaultNotificationPreferences,
+                ...(updatedPlayer.notificationPreferences || {}),
+                pushToken: token,
+              },
+            };
+            pushPlayerToSupabase(playerWithToken, teamId).catch(console.error);
+          }
         };
 
         const teamId = useTeamStore.getState().activeTeamId;
-        saveTokenToSupabase(teamId);
-
-        // If teamId wasn't available yet, retry after sync loads
-        if (!teamId) {
-          console.log('Push token: no teamId yet, will retry after sync');
+        if (teamId) {
+          doPlayerUpsert(teamId);
+        } else {
+          // Retry once team data finishes loading
           setTimeout(() => {
             const retryTeamId = useTeamStore.getState().activeTeamId;
-            if (retryTeamId) {
-              console.log('Push token retry: saving with teamId', retryTeamId);
-              saveTokenToSupabase(retryTeamId);
-              // Also do full player upsert
-              const updatedPlayer = useTeamStore.getState().players.find((p) => p.id === currentPlayerId);
-              if (updatedPlayer) {
-                const playerWithToken = {
-                  ...updatedPlayer,
-                  notificationPreferences: {
-                    ...defaultNotificationPreferences,
-                    ...(updatedPlayer.notificationPreferences || {}),
-                    pushToken: token,
-                  },
-                };
-                pushPlayerToSupabase(playerWithToken, retryTeamId).catch(console.error);
-              }
-            }
+            if (retryTeamId) doPlayerUpsert(retryTeamId);
           }, 3000);
-        }
-
-        // Also do full player upsert if the player object is available in the store
-        const updatedPlayer = useTeamStore.getState().players.find((p) => p.id === currentPlayerId);
-        if (updatedPlayer && teamId) {
-          const playerWithToken = {
-            ...updatedPlayer,
-            notificationPreferences: {
-              ...defaultNotificationPreferences,
-              ...(updatedPlayer.notificationPreferences || {}),
-              pushToken: token,
-            },
-          };
-          pushPlayerToSupabase(playerWithToken, teamId).catch(console.error);
         }
       } else {
         console.log('Push token: failed to get token (permissions denied or simulator)');
