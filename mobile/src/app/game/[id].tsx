@@ -648,6 +648,11 @@ export default function GameDetailScreen() {
     return statusOrder[aStatus] - statusOrder[bStatus];
   });
 
+  // If the current player isn't invited yet, show their row at the top so they can self-check-in
+  const currentPlayerInList = sortedInvitedPlayers.some((p) => p.id === currentPlayerId);
+  const currentPlayerObj = !currentPlayerInList && currentPlayerId ? players.find((p) => p.id === currentPlayerId) : null;
+  const playersToDisplay = currentPlayerObj ? [currentPlayerObj, ...sortedInvitedPlayers] : sortedInvitedPlayers;
+
   const uninvitedPlayers = players.filter((p) => !game.invitedPlayers?.includes(p.id));
   const uninvitedActive = uninvitedPlayers.filter((p) => p.status === 'active');
   const uninvitedReserve = uninvitedPlayers.filter((p) => p.status === 'reserve');
@@ -681,6 +686,16 @@ export default function GameDetailScreen() {
   const handleToggleCheckIn = (playerId: string) => {
     const isIn = game.checkedInPlayers?.includes(playerId);
     const isOut = game.checkedOutPlayers?.includes(playerId);
+    const isInvited = game.invitedPlayers?.includes(playerId);
+
+    // If the player isn't yet in invitedPlayers (self-check-in by a non-invited player),
+    // add them to the invite list first so they appear for everyone.
+    if (!isInvited && activeTeamId) {
+      updateGameAndSync(game.id, {
+        invitedPlayers: [...(game.invitedPlayers ?? []), playerId],
+      });
+      pushGameResponseToSupabase(game.id, playerId, 'invited').catch(console.error);
+    }
 
     // Cycle through: none -> in -> out -> none
     if (!isIn && !isOut) {
@@ -692,15 +707,9 @@ export default function GameDetailScreen() {
       checkOutFromGame(game.id, playerId);
       if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'out').catch(console.error);
     } else {
-      // Currently OUT, clear response
+      // Currently OUT, clear response (back to invited)
       clearPlayerResponse(game.id, playerId);
-      // Delete the response row from Supabase
-      if (activeTeamId) {
-        import('@/lib/supabase').then(({ supabase }) => {
-          supabase.from('game_responses').delete()
-            .eq('game_id', game.id).eq('player_id', playerId).then(() => {});
-        });
-      }
+      if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'invited').catch(console.error);
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
@@ -3100,7 +3109,7 @@ export default function GameDetailScreen() {
             </View>
 
             <View className="bg-slate-800/50 rounded-2xl p-3 border border-slate-700/50">
-              {sortedInvitedPlayers.map((player, index) => {
+              {playersToDisplay.map((player, index) => {
                 const isSelf = player.id === currentPlayerId;
                 // Admins and captains can toggle anyone, regular players can only toggle themselves
                 const canToggle = canManageTeam() || isSelf;
@@ -3117,7 +3126,7 @@ export default function GameDetailScreen() {
                   />
                 );
               })}
-              {sortedInvitedPlayers.length === 0 && (
+              {playersToDisplay.length === 0 && (
                 <Text className="text-slate-400 text-center py-4">
                   No players invited yet
                 </Text>

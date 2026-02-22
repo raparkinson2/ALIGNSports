@@ -180,6 +180,11 @@ export default function EventDetailScreen() {
     return statusOrder[aStatus] - statusOrder[bStatus];
   });
 
+  // If the current player isn't invited yet, show their row first so they can self-RSVP
+  const currentPlayerInEventList = sortedInvitedPlayers.some((p) => p.id === currentPlayerId);
+  const currentPlayerEventObj = !currentPlayerInEventList && currentPlayerId ? players.find((p) => p.id === currentPlayerId) : null;
+  const playersToDisplay = currentPlayerEventObj ? [currentPlayerEventObj, ...sortedInvitedPlayers] : sortedInvitedPlayers;
+
   const getPlayerStatus = (playerId: string): 'confirmed' | 'declined' | 'none' => {
     if (confirmedPlayers.includes(playerId)) return 'confirmed';
     if (declinedPlayers.includes(playerId)) return 'declined';
@@ -188,9 +193,18 @@ export default function EventDetailScreen() {
 
   const togglePlayerStatus = (playerId: string) => {
     const currentStatus = getPlayerStatus(playerId);
+    const isInvited = event.invitedPlayers?.includes(playerId);
     let newConfirmed = [...confirmedPlayers];
     let newDeclined = [...declinedPlayers];
     let newResponse: 'confirmed' | 'declined' | 'invited' | null = null;
+
+    // If the player isn't invited yet (self-RSVP), add them to the invite list first
+    if (!isInvited && activeTeamId) {
+      updateEventAndSync(event.id, {
+        invitedPlayers: [...(event.invitedPlayers ?? []), playerId],
+      });
+      pushEventResponseToSupabase(event.id, playerId, 'invited').catch(console.error);
+    }
 
     if (currentStatus === 'none') {
       // No response -> Confirmed
@@ -712,10 +726,10 @@ export default function EventDetailScreen() {
 
               {/* Player List */}
               <View className="bg-slate-800/50 rounded-2xl p-4">
-                {sortedInvitedPlayers.length === 0 ? (
+                {playersToDisplay.length === 0 ? (
                   <Text className="text-slate-400 text-center py-4">No players invited</Text>
                 ) : (
-                  sortedInvitedPlayers.map((player, index) => {
+                  playersToDisplay.map((player, index) => {
                     const status = getPlayerStatus(player.id);
                     const isSelf = player.id === currentPlayerId;
                     // Players can toggle their own status, admins can toggle anyone

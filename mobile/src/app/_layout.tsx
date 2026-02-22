@@ -13,6 +13,7 @@ import { useTeamStore, useStoreHydrated, defaultNotificationPreferences } from '
 import { registerForPushNotificationsAsync } from '@/lib/notifications';
 import { clearInvalidSession, getSafeSession } from '@/lib/supabase';
 import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase } from '@/lib/realtime-sync';
+import { supabase } from '@/lib/supabase';
 
 export const unstable_settings = {
   initialRouteName: 'login',
@@ -179,9 +180,23 @@ function AuthNavigator() {
         // Save the push token to the player's preferences (local store)
         updateNotificationPreferences(currentPlayerId, { pushToken: token });
         console.log('Push token registered for player:', currentPlayerId);
-        // Persist the token to Supabase so other team members can send push notifications to this device
+        // Persist the token to Supabase so other team members can send push notifications to this device.
+        // Always do a direct column update first (fast, reliable, even if player object isn't loaded yet).
+        const teamId = useTeamStore.getState().activeTeamId;
+        if (teamId) {
+          supabase
+            .from('players')
+            .update({ push_token: token })
+            .eq('id', currentPlayerId)
+            .eq('team_id', teamId)
+            .then(({ error }) => {
+              if (error) console.log('Push token direct update error:', error.message);
+              else console.log('Push token saved to Supabase directly');
+            });
+        }
+        // Also do full player upsert if the player object is available in the store
         const updatedPlayer = useTeamStore.getState().players.find((p) => p.id === currentPlayerId);
-        if (updatedPlayer && useTeamStore.getState().activeTeamId) {
+        if (updatedPlayer && teamId) {
           const playerWithToken = {
             ...updatedPlayer,
             notificationPreferences: {
@@ -190,8 +205,7 @@ function AuthNavigator() {
               pushToken: token,
             },
           };
-          const teamId = useTeamStore.getState().activeTeamId;
-          if (teamId) pushPlayerToSupabase(playerWithToken, teamId).catch(console.error);
+          pushPlayerToSupabase(playerWithToken, teamId).catch(console.error);
         }
       }
     });
