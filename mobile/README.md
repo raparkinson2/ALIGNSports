@@ -8,6 +8,8 @@ All real-time sync is handled by **Supabase Realtime** via a single WebSocket ch
 
 **Foreground reconnect**: When the app returns from background (`AppState` change), the realtime channel is forcibly restarted and data is reloaded to catch any changes missed while backgrounded. This is critical for TestFlight where iOS may drop WebSocket connections.
 
+**Multi-team sync**: `loadTeamFromSupabase` now also updates the `teams[]` array entry for the loaded team with full player/game/event data. This is required for `hasMultipleTeams` detection in the More tab to work correctly after app restart or team switch.
+
 **Photo deduplication**: The uploader registers the photo ID in `syncedIdsRef` before inserting to Supabase, preventing the realtime INSERT event from adding a duplicate.
 
 **Payment subscriptions**: `player_payments` and `payment_entries` subscriptions guard against cross-team events by checking if the changed row belongs to the current team's payment periods.

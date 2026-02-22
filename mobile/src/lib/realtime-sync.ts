@@ -378,7 +378,15 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       createdAt: l.created_at,
     }));
 
-    // Apply everything to store
+    // Apply everything to store, and also update the teams[] array entry for this team
+    // so that multi-team checks (e.g. hasMultipleTeams in more.tsx) can find the user.
+    const currentState = useTeamStore.getState();
+    const updatedTeams = currentState.teams.map((t) =>
+      t.id === teamId
+        ? { ...t, teamName, teamSettings, players, games, events, chatMessages, paymentPeriods, photos, notifications, polls, teamLinks }
+        : t
+    );
+
     useTeamStore.setState({
       teamName,
       teamSettings,
@@ -391,6 +399,7 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       notifications,
       polls,
       teamLinks,
+      teams: updatedTeams,
     });
 
     // After loading, resolve currentPlayerId if it's missing or stale
