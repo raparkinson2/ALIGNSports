@@ -359,6 +359,14 @@ export async function downloadTeamFromSupabase(teamId: string): Promise<{
       goalieStats: p.goalie_stats || {},
       pitcherStats: p.pitcher_stats || {},
       gameLogs: p.game_logs || [],
+      notificationPreferences: p.notification_preferences
+        ? {
+            ...p.notification_preferences,
+            pushToken: p.push_token || p.notification_preferences?.pushToken || undefined,
+          }
+        : p.push_token
+          ? { pushToken: p.push_token }
+          : undefined,
     }));
 
     const games: Game[] = (gamesData || []).map(g => {
