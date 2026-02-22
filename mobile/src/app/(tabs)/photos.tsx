@@ -312,7 +312,7 @@ export default function PhotosScreen() {
               {storePhotos.map((photo, index) => (
                 <Animated.View
                   key={photo.id}
-                  entering={FadeInDown.delay(Math.min(index * 50, 300)).springify()}
+                  entering={FadeInDown.springify()}
                 >
                   <Pressable
                     className="active:opacity-80"

@@ -150,7 +150,7 @@ function MessageBubble({ message, isOwnMessage, senderName, senderAvatar, index,
 
   return (
     <Animated.View
-      entering={FadeInDown.delay(index * 30).springify()}
+      entering={FadeInDown.springify()}
       className={cn('mb-3', isOwnMessage ? 'items-end' : 'items-start')}
     >
       <Pressable
@@ -265,7 +265,7 @@ export default function ChatScreen() {
   const [gifs, setGifs] = useState<GiphyGif[]>([]);
   const [isLoadingGifs, setIsLoadingGifs] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const flatListRef = useRef<FlatList<any>>(null);
 
   // Mention autocomplete state
   const [showMentionPicker, setShowMentionPicker] = useState(false);
@@ -293,15 +293,13 @@ export default function ChatScreen() {
     }, [currentPlayerId, markChatAsRead])
   );
 
-  // Also mark as read when new messages arrive while user is viewing
+  // Scroll to bottom when new messages arrive while user is viewing
   useEffect(() => {
     if (currentPlayerId) {
       markChatAsRead(currentPlayerId);
     }
-    // Scroll to bottom on new messages
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    // For inverted FlatList, scrolling to offset 0 scrolls to newest (bottom visually)
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
   }, [chatMessages.length, currentPlayerId, markChatAsRead]);
 
   // Load trending GIFs when modal opens
@@ -592,22 +590,73 @@ export default function ChatScreen() {
     setGifSearchQuery('');
   };
 
-  // Group messages by date
-  const groupedMessages: { date: Date; messages: ChatMessage[] }[] = [];
-  let currentDate: string | null = null;
+  // Group messages by date — memoized so it only recomputes when messages change
+  const groupedMessages = useMemo(() => {
+    const groups: { date: Date; messages: ChatMessage[] }[] = [];
+    let currentDate: string | null = null;
 
-  chatMessages.forEach((msg) => {
-    const msgDate = format(parseISO(msg.createdAt), 'yyyy-MM-dd');
-    if (msgDate !== currentDate) {
-      currentDate = msgDate;
-      groupedMessages.push({
-        date: parseISO(msg.createdAt),
-        messages: [msg],
+    chatMessages.forEach((msg) => {
+      const msgDate = format(parseISO(msg.createdAt), 'yyyy-MM-dd');
+      if (msgDate !== currentDate) {
+        currentDate = msgDate;
+        groups.push({ date: parseISO(msg.createdAt), messages: [msg] });
+      } else {
+        groups[groups.length - 1].messages.push(msg);
+      }
+    });
+    return groups;
+  }, [chatMessages]);
+
+  // Flat list items for FlatList virtualization.
+  // We use an inverted FlatList (newest at bottom), so we reverse the data.
+  type FlatItem =
+    | { type: 'message'; message: ChatMessage; groupIndex: number; msgIndex: number }
+    | { type: 'separator'; date: Date };
+
+  const flatItems = useMemo<FlatItem[]>(() => {
+    const items: FlatItem[] = [];
+    groupedMessages.forEach((group, groupIndex) => {
+      // Date separator first (it renders BELOW messages in inverted list)
+      items.push({ type: 'separator', date: group.date });
+      group.messages.forEach((msg, msgIndex) => {
+        items.push({ type: 'message', message: msg, groupIndex, msgIndex });
       });
-    } else {
-      groupedMessages[groupedMessages.length - 1].messages.push(msg);
+    });
+    // Reverse so newest is at index 0 for the inverted FlatList
+    return items.reverse();
+  }, [groupedMessages]);
+
+  const renderChatItem = useCallback(({ item }: { item: FlatItem }) => {
+    if (item.type === 'separator') {
+      return <DateSeparator date={item.date} />;
     }
-  });
+    const { message } = item;
+    const sender = players.find((p) => p.id === message.senderId);
+    const isOwnMessage = message.senderId === currentPlayerId;
+    const displayName = sender ? getPlayerName(sender) : (message.senderName || 'Unknown');
+    return (
+      <MessageBubble
+        message={message}
+        isOwnMessage={isOwnMessage}
+        senderName={displayName}
+        senderAvatar={sender?.avatar}
+        index={0}
+        onDelete={isOwnMessage ? () => {
+          deleteChatMessage(message.id);
+          deleteChatMessageFromSupabase(message.id).catch(err => {
+            console.error('Failed to delete message from cloud:', err);
+          });
+        } : undefined}
+        players={players}
+        currentPlayerId={currentPlayerId}
+      />
+    );
+  }, [players, currentPlayerId, deleteChatMessage]);
+
+  const keyExtractor = useCallback((item: FlatItem) => {
+    if (item.type === 'separator') return `sep-${item.date.toISOString()}`;
+    return item.message.id;
+  }, []);
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -635,58 +684,35 @@ export default function ChatScreen() {
           className="flex-1"
           keyboardVerticalOffset={0}
         >
-          {/* Messages */}
-          <ScrollView
-            ref={scrollViewRef}
-            className="flex-1"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingVertical: 16, flexGrow: 1, paddingHorizontal: isTablet ? containerPadding : 16, maxWidth: isTablet ? 800 : undefined, alignSelf: isTablet ? 'center' as const : undefined, width: isTablet ? '100%' : undefined }}
-          >
-            {chatMessages.length === 0 ? (
-              <View className="flex-1 items-center justify-center">
-                <View className="bg-slate-800/50 rounded-full p-6 mb-4">
-                  <MessageSquare size={48} color="#475569" />
-                </View>
-                <Text className="text-slate-400 text-center text-lg font-medium">
-                  No messages yet
-                </Text>
-                <Text className="text-slate-500 text-center mt-1">
-                  Start the conversation with your team!
-                </Text>
+          {/* Messages - virtualized inverted FlatList for performance */}
+          {chatMessages.length === 0 ? (
+            <View className="flex-1 items-center justify-center">
+              <View className="bg-slate-800/50 rounded-full p-6 mb-4">
+                <MessageSquare size={48} color="#475569" />
               </View>
-            ) : (
-              groupedMessages.map((group, groupIndex) => (
-                <View key={group.date.toISOString()}>
-                  <DateSeparator date={group.date} />
-                  {group.messages.map((message, msgIndex) => {
-                    const sender = players.find((p) => p.id === message.senderId);
-                    const isOwnMessage = message.senderId === currentPlayerId;
-                    // Use local player name if found, otherwise fall back to cached senderName from cloud
-                    const displayName = sender ? getPlayerName(sender) : (message.senderName || 'Unknown');
-                    return (
-                      <MessageBubble
-                        key={message.id}
-                        message={message}
-                        isOwnMessage={isOwnMessage}
-                        senderName={displayName}
-                        senderAvatar={sender?.avatar}
-                        index={groupIndex * 10 + msgIndex}
-                        onDelete={isOwnMessage ? () => {
-                          deleteChatMessage(message.id);
-                          // Also delete from Supabase
-                          deleteChatMessageFromSupabase(message.id).catch(err => {
-                            console.error('Failed to delete message from cloud:', err);
-                          });
-                        } : undefined}
-                        players={players}
-                        currentPlayerId={currentPlayerId}
-                      />
-                    );
-                  })}
-                </View>
-              ))
-            )}
-          </ScrollView>
+              <Text className="text-slate-400 text-center text-lg font-medium">
+                No messages yet
+              </Text>
+              <Text className="text-slate-500 text-center mt-1">
+                Start the conversation with your team!
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={flatItems}
+              keyExtractor={keyExtractor}
+              renderItem={renderChatItem}
+              inverted
+              removeClippedSubviews
+              maxToRenderPerBatch={15}
+              windowSize={10}
+              initialNumToRender={20}
+              contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: isTablet ? containerPadding : 16, maxWidth: isTablet ? 800 : undefined, alignSelf: isTablet ? 'center' as const : undefined, width: isTablet ? '100%' : undefined }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            />
+          )}
 
           {/* Input Area */}
           <View className="pb-4 pt-2 border-t border-slate-800 bg-slate-900/95" style={{ zIndex: 10, paddingHorizontal: isTablet ? containerPadding : 16, maxWidth: isTablet ? 800 : undefined, alignSelf: isTablet ? 'center' as const : undefined, width: isTablet ? '100%' : undefined }}>
