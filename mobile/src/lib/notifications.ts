@@ -166,7 +166,11 @@ export async function sendPushToTokens(
   const validTokens = pushTokens.filter(
     (t) => t && (t.startsWith('ExponentPushToken[') || t.startsWith('ExpoPushToken['))
   );
-  if (validTokens.length === 0) return;
+  console.log('sendPushToTokens: input tokens:', pushTokens.length, 'valid:', validTokens.length);
+  if (validTokens.length === 0) {
+    console.log('sendPushToTokens: no valid tokens, raw tokens:', JSON.stringify(pushTokens));
+    return;
+  }
 
   const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
   if (!backendUrl) {
@@ -174,12 +178,15 @@ export async function sendPushToTokens(
     return;
   }
 
+  console.log('sendPushToTokens: sending to backend', backendUrl, 'tokens:', validTokens);
   try {
-    await fetch(`${backendUrl}/api/notifications/send-push`, {
+    const res = await fetch(`${backendUrl}/api/notifications/send-push`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tokens: validTokens, title, body, data: data || {} }),
     });
+    const resText = await res.text();
+    console.log('sendPushToTokens: backend response status:', res.status, 'body:', resText);
   } catch (err) {
     console.log('sendPushToTokens error:', err);
   }

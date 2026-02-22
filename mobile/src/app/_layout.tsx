@@ -179,21 +179,46 @@ function AuthNavigator() {
       if (token && currentPlayerId) {
         // Save the push token to the player's preferences (local store)
         updateNotificationPreferences(currentPlayerId, { pushToken: token });
-        console.log('Push token registered for player:', currentPlayerId);
-        // Persist the token to Supabase so other team members can send push notifications to this device.
-        // Always do a direct column update first (fast, reliable, even if player object isn't loaded yet).
+        console.log('Push token registered for player:', currentPlayerId, 'token:', token);
+
+        // Save token to Supabase - try with teamId first, fall back to just playerId
+        const saveTokenToSupabase = (teamId: string | null) => {
+          const query = supabase.from('players').update({ push_token: token }).eq('id', currentPlayerId);
+          if (teamId) query.eq('team_id', teamId);
+          query.then(({ error }) => {
+            if (error) console.log('Push token direct update error:', error.message);
+            else console.log('Push token saved to Supabase directly (teamId:', teamId, ')');
+          });
+        };
+
         const teamId = useTeamStore.getState().activeTeamId;
-        if (teamId) {
-          supabase
-            .from('players')
-            .update({ push_token: token })
-            .eq('id', currentPlayerId)
-            .eq('team_id', teamId)
-            .then(({ error }) => {
-              if (error) console.log('Push token direct update error:', error.message);
-              else console.log('Push token saved to Supabase directly');
-            });
+        saveTokenToSupabase(teamId);
+
+        // If teamId wasn't available yet, retry after sync loads
+        if (!teamId) {
+          console.log('Push token: no teamId yet, will retry after sync');
+          setTimeout(() => {
+            const retryTeamId = useTeamStore.getState().activeTeamId;
+            if (retryTeamId) {
+              console.log('Push token retry: saving with teamId', retryTeamId);
+              saveTokenToSupabase(retryTeamId);
+              // Also do full player upsert
+              const updatedPlayer = useTeamStore.getState().players.find((p) => p.id === currentPlayerId);
+              if (updatedPlayer) {
+                const playerWithToken = {
+                  ...updatedPlayer,
+                  notificationPreferences: {
+                    ...defaultNotificationPreferences,
+                    ...(updatedPlayer.notificationPreferences || {}),
+                    pushToken: token,
+                  },
+                };
+                pushPlayerToSupabase(playerWithToken, retryTeamId).catch(console.error);
+              }
+            }
+          }, 3000);
         }
+
         // Also do full player upsert if the player object is available in the store
         const updatedPlayer = useTeamStore.getState().players.find((p) => p.id === currentPlayerId);
         if (updatedPlayer && teamId) {
@@ -207,6 +232,8 @@ function AuthNavigator() {
           };
           pushPlayerToSupabase(playerWithToken, teamId).catch(console.error);
         }
+      } else {
+        console.log('Push token: failed to get token (permissions denied or simulator)');
       }
     });
 

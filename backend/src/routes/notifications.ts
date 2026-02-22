@@ -65,7 +65,10 @@ notificationsRouter.post("/send-push", async (c) => {
     return c.json({ error: "Invalid request body" }, 400);
   }
 
+  console.log(`[push] Received request - tokens: ${tokens.length}, title: "${title}"`);
+
   if (!tokens.length || !title || !body) {
+    console.log(`[push] Missing required fields - tokens: ${tokens.length}, title: "${title}", body length: ${body.length}`);
     return c.json({ error: "tokens, title, and body are required" }, 400);
   }
 
@@ -74,7 +77,10 @@ notificationsRouter.post("/send-push", async (c) => {
     (t) => typeof t === "string" && (t.startsWith("ExponentPushToken[") || t.startsWith("ExpoPushToken["))
   );
 
+  console.log(`[push] Valid tokens: ${validTokens.length}/${tokens.length} - tokens: ${JSON.stringify(validTokens)}`);
+
   if (validTokens.length === 0) {
+    console.log(`[push] No valid tokens. Raw tokens: ${JSON.stringify(tokens)}`);
     return c.json({ success: true, sent: 0, message: "No valid Expo push tokens" });
   }
 
