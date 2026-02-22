@@ -119,6 +119,30 @@ const hexToColorName = (hex: string): string => {
   return hex; // Return as-is if not a recognized format
 };
 
+// Helper to convert color names to hex (reverse of hexToColorName)
+const colorNameToHex = (name: string): string => {
+  const nameMap: Record<string, string> = {
+    'white': '#ffffff',
+    'black': '#1a1a1a',
+    'red': '#dc2626',
+    'green': '#16a34a',
+    'blue': '#2563eb',
+    'yellow': '#ca8a04',
+    'orange': '#ea580c',
+    'purple': '#9333ea',
+    'pink': '#ffc0cb',
+    'gray': '#808080',
+    'grey': '#808080',
+    'brown': '#a52a2a',
+    'cyan': '#00ffff',
+    'navy': '#000080',
+    'silver': '#c0c0c0',
+    'gold': '#ffd700',
+    'maroon': '#8b0000',
+  };
+  return nameMap[name.toLowerCase()] || name;
+};
+
 // Edit mode type for game stats - determines which stats to show/edit
 type GameStatEditMode = 'batter' | 'pitcher' | 'skater' | 'goalie' | 'lacrosse' | 'lacrosse_goalie';
 
@@ -661,7 +685,7 @@ export default function GameDetailScreen() {
   const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === game.jerseyColor || c.color === game.jerseyColor);
   // If found in settings, use the name. Otherwise, try to convert hex to color name
   const jerseyColorName = jerseyColorInfo?.name || hexToColorName(game.jerseyColor);
-  const jerseyColorHex = jerseyColorInfo?.color || game.jerseyColor;
+  const jerseyColorHex = jerseyColorInfo?.color || (game.jerseyColor.startsWith('#') ? game.jerseyColor : colorNameToHex(game.jerseyColor));
 
   // Create gradient colors based on jersey color
   const getGradientColors = (hexColor: string): [string, string, string] => {
