@@ -36,8 +36,9 @@ export default function PhotosScreen() {
 
   // Track synced photo IDs to avoid duplicates
   const syncedIdsRef = useRef<Set<string>>(new Set(storePhotos.map(p => p.id)));
+  const hasDoneInitialSync = useRef(false);
 
-  // Fetch photos from Supabase and fully replace local store
+  // Fetch photos from Supabase and fully replace local store — only on initial mount
   const syncPhotos = useCallback(async () => {
     if (!teamId) return;
 
@@ -45,10 +46,16 @@ export default function PhotosScreen() {
     try {
       const result = await fetchTeamPhotos(teamId);
       if (result.success && result.photos) {
-        // Full replace — ensures all cloud photos are visible regardless of local state
-        setPhotos(result.photos);
-        // Rebuild the realtime dedup set from the fresh list
-        syncedIdsRef.current = new Set(result.photos.map(p => p.id));
+        // Full replace — merge cloud photos with any local-only optimistic ones
+        const localOnlyPhotos = useTeamStore.getState().photos.filter(
+          (p) => !result.photos!.some((cp) => cp.id === p.id)
+        );
+        setPhotos([...result.photos, ...localOnlyPhotos]);
+        // Rebuild the dedup set from both cloud and local IDs
+        syncedIdsRef.current = new Set([
+          ...result.photos.map(p => p.id),
+          ...localOnlyPhotos.map(p => p.id),
+        ]);
         console.log('PHOTOS: Synced', result.photos.length, 'photos from cloud');
       }
     } catch (err) {
@@ -58,10 +65,13 @@ export default function PhotosScreen() {
     }
   }, [teamId, setPhotos]);
 
-  // Sync photos when tab gains focus
+  // Only sync on first mount, not every time the tab gains focus
   useFocusEffect(
     useCallback(() => {
-      syncPhotos();
+      if (!hasDoneInitialSync.current) {
+        hasDoneInitialSync.current = true;
+        syncPhotos();
+      }
     }, [syncPhotos])
   );
 
