@@ -209,33 +209,25 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
       if (status === 'partial') return `$${balance} remaining · $${paidAmount ?? 0} paid`;
       return `$${totalAmount} remaining`;
     } else {
-      // Non-dues: show amount contributed
-      if (paidAmount && paidAmount > 0) return `$${paidAmount} paid`;
+      // Non-dues: show paid vs total
+      if (status === 'paid') return `$${paidAmount ?? totalAmount} paid`;
+      if (status === 'partial') return `$${paidAmount ?? 0} paid · $${balance} remaining`;
       return 'No payment yet';
     }
   };
 
   // For non-dues types, different styling logic
   const getBackgroundClass = () => {
-    if (isDuesType) {
-      if (status === 'paid') return 'bg-green-500/20';
-      if (status === 'partial') return 'bg-amber-500/20';
-      return 'bg-slate-800/60';
-    } else {
-      // For non-dues, highlight if they've paid anything
-      return (paidAmount && paidAmount > 0) ? 'bg-green-500/20' : 'bg-slate-800/60';
-    }
+    if (status === 'paid') return 'bg-green-500/20';
+    if (status === 'partial') return 'bg-amber-500/20';
+    return 'bg-slate-800/60';
   };
 
   const getTextClass = () => {
-    if (isDuesType) {
-      if (status === 'paid') return 'text-green-400';
-      if (showOverdue) return 'text-red-400';
-      if (status === 'partial') return 'text-amber-400';
-      return 'text-slate-400';
-    } else {
-      return (paidAmount && paidAmount > 0) ? 'text-green-400' : 'text-slate-400';
-    }
+    if (status === 'paid') return 'text-green-400';
+    if (showOverdue) return 'text-red-400';
+    if (status === 'partial') return 'text-amber-400';
+    return 'text-slate-400';
   };
 
   return (
@@ -263,7 +255,7 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
           {getStatusText()}
         </Text>
         {/* Progress bar for partial payments */}
-        {isDuesType && status === 'partial' && (
+        {status === 'partial' && (
           <View className="w-full h-1.5 bg-slate-700 rounded-full mt-2 overflow-hidden">
             <View
               className={cn("h-full rounded-full", showOverdue ? "bg-red-500" : "bg-amber-500")}
@@ -274,22 +266,14 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
       </View>
 
       <View className="items-end">
-        {isDuesType ? (
-          status === 'paid' ? (
-            <CheckCircle2 size={28} color="#22c55e" />
-          ) : showOverdue ? (
-            <AlertCircle size={28} color="#ef4444" />
-          ) : status === 'partial' ? (
-            <AlertCircle size={28} color="#f59e0b" />
-          ) : (
-            <Circle size={28} color="#64748b" />
-          )
+        {status === 'paid' ? (
+          <CheckCircle2 size={28} color="#22c55e" />
+        ) : showOverdue ? (
+          <AlertCircle size={28} color="#ef4444" />
+        ) : status === 'partial' ? (
+          <AlertCircle size={28} color="#f59e0b" />
         ) : (
-          (paidAmount && paidAmount > 0) ? (
-            <CheckCircle2 size={28} color="#22c55e" />
-          ) : (
-            <Circle size={28} color="#64748b" />
-          )
+          <Circle size={28} color="#64748b" />
         )}
       </View>
       <ChevronRight size={20} color="#64748b" className="ml-2" />
