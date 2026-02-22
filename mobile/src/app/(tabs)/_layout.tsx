@@ -111,8 +111,8 @@ export default function TabLayout() {
                 <View
                   style={{
                     position: 'absolute',
-                    top: 0,
-                    right: 0,
+                    top: -6,
+                    right: -6,
                     backgroundColor: '#ef4444',
                     borderRadius: 10,
                     minWidth: 18,
@@ -122,7 +122,7 @@ export default function TabLayout() {
                     paddingHorizontal: 4,
                   }}
                 >
-                  <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
+                  <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold', lineHeight: 18 }}>
                     {unreadChatCount > 99 ? '99+' : unreadChatCount}
                   </Text>
                 </View>
@@ -186,8 +186,8 @@ export default function TabLayout() {
                 <View
                   style={{
                     position: 'absolute',
-                    top: 0,
-                    right: 0,
+                    top: -6,
+                    right: -6,
                     backgroundColor: '#ef4444',
                     borderRadius: 10,
                     minWidth: 18,
@@ -197,7 +197,7 @@ export default function TabLayout() {
                     paddingHorizontal: 4,
                   }}
                 >
-                  <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
+                  <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold', lineHeight: 18 }}>
                     {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
                   </Text>
                 </View>

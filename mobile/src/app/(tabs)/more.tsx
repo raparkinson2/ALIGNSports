@@ -1340,7 +1340,7 @@ export default function MoreScreen() {
                 <Bell size={20} color="#67e8f9" />
                 {unreadCount > 0 && (
                   <View className="absolute -top-1 -right-1 bg-red-500 rounded-full min-w-5 h-5 items-center justify-center px-1">
-                    <Text className="text-white text-xs font-bold">{unreadCount}</Text>
+                    <Text className="text-white text-xs font-bold leading-5">{unreadCount > 99 ? '99+' : unreadCount}</Text>
                   </View>
                 )}
               </View>
