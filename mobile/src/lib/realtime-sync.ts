@@ -488,11 +488,44 @@ export function startRealtimeSync(teamId: string): void {
     })
 
     // ── GAME RESPONSES ────────────────────────────────────────────────────────
+    // postgres_changes on game_responses has no team_id filter so events are blocked for other users.
+    // We use broadcast for cross-user real-time updates instead.
+    .on('broadcast', { event: 'game_response' }, (payload) => {
+      console.log('SYNC: Game response broadcast received');
+      const { gameId, playerId, response, note } = payload.payload as { gameId: string; playerId: string; response: string; note?: string };
+      const store = useTeamStore.getState();
+      // Skip if this is our own change (we already updated local state optimistically)
+      if (playerId === store.currentPlayerId) return;
+
+      const games = store.games.map((game) => {
+        if (game.id !== gameId) return game;
+
+        let checkedIn = [...(game.checkedInPlayers || [])];
+        let checkedOut = [...(game.checkedOutPlayers || [])];
+        let invited = [...(game.invitedPlayers || [])];
+        const notes = { ...(game.checkoutNotes || {}) };
+
+        checkedIn = checkedIn.filter((id) => id !== playerId);
+        checkedOut = checkedOut.filter((id) => id !== playerId);
+        invited = invited.filter((id) => id !== playerId);
+        delete notes[playerId];
+
+        if (response === 'in') { checkedIn.push(playerId); if (!invited.includes(playerId)) invited.push(playerId); }
+        else if (response === 'out') { checkedOut.push(playerId); if (!invited.includes(playerId)) invited.push(playerId); if (note) notes[playerId] = note; }
+        else if (response === 'invited') { if (!invited.includes(playerId)) invited.push(playerId); }
+
+        return { ...game, checkedInPlayers: checkedIn, checkedOutPlayers: checkedOut, invitedPlayers: invited, checkoutNotes: notes };
+      });
+      useTeamStore.setState({ games });
+    })
+    // Keep postgres_changes listener as fallback for self-updates
     .on('postgres_changes', { event: '*', schema: 'public', table: 'game_responses' }, (payload) => {
-      console.log('SYNC: Game response change');
       const store = useTeamStore.getState();
       const row = (payload.new || payload.old) as any;
       if (!row?.game_id) return;
+      // Only process for the current user's own changes (broadcast handles others)
+      if (row.player_id !== store.currentPlayerId) return;
+      console.log('SYNC: Game response self-change via postgres_changes');
 
       const games = store.games.map((game) => {
         if (game.id !== row.game_id) return game;
@@ -888,6 +921,16 @@ export async function pushGameResponseToSupabase(gameId: string, playerId: strin
       { game_id: gameId, player_id: playerId, response, note: note || null },
       { onConflict: 'game_id,player_id' }
     );
+    // Broadcast the response change so other subscribers can update in real-time.
+    // game_responses has no team_id filter so postgres_changes events don't reach other users.
+    const teamId = useTeamStore.getState().activeTeamId;
+    if (teamId) {
+      supabase.channel(`team-sync-v2:${teamId}`).send({
+        type: 'broadcast',
+        event: 'game_response',
+        payload: { gameId, playerId, response, note: note || null },
+      });
+    }
   } catch (err) {
     console.error('SYNC: pushGameResponseToSupabase error:', err);
   }
