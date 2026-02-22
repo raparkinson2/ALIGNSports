@@ -32,7 +32,7 @@ import { pushEventToSupabase, pushEventResponseToSupabase, pushNotificationToSup
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { sendEventInviteNotification, sendPushToPlayers } from '@/lib/notifications';
+import { sendPushToPlayers } from '@/lib/notifications';
 
 interface PlayerRowProps {
   player: Player;
@@ -455,9 +455,6 @@ export default function EventDetailScreen() {
   const sendInviteReminder = () => {
     const formattedDateShort = format(eventDate, 'EEE, MMM d');
 
-    // Send push notification
-    sendEventInviteNotification(event.id, event.title, formattedDateShort, event.time);
-
     // Create in-app notifications for players who haven't responded
     const pendingPlayers = invitedPlayers.filter(
       (p) => !confirmedPlayers.includes(p.id) && !declinedPlayers.includes(p.id)
@@ -477,6 +474,16 @@ export default function EventDetailScreen() {
       addNotification(notification);
       if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
     });
+
+    // Push to all pending players' devices
+    if (pendingPlayers.length > 0) {
+      sendPushToPlayers(
+        pendingPlayers.map((p) => p.id),
+        'Event Reminder',
+        `Please RSVP for "${event.title}" on ${formattedDateShort} at ${event.time}`,
+        { eventId: event.id, type: 'event_reminder' }
+      ).catch(console.error);
+    }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert('Reminder Sent', `Reminder sent to ${pendingPlayers.length} player(s) who haven't responded.`);

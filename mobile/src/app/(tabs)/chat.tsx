@@ -12,7 +12,7 @@ import { useTeamStore, ChatMessage, getPlayerName, getPlayerInitials, Player } f
 import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
-import { sendChatMentionNotification, sendChatMessageNotification } from '@/lib/notifications';
+import { sendPushToPlayers } from '@/lib/notifications';
 import { sendChatMessage, deleteChatMessage as deleteChatMessageFromSupabase } from '@/lib/chat-sync';
 import { uploadPhotoToStorageBase64, uploadPhotoToStorage } from '@/lib/photo-storage';
 
@@ -486,10 +486,27 @@ export default function ChatScreen() {
       });
     }
 
-    // Send push notification for mentions
-    if (mentionType && currentPlayer) {
+    // Send push notifications to relevant players
+    if (currentPlayer) {
       const senderName = getPlayerName(currentPlayer);
-      sendChatMentionNotification(senderName, messageText.trim(), mentionType);
+      const preview = messageText.trim().length > 100 ? messageText.trim().substring(0, 100) + '...' : messageText.trim();
+
+      if (mentionType === 'all') {
+        // @everyone — push all active players except sender
+        const recipientIds = players
+          .filter((p) => p.id !== currentPlayerId && p.status === 'active')
+          .map((p) => p.id);
+        sendPushToPlayers(recipientIds, `${senderName} mentioned everyone`, preview, { type: 'chat_mention' }).catch(console.error);
+      } else if (mentionType === 'specific' && mentionedPlayerIds?.length) {
+        // @specific — push only the mentioned players
+        sendPushToPlayers(mentionedPlayerIds, `${senderName} mentioned you`, preview, { type: 'chat_mention' }).catch(console.error);
+      } else {
+        // Regular message — push all team members except sender
+        const recipientIds = players
+          .filter((p) => p.id !== currentPlayerId)
+          .map((p) => p.id);
+        sendPushToPlayers(recipientIds, `${senderName}`, preview, { type: 'chat_message' }).catch(console.error);
+      }
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
