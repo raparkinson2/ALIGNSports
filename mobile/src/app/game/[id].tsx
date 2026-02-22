@@ -1770,38 +1770,40 @@ export default function GameDetailScreen() {
             </Animated.View>
           )}
 
-          {/* Final Score Section - Only for captains/admins */}
-          {canManageTeam() && (
-            <Animated.View
-              entering={FadeInUp.delay(120).springify()}
-              className="mx-4 mb-3"
+          {/* Final Score Section - Visible to all, editable by captains/admins/coaches */}
+          <Animated.View
+            entering={FadeInUp.delay(120).springify()}
+            className="mx-4 mb-3"
+          >
+            <Pressable
+              onPress={() => {
+                if (!canManageTeam()) return;
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsFinalScoreExpanded(!isFinalScoreExpanded);
+              }}
+              className="bg-slate-800/80 rounded-xl py-2.5 px-3 active:bg-slate-700/80"
             >
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setIsFinalScoreExpanded(!isFinalScoreExpanded);
-                }}
-                className="bg-slate-800/80 rounded-xl py-2.5 px-3 active:bg-slate-700/80"
-              >
-                <View className="flex-row items-center">
-                  <Trophy size={18} color={game.gameResult ? (game.gameResult === 'win' ? '#22c55e' : game.gameResult === 'loss' ? '#ef4444' : game.gameResult === 'otLoss' ? '#f97316' : '#94a3b8') : '#f59e0b'} />
-                  <View className="flex-1 ml-2.5">
-                    <Text className="text-white font-medium text-sm">
-                      Final Score
-                    </Text>
-                    <Text className="text-slate-400 text-xs">
-                      {game.gameResult
-                        ? `${game.gameResult === 'win' ? 'Win' : game.gameResult === 'loss' ? 'Loss' : game.gameResult === 'otLoss' ? 'OT Loss' : 'Tie'}${(game.finalScoreUs !== undefined && game.finalScoreThem !== undefined) ? ` ${game.finalScoreUs}-${game.finalScoreThem}` : ''}`
-                        : 'Tap to enter result'}
-                    </Text>
-                  </View>
+              <View className="flex-row items-center">
+                <Trophy size={18} color={game.gameResult ? (game.gameResult === 'win' ? '#22c55e' : game.gameResult === 'loss' ? '#ef4444' : game.gameResult === 'otLoss' ? '#f97316' : '#94a3b8') : '#f59e0b'} />
+                <View className="flex-1 ml-2.5">
+                  <Text className="text-white font-medium text-sm">
+                    Final Score
+                  </Text>
+                  <Text className="text-slate-400 text-xs">
+                    {game.gameResult
+                      ? `${game.gameResult === 'win' ? 'Win' : game.gameResult === 'loss' ? 'Loss' : game.gameResult === 'otLoss' ? 'OT Loss' : 'Tie'}${(game.finalScoreUs !== undefined && game.finalScoreThem !== undefined) ? ` ${game.finalScoreUs}-${game.finalScoreThem}` : ''}`
+                      : canManageTeam() ? 'Tap to enter result' : 'Not yet entered'}
+                  </Text>
+                </View>
+                {canManageTeam() && (
                   <ChevronDown
                     size={16}
                     color={game.gameResult === 'win' ? '#22c55e' : game.gameResult === 'loss' ? '#ef4444' : game.gameResult === 'otLoss' ? '#f97316' : game.gameResult === 'tie' ? '#94a3b8' : '#f59e0b'}
                     style={{ transform: [{ rotate: isFinalScoreExpanded ? '180deg' : '0deg' }] }}
                   />
-                </View>
-              </Pressable>
+                )}
+              </View>
+            </Pressable>
 
               {/* Expanded content */}
               {isFinalScoreExpanded && (
@@ -1945,7 +1947,6 @@ export default function GameDetailScreen() {
                 </View>
               )}
             </Animated.View>
-          )}
 
           {/* Game Stats Section - Only when team stats is enabled */}
           {teamSettings.showTeamStats && (canManageStats || teamSettings.allowPlayerSelfStats) && (
