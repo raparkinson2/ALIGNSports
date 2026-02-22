@@ -456,10 +456,7 @@ function PlayerRow({ player, status, onToggle, index, canToggle, isSelf }: Playe
   const positionName = SPORT_POSITION_NAMES[sport][player.position] || player.position;
 
   const handlePress = () => {
-    if (!canToggle) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
+    if (!canToggle) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onToggle();
   };
@@ -471,8 +468,7 @@ function PlayerRow({ player, status, onToggle, index, canToggle, isSelf }: Playe
         disabled={!canToggle}
         className={cn(
           'flex-row items-center p-3 rounded-xl mb-2',
-          status === 'in' ? 'bg-green-500/20' : status === 'out' ? 'bg-red-500/20' : 'bg-slate-800/60',
-          !canToggle && 'opacity-60'
+          status === 'in' ? 'bg-green-500/20' : status === 'out' ? 'bg-red-500/20' : 'bg-slate-800/60'
         )}
       >
         <View className="relative">
@@ -504,7 +500,7 @@ function PlayerRow({ player, status, onToggle, index, canToggle, isSelf }: Playe
         ) : status === 'out' ? (
           <XCircle size={24} color="#ef4444" />
         ) : (
-          <Circle size={24} color={canToggle ? '#475569' : '#334155'} />
+          <Circle size={24} color="#475569" />
         )}
       </Pressable>
     </Animated.View>
@@ -3105,7 +3101,10 @@ export default function GameDetailScreen() {
             {/* Instruction note */}
             <View className="bg-slate-700/30 rounded-xl px-3 py-2.5 mb-3 border border-slate-600/30">
               <Text className="text-slate-400 text-xs text-center">
-                Tap to cycle: <Text className="text-green-400 font-medium">IN</Text> → <Text className="text-red-400 font-medium">OUT</Text> → <Text className="text-slate-500 font-medium">No Response</Text>
+                {canManageTeam()
+                  ? <>Tap to cycle: <Text className="text-green-400 font-medium">IN</Text> → <Text className="text-red-400 font-medium">OUT</Text> → <Text className="text-slate-500 font-medium">No Response</Text></>
+                  : <>Tap your row to update your RSVP</>
+                }
               </Text>
             </View>
 
