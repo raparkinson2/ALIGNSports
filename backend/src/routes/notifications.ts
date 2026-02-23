@@ -1,6 +1,13 @@
 import { Hono } from "hono";
+import { createClient } from "@supabase/supabase-js";
 
 const notificationsRouter = new Hono();
+
+// Service-role Supabase client - bypasses RLS to read push tokens
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 interface ExpoPushMessage {
   to: string;
@@ -107,6 +114,108 @@ notificationsRouter.post("/send-push", async (c) => {
   await sendExpoPushNotifications(messages);
 
   return c.json({ success: true, sent: validTokens.length });
+});
+
+/**
+ * POST /api/notifications/send-to-players
+ * Look up push tokens for given player IDs using the service-role key (bypasses RLS),
+ * then send push notifications. Falls back to email/phone cross-team lookup.
+ * Body: { playerIds: string[], title: string, body: string, data?: object }
+ */
+notificationsRouter.post("/send-to-players", async (c) => {
+  let playerIds: string[] = [];
+  let title: string = "";
+  let body: string = "";
+  let data: Record<string, any> = {};
+
+  try {
+    const req = await c.req.json();
+    playerIds = req.playerIds || [];
+    title = req.title || "";
+    body = req.body || "";
+    data = req.data || {};
+  } catch {
+    return c.json({ error: "Invalid request body" }, 400);
+  }
+
+  if (!playerIds.length || !title || !body) {
+    return c.json({ error: "playerIds, title, and body are required" }, 400);
+  }
+
+  console.log(`[push] send-to-players: ${playerIds.length} player IDs, title: "${title}"`);
+
+  // Fetch push tokens by player ID using service role (bypasses RLS)
+  const { data: rows, error } = await supabaseAdmin
+    .from("players")
+    .select("id, email, phone, push_token")
+    .in("id", playerIds);
+
+  if (error) {
+    console.error("[push] send-to-players: supabase error:", error.message);
+  }
+
+  const tokenMap: Record<string, string> = {};
+  for (const row of rows || []) {
+    if (row.push_token) tokenMap[row.id] = row.push_token;
+  }
+
+  // For players missing tokens, try cross-team lookup by email/phone
+  const missingIds = playerIds.filter((id) => !tokenMap[id]);
+  if (missingIds.length > 0) {
+    const missingPlayers = (rows || []).filter((r: any) => missingIds.includes(r.id));
+    const emails = missingPlayers.map((p: any) => p.email?.toLowerCase()).filter(Boolean);
+    const phones = missingPlayers.map((p: any) => p.phone?.replace(/\D/g, '')).filter(Boolean);
+
+    if (emails.length > 0 || phones.length > 0) {
+      const { data: altRows } = await supabaseAdmin
+        .from("players")
+        .select("email, phone, push_token")
+        .not("push_token", "is", null);
+
+      for (const altRow of altRows || []) {
+        if (!altRow.push_token) continue;
+        const altEmail = altRow.email?.toLowerCase();
+        const altPhone = altRow.phone?.replace(/\D/g, '');
+
+        for (const missingPlayer of missingPlayers) {
+          const id = missingPlayer.id;
+          if (tokenMap[id]) continue;
+          const mpEmail = missingPlayer.email?.toLowerCase();
+          const mpPhone = missingPlayer.phone?.replace(/\D/g, '');
+          if (
+            (altEmail && mpEmail && altEmail === mpEmail) ||
+            (altPhone && mpPhone && altPhone === mpPhone)
+          ) {
+            tokenMap[id] = altRow.push_token;
+            console.log(`[push] send-to-players: found token for ${id} via email/phone fallback`);
+          }
+        }
+      }
+    }
+  }
+
+  const tokens = Object.values(tokenMap).filter(
+    (t) => t && (t.startsWith("ExponentPushToken[") || t.startsWith("ExpoPushToken["))
+  );
+
+  console.log(`[push] send-to-players: ${playerIds.length} players → ${tokens.length} valid tokens`);
+
+  if (tokens.length === 0) {
+    return c.json({ success: true, sent: 0, message: "No valid push tokens found for given player IDs" });
+  }
+
+  const messages: ExpoPushMessage[] = tokens.map((token) => ({
+    to: token,
+    title,
+    body,
+    data,
+    sound: "default",
+    priority: "high",
+  }));
+
+  await sendExpoPushNotifications(messages);
+
+  return c.json({ success: true, sent: tokens.length });
 });
 
 export { notificationsRouter };
