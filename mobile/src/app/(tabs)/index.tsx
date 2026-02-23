@@ -218,7 +218,7 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false, hi
     : null;
 
   // Look up jersey color by name or hex code (handles both cases)
-  const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === game.jerseyColor || c.color === game.jerseyColor);
+  const jerseyColorInfo = (teamSettings.jerseyColors ?? []).find((c) => c.name === game.jerseyColor || c.color === game.jerseyColor);
   // If found in settings, use the name. Otherwise, try to convert hex to color name
   const jerseyColorName = jerseyColorInfo?.name || hexToColorName(game.jerseyColor);
   const jerseyColorHex = jerseyColorInfo?.color || (game.jerseyColor.startsWith('#') ? game.jerseyColor : colorNameToHex(game.jerseyColor));
@@ -1063,7 +1063,7 @@ export default function ScheduleScreen() {
     setGameDate(new Date());
     setGameTimeValue('7:00');
     setGameTimePeriod('PM');
-    setSelectedJersey(teamSettings.jerseyColors[0]?.name || '');
+    setSelectedJersey(teamSettings.jerseyColors?.[0]?.name || '');
     setNotes('');
     setShowBeerDuty(false);
     setSelectedBeerDutyPlayer(null);
@@ -1793,7 +1793,7 @@ export default function ScheduleScreen() {
                 <View className="mb-2">
                   <Text className="text-slate-400 text-sm mb-1">Jersey Color</Text>
                   <View className="flex-row bg-slate-800/80 rounded-xl p-1">
-                    {teamSettings.jerseyColors.map((color, index) => (
+                    {(teamSettings.jerseyColors ?? []).map((color, index) => (
                       <Pressable
                         key={color.name}
                         onPress={() => {

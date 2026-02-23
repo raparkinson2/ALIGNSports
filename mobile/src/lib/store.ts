@@ -2821,6 +2821,21 @@ export const useTeamStore = create<TeamStore>()(
           }
         }
 
+        // Always ensure teamSettings has jerseyColors (may be missing from old persisted state)
+        const ts = state.teamSettings as Record<string, unknown> | undefined;
+        if (ts && !ts.jerseyColors) {
+          ts.jerseyColors = [{ name: 'White', color: '#ffffff' }, { name: 'Black', color: '#1a1a1a' }];
+        }
+        // Also fix per-team teamSettings
+        const teamsArr = state.teams as Array<{ teamSettings?: Record<string, unknown> }> | undefined;
+        if (Array.isArray(teamsArr)) {
+          teamsArr.forEach(t => {
+            if (t.teamSettings && !t.teamSettings.jerseyColors) {
+              t.teamSettings.jerseyColors = [{ name: 'White', color: '#ffffff' }, { name: 'Black', color: '#1a1a1a' }];
+            }
+          });
+        }
+
         // Fix payment statuses - recalculate based on actual amounts paid
         if (version < 12) {
           // Fix paymentPeriods in root state
