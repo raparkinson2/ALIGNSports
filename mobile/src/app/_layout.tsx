@@ -82,34 +82,38 @@ function AuthNavigator() {
           playerRows = data;
         }
 
-        if (!playerRows || playerRows.length === 0) return;
+        // The authoritative set of team IDs this user belongs to (from Supabase)
+        const validTeamIds = new Set((playerRows || []).map(r => r.team_id));
 
         const currentState = useTeamStore.getState();
-        const knownTeamIds = new Set(currentState.teams.map(t => t.id));
-        const missingTeams = playerRows.filter(r => !knownTeamIds.has(r.team_id));
 
-        if (missingTeams.length === 0) return;
-
-        console.log('STARTUP: Loading', missingTeams.length, 'missing teams from Supabase');
-        for (const row of missingTeams) {
-          await loadTeamFromSupabase(row.team_id);
+        // Remove any locally cached teams that no longer exist in Supabase
+        const purgedTeams = currentState.teams.filter(t => validTeamIds.has(t.id));
+        if (purgedTeams.length !== currentState.teams.length) {
+          const removedCount = currentState.teams.length - purgedTeams.length;
+          console.log('STARTUP: Purging', removedCount, 'deleted team(s) from local store');
+          const newActiveTeamId = validTeamIds.has(currentState.activeTeamId || '')
+            ? currentState.activeTeamId
+            : purgedTeams[0]?.id || null;
+          useTeamStore.setState({
+            teams: purgedTeams,
+            activeTeamId: newActiveTeamId,
+            // Clear pendingTeamIds that reference deleted teams
+            pendingTeamIds: currentState.pendingTeamIds
+              ? currentState.pendingTeamIds.filter(id => validTeamIds.has(id))
+              : null,
+          });
         }
 
-        // If there are now multiple teams, ensure they're all known.
-        // Don't redirect the user mid-session — they can use the team switcher manually.
-        // Only set pendingTeamIds if not already set (e.g. fresh startup, user hasn't picked yet).
-        const updatedState = useTeamStore.getState();
-        if (!updatedState.pendingTeamIds) {
-          const { userEmail: ue, userPhone: up } = updatedState;
-          const userTeams = updatedState.teams.filter(team =>
-            team.players.some(p =>
-              (ue && p.email?.toLowerCase() === ue.toLowerCase()) ||
-              (up && p.phone?.replace(/\D/g, '') === up.replace(/\D/g, ''))
-            )
-          );
-          if (userTeams.length > 1) {
-            console.log('STARTUP: Found', userTeams.length, 'teams — enabling team switcher');
-            // Don't redirect, just ensure all teams are accessible via the team switcher
+        if (!playerRows || playerRows.length === 0) return;
+
+        // Load any teams that are missing from local store
+        const knownTeamIds = new Set(useTeamStore.getState().teams.map(t => t.id));
+        const missingTeams = playerRows.filter(r => !knownTeamIds.has(r.team_id));
+        if (missingTeams.length > 0) {
+          console.log('STARTUP: Loading', missingTeams.length, 'missing teams from Supabase');
+          for (const row of missingTeams) {
+            await loadTeamFromSupabase(row.team_id);
           }
         }
       } catch (err) {
