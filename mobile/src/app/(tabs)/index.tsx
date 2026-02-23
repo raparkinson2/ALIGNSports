@@ -995,7 +995,7 @@ export default function ScheduleScreen() {
   const [gameDate, setGameDate] = useState(new Date());
   const [gameTimeValue, setGameTimeValue] = useState('7:00');
   const [gameTimePeriod, setGameTimePeriod] = useState<'AM' | 'PM'>('PM');
-  const [selectedJersey, setSelectedJersey] = useState(teamSettings.jerseyColors[0]?.name || '');
+  const [selectedJersey, setSelectedJersey] = useState(teamSettings.jerseyColors?.[0]?.name || '');
   const [notes, setNotes] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showBeerDuty, setShowBeerDuty] = useState(teamSettings.showRefreshmentDuty !== false);

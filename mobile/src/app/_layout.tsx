@@ -328,14 +328,23 @@ function AuthNavigator() {
     const inTeamSelection = segments[0] === 'select-team';
     console.log('AUTH CHECK - isLoggedIn:', isLoggedIn, 'inAuthGroup:', inAuthGroup, 'pendingTeamIds:', pendingTeamIds, 'segments:', segments);
 
-    // If there are pending teams to select from, go to team selection (and stay there)
+    // If there are pending teams to select from, go to team selection (and stay there).
+    // Filter out ghost IDs that don't exist in the local teams array first.
     if (pendingTeamIds && pendingTeamIds.length > 0) {
-      if (!inTeamSelection) {
-        console.log('PENDING TEAM SELECTION - redirecting to select-team');
-        router.replace('/select-team');
+      const knownTeamIds = new Set(useTeamStore.getState().teams.map(t => t.id));
+      const validPendingIds = pendingTeamIds.filter(id => knownTeamIds.has(id));
+      if (validPendingIds.length !== pendingTeamIds.length) {
+        // Some IDs were ghosts — update store with the cleaned list and re-evaluate
+        useTeamStore.setState({ pendingTeamIds: validPendingIds.length > 1 ? validPendingIds : null });
+        return;
       }
-      // Don't redirect away from select-team while pendingTeamIds exists
-      return;
+      if (validPendingIds.length > 1) {
+        if (!inTeamSelection) {
+          console.log('PENDING TEAM SELECTION - redirecting to select-team');
+          router.replace('/select-team');
+        }
+        return;
+      }
     }
 
     // Always redirect to login if not logged in and not in auth flow

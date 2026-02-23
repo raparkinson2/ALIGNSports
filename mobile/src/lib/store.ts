@@ -2897,15 +2897,14 @@ export const useTeamStore = create<TeamStore>()(
         activeTeamId: state.activeTeamId,
         userEmail: state.userEmail,
         userPhone: state.userPhone,
-        pendingTeamIds: state.pendingTeamIds,
-        // Keep chatLastReadAt locally so unread badge works immediately on load
+        pendingTeamIds: null, // Never persist pendingTeamIds — always start fresh
         chatLastReadAt: state.chatLastReadAt,
-        // Persist teams with minimal player identity so hasMultipleTeams works instantly
-        // without needing a network call on every startup.
+        teamName: state.teamName,
+        teamSettings: state.teamSettings, // Persist full settings so jerseyColors etc are available instantly
         teams: state.teams.map((t) => ({
           id: t.id,
           teamName: t.teamName,
-          teamSettings: { sport: t.teamSettings.sport } as any,
+          teamSettings: t.teamSettings, // Persist full settings per-team too
           players: t.players.map((p) => ({
             id: p.id,
             firstName: p.firstName,
