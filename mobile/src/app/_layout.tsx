@@ -11,9 +11,8 @@ import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTeamStore, useStoreHydrated, defaultNotificationPreferences } from '@/lib/store';
 import { registerForPushNotificationsAsync } from '@/lib/notifications';
-import { clearInvalidSession, getSafeSession } from '@/lib/supabase';
-import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase, loadTeamFromSupabase } from '@/lib/realtime-sync';
-import { supabase } from '@/lib/supabase';
+import { clearInvalidSession, getSafeSession, supabase } from '@/lib/supabase';
+import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase } from '@/lib/realtime-sync';
 
 export const unstable_settings = {
   initialRouteName: 'login',
@@ -90,39 +89,6 @@ function AuthNavigator() {
     };
     // Run in background - don't await to prevent blocking app startup
     checkSupabaseSession();
-
-    // On startup, silently fetch any teams the user belongs to that aren't in the
-    // local store yet (e.g. created on another device). Only runs once per session.
-    // Does NOT set pendingTeamIds — just hydrates the teams[] array so "Switch Team" works.
-    if (isLoggedIn && !didFetchAllTeams.current) {
-      didFetchAllTeams.current = true;
-      const { userEmail, userPhone, activeTeamId: currentActive } = useTeamStore.getState();
-      const fetchMissingTeams = async () => {
-        try {
-          let query = supabase.from('players').select('team_id, id');
-          if (userEmail) query = query.eq('email', userEmail.toLowerCase());
-          else if (userPhone) query = query.eq('phone', userPhone.replace(/\D/g, ''));
-          else return;
-
-          const { data: playerRows } = await query;
-          if (!playerRows || playerRows.length <= 1) return;
-
-          // Only load teams that aren't already in the local store — skip the active team
-          // (it's already being loaded by startRealtimeSync)
-          const localTeamIds = new Set(useTeamStore.getState().teams.map(t => t.id));
-          const missingRows = playerRows.filter(
-            (r: { team_id: string }) => r.team_id !== currentActive && !localTeamIds.has(r.team_id)
-          );
-          if (missingRows.length === 0) return;
-
-          console.log('STARTUP: Loading', missingRows.length, 'missing team(s) into store');
-          await Promise.all(missingRows.map((r: { team_id: string }) => loadTeamFromSupabase(r.team_id)));
-        } catch (e) {
-          // Non-blocking — ignore errors
-        }
-      };
-      fetchMissingTeams();
-    }
 
     // Additional safety: if somehow isLoggedIn is true but no players exist, force logout
     // BUT only if there's no activeTeamId — if there is one, realtime sync will load players shortly
@@ -222,7 +188,7 @@ function AuthNavigator() {
           .update({ push_token: token })
           .eq('id', currentPlayerId)
           .select('id')
-          .then(({ data: updatedRows, error }) => {
+          .then(({ data: updatedRows, error }: { data: { id: string }[] | null, error: { message: string } | null }) => {
             if (error) {
               console.log('Push token save error:', error.message);
             } else if (!updatedRows || updatedRows.length === 0) {

@@ -2792,14 +2792,32 @@ export const useTeamStore = create<TeamStore>()(
     {
       name: 'team-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 13, // v13: Supabase-first architecture — team data no longer persisted locally
+      version: 14,
       // Migration: preserve only session fields, discard old local team data
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
 
         // Always preserve existing data - just add any new fields with defaults
         // This ensures users never lose their data during updates
-        console.log(`Migrating store from version ${version} to version 12`);
+        console.log(`Migrating store from version ${version} to version 14`);
+
+        // v14: If activeTeamId points to a team with no players in the local store,
+        // switch to the first team that has players (so users don't get stuck on an empty team)
+        if (version < 14) {
+          const teams = state.teams as Array<{ id: string; players: unknown[] }> | undefined;
+          const activeTeamId = state.activeTeamId as string | null;
+          if (teams && activeTeamId) {
+            const activeTeam = teams.find(t => t.id === activeTeamId);
+            if (!activeTeam || (activeTeam.players?.length ?? 0) === 0) {
+              const teamWithPlayers = teams.find(t => (t.players?.length ?? 0) > 0);
+              if (teamWithPlayers) {
+                console.log(`Migration v14: switching activeTeamId from ${activeTeamId} to ${teamWithPlayers.id}`);
+                state.activeTeamId = teamWithPlayers.id;
+                state.pendingTeamIds = null;
+              }
+            }
+          }
+        }
 
         // Fix payment statuses - recalculate based on actual amounts paid
         if (version < 12) {
@@ -2869,7 +2887,7 @@ export const useTeamStore = create<TeamStore>()(
         return state;
       },
       // Only persist session/identity fields.
-      // ALL team data (games, events, players, chat, payments, etc.) is loaded
+      // ALL team data (games, events, chat, payments, etc.) is loaded
       // fresh from Supabase on every login — the local store is just a cache.
       partialize: (state) => ({
         currentPlayerId: state.currentPlayerId,
@@ -2880,12 +2898,23 @@ export const useTeamStore = create<TeamStore>()(
         pendingTeamIds: state.pendingTeamIds,
         // Keep chatLastReadAt locally so unread badge works immediately on load
         chatLastReadAt: state.chatLastReadAt,
-        // Keep teams array only for multi-team identity (team IDs + names, not full data)
+        // Persist teams with minimal player identity so hasMultipleTeams works instantly
+        // without needing a network call on every startup.
         teams: state.teams.map((t) => ({
           id: t.id,
           teamName: t.teamName,
           teamSettings: { sport: t.teamSettings.sport } as any,
-          players: [],
+          players: t.players.map((p) => ({
+            id: p.id,
+            firstName: p.firstName,
+            lastName: p.lastName,
+            email: p.email,
+            phone: p.phone,
+            roles: p.roles,
+            number: p.number,
+            position: p.position,
+            status: p.status,
+          })) as any[],
           games: [],
           events: [],
           photos: [],
