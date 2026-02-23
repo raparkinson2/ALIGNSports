@@ -344,7 +344,7 @@ function AuthNavigator() {
         console.log('NOT LOGGED IN - redirecting to login');
         router.replace('/login');
       }
-    } else if (isLoggedIn && (inAuthGroup || inTeamSelection)) {
+    } else if (isLoggedIn && inAuthGroup) {
       console.log('LOGGED IN - redirecting to tabs');
       router.replace('/(tabs)');
     }

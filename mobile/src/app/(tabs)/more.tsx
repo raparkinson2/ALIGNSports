@@ -1025,7 +1025,6 @@ export default function MoreScreen() {
   const userEmail = useTeamStore((s) => s.userEmail);
   const userPhone = useTeamStore((s) => s.userPhone);
   const setPendingTeamSelection = useTeamStore((s) => s.setPendingTeamSelection);
-  const setIsLoggedIn = useTeamStore((s) => s.setIsLoggedIn);
 
   // Fallback: if currentPlayerId is null but there are players, use the first player
   const effectivePlayerId = currentPlayerId || (players.length > 0 ? players[0].id : null);
@@ -1211,9 +1210,8 @@ export default function MoreScreen() {
 
   const handleSwitchTeam = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Set up pending selection with all user's teams
+    // Set up pending selection with all user's teams, stay logged in
     setPendingTeamSelection(userTeams.map((t) => t.id));
-    setIsLoggedIn(false);
     router.replace('/select-team');
   };
 

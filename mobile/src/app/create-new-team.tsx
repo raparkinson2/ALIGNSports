@@ -31,8 +31,7 @@ const PRESET_COLORS = [
 export default function CreateNewTeamScreen() {
   const router = useRouter();
   const createNewTeam = useTeamStore((s) => s.createNewTeam);
-  const switchTeam = useTeamStore((s) => s.switchTeam);
-  const setIsLoggedIn = useTeamStore((s) => s.setIsLoggedIn);
+  const setPendingTeamSelection = useTeamStore((s) => s.setPendingTeamSelection);
   const userEmail = useTeamStore((s) => s.userEmail);
   const userPhone = useTeamStore((s) => s.userPhone);
   const players = useTeamStore((s) => s.players);
@@ -184,8 +183,24 @@ export default function CreateNewTeamScreen() {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      // Navigate to main app - the new team is now active
-      router.replace('/(tabs)');
+      // Get all teams the user belongs to (including the newly created one)
+      const allTeams = useTeamStore.getState().teams;
+      const userTeams = allTeams.filter((team) =>
+        team.players.some(
+          (p) =>
+            (userEmail && p.email?.toLowerCase() === userEmail?.toLowerCase()) ||
+            (userPhone && p.phone?.replace(/\D/g, '') === userPhone?.replace(/\D/g, ''))
+        )
+      );
+
+      if (userTeams.length > 1) {
+        // User has multiple teams - show team selector so they can choose which to view
+        setPendingTeamSelection(userTeams.map((t) => t.id));
+        router.replace('/select-team');
+      } else {
+        // First team - go straight to app
+        router.replace('/(tabs)');
+      }
     } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError('Something went wrong. Please try again.');

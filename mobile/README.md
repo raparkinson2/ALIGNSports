@@ -10,6 +10,8 @@ All real-time sync is handled by **Supabase Realtime** via a single WebSocket ch
 
 **Multi-team sync**: `loadTeamFromSupabase` now also updates the `teams[]` array entry for the loaded team with full player/game/event data. This is required for `hasMultipleTeams` detection in the More tab to work correctly after app restart or team switch.
 
+**Multi-team switching**: Team switching works WITHOUT calling `setIsLoggedIn(false)`. The correct flow is: set `pendingTeamIds` via `setPendingTeamSelection()`, then `router.replace('/select-team')`. The `_layout.tsx` auth guard will keep the user on `select-team` while `pendingTeamIds` is set, and only redirects logged-in users away from `inAuthGroup` screens (not `select-team`). After creating a second team, the user is shown the team selector automatically.
+
 **Photo deduplication**: The uploader registers the photo ID in `syncedIdsRef` before inserting to Supabase, preventing the realtime INSERT event from adding a duplicate.
 
 **Payment subscriptions**: `player_payments` and `payment_entries` subscriptions guard against cross-team events by checking if the changed row belongs to the current team's payment periods.
