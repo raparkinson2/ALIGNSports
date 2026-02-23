@@ -52,6 +52,7 @@ function AuthNavigator() {
   const isHydrated = useStoreHydrated();
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
+  const didFetchAllTeams = useRef(false);
 
   useEffect(() => {
     // Check immediately and on interval until ready
@@ -90,10 +91,10 @@ function AuthNavigator() {
     // Run in background - don't await to prevent blocking app startup
     checkSupabaseSession();
 
-    // On every startup, check Supabase for ALL teams the user belongs to.
-    // This ensures the local teams[] array is complete so "Switch Team" works
-    // even when teams were created on another device or the local store is stale.
-    if (isLoggedIn) {
+    // On startup, check Supabase for ALL teams the user belongs to — once only.
+    // This ensures the local teams[] array is complete so "Switch Team" works.
+    if (isLoggedIn && !didFetchAllTeams.current) {
+      didFetchAllTeams.current = true;
       const { userEmail, userPhone } = useTeamStore.getState();
       const fetchAllUserTeams = async () => {
         try {
