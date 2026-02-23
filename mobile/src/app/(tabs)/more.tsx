@@ -95,11 +95,10 @@ interface EditProfileModalProps {
   player: Player;
   onSave: (updates: Partial<Player>) => void;
   onChangePassword: () => void;
-  onLogout: () => void;
   onDeleteAccount: () => void;
 }
 
-function EditProfileModal({ visible, onClose, player, onSave, onChangePassword, onLogout, onDeleteAccount }: EditProfileModalProps) {
+function EditProfileModal({ visible, onClose, player, onSave, onChangePassword, onDeleteAccount }: EditProfileModalProps) {
   const [avatar, setAvatar] = useState(player.avatar || '');
   const [number, setNumber] = useState(player.number);
   const [phone, setPhone] = useState(formatPhoneNumber(player.phone));
@@ -276,20 +275,6 @@ function EditProfileModal({ visible, onClose, player, onSave, onChangePassword, 
                 >
                   <Lock size={18} color="#67e8f9" />
                   <Text className="text-white ml-3 flex-1">Change Password</Text>
-                  <ChevronRight size={18} color="#64748b" />
-                </Pressable>
-
-                {/* Log Out */}
-                <Pressable
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    onClose();
-                    onLogout();
-                  }}
-                  className="flex-row items-center py-3 px-4 bg-slate-800/60 rounded-xl mb-2 active:bg-slate-700/80"
-                >
-                  <LogOut size={18} color="#f87171" />
-                  <Text className="text-red-400 ml-3 flex-1">Log Out</Text>
                   <ChevronRight size={18} color="#64748b" />
                 </Pressable>
 
@@ -1447,7 +1432,6 @@ export default function MoreScreen() {
           player={playerToEdit}
           onSave={handleSaveProfile}
           onChangePassword={() => setPasswordModalVisible(true)}
-          onLogout={handleLogout}
           onDeleteAccount={handleDeleteAccount}
         />
       )}
