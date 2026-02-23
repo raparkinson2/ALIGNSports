@@ -2695,10 +2695,12 @@ export const useTeamStore = create<TeamStore>()(
         if (!state.userEmail && !state.userPhone) return [];
 
         return state.teams.filter((team) =>
-          team.players.some(
-            (p) => (state.userEmail && p.email?.toLowerCase() === state.userEmail.toLowerCase()) ||
-                   (state.userPhone && p.phone?.replace(/\D/g, '') === state.userPhone.replace(/\D/g, ''))
-          )
+          team.players.length === 0 // players not yet loaded — trust the teams array
+            ? true
+            : team.players.some(
+                (p) => (state.userEmail && p.email?.toLowerCase() === state.userEmail!.toLowerCase()) ||
+                       (state.userPhone && p.phone?.replace(/\D/g, '') === state.userPhone!.replace(/\D/g, ''))
+              )
         );
       },
 

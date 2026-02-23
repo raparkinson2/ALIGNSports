@@ -1016,13 +1016,17 @@ export default function MoreScreen() {
   const canManageTeam = currentPlayer?.roles?.includes('admin') || currentPlayer?.roles?.includes('captain');
   const canEditPlayers = currentPlayer?.roles?.includes('admin') || currentPlayer?.roles?.includes('coach');
 
-  // Check how many teams the user belongs to
+  // Check how many teams the user belongs to.
+  // Use email/phone matching when players are loaded, but fall back to the teams array
+  // length alone — if 2+ teams are persisted, the user must belong to all of them.
   const userTeams = teams.filter((team) =>
-    team.players.some(
-      (p) =>
-        (userEmail && p.email?.toLowerCase() === userEmail.toLowerCase()) ||
-        (userPhone && p.phone?.replace(/\D/g, '') === userPhone?.replace(/\D/g, ''))
-    )
+    team.players.length === 0 // players not yet loaded from Supabase — trust the teams array
+      ? true
+      : team.players.some(
+          (p) =>
+            (userEmail && p.email?.toLowerCase() === userEmail.toLowerCase()) ||
+            (userPhone && p.phone?.replace(/\D/g, '') === userPhone?.replace(/\D/g, ''))
+        )
   );
   const hasMultipleTeams = userTeams.length > 1;
 

@@ -100,11 +100,13 @@ export default function SelectTeamScreen() {
   const userTeams = pendingTeamIds
     ? teams.filter((t) => pendingTeamIds.includes(t.id))
     : teams.filter((team) =>
-        team.players.some(
-          (p) =>
-            (userEmail && p.email?.toLowerCase() === userEmail.toLowerCase()) ||
-            (userPhone && p.phone?.replace(/\D/g, '') === userPhone?.replace(/\D/g, ''))
-        )
+        team.players.length === 0 // players not yet loaded — trust the teams array
+          ? true
+          : team.players.some(
+              (p) =>
+                (userEmail && p.email?.toLowerCase() === userEmail.toLowerCase()) ||
+                (userPhone && p.phone?.replace(/\D/g, '') === userPhone?.replace(/\D/g, ''))
+            )
       );
 
   // Get user's role in each team
