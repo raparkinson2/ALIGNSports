@@ -143,7 +143,31 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       .maybeSingle();
 
     if (teamError || !teamData) {
-      console.error('SYNC: Failed to load team:', teamError?.message);
+      // Team doesn't exist in Supabase yet — this happens for locally-created teams
+      // that were never pushed. Auto-upload from local store so sync can proceed.
+      const localState = useTeamStore.getState();
+      const localTeam = localState.activeTeamId === teamId
+        ? { teamName: localState.teamName, teamSettings: localState.teamSettings, players: localState.players }
+        : (() => { const t = localState.teams.find(t => t.id === teamId); return t ? { teamName: t.teamName, teamSettings: t.teamSettings, players: t.players } : null; })();
+
+      if (localTeam) {
+        console.log('SYNC: Team not in Supabase, uploading from local store:', teamId);
+        await pushTeamToSupabase(teamId, localTeam.teamName, localTeam.teamSettings);
+        for (const player of localTeam.players) {
+          await pushPlayerToSupabase(player, teamId);
+        }
+        // Retry the fetch
+        const { data: retryData, error: retryError } = await supabase
+          .from('teams').select('*').eq('id', teamId).maybeSingle();
+        if (retryError || !retryData) {
+          console.warn('SYNC: Failed to load team after upload:', retryError?.message);
+          return false;
+        }
+        // Continue with the retried data by re-invoking (simpler than inlining)
+        return loadTeamFromSupabase(teamId);
+      }
+
+      console.warn('SYNC: Team not found in Supabase and no local data:', teamId);
       return false;
     }
 
