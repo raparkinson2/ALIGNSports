@@ -45,7 +45,6 @@ import { useState, useEffect } from 'react';
 import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences, getPlayerName, getPlayerInitials, TeamLink } from '@/lib/store';
 import { pushPlayerToSupabase } from '@/lib/realtime-sync';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
-import { APP_VERSION } from '@/config/app';
 import { sendTestNotification, registerForPushNotificationsAsync } from '@/lib/notifications';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { pushTeamLinkToSupabase, deleteTeamLinkFromSupabase } from '@/lib/realtime-sync';
@@ -1426,15 +1425,10 @@ export default function MoreScreen() {
             index={13}
           />
 
-          {/* Version */}
-          <View className="items-center mt-8 mb-2">
-            <Text className="text-slate-600 text-xs">Version {APP_VERSION}</Text>
-          </View>
-
           {/* Log Out */}
           <Pressable
             onPress={handleLogout}
-            className="flex-row items-center justify-center py-4 px-4 rounded-xl mb-8 active:opacity-70"
+            className="flex-row items-center justify-center py-4 px-4 rounded-xl mb-8 mt-8 active:opacity-70"
           >
             <LogOut size={18} color="#ef4444" />
             <Text className="text-red-400 font-semibold ml-2">Log Out</Text>
