@@ -411,11 +411,26 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       : (currentState.teams.find(t => t.id === teamId)?.players || []);
     const finalPlayers = players.length > 0 ? players : localPlayers;
 
-    const updatedTeams = currentState.teams.map((t) =>
-      t.id === teamId
-        ? { ...t, teamName, teamSettings, players: finalPlayers, games, events, chatMessages, paymentPeriods, photos, notifications, polls, teamLinks }
-        : t
-    );
+    const teamEntry = {
+      id: teamId,
+      teamName,
+      teamSettings,
+      players: finalPlayers,
+      games,
+      events,
+      chatMessages,
+      chatLastReadAt: currentState.teams.find(t => t.id === teamId)?.chatLastReadAt ?? {},
+      paymentPeriods,
+      photos,
+      notifications,
+      polls,
+      teamLinks,
+    };
+
+    const existsInArray = currentState.teams.some(t => t.id === teamId);
+    const updatedTeams = existsInArray
+      ? currentState.teams.map(t => t.id === teamId ? { ...t, ...teamEntry } : t)
+      : [...currentState.teams, teamEntry];
 
     useTeamStore.setState({
       teamName,

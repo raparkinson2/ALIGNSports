@@ -340,29 +340,43 @@ export default function LoginScreen() {
             setIsLoading(false);
             return;
           }
-          // Player not found in local store yet — try loading their team from Supabase
+          // Player not found in local store yet — try loading their team(s) from Supabase
           console.log('LOGIN: Player not in local store, loading team data from Supabase');
           try {
-            // Find what team this user belongs to in Supabase players table
+            // Find ALL teams this user belongs to in Supabase players table
             const { data: playerRows } = await supabase
               .from('players')
               .select('team_id, id')
-              .eq('email', trimmedIdentifier.toLowerCase())
-              .limit(1);
+              .eq('email', trimmedIdentifier.toLowerCase());
 
             if (playerRows && playerRows.length > 0) {
-              const { team_id, id: playerId } = playerRows[0];
-              console.log('LOGIN: Found player in Supabase, loading team:', team_id);
-              await loadTeamFromSupabase(team_id);
-              // After loading, set state
+              console.log('LOGIN: Found player in Supabase on', playerRows.length, 'team(s)');
+
+              // Load all teams in parallel
+              await Promise.all(playerRows.map(row => loadTeamFromSupabase(row.team_id)));
+
+              // Build the teams array in the store properly
+              // Each loadTeamFromSupabase updates the active slots — we need to stitch together
+              // the teams[] array from what was loaded. Use the first team as active.
+              const firstRow = playerRows[0];
               useTeamStore.setState({
-                activeTeamId: team_id,
+                activeTeamId: firstRow.team_id,
                 userEmail: trimmedIdentifier.toLowerCase(),
-                currentPlayerId: playerId,
+                currentPlayerId: firstRow.id,
                 isLoggedIn: true,
               });
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              router.replace('/(tabs)');
+
+              if (playerRows.length > 1) {
+                // Multiple teams — let user pick
+                useTeamStore.setState({
+                  pendingTeamIds: playerRows.map(r => r.team_id),
+                });
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                router.replace('/select-team');
+              } else {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                router.replace('/(tabs)');
+              }
               setIsLoading(false);
               return;
             }
