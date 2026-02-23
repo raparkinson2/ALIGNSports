@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTeamStore, useStoreHydrated, defaultNotificationPreferences } from '@/lib/store';
 import { registerForPushNotificationsAsync } from '@/lib/notifications';
 import { clearInvalidSession, getSafeSession } from '@/lib/supabase';
-import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase } from '@/lib/realtime-sync';
+import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase, loadTeamFromSupabase } from '@/lib/realtime-sync';
 import { supabase } from '@/lib/supabase';
 
 export const unstable_settings = {
@@ -89,6 +89,30 @@ function AuthNavigator() {
     };
     // Run in background - don't await to prevent blocking app startup
     checkSupabaseSession();
+
+    // On every startup, check Supabase for ALL teams the user belongs to.
+    // This ensures the local teams[] array is complete so "Switch Team" works
+    // even when teams were created on another device or the local store is stale.
+    if (isLoggedIn) {
+      const { userEmail, userPhone } = useTeamStore.getState();
+      const fetchAllUserTeams = async () => {
+        try {
+          let query = supabase.from('players').select('team_id, id');
+          if (userEmail) query = query.eq('email', userEmail.toLowerCase());
+          else if (userPhone) query = query.eq('phone', userPhone.replace(/\D/g, ''));
+          else return;
+
+          const { data: playerRows } = await query;
+          if (!playerRows || playerRows.length <= 1) return;
+
+          console.log('STARTUP: Found', playerRows.length, 'teams for user, loading all');
+          await Promise.all(playerRows.map((r: { team_id: string }) => loadTeamFromSupabase(r.team_id)));
+        } catch (e) {
+          // Non-blocking — ignore errors
+        }
+      };
+      fetchAllUserTeams();
+    }
 
     // Additional safety: if somehow isLoggedIn is true but no players exist, force logout
     // BUT only if there's no activeTeamId — if there is one, realtime sync will load players shortly
