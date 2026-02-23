@@ -26,13 +26,14 @@ import {
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
+import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, getPlayerName, AppNotification, InviteReleaseOption } from '@/lib/store';
 import { pushEventToSupabase, pushEventResponseToSupabase, pushNotificationToSupabase } from '@/lib/realtime-sync';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { sendPushToPlayers } from '@/lib/notifications';
+import { sendPushToPlayers, scheduleEventReminderDayBefore, scheduleEventReminderHourBefore } from '@/lib/notifications';
 
 interface PlayerRowProps {
   player: Player;
@@ -210,11 +211,33 @@ export default function EventDetailScreen() {
       // No response -> Confirmed
       newConfirmed.push(playerId);
       newResponse = 'confirmed';
+
+      // Schedule local reminders on this device if the current player is confirming themselves
+      if (playerId === currentPlayerId) {
+        const notificationPrefs = players.find((p) => p.id === currentPlayerId)?.notificationPreferences;
+        const timeMatch = event.time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        if (timeMatch) {
+          const hours = parseInt(timeMatch[1], 10);
+          const minutes = parseInt(timeMatch[2], 10);
+          const isPM = timeMatch[3].toUpperCase() === 'PM';
+          const eventDateTime = new Date(eventDate);
+          eventDateTime.setHours(isPM && hours !== 12 ? hours + 12 : !isPM && hours === 12 ? 0 : hours, minutes, 0, 0);
+          if (notificationPrefs?.gameReminderDayBefore !== false) {
+            scheduleEventReminderDayBefore(event.id, event.title, eventDateTime, event.time);
+          }
+          if (notificationPrefs?.gameReminderHoursBefore !== false) {
+            scheduleEventReminderHourBefore(event.id, event.title, eventDateTime, event.time);
+          }
+        }
+      }
     } else if (currentStatus === 'confirmed') {
-      // Confirmed -> Declined
+      // Confirmed -> Declined - cancel any scheduled reminders on this device
       newConfirmed = newConfirmed.filter((id) => id !== playerId);
       newDeclined.push(playerId);
       newResponse = 'declined';
+      if (playerId === currentPlayerId) {
+        Notifications.cancelAllScheduledNotificationsAsync().catch(console.error);
+      }
     } else {
       // Declined -> No response (back to invited)
       newDeclined = newDeclined.filter((id) => id !== playerId);

@@ -47,7 +47,7 @@ import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLine
 import { cn } from '@/lib/cn';
 import { supabase } from '@/lib/supabase';
 import { pushGameToSupabase, pushGameResponseToSupabase, pushNotificationToSupabase, pushPlayerToSupabase, deleteGameFromSupabase } from '@/lib/realtime-sync';
-import { sendPushToPlayers } from '@/lib/notifications';
+import { sendPushToPlayers, scheduleGameReminderDayBefore, scheduleGameReminderHoursBefore } from '@/lib/notifications';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
@@ -723,10 +723,34 @@ export default function GameDetailScreen() {
       // Currently no response, mark as IN
       checkInToGame(game.id, playerId);
       if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'in').catch(console.error);
+
+      // Schedule local reminders on this device if it's the current player checking themselves in
+      if (playerId === currentPlayerId) {
+        const notificationPrefs = players.find((p) => p.id === currentPlayerId)?.notificationPreferences;
+        const gameDate = parseISO(game.date);
+        // Parse time string like "7:00 PM" into a full Date
+        const timeMatch = game.time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        if (timeMatch) {
+          const hours = parseInt(timeMatch[1], 10);
+          const minutes = parseInt(timeMatch[2], 10);
+          const isPM = timeMatch[3].toUpperCase() === 'PM';
+          const gameDateTime = new Date(gameDate);
+          gameDateTime.setHours(isPM && hours !== 12 ? hours + 12 : !isPM && hours === 12 ? 0 : hours, minutes, 0, 0);
+          if (notificationPrefs?.gameReminderDayBefore !== false) {
+            scheduleGameReminderDayBefore(game.id, game.opponent, gameDateTime, game.time);
+          }
+          if (notificationPrefs?.gameReminderHoursBefore !== false) {
+            scheduleGameReminderHoursBefore(game.id, game.opponent, gameDateTime, game.time);
+          }
+        }
+      }
     } else if (isIn) {
-      // Currently IN, mark as OUT
+      // Currently IN, mark as OUT - cancel any scheduled reminders on this device
       checkOutFromGame(game.id, playerId);
       if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'out').catch(console.error);
+      if (playerId === currentPlayerId) {
+        Notifications.cancelAllScheduledNotificationsAsync().catch(console.error);
+      }
     } else {
       // Currently OUT, clear response (back to invited)
       clearPlayerResponse(game.id, playerId);
