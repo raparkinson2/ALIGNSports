@@ -196,7 +196,7 @@ export async function sendPushToTokens(
 /**
  * Send a push notification to a list of player IDs.
  * Always fetches fresh push tokens from Supabase so newly-registered devices are reached.
- * Falls back to cached store tokens for any player not found in Supabase.
+ * Falls back to cached store tokens and email/phone lookup for any player not found by ID.
  */
 export async function sendPushToPlayers(
   playerIds: string[],
@@ -209,22 +209,60 @@ export async function sendPushToPlayers(
   try {
     // Dynamic import to avoid circular deps
     const { supabase } = await import('./supabase');
+    const { useTeamStore } = await import('./store');
+    const storePlayers = useTeamStore.getState().players;
+
+    // Query Supabase for fresh tokens by player ID
     const { data: rows, error } = await supabase
       .from('players')
-      .select('id, push_token')
+      .select('id, email, phone, push_token')
       .in('id', playerIds);
 
     if (error) console.log('sendPushToPlayers: supabase error:', error.message);
 
-    // Build a map of fresh tokens from Supabase
+    // Build a map of fresh tokens from Supabase (by player ID)
     const freshTokenMap: Record<string, string> = {};
     for (const row of rows || []) {
       if (row.push_token) freshTokenMap[row.id] = row.push_token;
     }
 
-    // Fall back to cached store tokens for any player not returned
-    const { useTeamStore } = await import('./store');
-    const storePlayers = useTeamStore.getState().players;
+    // For any players missing a token, try looking up by email/phone in Supabase
+    // (a user might have registered their token under a different player ID in another team)
+    const missingIds = playerIds.filter((id) => !freshTokenMap[id]);
+    if (missingIds.length > 0) {
+      const emailsAndPhones: string[] = [];
+      for (const id of missingIds) {
+        const storePlayer = storePlayers.find((p) => p.id === id);
+        if (storePlayer?.email) emailsAndPhones.push(storePlayer.email.toLowerCase());
+        if (storePlayer?.phone) emailsAndPhones.push(storePlayer.phone.replace(/\D/g, ''));
+      }
+      if (emailsAndPhones.length > 0) {
+        // Look for any player row (in any team) with a matching email/phone AND a push token
+        const { data: altRows } = await supabase
+          .from('players')
+          .select('email, phone, push_token')
+          .not('push_token', 'is', null);
+        for (const altRow of altRows || []) {
+          if (!altRow.push_token) continue;
+          const altEmail = altRow.email?.toLowerCase();
+          const altPhone = altRow.phone?.replace(/\D/g, '');
+          // Find the missing player this alt row corresponds to
+          for (const id of missingIds) {
+            if (freshTokenMap[id]) continue;
+            const sp = storePlayers.find((p) => p.id === id);
+            if (
+              (altEmail && sp?.email && altEmail === sp.email.toLowerCase()) ||
+              (altPhone && sp?.phone && altPhone === sp.phone.replace(/\D/g, ''))
+            ) {
+              freshTokenMap[id] = altRow.push_token;
+              console.log(`sendPushToPlayers: found token for player ${id} via email/phone lookup`);
+            }
+          }
+        }
+      }
+    }
+
+    // Build final token list, falling back to cached store tokens last
     const tokens: string[] = playerIds.map((id) => {
       return freshTokenMap[id] || storePlayers.find((p) => p.id === id)?.notificationPreferences?.pushToken || '';
     }).filter(Boolean);
