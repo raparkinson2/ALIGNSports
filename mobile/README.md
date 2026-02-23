@@ -21,8 +21,11 @@ All real-time sync is handled by **Supabase Realtime** via a single WebSocket ch
 Push tokens require a valid EAS project ID in `app.json` (`extra.eas.projectId`). The `registerForPushNotificationsAsync` function tries multiple sources: `extra.eas.projectId`, `easConfig.projectId`, and the expoConfig-level `projectId`. If none is found the function returns `null` gracefully (local notifications still work).
 
 **Push token saving**: On login, the token is saved via:
-1. A direct `supabase.from('players').update({ push_token })` for reliability (works even before full player data loads)
+1. A direct `supabase.from('players').update({ push_token }).select('id')` — now uses `.select('id')` to detect 0-row matches (player not yet in Supabase)
 2. A full `pushPlayerToSupabase` upsert if the player object is available
+3. Retried at +3s and +8s after login to handle slow connections / late team data loads
+
+**Test push notifications**: Admins can send a test push notification to all team members from the Admin tab → Communication → "Test Push Notifications". This shows how many players have registered devices and sends a real notification to verify the pipeline works.
 
 **Self-check-in**: Players always see their own row in the check-in list even before the admin explicitly invites them. Toggling their own status auto-adds them to `invitedPlayers` and writes to `game_responses` / `event_responses` in Supabase. Other team members see the change in real time.
 

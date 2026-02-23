@@ -35,8 +35,19 @@ async function sendExpoPushNotifications(messages: ExpoPushMessage[]): Promise<v
         const text = await res.text();
         console.error("Expo push error:", text);
       } else {
-        const data = await res.json();
-        console.log("Expo push response:", JSON.stringify(data).slice(0, 200));
+        const responseData = await res.json() as { data: Array<{ status: string; id?: string; message?: string; details?: any }> };
+        // Log per-ticket results to spot invalid/expired tokens
+        if (responseData?.data) {
+          responseData.data.forEach((ticket: any, i: number) => {
+            if (ticket.status === 'error') {
+              console.error(`[push] Token error for message ${i} (to: ${chunk[i]?.to}): ${ticket.message} - details: ${JSON.stringify(ticket.details)}`);
+            } else {
+              console.log(`[push] Ticket ${i}: ${ticket.status} id=${ticket.id}`);
+            }
+          });
+        } else {
+          console.log("Expo push response:", JSON.stringify(responseData).slice(0, 300));
+        }
       }
     } catch (err) {
       console.error("Failed to send push notifications:", err);

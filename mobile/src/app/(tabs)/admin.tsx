@@ -34,6 +34,7 @@ import {
   RefreshCw,
   Trophy,
   Archive,
+  Bell,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -63,6 +64,7 @@ import { formatPhoneNumber, formatPhoneInput, unformatPhone } from '@/lib/phone'
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { createTeamInvitation } from '@/lib/team-invitations';
 import { pushPlayerToSupabase, pushTeamToSupabase, deletePlayerFromSupabase } from '@/lib/realtime-sync';
+import { sendPushToPlayers } from '@/lib/notifications';
 
 interface PlayerManageCardProps {
   player: Player;
@@ -1449,6 +1451,62 @@ export default function AdminScreen() {
                   <View className="ml-3">
                     <Text className="text-white font-semibold">Text Team</Text>
                     <Text className="text-slate-400 text-sm">Send a group text to all players</Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color="#64748b" />
+              </View>
+            </Pressable>
+
+            {/* Send Test Push Notification Button */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                const otherPlayers = players.filter((p) => p.id !== currentPlayerId);
+                if (otherPlayers.length === 0) {
+                  Alert.alert('No Other Players', 'There are no other team members to send a test notification to.');
+                  return;
+                }
+                const playersWithToken = otherPlayers.filter(
+                  (p) => p.notificationPreferences?.pushToken
+                );
+                Alert.alert(
+                  'Send Test Push Notification',
+                  `This will send a test notification to all ${otherPlayers.length} team member${otherPlayers.length !== 1 ? 's' : ''} (${playersWithToken.length} have registered devices).\n\nIf players aren't receiving notifications, ask them to open the app first to register their device.`,
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Send Test',
+                      onPress: async () => {
+                        try {
+                          await sendPushToPlayers(
+                            otherPlayers.map((p) => p.id),
+                            'Test Notification',
+                            `Push notifications are working! Sent by your team admin.`,
+                            { type: 'test' }
+                          );
+                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                          Alert.alert(
+                            'Test Sent',
+                            `Notification sent to ${otherPlayers.length} player${otherPlayers.length !== 1 ? 's' : ''}. Players must have opened the app at least once to receive it.`
+                          );
+                        } catch (err) {
+                          Alert.alert('Error', 'Failed to send test notification.');
+                        }
+                      },
+                    },
+                  ]
+                );
+              }}
+              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <View className="bg-amber-500/20 p-2 rounded-full">
+                    <Bell size={20} color="#fbbf24" />
+                  </View>
+                  <View className="ml-3">
+                    <Text className="text-white font-semibold">Test Push Notifications</Text>
+                    <Text className="text-slate-400 text-sm">Send a test alert to all players</Text>
                   </View>
                 </View>
                 <ChevronRight size={20} color="#64748b" />
