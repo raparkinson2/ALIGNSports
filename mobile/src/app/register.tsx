@@ -137,20 +137,30 @@ export default function RegisterScreen() {
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-        // Check if this user already has an account in Supabase Auth or already has a team locally
-        // If they do, send them to the "sign in with existing password" step (step 4)
-        // rather than the "create new password" step (step 2)
+        // Check if THIS invited person already has an account — check by their specific
+        // email/phone, not whether the current device has any teams at all.
+        const isPhone = isPhoneNumber(trimmedIdentifier);
         const currentStoreState = useTeamStore.getState();
-        // Check both the teams array AND the active players array (legacy single-team users
-        // may have players but not populate the teams array yet)
-        const hasExistingTeams = currentStoreState.teams.length > 0 || currentStoreState.players.length > 0;
 
-        // Also check if they're already authenticated in Supabase
+        // Check if this person already has a player record in any local team
+        const hasExistingPlayerRecord = isPhone
+          ? currentStoreState.teams.some(t => t.players.some(p =>
+              p.phone?.replace(/\D/g, '') === unformatPhone(trimmedIdentifier).replace(/\D/g, '') && p.password
+            )) || currentStoreState.players.some(p =>
+              p.phone?.replace(/\D/g, '') === unformatPhone(trimmedIdentifier).replace(/\D/g, '') && p.password
+            )
+          : currentStoreState.teams.some(t => t.players.some(p =>
+              p.email?.toLowerCase() === trimmedIdentifier.toLowerCase() && p.password
+            )) || currentStoreState.players.some(p =>
+              p.email?.toLowerCase() === trimmedIdentifier.toLowerCase() && p.password
+            );
+
+        // Check if they're already authenticated in Supabase with this specific email
         const currentUser = await getCurrentUser();
-        const isAlreadyLoggedInWithEmail = currentUser?.email?.toLowerCase() === trimmedIdentifier.toLowerCase();
+        const isAlreadyLoggedInWithEmail = !isPhone && currentUser?.email?.toLowerCase() === trimmedIdentifier.toLowerCase();
 
-        if (hasExistingTeams || isAlreadyLoggedInWithEmail) {
-          console.log('REGISTER: Existing user detected (hasTeams:', hasExistingTeams, ', loggedIn:', isAlreadyLoggedInWithEmail, ') - going to step 4 (sign in flow)');
+        if (hasExistingPlayerRecord || isAlreadyLoggedInWithEmail) {
+          console.log('REGISTER: Existing account detected for this invitee - going to step 4 (sign in flow)');
           setStep(4);
         } else {
           console.log('REGISTER: New user - going to step 2 (create account flow)');
