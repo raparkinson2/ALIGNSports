@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTeamStore, useStoreHydrated, defaultNotificationPreferences } from '@/lib/store';
 import { registerForPushNotificationsAsync } from '@/lib/notifications';
 import { clearInvalidSession, getSafeSession, supabase } from '@/lib/supabase';
-import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase } from '@/lib/realtime-sync';
+import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase, loadTeamFromSupabase } from '@/lib/realtime-sync';
 
 export const unstable_settings = {
   initialRouteName: 'login',
@@ -52,6 +52,73 @@ function AuthNavigator() {
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
   const didFetchAllTeams = useRef(false);
+
+  // On startup, ensure all teams the user belongs to are loaded from Supabase.
+  // This fixes cases where the race condition caused only 1 team to be persisted locally.
+  useEffect(() => {
+    if (!isHydrated || !isLoggedIn || didFetchAllTeams.current) return;
+
+    const { userEmail, userPhone } = useTeamStore.getState();
+    if (!userEmail && !userPhone) return;
+
+    didFetchAllTeams.current = true;
+
+    const fetchAllUserTeams = async () => {
+      try {
+        let playerRows: { team_id: string; id: string }[] | null = null;
+
+        if (userEmail) {
+          const { data } = await supabase
+            .from('players')
+            .select('team_id, id')
+            .eq('email', userEmail.toLowerCase());
+          playerRows = data;
+        } else if (userPhone) {
+          const normalizedPhone = userPhone.replace(/\D/g, '');
+          const { data } = await supabase
+            .from('players')
+            .select('team_id, id')
+            .or(`phone.eq.${normalizedPhone},phone.eq.+1${normalizedPhone}`);
+          playerRows = data;
+        }
+
+        if (!playerRows || playerRows.length === 0) return;
+
+        const currentState = useTeamStore.getState();
+        const knownTeamIds = new Set(currentState.teams.map(t => t.id));
+        const missingTeams = playerRows.filter(r => !knownTeamIds.has(r.team_id));
+
+        if (missingTeams.length === 0) return;
+
+        console.log('STARTUP: Loading', missingTeams.length, 'missing teams from Supabase');
+        for (const row of missingTeams) {
+          await loadTeamFromSupabase(row.team_id);
+        }
+
+        // If there are now multiple teams, ensure they're all known.
+        // Don't redirect the user mid-session — they can use the team switcher manually.
+        // Only set pendingTeamIds if not already set (e.g. fresh startup, user hasn't picked yet).
+        const updatedState = useTeamStore.getState();
+        if (!updatedState.pendingTeamIds) {
+          const { userEmail: ue, userPhone: up } = updatedState;
+          const userTeams = updatedState.teams.filter(team =>
+            team.players.some(p =>
+              (ue && p.email?.toLowerCase() === ue.toLowerCase()) ||
+              (up && p.phone?.replace(/\D/g, '') === up.replace(/\D/g, ''))
+            )
+          );
+          if (userTeams.length > 1) {
+            console.log('STARTUP: Found', userTeams.length, 'teams — enabling team switcher');
+            // Don't redirect, just ensure all teams are accessible via the team switcher
+          }
+        }
+      } catch (err) {
+        console.error('STARTUP: Failed to fetch all user teams:', err);
+      }
+    };
+
+    fetchAllUserTeams();
+  }, [isHydrated, isLoggedIn]);
 
   useEffect(() => {
     // Check immediately and on interval until ready

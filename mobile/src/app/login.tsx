@@ -352,12 +352,12 @@ export default function LoginScreen() {
             if (playerRows && playerRows.length > 0) {
               console.log('LOGIN: Found player in Supabase on', playerRows.length, 'team(s)');
 
-              // Load all teams in parallel
-              await Promise.all(playerRows.map(row => loadTeamFromSupabase(row.team_id)));
+              // Load teams sequentially to avoid race conditions in the teams[] array
+              // (parallel loads all read the same state snapshot and the last write wins)
+              for (const row of playerRows) {
+                await loadTeamFromSupabase(row.team_id);
+              }
 
-              // Build the teams array in the store properly
-              // Each loadTeamFromSupabase updates the active slots — we need to stitch together
-              // the teams[] array from what was loaded. Use the first team as active.
               const firstRow = playerRows[0];
               useTeamStore.setState({
                 activeTeamId: firstRow.team_id,
