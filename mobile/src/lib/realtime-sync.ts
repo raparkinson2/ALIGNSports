@@ -402,11 +402,13 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       createdAt: l.created_at,
     }));
 
-    // Apply everything to store, and also update the teams[] array entry for this team
-    // so that multi-team checks (e.g. hasMultipleTeams in more.tsx) can find the user.
-    // If Supabase returns empty players, preserve the local players so we don't wipe user data.
+    // Apply to the teams[] array so multi-team checks work.
+    // Only update the active store slots (teamName, players, etc.) when loading the active team —
+    // loading a background team should NOT overwrite what the user is currently seeing.
     const currentState = useTeamStore.getState();
-    const localPlayers = teamId === currentState.activeTeamId
+    const isActiveTeam = teamId === currentState.activeTeamId;
+
+    const localPlayers = isActiveTeam
       ? currentState.players
       : (currentState.teams.find(t => t.id === teamId)?.players || []);
     const finalPlayers = players.length > 0 ? players : localPlayers;
@@ -432,20 +434,26 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       ? currentState.teams.map(t => t.id === teamId ? { ...t, ...teamEntry } : t)
       : [...currentState.teams, teamEntry];
 
-    useTeamStore.setState({
-      teamName,
-      teamSettings,
-      players: finalPlayers,
-      games,
-      events,
-      chatMessages,
-      paymentPeriods,
-      photos,
-      notifications,
-      polls,
-      teamLinks,
-      teams: updatedTeams,
-    });
+    if (isActiveTeam) {
+      // Full update — this is the team the user is viewing
+      useTeamStore.setState({
+        teamName,
+        teamSettings,
+        players: finalPlayers,
+        games,
+        events,
+        chatMessages,
+        paymentPeriods,
+        photos,
+        notifications,
+        polls,
+        teamLinks,
+        teams: updatedTeams,
+      });
+    } else {
+      // Background team — only update the teams[] array, don't touch active slots
+      useTeamStore.setState({ teams: updatedTeams });
+    }
 
     // After loading, resolve currentPlayerId if it's missing or stale
     const storeState = useTeamStore.getState();

@@ -91,12 +91,13 @@ function AuthNavigator() {
     // Run in background - don't await to prevent blocking app startup
     checkSupabaseSession();
 
-    // On startup, check Supabase for ALL teams the user belongs to — once only.
-    // This ensures the local teams[] array is complete so "Switch Team" works.
+    // On startup, silently fetch any teams the user belongs to that aren't in the
+    // local store yet (e.g. created on another device). Only runs once per session.
+    // Does NOT set pendingTeamIds — just hydrates the teams[] array so "Switch Team" works.
     if (isLoggedIn && !didFetchAllTeams.current) {
       didFetchAllTeams.current = true;
-      const { userEmail, userPhone } = useTeamStore.getState();
-      const fetchAllUserTeams = async () => {
+      const { userEmail, userPhone, activeTeamId: currentActive } = useTeamStore.getState();
+      const fetchMissingTeams = async () => {
         try {
           let query = supabase.from('players').select('team_id, id');
           if (userEmail) query = query.eq('email', userEmail.toLowerCase());
@@ -106,13 +107,21 @@ function AuthNavigator() {
           const { data: playerRows } = await query;
           if (!playerRows || playerRows.length <= 1) return;
 
-          console.log('STARTUP: Found', playerRows.length, 'teams for user, loading all');
-          await Promise.all(playerRows.map((r: { team_id: string }) => loadTeamFromSupabase(r.team_id)));
+          // Only load teams that aren't already in the local store — skip the active team
+          // (it's already being loaded by startRealtimeSync)
+          const localTeamIds = new Set(useTeamStore.getState().teams.map(t => t.id));
+          const missingRows = playerRows.filter(
+            (r: { team_id: string }) => r.team_id !== currentActive && !localTeamIds.has(r.team_id)
+          );
+          if (missingRows.length === 0) return;
+
+          console.log('STARTUP: Loading', missingRows.length, 'missing team(s) into store');
+          await Promise.all(missingRows.map((r: { team_id: string }) => loadTeamFromSupabase(r.team_id)));
         } catch (e) {
           // Non-blocking — ignore errors
         }
       };
-      fetchAllUserTeams();
+      fetchMissingTeams();
     }
 
     // Additional safety: if somehow isLoggedIn is true but no players exist, force logout
