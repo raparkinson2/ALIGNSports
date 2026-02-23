@@ -142,24 +142,24 @@ export default function RegisterScreen() {
         const isPhone = isPhoneNumber(trimmedIdentifier);
         const currentStoreState = useTeamStore.getState();
 
-        // Check if this person already has a player record in any local team
-        const hasExistingPlayerRecord = isPhone
+        // For phone users: check if they already have a hashed password in the local store
+        // (phone users don't have Supabase Auth accounts, so local password hash is the source of truth)
+        // For email users: do NOT use local store password as the check — the players table password
+        // can be set from partial/failed previous registration attempts and is unreliable.
+        const hasExistingPhoneRecord = isPhone
           ? currentStoreState.teams.some(t => t.players.some(p =>
               p.phone?.replace(/\D/g, '') === unformatPhone(trimmedIdentifier).replace(/\D/g, '') && p.password
             )) || currentStoreState.players.some(p =>
               p.phone?.replace(/\D/g, '') === unformatPhone(trimmedIdentifier).replace(/\D/g, '') && p.password
             )
-          : currentStoreState.teams.some(t => t.players.some(p =>
-              p.email?.toLowerCase() === trimmedIdentifier.toLowerCase() && p.password
-            )) || currentStoreState.players.some(p =>
-              p.email?.toLowerCase() === trimmedIdentifier.toLowerCase() && p.password
-            );
+          : false;
 
         // Check if they're already authenticated in Supabase with this specific email
+        // This is the authoritative check for email-based accounts
         const currentUser = await getCurrentUser();
         const isAlreadyLoggedInWithEmail = !isPhone && currentUser?.email?.toLowerCase() === trimmedIdentifier.toLowerCase();
 
-        if (hasExistingPlayerRecord || isAlreadyLoggedInWithEmail) {
+        if (hasExistingPhoneRecord || isAlreadyLoggedInWithEmail) {
           console.log('REGISTER: Existing account detected for this invitee - going to step 4 (sign in flow)');
           setStep(4);
         } else {
@@ -325,7 +325,13 @@ export default function RegisterScreen() {
             console.log('REGISTER: signInWithEmail result:', JSON.stringify(signInResult));
             if (!signInResult.success) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              setError(signInResult.error || 'Failed to sign in. Please check your password.');
+              // If they have a pending invitation but sign-in fails, it means they have
+              // an existing account with a different password. Tell them to use the login screen.
+              if (supabaseInvitation) {
+                setError('An account already exists with this email. Please use the login screen to sign in and then accept the invitation.');
+              } else {
+                setError(signInResult.error || 'Failed to sign in. Please check your password.');
+              }
               setIsLoading(false);
               return;
             }
