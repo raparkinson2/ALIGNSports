@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useTeamStore, Sport, SPORT_NAMES, Player, PlayerRole, SPORT_POSITIONS, getPlayerName } from '@/lib/store';
+import { pushTeamToSupabase, pushPlayerToSupabase } from '@/lib/realtime-sync';
 import { cn } from '@/lib/cn';
 import { ParentChildIcon } from '@/components/ParentChildIcon';
 
@@ -173,13 +174,19 @@ export default function CreateNewTeamScreen() {
 
       // Update team settings with jersey colors and logo
       const currentState = useTeamStore.getState();
+      const finalSettings = {
+        ...currentState.teamSettings,
+        jerseyColors,
+        teamLogo: teamLogo ?? undefined,
+      };
       useTeamStore.setState({
-        teamSettings: {
-          ...currentState.teamSettings,
-          jerseyColors,
-          teamLogo: teamLogo ?? undefined,
-        },
+        teamSettings: finalSettings,
       });
+
+      // Push the new team and admin player to Supabase so realtime sync can load it
+      const newTeamId = useTeamStore.getState().activeTeamId!;
+      await pushTeamToSupabase(newTeamId, teamNameInput.trim(), finalSettings);
+      await pushPlayerToSupabase(adminPlayer, newTeamId);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
