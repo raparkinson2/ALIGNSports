@@ -2742,24 +2742,49 @@ export const useTeamStore = create<TeamStore>()(
           teamLinks: [],
         };
 
-        set((state) => ({
-          teams: [...state.teams, newTeam],
-          activeTeamId: teamId,
-          teamName: newTeam.teamName,
-          teamSettings: newTeam.teamSettings,
-          players: newTeam.players,
-          games: newTeam.games,
-          events: newTeam.events,
-          photos: newTeam.photos,
-          notifications: newTeam.notifications,
-          chatMessages: newTeam.chatMessages,
-          chatLastReadAt: newTeam.chatLastReadAt,
-          paymentPeriods: newTeam.paymentPeriods,
-          currentPlayerId: adminPlayer.id,
-          isLoggedIn: true,
-          userEmail: adminPlayer.email || null,
-          userPhone: adminPlayer.phone || null,
-        }));
+        set((state) => {
+          // Sync the current active team's live data back into the teams array before adding new team
+          const syncedTeams = state.activeTeamId
+            ? state.teams.map((t) =>
+                t.id === state.activeTeamId
+                  ? {
+                      ...t,
+                      teamName: state.teamName,
+                      teamSettings: state.teamSettings,
+                      players: state.players,
+                      games: state.games,
+                      events: state.events,
+                      photos: state.photos,
+                      notifications: state.notifications,
+                      chatMessages: state.chatMessages,
+                      chatLastReadAt: state.chatLastReadAt,
+                      paymentPeriods: state.paymentPeriods,
+                      polls: state.polls || [],
+                      teamLinks: state.teamLinks || [],
+                    }
+                  : t
+              )
+            : state.teams;
+
+          return {
+            teams: [...syncedTeams, newTeam],
+            activeTeamId: teamId,
+            teamName: newTeam.teamName,
+            teamSettings: newTeam.teamSettings,
+            players: newTeam.players,
+            games: newTeam.games,
+            events: newTeam.events,
+            photos: newTeam.photos,
+            notifications: newTeam.notifications,
+            chatMessages: newTeam.chatMessages,
+            chatLastReadAt: newTeam.chatLastReadAt,
+            paymentPeriods: newTeam.paymentPeriods,
+            currentPlayerId: adminPlayer.id,
+            isLoggedIn: true,
+            userEmail: adminPlayer.email || null,
+            userPhone: adminPlayer.phone || null,
+          };
+        });
 
         return teamId;
       },
