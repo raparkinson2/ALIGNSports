@@ -404,17 +404,23 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
 
     // Apply everything to store, and also update the teams[] array entry for this team
     // so that multi-team checks (e.g. hasMultipleTeams in more.tsx) can find the user.
+    // If Supabase returns empty players, preserve the local players so we don't wipe user data.
     const currentState = useTeamStore.getState();
+    const localPlayers = teamId === currentState.activeTeamId
+      ? currentState.players
+      : (currentState.teams.find(t => t.id === teamId)?.players || []);
+    const finalPlayers = players.length > 0 ? players : localPlayers;
+
     const updatedTeams = currentState.teams.map((t) =>
       t.id === teamId
-        ? { ...t, teamName, teamSettings, players, games, events, chatMessages, paymentPeriods, photos, notifications, polls, teamLinks }
+        ? { ...t, teamName, teamSettings, players: finalPlayers, games, events, chatMessages, paymentPeriods, photos, notifications, polls, teamLinks }
         : t
     );
 
     useTeamStore.setState({
       teamName,
       teamSettings,
-      players,
+      players: finalPlayers,
       games,
       events,
       chatMessages,

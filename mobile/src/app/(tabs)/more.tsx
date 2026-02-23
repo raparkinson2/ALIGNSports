@@ -1427,9 +1427,18 @@ export default function MoreScreen() {
           />
 
           {/* Version */}
-          <View className="items-center mt-8 mb-4">
+          <View className="items-center mt-8 mb-2">
             <Text className="text-slate-600 text-xs">Version {APP_VERSION}</Text>
           </View>
+
+          {/* Log Out */}
+          <Pressable
+            onPress={handleLogout}
+            className="flex-row items-center justify-center py-4 px-4 rounded-xl mb-8 active:opacity-70"
+          >
+            <LogOut size={18} color="#ef4444" />
+            <Text className="text-red-400 font-semibold ml-2">Log Out</Text>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
 
