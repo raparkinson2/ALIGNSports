@@ -212,13 +212,12 @@ export async function sendPushToPlayers(
   if (playerIds.length === 0) return;
 
   try {
-    // Import supabase client inline to avoid circular deps
     const { supabase } = await import('@/lib/supabase');
 
-    // Fetch push tokens directly from Supabase (anon key, RLS is open)
+    // Fetch tokens by player ID
     const { data: rows, error } = await supabase
       .from('players')
-      .select('id, push_token, notification_preferences')
+      .select('id, email, phone, push_token, notification_preferences')
       .in('id', playerIds);
 
     if (error) {
@@ -228,15 +227,42 @@ export async function sendPushToPlayers(
 
     console.log(`sendPushToPlayers: fetched ${rows?.length ?? 0} rows for ${playerIds.length} players`);
 
-    // Collect valid tokens
     const tokens: string[] = [];
+    const missingEmails: string[] = [];
+    const missingPhones: string[] = [];
+
     for (const row of rows || []) {
       const token = row.push_token || (row.notification_preferences as any)?.pushToken;
       if (token && (token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken['))) {
         tokens.push(token);
         console.log(`sendPushToPlayers: found token for player ${row.id}`);
       } else {
-        console.log(`sendPushToPlayers: no token for player ${row.id}`);
+        console.log(`sendPushToPlayers: no token for player ${row.id}, will try email/phone fallback`);
+        if (row.email) missingEmails.push(row.email.toLowerCase());
+        if (row.phone) missingPhones.push(row.phone.replace(/\D/g, ''));
+      }
+    }
+
+    // For players with no token, try cross-matching by email or phone
+    // (handles cases where player has a different ID in another team record)
+    if (missingEmails.length > 0 || missingPhones.length > 0) {
+      const conditions: string[] = [];
+      missingEmails.forEach(e => conditions.push(`email.eq.${e}`));
+      missingPhones.forEach(p => conditions.push(`phone.eq.${p}`));
+
+      const { data: fallbackRows } = await supabase
+        .from('players')
+        .select('id, email, phone, push_token, notification_preferences')
+        .or(conditions.join(','));
+
+      for (const row of fallbackRows || []) {
+        const token = row.push_token || (row.notification_preferences as any)?.pushToken;
+        if (token && (token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken['))) {
+          if (!tokens.includes(token)) {
+            tokens.push(token);
+            console.log(`sendPushToPlayers: found token via email/phone fallback for ${row.email || row.phone}`);
+          }
+        }
       }
     }
 
@@ -259,10 +285,7 @@ export async function sendPushToPlayers(
 
     const res = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(messages),
     });
 
@@ -275,8 +298,6 @@ export async function sendPushToPlayers(
           console.log(`sendPushToPlayers: ticket ${i} ok, id=${ticket.id}`);
         }
       });
-    } else {
-      console.log('sendPushToPlayers: Expo response:', JSON.stringify(resData).slice(0, 200));
     }
   } catch (err) {
     console.log('sendPushToPlayers error:', err);

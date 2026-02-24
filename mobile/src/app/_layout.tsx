@@ -252,26 +252,55 @@ function AuthNavigator() {
         updateNotificationPreferences(currentPlayerId, { pushToken: token });
         console.log('Push token registered for player:', currentPlayerId, 'token:', token);
 
-        // Save token directly to Supabase - simple targeted update, no full upsert
+        // Save token directly to Supabase
+        // Try by player ID first, then fall back to email/phone match
         const savePushToken = async (retryCount = 0) => {
-          const { data, error } = await supabase
+          // Attempt 1: match by player ID
+          const { data: byId, error: idError } = await supabase
             .from('players')
             .update({ push_token: token })
             .eq('id', currentPlayerId)
             .select('id');
 
-          if (error) {
-            console.log(`Push token save error (attempt ${retryCount + 1}):`, error.message);
-          } else if (!data || data.length === 0) {
-            console.log(`Push token save matched 0 rows (attempt ${retryCount + 1}) for player:`, currentPlayerId);
-          } else {
-            console.log('Push token saved successfully for player:', currentPlayerId, 'rows:', data.length);
+          if (idError) {
+            console.log(`Push token save error by ID (attempt ${retryCount + 1}):`, idError.message);
+          } else if (byId && byId.length > 0) {
+            console.log('Push token saved successfully by player ID:', currentPlayerId);
             return; // success
+          } else {
+            console.log(`Push token: ID match found 0 rows for ${currentPlayerId}, trying email/phone fallback`);
           }
 
-          // Retry up to 3 times with delay
+          // Attempt 2: match by email or phone (handles ID mismatches between local and Supabase)
+          const storeState = useTeamStore.getState();
+          const email = storeState.userEmail;
+          const phone = storeState.userPhone;
+
+          if (email || phone) {
+            let query = supabase.from('players').update({ push_token: token });
+            if (email && phone) {
+              query = query.or(`email.eq.${email},phone.eq.${phone?.replace(/\D/g, '')}`);
+            } else if (email) {
+              query = query.eq('email', email);
+            } else if (phone) {
+              query = query.eq('phone', phone!.replace(/\D/g, ''));
+            }
+            const { data: byContact, error: contactError } = await query.select('id');
+            if (contactError) {
+              console.log(`Push token save error by email/phone:`, contactError.message);
+            } else if (byContact && byContact.length > 0) {
+              console.log('Push token saved by email/phone match, updated player IDs:', byContact.map((r: any) => r.id).join(', '));
+              return; // success
+            } else {
+              console.log('Push token: no rows matched by email/phone either');
+            }
+          }
+
+          // Retry up to 3 times
           if (retryCount < 3) {
             setTimeout(() => savePushToken(retryCount + 1), 3000 * (retryCount + 1));
+          } else {
+            console.log('Push token: all save attempts failed for player:', currentPlayerId);
           }
         };
 
