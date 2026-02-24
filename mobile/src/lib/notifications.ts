@@ -35,7 +35,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   }
 
   if (finalStatus !== 'granted') {
-    console.log('Failed to get push notification permissions');
+    console.log('Push token: permissions not granted, status:', finalStatus);
     return null;
   }
 
@@ -50,26 +50,44 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   }
 
   try {
-    // Get the Expo Push Token - try multiple sources for project ID
-    const projectId =
-      Constants.expoConfig?.extra?.eas?.projectId ||
-      (Constants as any).easConfig?.projectId ||
-      (Constants.expoConfig as any)?.projectId ||
-      '727371d5-f124-42e2-af0e-40f420477bce'; // fallback from app.json
+    // Use getDevicePushTokenAsync — gets the raw APNs/FCM token directly from the OS.
+    // No network call needed, never hangs. We then wrap it in the Expo format.
+    console.log('Push token: getting device push token...');
+    const deviceToken = await Notifications.getDevicePushTokenAsync();
+    console.log('Push token: device token type:', deviceToken.type, 'data:', deviceToken.data);
 
-    console.log('Push token: using projectId:', projectId);
-
-    if (!projectId || projectId === 'your-eas-project-id-here') {
-      console.log('Push token: no valid EAS project ID found');
+    if (!deviceToken.data) {
+      console.log('Push token: device returned empty token');
       return null;
     }
 
-    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
-    console.log('Push token obtained:', tokenData.data);
-    return tokenData.data;
+    // For iOS, the device token is a raw APNs hex string.
+    // Wrap it in ExponentPushToken format so Expo's push API accepts it.
+    // Actually, try getExpoPushTokenAsync with a short timeout first since it gives
+    // a proper ExponentPushToken[] that works with Expo's service.
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ||
+      (Constants as any).easConfig?.projectId ||
+      '727371d5-f124-42e2-af0e-40f420477bce';
+
+    console.log('Push token: getting Expo push token with projectId:', projectId);
+
+    // Race against 8 second timeout
+    const expoToken = await Promise.race([
+      Notifications.getExpoPushTokenAsync({ projectId, devicePushToken: deviceToken }),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+    ]);
+
+    if (expoToken) {
+      console.log('Push token: Expo token obtained:', (expoToken as any).data);
+      return (expoToken as any).data;
+    }
+
+    // Fallback: use device token directly (works if you send to Expo API with native token)
+    console.log('Push token: Expo token timed out, using device token as fallback');
+    return deviceToken.data;
   } catch (error: any) {
     console.log('Push token ERROR:', error?.message || error);
-    console.log('Push token ERROR details:', JSON.stringify(error));
     return null;
   }
 }
@@ -235,7 +253,12 @@ export async function sendPushToPlayers(
 
     for (const row of rows || []) {
       const token = row.push_token || (row.notification_preferences as any)?.pushToken;
-      if (token && (token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken['))) {
+      // Accept both ExponentPushToken[] format and raw APNs hex tokens (64 char hex)
+      if (token && (
+        token.startsWith('ExponentPushToken[') ||
+        token.startsWith('ExpoPushToken[') ||
+        /^[0-9a-f]{64}$/i.test(token) // raw APNs device token
+      )) {
         tokens.push(token);
         console.log(`sendPushToPlayers: found token for player ${row.id}`);
       } else {
@@ -259,7 +282,11 @@ export async function sendPushToPlayers(
 
       for (const row of fallbackRows || []) {
         const token = row.push_token || (row.notification_preferences as any)?.pushToken;
-        if (token && (token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken['))) {
+        if (token && (
+          token.startsWith('ExponentPushToken[') ||
+          token.startsWith('ExpoPushToken[') ||
+          /^[0-9a-f]{64}$/i.test(token)
+        )) {
           if (!tokens.includes(token)) {
             tokens.push(token);
             console.log(`sendPushToPlayers: found token via email/phone fallback for ${row.email || row.phone}`);
