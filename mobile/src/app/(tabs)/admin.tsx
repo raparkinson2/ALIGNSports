@@ -64,7 +64,7 @@ import { formatPhoneNumber, formatPhoneInput, unformatPhone } from '@/lib/phone'
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { createTeamInvitation } from '@/lib/team-invitations';
 import { pushPlayerToSupabase, pushTeamToSupabase, deletePlayerFromSupabase } from '@/lib/realtime-sync';
-import { sendPushToPlayers } from '@/lib/notifications';
+import { sendPushToPlayers, registerForPushNotificationsAsync } from '@/lib/notifications';
 
 interface PlayerManageCardProps {
   player: Player;
@@ -1507,6 +1507,44 @@ export default function AdminScreen() {
                   <View className="ml-3">
                     <Text className="text-white font-semibold">Test Push Notifications</Text>
                     <Text className="text-slate-400 text-sm">Send a test alert to all players</Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color="#64748b" />
+              </View>
+            </Pressable>
+
+            {/* Push Token Diagnostics Button */}
+            <Pressable
+              onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                // Get this device's token
+                const myToken = await registerForPushNotificationsAsync();
+                // Get all players' tokens from Supabase
+                const { supabase } = await import('@/lib/supabase');
+                const { data: rows } = await supabase
+                  .from('players')
+                  .select('id, first_name, push_token, notification_preferences')
+                  .eq('team_id', activeTeamId || '');
+                const lines = (rows || []).map((r: any) => {
+                  const token = r.push_token || (r.notification_preferences as any)?.pushToken;
+                  return `${r.first_name}: ${token ? '✓ has token' : '✗ no token'}`;
+                });
+                Alert.alert(
+                  'Push Token Status',
+                  `My token: ${myToken ? myToken.slice(0, 30) + '...' : 'NONE - not registered!'}\n\nAll players:\n${lines.join('\n')}`,
+                  [{ text: 'OK' }]
+                );
+              }}
+              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <View className="bg-blue-500/20 p-2 rounded-full">
+                    <Bell size={20} color="#60a5fa" />
+                  </View>
+                  <View className="ml-3">
+                    <Text className="text-white font-semibold">Push Token Diagnostics</Text>
+                    <Text className="text-slate-400 text-sm">Check who has tokens registered</Text>
                   </View>
                 </View>
                 <ChevronRight size={20} color="#64748b" />
