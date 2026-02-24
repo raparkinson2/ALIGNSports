@@ -252,24 +252,24 @@ function AuthNavigator() {
         updateNotificationPreferences(currentPlayerId, { pushToken: token });
         console.log('Push token registered for player:', currentPlayerId, 'token:', token);
 
-        // Save token to Supabase - try by player id first, then fallback to upsert
-        // Never filter by team_id as it may not match or may not be loaded yet
-        supabase
-          .from('players')
-          .update({ push_token: token })
-          .eq('id', currentPlayerId)
-          .select('id')
-          .then(({ data: updatedRows, error }: { data: { id: string }[] | null, error: { message: string } | null }) => {
-            if (error) {
-              console.log('Push token save error:', error.message);
-            } else if (!updatedRows || updatedRows.length === 0) {
-              // No rows matched - player might not be in Supabase yet, try upsert
-              console.log('Push token update matched 0 rows for player:', currentPlayerId, '- will retry via full upsert');
-              // The doPlayerUpsert below will handle this case
-            } else {
-              console.log('Push token saved to Supabase for player:', currentPlayerId, 'rows updated:', updatedRows.length);
-            }
-          });
+        // Save token via backend (uses service-role key, bypasses any RLS issues)
+        const saveTokenViaBackend = (playerId: string, pushToken: string) => {
+          const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+          if (!backendUrl) return;
+          fetch(`${backendUrl}/api/notifications/save-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ playerId, pushToken }),
+          })
+            .then(async (res) => {
+              const text = await res.text();
+              console.log('Push token save-via-backend status:', res.status, text);
+            })
+            .catch((err) => console.log('Push token save-via-backend error:', err));
+        };
+
+        // Save immediately via backend
+        saveTokenViaBackend(currentPlayerId, token);
 
         // Also do full player upsert once team data is available to ensure push_token persists
         const doPlayerUpsert = (teamId: string) => {
@@ -294,12 +294,12 @@ function AuthNavigator() {
         if (teamId) {
           doPlayerUpsert(teamId);
         }
-        // Always retry after 3s to catch cases where team data loads after token registration
+        // Retry after 3s and 8s for slow connections
         setTimeout(() => {
           const retryTeamId = useTeamStore.getState().activeTeamId;
           if (retryTeamId) doPlayerUpsert(retryTeamId);
+          saveTokenViaBackend(currentPlayerId, token);
         }, 3000);
-        // Also retry after 8s for slow connections
         setTimeout(() => {
           const retryTeamId = useTeamStore.getState().activeTeamId;
           if (retryTeamId) doPlayerUpsert(retryTeamId);

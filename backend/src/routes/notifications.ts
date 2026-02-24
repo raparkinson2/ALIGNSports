@@ -9,6 +9,56 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+/**
+ * POST /api/notifications/save-token
+ * Saves a push token for a player using service-role key (guaranteed to bypass RLS).
+ */
+notificationsRouter.post("/save-token", async (c) => {
+  let playerId: string = "";
+  let pushToken: string = "";
+  try {
+    const req = await c.req.json();
+    playerId = req.playerId || "";
+    pushToken = req.pushToken || "";
+  } catch {
+    return c.json({ error: "Invalid request body" }, 400);
+  }
+
+  if (!playerId || !pushToken) {
+    return c.json({ error: "playerId and pushToken required" }, 400);
+  }
+
+  console.log(`[push] save-token: player=${playerId} token=${pushToken}`);
+
+  const { data, error } = await supabaseAdmin
+    .from("players")
+    .update({ push_token: pushToken })
+    .eq("id", playerId)
+    .select("id");
+
+  if (error) {
+    console.error("[push] save-token error:", error.message);
+    return c.json({ error: error.message }, 500);
+  }
+
+  const rowsUpdated = data?.length ?? 0;
+  console.log(`[push] save-token: updated ${rowsUpdated} rows for player ${playerId}`);
+
+  if (rowsUpdated === 0) {
+    // Player row doesn't exist yet - upsert it
+    const { error: upsertError } = await supabaseAdmin
+      .from("players")
+      .upsert({ id: playerId, push_token: pushToken }, { onConflict: "id" });
+    if (upsertError) {
+      console.error("[push] save-token upsert error:", upsertError.message);
+      return c.json({ error: upsertError.message }, 500);
+    }
+    console.log(`[push] save-token: upserted player ${playerId} with token`);
+  }
+
+  return c.json({ success: true, rowsUpdated });
+});
+
 interface ExpoPushMessage {
   to: string;
   title: string;
