@@ -45,7 +45,7 @@ import { BaseballLineupViewer } from '@/components/BaseballLineupViewer';
 import { hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
 import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
 import { hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
-import { sendGameInviteNotification, scheduleGameInviteNotification, sendEventInviteNotification, scheduleEventReminderDayBefore, scheduleEventReminderHourBefore, scheduleGameReminderDayBefore, scheduleGameReminderHoursBefore } from '@/lib/notifications';
+import { sendGameInviteNotification, scheduleGameInviteNotification, sendEventInviteNotification, scheduleEventReminderDayBefore, scheduleEventReminderHourBefore, scheduleGameReminderDayBefore, scheduleGameReminderHoursBefore, sendPushToPlayers } from '@/lib/notifications';
 import { pushGameToSupabase, pushEventToSupabase, deleteGameFromSupabase } from '@/lib/realtime-sync';
 
 const getDateLabel = (dateString: string): string => {
@@ -1120,8 +1120,18 @@ export default function ScheduleScreen() {
     const formattedDate = format(gameDate, 'EEE, MMM d');
 
     if (inviteReleaseOption === 'now') {
-      // Send notifications immediately
+      // Send local notification to the admin (current user)
       sendGameInviteNotification(newGame.id, opponent.trim(), formattedDate, fullGameTime);
+      // Send push notifications to all OTHER invited players via backend
+      const otherPlayerIds = invitedPlayerIds.filter((id) => id !== currentPlayerId);
+      if (otherPlayerIds.length > 0) {
+        sendPushToPlayers(
+          otherPlayerIds,
+          'New Game Added!',
+          `You've been invited to play vs ${opponent.trim()} on ${formattedDate} at ${fullGameTime}. Make sure to check in or out in the app.`,
+          { gameId: newGame.id, type: 'game_invite' }
+        ).catch(console.error);
+      }
     } else if (inviteReleaseOption === 'scheduled') {
       // Schedule notifications for later
       scheduleGameInviteNotification(newGame.id, opponent.trim(), formattedDate, fullGameTime, inviteReleaseDate);
@@ -1184,7 +1194,18 @@ export default function ScheduleScreen() {
 
     // Only send immediate notification if inviteReleaseOption is 'now'
     if (inviteReleaseOption === 'now') {
+      // Send local notification to the admin (current user)
       sendEventInviteNotification(newEvent.id, eventName.trim(), formattedDate, fullEventTime);
+      // Send push notifications to all OTHER invited players via backend
+      const otherPlayerIds = invitedPlayerIds.filter((id) => id !== currentPlayerId);
+      if (otherPlayerIds.length > 0) {
+        sendPushToPlayers(
+          otherPlayerIds,
+          'New Event Added!',
+          `You've been invited to "${eventName.trim()}" on ${formattedDate} at ${fullEventTime}. Tap to RSVP.`,
+          { eventId: newEvent.id, type: 'event_invite' }
+        ).catch(console.error);
+      }
 
       // Create in-app notifications for each invited player
       invitedPlayerIds.forEach((playerId) => {
@@ -1260,7 +1281,18 @@ export default function ScheduleScreen() {
 
     // Only send immediate notification if inviteReleaseOption is 'now'
     if (inviteReleaseOption === 'now') {
+      // Send local notification to the admin (current user)
       sendEventInviteNotification(newPractice.id, 'Practice', formattedDate, fullPracticeTime);
+      // Send push notifications to all OTHER invited players via backend
+      const otherPracticePlayerIds = invitedPlayerIds.filter((id) => id !== currentPlayerId);
+      if (otherPracticePlayerIds.length > 0) {
+        sendPushToPlayers(
+          otherPracticePlayerIds,
+          'Practice Scheduled!',
+          `Practice on ${formattedDate} at ${fullPracticeTime}. Make sure to check in or out in the app.`,
+          { eventId: newPractice.id, type: 'practice_invite' }
+        ).catch(console.error);
+      }
 
       // Create in-app notifications for each invited player
       invitedPlayerIds.forEach((playerId) => {
