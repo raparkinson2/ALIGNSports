@@ -246,64 +246,36 @@ function AuthNavigator() {
     if (!isLoggedIn || !currentPlayerId) return;
 
     // Register for push notifications
-    registerForPushNotificationsAsync().then((token) => {
+    registerForPushNotificationsAsync().then(async (token) => {
       if (token && currentPlayerId) {
         // Save the push token to the player's preferences (local store)
         updateNotificationPreferences(currentPlayerId, { pushToken: token });
         console.log('Push token registered for player:', currentPlayerId, 'token:', token);
 
-        // Save token via backend (uses service-role key, bypasses any RLS issues)
-        const saveTokenViaBackend = (playerId: string, pushToken: string) => {
-          const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
-          if (!backendUrl) return;
-          fetch(`${backendUrl}/api/notifications/save-token`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ playerId, pushToken }),
-          })
-            .then(async (res) => {
-              const text = await res.text();
-              console.log('Push token save-via-backend status:', res.status, text);
-            })
-            .catch((err) => console.log('Push token save-via-backend error:', err));
-        };
+        // Save token directly to Supabase - simple targeted update, no full upsert
+        const savePushToken = async (retryCount = 0) => {
+          const { data, error } = await supabase
+            .from('players')
+            .update({ push_token: token })
+            .eq('id', currentPlayerId)
+            .select('id');
 
-        // Save immediately via backend
-        saveTokenViaBackend(currentPlayerId, token);
-
-        // Also do full player upsert once team data is available to ensure push_token persists
-        const doPlayerUpsert = (teamId: string) => {
-          const updatedPlayer = useTeamStore.getState().players.find((p) => p.id === currentPlayerId);
-          if (updatedPlayer) {
-            const playerWithToken = {
-              ...updatedPlayer,
-              notificationPreferences: {
-                ...defaultNotificationPreferences,
-                ...(updatedPlayer.notificationPreferences || {}),
-                pushToken: token,
-              },
-            };
-            console.log('Push token: doing full player upsert to Supabase for player:', currentPlayerId);
-            pushPlayerToSupabase(playerWithToken, teamId).catch(console.error);
+          if (error) {
+            console.log(`Push token save error (attempt ${retryCount + 1}):`, error.message);
+          } else if (!data || data.length === 0) {
+            console.log(`Push token save matched 0 rows (attempt ${retryCount + 1}) for player:`, currentPlayerId);
           } else {
-            console.log('Push token: player not found in store for id:', currentPlayerId);
+            console.log('Push token saved successfully for player:', currentPlayerId, 'rows:', data.length);
+            return; // success
+          }
+
+          // Retry up to 3 times with delay
+          if (retryCount < 3) {
+            setTimeout(() => savePushToken(retryCount + 1), 3000 * (retryCount + 1));
           }
         };
 
-        const teamId = useTeamStore.getState().activeTeamId;
-        if (teamId) {
-          doPlayerUpsert(teamId);
-        }
-        // Retry after 3s and 8s for slow connections
-        setTimeout(() => {
-          const retryTeamId = useTeamStore.getState().activeTeamId;
-          if (retryTeamId) doPlayerUpsert(retryTeamId);
-          saveTokenViaBackend(currentPlayerId, token);
-        }, 3000);
-        setTimeout(() => {
-          const retryTeamId = useTeamStore.getState().activeTeamId;
-          if (retryTeamId) doPlayerUpsert(retryTeamId);
-        }, 8000);
+        await savePushToken();
       } else {
         console.log('Push token: failed to get token (permissions denied or simulator)');
       }
