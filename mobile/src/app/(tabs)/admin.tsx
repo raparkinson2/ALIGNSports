@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert, Platform, Switch } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert, Platform, Switch, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
@@ -291,6 +291,7 @@ export default function AdminScreen() {
   const [newPlayerIsInjured, setNewPlayerIsInjured] = useState(false);
   const [newPlayerIsSuspended, setNewPlayerIsSuspended] = useState(false);
   const [newPlayerStatusEndDate, setNewPlayerStatusEndDate] = useState<string>(''); // YYYY-MM-DD format
+  const [isDiagnosticRunning, setIsDiagnosticRunning] = useState(false);
   const [showNewPlayerEndDatePicker, setShowNewPlayerEndDatePicker] = useState(false);
   const [newPlayerMemberRole, setNewPlayerMemberRole] = useState<'player' | 'reserve' | 'coach' | 'parent'>('player');
 
@@ -1516,8 +1517,9 @@ export default function AdminScreen() {
             {/* Push Token Diagnostics Button */}
             <Pressable
               onPress={async () => {
+                if (isDiagnosticRunning) return;
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                Alert.alert('Checking...', 'Running diagnostics, please wait.');
+                setIsDiagnosticRunning(true);
 
                 // Race token registration against a 5s timeout
                 let myToken: string | null = null;
@@ -1546,6 +1548,7 @@ export default function AdminScreen() {
 
                 if (dbError) lines.push(`DB error: ${dbError.message}`);
 
+                setIsDiagnosticRunning(false);
                 Alert.alert(
                   'Push Diagnostics',
                   `MY DEVICE TOKEN:\n${myToken ? myToken.slice(0, 40) + '...' : `NONE (${tokenError})`}\n\nSUPABASE TOKENS:\n${lines.join('\n') || 'No players found'}`,
@@ -1561,10 +1564,15 @@ export default function AdminScreen() {
                   </View>
                   <View className="ml-3">
                     <Text className="text-white font-semibold">Push Token Diagnostics</Text>
-                    <Text className="text-slate-400 text-sm">Check who has tokens registered</Text>
+                    <Text className="text-slate-400 text-sm">
+                      {isDiagnosticRunning ? 'Running diagnostics...' : 'Check who has tokens registered'}
+                    </Text>
                   </View>
                 </View>
-                <ChevronRight size={20} color="#64748b" />
+                {isDiagnosticRunning
+                  ? <ActivityIndicator size="small" color="#60a5fa" />
+                  : <ChevronRight size={20} color="#64748b" />
+                }
               </View>
             </Pressable>
           </Animated.View>
