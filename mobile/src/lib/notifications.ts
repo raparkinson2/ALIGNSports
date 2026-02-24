@@ -57,17 +57,19 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       (Constants.expoConfig as any)?.projectId ||
       '727371d5-f124-42e2-af0e-40f420477bce'; // fallback from app.json
 
+    console.log('Push token: using projectId:', projectId);
+
     if (!projectId || projectId === 'your-eas-project-id-here') {
-      console.log('No valid EAS project ID found - push notifications to other devices unavailable');
-      // Local notifications still work without a project ID
+      console.log('Push token: no valid EAS project ID found');
       return null;
     }
 
     const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
-    console.log('Expo Push Token:', tokenData.data);
+    console.log('Push token obtained:', tokenData.data);
     return tokenData.data;
-  } catch (error) {
-    console.log('Error getting push token:', error);
+  } catch (error: any) {
+    console.log('Push token ERROR:', error?.message || error);
+    console.log('Push token ERROR details:', JSON.stringify(error));
     return null;
   }
 }
