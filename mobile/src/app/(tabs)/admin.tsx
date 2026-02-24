@@ -1517,21 +1517,38 @@ export default function AdminScreen() {
             <Pressable
               onPress={async () => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                // Get this device's token
-                const myToken = await registerForPushNotificationsAsync();
+                Alert.alert('Checking...', 'Running diagnostics, please wait.');
+
+                // Race token registration against a 5s timeout
+                let myToken: string | null = null;
+                let tokenError = 'timed out after 5s';
+                try {
+                  myToken = await Promise.race([
+                    registerForPushNotificationsAsync(),
+                    new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+                  ]);
+                  if (!myToken) tokenError = 'returned null (no permission or simulator)';
+                } catch (e: any) {
+                  tokenError = e?.message || String(e);
+                }
+
                 // Get all players' tokens from Supabase
                 const { supabase } = await import('@/lib/supabase');
-                const { data: rows } = await supabase
+                const { data: rows, error: dbError } = await supabase
                   .from('players')
                   .select('id, first_name, push_token, notification_preferences')
                   .eq('team_id', activeTeamId || '');
+
                 const lines = (rows || []).map((r: any) => {
                   const token = r.push_token || (r.notification_preferences as any)?.pushToken;
-                  return `${r.first_name}: ${token ? '✓ has token' : '✗ no token'}`;
+                  return `${r.first_name}: ${token ? '✓ token saved' : '✗ no token'}`;
                 });
+
+                if (dbError) lines.push(`DB error: ${dbError.message}`);
+
                 Alert.alert(
-                  'Push Token Status',
-                  `My token: ${myToken ? myToken.slice(0, 30) + '...' : 'NONE - not registered!'}\n\nAll players:\n${lines.join('\n')}`,
+                  'Push Diagnostics',
+                  `MY DEVICE TOKEN:\n${myToken ? myToken.slice(0, 40) + '...' : `NONE (${tokenError})`}\n\nSUPABASE TOKENS:\n${lines.join('\n') || 'No players found'}`,
                   [{ text: 'OK' }]
                 );
               }}
