@@ -147,16 +147,24 @@ notificationsRouter.post("/send-to-players", async (c) => {
   // Fetch push tokens by player ID using service role (bypasses RLS)
   const { data: rows, error } = await supabaseAdmin
     .from("players")
-    .select("id, email, phone, push_token")
+    .select("id, email, phone, push_token, notification_preferences")
     .in("id", playerIds);
 
   if (error) {
     console.error("[push] send-to-players: supabase error:", error.message);
   }
 
+  console.log(`[push] send-to-players: DB returned ${rows?.length ?? 0} rows for ${playerIds.length} IDs`);
+  for (const row of rows || []) {
+    const prefToken = (row.notification_preferences as any)?.pushToken;
+    console.log(`[push] row id=${row.id} push_token=${row.push_token ?? 'NULL'} pref_token=${prefToken ?? 'NULL'}`);
+  }
+
   const tokenMap: Record<string, string> = {};
   for (const row of rows || []) {
-    if (row.push_token) tokenMap[row.id] = row.push_token;
+    // Check push_token column first, then fall back to notification_preferences.pushToken
+    const token = row.push_token || (row.notification_preferences as any)?.pushToken;
+    if (token) tokenMap[row.id] = token;
   }
 
   // For players missing tokens, try cross-team lookup by email/phone
@@ -169,11 +177,12 @@ notificationsRouter.post("/send-to-players", async (c) => {
     if (emails.length > 0 || phones.length > 0) {
       const { data: altRows } = await supabaseAdmin
         .from("players")
-        .select("email, phone, push_token")
-        .not("push_token", "is", null);
+        .select("email, phone, push_token, notification_preferences")
+        .or("push_token.not.is.null,notification_preferences->>pushToken.not.is.null");
 
       for (const altRow of altRows || []) {
-        if (!altRow.push_token) continue;
+        const altToken = altRow.push_token || (altRow.notification_preferences as any)?.pushToken;
+        if (!altToken) continue;
         const altEmail = altRow.email?.toLowerCase();
         const altPhone = altRow.phone?.replace(/\D/g, '');
 
@@ -186,7 +195,7 @@ notificationsRouter.post("/send-to-players", async (c) => {
             (altEmail && mpEmail && altEmail === mpEmail) ||
             (altPhone && mpPhone && altPhone === mpPhone)
           ) {
-            tokenMap[id] = altRow.push_token;
+            tokenMap[id] = altToken;
             console.log(`[push] send-to-players: found token for ${id} via email/phone fallback`);
           }
         }
@@ -216,6 +225,33 @@ notificationsRouter.post("/send-to-players", async (c) => {
   await sendExpoPushNotifications(messages);
 
   return c.json({ success: true, sent: tokens.length });
+});
+
+/**
+ * GET /api/notifications/debug-tokens?teamId=xxx
+ * Returns push token status for all players on a team (for debugging).
+ */
+notificationsRouter.get("/debug-tokens", async (c) => {
+  const teamId = c.req.query("teamId");
+  if (!teamId) return c.json({ error: "teamId required" }, 400);
+
+  const { data: rows, error } = await supabaseAdmin
+    .from("players")
+    .select("id, first_name, last_name, email, push_token, notification_preferences")
+    .eq("team_id", teamId);
+
+  if (error) return c.json({ error: error.message }, 500);
+
+  const result = (rows || []).map((r: any) => ({
+    id: r.id,
+    name: `${r.first_name} ${r.last_name}`,
+    email: r.email,
+    push_token: r.push_token ?? null,
+    pref_push_token: (r.notification_preferences as any)?.pushToken ?? null,
+    has_token: !!(r.push_token || (r.notification_preferences as any)?.pushToken),
+  }));
+
+  return c.json({ players: result, count: result.length, with_token: result.filter((r: any) => r.has_token).length });
 });
 
 export { notificationsRouter };

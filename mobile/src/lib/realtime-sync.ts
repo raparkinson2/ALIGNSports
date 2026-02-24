@@ -421,7 +421,9 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       games,
       events,
       chatMessages,
-      chatLastReadAt: currentState.teams.find(t => t.id === teamId)?.chatLastReadAt ?? {},
+      chatLastReadAt: currentState.teams.find(t => t.id === teamId)?.chatLastReadAt
+        ?? (isActiveTeam ? currentState.chatLastReadAt : {})
+        ?? {},
       paymentPeriods,
       photos,
       notifications,
