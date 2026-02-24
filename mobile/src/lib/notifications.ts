@@ -155,7 +155,7 @@ export async function cancelScheduledNotification(identifier: string): Promise<v
 }
 
 /**
- * Send a push notification to specific devices via the backend.
+ * Send a push notification to specific devices via Expo Push API directly.
  * pushTokens: array of Expo push tokens for the recipient devices.
  */
 export async function sendPushToTokens(
@@ -173,21 +173,26 @@ export async function sendPushToTokens(
     return;
   }
 
-  const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
-  if (!backendUrl) {
-    console.log('sendPushToTokens: no backend URL configured');
-    return;
-  }
-
-  console.log('sendPushToTokens: sending to backend', backendUrl, 'tokens:', validTokens);
   try {
-    const res = await fetch(`${backendUrl}/api/notifications/send-push`, {
+    const messages = validTokens.map((token) => ({
+      to: token,
+      title,
+      body,
+      data: data || {},
+      sound: 'default',
+      priority: 'high',
+    }));
+
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tokens: validTokens, title, body, data: data || {} }),
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(messages),
     });
     const resText = await res.text();
-    console.log('sendPushToTokens: backend response status:', res.status, 'body:', resText);
+    console.log('sendPushToTokens: Expo response status:', res.status, 'body:', resText);
   } catch (err) {
     console.log('sendPushToTokens error:', err);
   }
@@ -195,8 +200,8 @@ export async function sendPushToTokens(
 
 /**
  * Send a push notification to a list of player IDs.
- * Uses the backend /api/notifications/send-to-players endpoint which has the service-role
- * Supabase key and can bypass RLS to fetch push tokens for any player.
+ * Fetches push tokens directly from Supabase, then sends via Expo Push API.
+ * Does NOT depend on the backend URL, so works regardless of which backend is running.
  */
 export async function sendPushToPlayers(
   playerIds: string[],
@@ -206,21 +211,73 @@ export async function sendPushToPlayers(
 ): Promise<void> {
   if (playerIds.length === 0) return;
 
-  const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
-  if (!backendUrl) {
-    console.log('sendPushToPlayers: no backend URL configured');
-    return;
-  }
-
   try {
-    console.log(`sendPushToPlayers: sending to ${playerIds.length} players via backend`);
-    const res = await fetch(`${backendUrl}/api/notifications/send-to-players`, {
+    // Import supabase client inline to avoid circular deps
+    const { supabase } = await import('@/lib/supabase');
+
+    // Fetch push tokens directly from Supabase (anon key, RLS is open)
+    const { data: rows, error } = await supabase
+      .from('players')
+      .select('id, push_token, notification_preferences')
+      .in('id', playerIds);
+
+    if (error) {
+      console.log('sendPushToPlayers: supabase fetch error:', error.message);
+      return;
+    }
+
+    console.log(`sendPushToPlayers: fetched ${rows?.length ?? 0} rows for ${playerIds.length} players`);
+
+    // Collect valid tokens
+    const tokens: string[] = [];
+    for (const row of rows || []) {
+      const token = row.push_token || (row.notification_preferences as any)?.pushToken;
+      if (token && (token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken['))) {
+        tokens.push(token);
+        console.log(`sendPushToPlayers: found token for player ${row.id}`);
+      } else {
+        console.log(`sendPushToPlayers: no token for player ${row.id}`);
+      }
+    }
+
+    if (tokens.length === 0) {
+      console.log('sendPushToPlayers: no valid tokens found for players:', playerIds);
+      return;
+    }
+
+    console.log(`sendPushToPlayers: sending to ${tokens.length} devices`);
+
+    // Send directly to Expo Push API — no backend URL needed
+    const messages = tokens.map((token) => ({
+      to: token,
+      title,
+      body,
+      data: data || {},
+      sound: 'default',
+      priority: 'high',
+    }));
+
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playerIds, title, body, data: data || {} }),
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(messages),
     });
-    const resText = await res.text();
-    console.log('sendPushToPlayers: backend response status:', res.status, 'body:', resText);
+
+    const resData = await res.json() as { data?: Array<{ status: string; id?: string; message?: string }> };
+    if (resData?.data) {
+      resData.data.forEach((ticket, i) => {
+        if (ticket.status === 'error') {
+          console.log(`sendPushToPlayers: ticket ${i} error: ${ticket.message}`);
+        } else {
+          console.log(`sendPushToPlayers: ticket ${i} ok, id=${ticket.id}`);
+        }
+      });
+    } else {
+      console.log('sendPushToPlayers: Expo response:', JSON.stringify(resData).slice(0, 200));
+    }
   } catch (err) {
     console.log('sendPushToPlayers error:', err);
   }
