@@ -220,8 +220,8 @@ export async function sendPushToTokens(
 
 /**
  * Send a push notification to a list of player IDs.
- * Fetches push tokens directly from Supabase, then sends via Expo Push API.
- * Does NOT depend on the backend URL, so works regardless of which backend is running.
+ * Routes through the backend /api/notifications/send-to-players which uses the
+ * service-role key to bypass Supabase RLS when reading push tokens.
  */
 export async function sendPushToPlayers(
   playerIds: string[],
@@ -231,103 +231,21 @@ export async function sendPushToPlayers(
 ): Promise<void> {
   if (playerIds.length === 0) return;
 
+  const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+  if (!backendUrl) {
+    console.log('sendPushToPlayers: no backend URL configured');
+    return;
+  }
+
   try {
-    const { supabase } = await import('@/lib/supabase');
-
-    // Fetch tokens by player ID
-    const { data: rows, error } = await supabase
-      .from('players')
-      .select('id, email, phone, push_token, notification_preferences')
-      .in('id', playerIds);
-
-    if (error) {
-      console.log('sendPushToPlayers: supabase fetch error:', error.message);
-      return;
-    }
-
-    console.log(`sendPushToPlayers: fetched ${rows?.length ?? 0} rows for ${playerIds.length} players`);
-
-    const tokens: string[] = [];
-    const missingEmails: string[] = [];
-    const missingPhones: string[] = [];
-
-    for (const row of rows || []) {
-      const token = row.push_token || (row.notification_preferences as any)?.pushToken;
-      // Accept both ExponentPushToken[] format and raw APNs hex tokens (64 char hex)
-      if (token && (
-        token.startsWith('ExponentPushToken[') ||
-        token.startsWith('ExpoPushToken[') ||
-        /^[0-9a-f]{64}$/i.test(token) // raw APNs device token
-      )) {
-        tokens.push(token);
-        console.log(`sendPushToPlayers: found token for player ${row.id}`);
-      } else {
-        console.log(`sendPushToPlayers: no token for player ${row.id}, will try email/phone fallback`);
-        if (row.email) missingEmails.push(row.email.toLowerCase());
-        if (row.phone) missingPhones.push(row.phone.replace(/\D/g, ''));
-      }
-    }
-
-    // For players with no token, try cross-matching by email or phone
-    // (handles cases where player has a different ID in another team record)
-    if (missingEmails.length > 0 || missingPhones.length > 0) {
-      const conditions: string[] = [];
-      missingEmails.forEach(e => conditions.push(`email.eq.${e}`));
-      missingPhones.forEach(p => conditions.push(`phone.eq.${p}`));
-
-      const { data: fallbackRows } = await supabase
-        .from('players')
-        .select('id, email, phone, push_token, notification_preferences')
-        .or(conditions.join(','));
-
-      for (const row of fallbackRows || []) {
-        const token = row.push_token || (row.notification_preferences as any)?.pushToken;
-        if (token && (
-          token.startsWith('ExponentPushToken[') ||
-          token.startsWith('ExpoPushToken[') ||
-          /^[0-9a-f]{64}$/i.test(token)
-        )) {
-          if (!tokens.includes(token)) {
-            tokens.push(token);
-            console.log(`sendPushToPlayers: found token via email/phone fallback for ${row.email || row.phone}`);
-          }
-        }
-      }
-    }
-
-    if (tokens.length === 0) {
-      console.log('sendPushToPlayers: no valid tokens found for players:', playerIds);
-      return;
-    }
-
-    console.log(`sendPushToPlayers: sending to ${tokens.length} devices`);
-
-    // Send directly to Expo Push API — no backend URL needed
-    const messages = tokens.map((token) => ({
-      to: token,
-      title,
-      body,
-      data: data || {},
-      sound: 'default',
-      priority: 'high',
-    }));
-
-    const res = await fetch('https://exp.host/--/api/v2/push/send', {
+    console.log(`sendPushToPlayers: sending to ${playerIds.length} players via backend`);
+    const res = await fetch(`${backendUrl}/api/notifications/send-to-players`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(messages),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerIds, title, body, data: data || {} }),
     });
-
-    const resData = await res.json() as { data?: Array<{ status: string; id?: string; message?: string }> };
-    if (resData?.data) {
-      resData.data.forEach((ticket, i) => {
-        if (ticket.status === 'error') {
-          console.log(`sendPushToPlayers: ticket ${i} error: ${ticket.message}`);
-        } else {
-          console.log(`sendPushToPlayers: ticket ${i} ok, id=${ticket.id}`);
-        }
-      });
-    }
+    const resData = await res.json() as { success?: boolean; sent?: number; message?: string; error?: string };
+    console.log(`sendPushToPlayers: backend response - sent=${resData.sent}, msg=${resData.message || resData.error || ''}`);
   } catch (err) {
     console.log('sendPushToPlayers error:', err);
   }

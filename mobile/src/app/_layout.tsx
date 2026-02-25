@@ -252,55 +252,34 @@ function AuthNavigator() {
         updateNotificationPreferences(currentPlayerId, { pushToken: token });
         console.log('Push token registered for player:', currentPlayerId, 'token:', token);
 
-        // Save token directly to Supabase
-        // Try by player ID first, then fall back to email/phone match
+        // Save token via backend (uses service-role key to bypass RLS)
         const savePushToken = async (retryCount = 0) => {
-          // Attempt 1: match by player ID
-          const { data: byId, error: idError } = await supabase
-            .from('players')
-            .update({ push_token: token })
-            .eq('id', currentPlayerId)
-            .select('id');
-
-          if (idError) {
-            console.log(`Push token save error by ID (attempt ${retryCount + 1}):`, idError.message);
-          } else if (byId && byId.length > 0) {
-            console.log('Push token saved successfully by player ID:', currentPlayerId);
-            return; // success
-          } else {
-            console.log(`Push token: ID match found 0 rows for ${currentPlayerId}, trying email/phone fallback`);
-          }
-
-          // Attempt 2: match by email or phone (handles ID mismatches between local and Supabase)
-          const storeState = useTeamStore.getState();
-          const email = storeState.userEmail;
-          const phone = storeState.userPhone;
-
-          if (email || phone) {
-            let query = supabase.from('players').update({ push_token: token });
-            if (email && phone) {
-              query = query.or(`email.eq.${email},phone.eq.${phone?.replace(/\D/g, '')}`);
-            } else if (email) {
-              query = query.eq('email', email);
-            } else if (phone) {
-              query = query.eq('phone', phone!.replace(/\D/g, ''));
+          try {
+            const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+            if (!backendUrl) {
+              console.log('Push token: no backend URL configured, skipping save');
+              return;
             }
-            const { data: byContact, error: contactError } = await query.select('id');
-            if (contactError) {
-              console.log(`Push token save error by email/phone:`, contactError.message);
-            } else if (byContact && byContact.length > 0) {
-              console.log('Push token saved by email/phone match, updated player IDs:', byContact.map((r: any) => r.id).join(', '));
-              return; // success
-            } else {
-              console.log('Push token: no rows matched by email/phone either');
+            const res = await fetch(`${backendUrl}/api/notifications/save-token`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ playerId: currentPlayerId, pushToken: token }),
+            });
+            const json = await res.json() as { success?: boolean; rowsUpdated?: number; error?: string };
+            if (json.success) {
+              console.log('Push token saved via backend, rowsUpdated:', json.rowsUpdated);
+              return;
             }
+            console.log('Push token backend save failed:', json.error);
+          } catch (err: any) {
+            console.log(`Push token backend save error (attempt ${retryCount + 1}):`, err?.message || err);
           }
 
           // Retry up to 3 times
           if (retryCount < 3) {
             setTimeout(() => savePushToken(retryCount + 1), 3000 * (retryCount + 1));
           } else {
-            console.log('Push token: all save attempts failed for player:', currentPlayerId);
+            console.log('Push token: all backend save attempts failed for player:', currentPlayerId);
           }
         };
 
