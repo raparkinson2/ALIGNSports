@@ -83,9 +83,9 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       return (expoToken as any).data;
     }
 
-    // Fallback: use device token directly (works if you send to Expo API with native token)
-    console.log('Push token: Expo token timed out, using device token as fallback');
-    return deviceToken.data;
+    // Raw APNs/FCM tokens cannot be used with Expo Push Service — only ExponentPushToken[] format works.
+    console.log('Push token: Expo token timed out, cannot use raw device token with Expo Push Service');
+    return null;
   } catch (error: any) {
     console.log('Push token ERROR:', error?.message || error);
     return null;

@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useEffect, useState, useRef } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTeamStore, useStoreHydrated, defaultNotificationPreferences } from '@/lib/store';
@@ -263,7 +263,7 @@ function AuthNavigator() {
             const res = await fetch(`${backendUrl}/api/notifications/save-token`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ playerId: currentPlayerId, pushToken: token }),
+              body: JSON.stringify({ playerId: currentPlayerId, pushToken: token, platform: Platform.OS }),
             });
             const json = await res.json() as { success?: boolean; rowsUpdated?: number; error?: string };
             if (json.success) {
