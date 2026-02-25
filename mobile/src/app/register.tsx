@@ -15,7 +15,7 @@ import { signUpWithEmail, getCurrentUser } from '@/lib/supabase-auth';
 import { secureRegisterInvitedPlayer, secureRegisterInvitedPlayerByPhone, secureLoginWithEmail, secureLoginWithPhone } from '@/lib/secure-auth';
 import { signInWithEmail } from '@/lib/supabase-auth';
 import { checkPendingInvitation, acceptTeamInvitation, TeamInvitation } from '@/lib/team-invitations';
-import { pushPlayerToSupabase, loadTeamFromSupabase } from '@/lib/realtime-sync';
+import { pushPlayerToSupabase, loadTeamFromSupabase, findPlayerInSupabaseByContact } from '@/lib/realtime-sync';
 import { hashPassword } from '@/lib/crypto';
 
 export default function RegisterScreen() {
@@ -381,25 +381,46 @@ export default function RegisterScreen() {
             supabaseInvitation.team_id
           );
         } else {
-          // Player row doesn't exist yet (e.g. admin added them but push failed) — create it
-          playerId = `player-${Date.now()}`;
-          const newPlayer = {
-            id: playerId,
-            firstName: supabaseInvitation.first_name,
-            lastName: supabaseInvitation.last_name,
-            email: !isPhone ? trimmedIdentifier.toLowerCase() : undefined,
-            phone: isPhone ? unformatPhone(trimmedIdentifier) : undefined,
-            number: supabaseInvitation.jersey_number || '',
-            position: supabaseInvitation.position || 'C',
-            positions: supabaseInvitation.position ? [supabaseInvitation.position] : ['C'],
-            roles: supabaseInvitation.roles || [],
-            password: hashedPassword,
-            avatar: avatar || undefined,
-            status: 'active' as const,
-          };
-          await pushPlayerToSupabase(newPlayer as any, supabaseInvitation.team_id);
-          // Reload so local store has the new player
-          await loadTeamFromSupabase(supabaseInvitation.team_id);
+          // Player row doesn't exist in local store — query Supabase directly to avoid creating a duplicate
+          const supabasePlayer = await findPlayerInSupabaseByContact(
+            supabaseInvitation.team_id,
+            !isPhone ? trimmedIdentifier.toLowerCase() : undefined,
+            isPhone ? unformatPhone(trimmedIdentifier) : undefined,
+          );
+
+          if (supabasePlayer) {
+            // Found via direct Supabase query — reuse the existing row
+            playerId = supabasePlayer.id;
+            const updates: any = { password: hashedPassword };
+            if (avatar) updates.avatar = avatar;
+            useTeamStore.getState().updatePlayer(playerId, updates);
+            await pushPlayerToSupabase(
+              { ...supabasePlayer, ...updates },
+              supabaseInvitation.team_id,
+            );
+            // Reload so local store reflects the updated player
+            await loadTeamFromSupabase(supabaseInvitation.team_id);
+          } else {
+            // Truly no existing row — create one (admin push may have failed)
+            playerId = `player-${Date.now()}`;
+            const newPlayer = {
+              id: playerId,
+              firstName: supabaseInvitation.first_name,
+              lastName: supabaseInvitation.last_name,
+              email: !isPhone ? trimmedIdentifier.toLowerCase() : undefined,
+              phone: isPhone ? unformatPhone(trimmedIdentifier) : undefined,
+              number: supabaseInvitation.jersey_number || '',
+              position: supabaseInvitation.position || 'C',
+              positions: supabaseInvitation.position ? [supabaseInvitation.position] : ['C'],
+              roles: supabaseInvitation.roles || [],
+              password: hashedPassword,
+              avatar: avatar || undefined,
+              status: 'active' as const,
+            };
+            await pushPlayerToSupabase(newPlayer as any, supabaseInvitation.team_id);
+            // Reload so local store has the new player
+            await loadTeamFromSupabase(supabaseInvitation.team_id);
+          }
         }
 
         // Mark the invitation as accepted
@@ -536,25 +557,44 @@ export default function RegisterScreen() {
           await pushPlayerToSupabase({ ...existingPlayer, ...updates }, supabaseInvitation.team_id);
           console.log('REGISTER: Player pushed successfully');
         } else {
-          console.log('REGISTER: Creating new player row...');
-          playerId = `player-${Date.now()}`;
-          const hashedPw = await hashPassword(existingPassword);
-          const newPlayer = {
-            id: playerId,
-            firstName: supabaseInvitation.first_name,
-            lastName: supabaseInvitation.last_name,
-            email: !isPhone ? trimmedIdentifier.toLowerCase() : undefined,
-            phone: isPhone ? unformatPhone(trimmedIdentifier) : undefined,
-            number: supabaseInvitation.jersey_number || '',
-            position: supabaseInvitation.position || 'C',
-            positions: supabaseInvitation.position ? [supabaseInvitation.position] : ['C'],
-            roles: supabaseInvitation.roles || [],
-            password: hashedPw,
-            status: 'active' as const,
-          };
-          await pushPlayerToSupabase(newPlayer as any, supabaseInvitation.team_id);
-          await loadTeamFromSupabase(supabaseInvitation.team_id);
-          console.log('REGISTER: New player created and pushed');
+          console.log('REGISTER: Player not in local store — querying Supabase directly...');
+          const isPhoneLocal = isPhoneNumber(trimmedIdentifier);
+          const supabasePlayer = await findPlayerInSupabaseByContact(
+            supabaseInvitation.team_id,
+            !isPhoneLocal ? trimmedIdentifier.toLowerCase() : undefined,
+            isPhoneLocal ? unformatPhone(trimmedIdentifier) : undefined,
+          );
+
+          if (supabasePlayer) {
+            // Found via direct Supabase query — reuse the existing row
+            playerId = supabasePlayer.id;
+            console.log('REGISTER: Found existing player in Supabase directly:', playerId);
+            const hashedPw = await hashPassword(existingPassword);
+            const updates: { password: string } = { password: hashedPw };
+            useTeamStore.getState().updatePlayer(playerId, updates);
+            await pushPlayerToSupabase({ ...supabasePlayer, ...updates }, supabaseInvitation.team_id);
+            await loadTeamFromSupabase(supabaseInvitation.team_id);
+          } else {
+            console.log('REGISTER: Creating new player row (no existing row found anywhere)...');
+            playerId = `player-${Date.now()}`;
+            const hashedPw = await hashPassword(existingPassword);
+            const newPlayer = {
+              id: playerId,
+              firstName: supabaseInvitation.first_name,
+              lastName: supabaseInvitation.last_name,
+              email: !isPhoneLocal ? trimmedIdentifier.toLowerCase() : undefined,
+              phone: isPhoneLocal ? unformatPhone(trimmedIdentifier) : undefined,
+              number: supabaseInvitation.jersey_number || '',
+              position: supabaseInvitation.position || 'C',
+              positions: supabaseInvitation.position ? [supabaseInvitation.position] : ['C'],
+              roles: supabaseInvitation.roles || [],
+              password: hashedPw,
+              status: 'active' as const,
+            };
+            await pushPlayerToSupabase(newPlayer as any, supabaseInvitation.team_id);
+            await loadTeamFromSupabase(supabaseInvitation.team_id);
+            console.log('REGISTER: New player created and pushed');
+          }
         }
 
         console.log('REGISTER: Accepting invitation...');

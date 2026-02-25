@@ -18,6 +18,8 @@ All real-time sync is handled by **Supabase Realtime** via a single WebSocket ch
 
 **Registration flow (email users)**: When a pending Supabase invitation is found for an email address, the app routes the user to Step 2 (create password) based ONLY on whether they have an active Supabase Auth session (`isAlreadyLoggedInWithEmail`). The local store's player password field is NOT used for email users because `loadTeamFromSupabase` pulls player passwords from Supabase into the local store, and these can be stale from partial/failed registration attempts, causing false "existing account" detection.
 
+**Duplicate player prevention**: When accepting an invitation, `handleCompleteRegistration` and `handleExistingUserLogin` first search the local store for an existing player row matching the email/phone. If not found there (due to stale state or load timing), they now call `findPlayerInSupabaseByContact` to query Supabase directly before creating a new row. This prevents the duplicate player bug where the admin-created player row was not found in the local store and a second row was created with a different ID.
+
 **Payment subscriptions**: `player_payments` and `payment_entries` subscriptions guard against cross-team events by checking if the changed row belongs to the current team's payment periods.
 
 **Notification deduplication**: Both game invites and event invites use stable identifiers (`game-invite-${id}`, `event-invite-${id}`) so scheduling the same notification twice replaces rather than duplicates.

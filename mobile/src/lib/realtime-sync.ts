@@ -928,6 +928,36 @@ export async function pushPlayerToSupabase(player: Player, teamId: string): Prom
   }
 }
 
+/**
+ * Look up a player in Supabase by email OR phone within a given team.
+ * Returns the raw player row (mapped to Player) or null if not found.
+ * Use this before creating a new player to avoid duplicates.
+ */
+export async function findPlayerInSupabaseByContact(
+  teamId: string,
+  email: string | undefined,
+  phone: string | undefined,
+): Promise<Player | null> {
+  try {
+    let query = supabase.from('players').select('*').eq('team_id', teamId);
+    if (email) {
+      query = query.ilike('email', email);
+    } else if (phone) {
+      // Strip non-digits for comparison; Supabase stores digits-only
+      const digits = phone.replace(/\D/g, '');
+      query = query.eq('phone', digits);
+    } else {
+      return null;
+    }
+    const { data, error } = await query.maybeSingle();
+    if (error || !data) return null;
+    return mapPlayer(data);
+  } catch (err) {
+    console.error('SYNC: findPlayerInSupabaseByContact error:', err);
+    return null;
+  }
+}
+
 export async function deletePlayerFromSupabase(playerId: string): Promise<void> {
   try {
     await supabase.from('players').delete().eq('id', playerId);
