@@ -13,7 +13,7 @@
     "preview": {
       "distribution": "internal",
       "ios": {
-        "distribution": "internal"
+        "distribution": "store"
       },
       "env": {
         "EXPO_PUBLIC_VIBECODE_ELEVENLABS_API_KEY": "elevenlabs-api-key-oa9Shahx4Zi4oof2bei5kee9nee7eeng-n0tr3al",
