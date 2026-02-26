@@ -29,8 +29,8 @@ export default function TabLayout() {
     if (!currentPlayerId) return 0;
     const lastReadAt = chatLastReadAt[currentPlayerId];
     if (!lastReadAt) {
-      // If never read, count all messages from others
-      return chatMessages.filter((m) => m.senderId !== currentPlayerId).length;
+      // No read timestamp means user hasn't opened chat yet — don't spam with old messages
+      return 0;
     }
     // Count messages from others after last read time
     return chatMessages.filter(

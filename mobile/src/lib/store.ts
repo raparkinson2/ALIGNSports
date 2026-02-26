@@ -1568,8 +1568,8 @@ export const useTeamStore = create<TeamStore>()(
         const state = get();
         const lastReadAt = state.chatLastReadAt[playerId];
         if (!lastReadAt) {
-          // If never read, count all messages from others
-          return state.chatMessages.filter((m) => m.senderId !== playerId).length;
+          // No read timestamp — don't count old messages as unread
+          return 0;
         }
         // Count messages from others after last read time
         return state.chatMessages.filter(
