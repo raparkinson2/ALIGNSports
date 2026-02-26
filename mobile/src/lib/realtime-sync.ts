@@ -895,6 +895,16 @@ export async function pushTeamToSupabase(teamId: string, teamName: string, setti
 
 export async function pushPlayerToSupabase(player: Player, teamId: string): Promise<void> {
   try {
+    // IMPORTANT: Never include push_token or notification_preferences.pushToken/pushTokens here.
+    // Token management is handled exclusively by the backend /api/notifications/save-token
+    // endpoint. Syncing tokens during a player upsert overwrites other devices' tokens.
+    const notifPrefsWithoutToken = player.notificationPreferences
+      ? (() => {
+          const { pushToken, pushTokens, ...rest } = player.notificationPreferences as any;
+          return Object.keys(rest).length > 0 ? rest : null;
+        })()
+      : null;
+
     const { error } = await supabase.from('players').upsert({
       id: player.id,
       team_id: teamId,
@@ -912,8 +922,8 @@ export async function pushPlayerToSupabase(player: Player, teamId: string): Prom
       is_suspended: player.isSuspended || false,
       status_end_date: player.statusEndDate || null,
       unavailable_dates: player.unavailableDates || [],
-      notification_preferences: player.notificationPreferences || null,
-      push_token: player.notificationPreferences?.pushToken || null,
+      notification_preferences: notifPrefsWithoutToken,
+      // push_token intentionally omitted — managed only by backend save-token endpoint
       stats: player.stats || {},
       goalie_stats: player.goalieStats || {},
       pitcher_stats: player.pitcherStats || {},
