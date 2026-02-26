@@ -350,6 +350,7 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
         .select('*')
         .eq('team_id', teamId)
         .eq('to_player_id', currentPlayerId)
+        .eq('read', false)
         .order('created_at', { ascending: false })
         .limit(50);
       notifications = (notifData || []).map((n: any) => ({
