@@ -1521,25 +1521,14 @@ export default function AdminScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 setIsDiagnosticRunning(true);
 
-                // Step 1: Check permission status
-                const { status: permStatus } = await (await import('expo-notifications')).getPermissionsAsync();
+                // Step 1: Check permission status (instant, no network)
+                const Notifs = await import('expo-notifications');
+                const { status: permStatus } = await Notifs.getPermissionsAsync();
 
-                // Step 2: Get this device's Expo push token
-                let myToken: string | null = null;
-                let tokenError = 'timed out';
-                try {
-                  myToken = await Promise.race([
-                    registerForPushNotificationsAsync(),
-                    new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
-                  ]);
-                  if (!myToken) tokenError = 'null — check permissions or use physical device';
-                } catch (e: any) {
-                  tokenError = e?.message || String(e);
-                }
-
-                // Step 3: Fetch all team tokens via backend (bypasses RLS, shows multi-device array)
+                // Step 2: Fetch all team tokens via backend (bypasses RLS)
+                // Do NOT call registerForPushNotificationsAsync here — it hangs in dev builds
                 const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
-                type DebugPlayer = { id: string; name: string; email: string; push_token: string | null; push_tokens: Array<{ token: string; platform: string; lastSeen: string }>; token_count: number; has_token: boolean };
+                type DebugPlayer = { id: string; name: string; email: string; push_tokens: Array<{ token: string; platform: string; last_seen: string }>; token_count: number; has_token: boolean };
                 let debugPlayers: DebugPlayer[] = [];
                 let fetchError = '';
                 if (backendUrl && activeTeamId) {
@@ -1552,26 +1541,28 @@ export default function AdminScreen() {
                     fetchError = e?.message || String(e);
                   }
                 } else {
-                  fetchError = backendUrl ? 'no activeTeamId' : 'no backend URL';
+                  fetchError = backendUrl ? 'no activeTeamId' : 'no backend URL configured';
                 }
 
                 setIsDiagnosticRunning(false);
 
-                const tokenDisplay = myToken ? `${myToken}` : `NONE (${tokenError})`;
-
+                const withTokens = debugPlayers.filter(p => p.has_token).length;
                 const playerLines = debugPlayers.map((p) => {
                   if (p.token_count > 0) {
-                    const devices = p.push_tokens.map(t => `    • ${t.platform} — ${t.token.slice(0, 28)}...`).join('\n');
+                    const devices = p.push_tokens.map(t =>
+                      `    ${t.platform}  ${t.token.slice(0, 30)}...`
+                    ).join('\n');
                     return `✓ ${p.name} (${p.token_count} device${p.token_count !== 1 ? 's' : ''})\n${devices}`;
                   }
-                  return `✗ ${p.name} — NO TOKEN`;
+                  return `✗ ${p.name} — no token (needs to open TestFlight app)`;
                 });
 
                 Alert.alert(
                   'Push Diagnostics',
-                  `PERMISSION: ${permStatus}\n\nMY TOKEN:\n${tokenDisplay}\n\n` +
-                  `TEAM (${debugPlayers.filter(p => p.has_token).length}/${debugPlayers.length} have tokens):\n` +
-                  (fetchError ? `Error: ${fetchError}` : playerLines.join('\n\n') || 'No players found'),
+                  `Permission: ${permStatus}\n` +
+                  `Note: token fetch only works in TestFlight, not dev preview\n\n` +
+                  `TEAM TOKENS (${withTokens}/${debugPlayers.length} registered):\n\n` +
+                  (fetchError ? `Backend error: ${fetchError}` : playerLines.join('\n\n') || 'No players found'),
                   [{ text: 'OK' }]
                 );
               }}
