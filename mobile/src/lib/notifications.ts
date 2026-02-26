@@ -50,41 +50,24 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   }
 
   try {
-    // Use getDevicePushTokenAsync — gets the raw APNs/FCM token directly from the OS.
-    // No network call needed, never hangs. We then wrap it in the Expo format.
-    console.log('Push token: getting device push token...');
-    const deviceToken = await Notifications.getDevicePushTokenAsync();
-    console.log('Push token: device token type:', deviceToken.type, 'data:', deviceToken.data);
-
-    if (!deviceToken.data) {
-      console.log('Push token: device returned empty token');
-      return null;
-    }
-
-    // For iOS, the device token is a raw APNs hex string.
-    // Wrap it in ExponentPushToken format so Expo's push API accepts it.
-    // Actually, try getExpoPushTokenAsync with a short timeout first since it gives
-    // a proper ExponentPushToken[] that works with Expo's service.
     const projectId =
       Constants.expoConfig?.extra?.eas?.projectId ||
       (Constants as any).easConfig?.projectId ||
       '727371d5-f124-42e2-af0e-40f420477bce';
 
-    console.log('Push token: getting Expo push token with projectId:', projectId);
+    console.log('Push token: calling getExpoPushTokenAsync with projectId:', projectId);
 
-    // Race against 8 second timeout
     const expoToken = await Promise.race([
-      Notifications.getExpoPushTokenAsync({ projectId, devicePushToken: deviceToken }),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+      Notifications.getExpoPushTokenAsync({ projectId }),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 15000)),
     ]);
 
     if (expoToken) {
-      console.log('Push token: Expo token obtained:', (expoToken as any).data);
+      console.log('Push token: obtained:', (expoToken as any).data);
       return (expoToken as any).data;
     }
 
-    // Raw APNs/FCM tokens cannot be used with Expo Push Service — only ExponentPushToken[] format works.
-    console.log('Push token: Expo token timed out, cannot use raw device token with Expo Push Service');
+    console.log('Push token: timed out after 15s — APNs credentials may not be configured for this build');
     return null;
   } catch (error: any) {
     console.log('Push token ERROR:', error?.message || error);
