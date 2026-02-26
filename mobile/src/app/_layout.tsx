@@ -52,6 +52,7 @@ function AuthNavigator() {
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
   const didFetchAllTeams = useRef(false);
+  const pushTokenRegistered = useRef<string | null>(null); // tracks which playerId has registered
 
   // On startup, ensure all teams the user belongs to are loaded from Supabase.
   // This fixes cases where the race condition caused only 1 team to be persisted locally.
@@ -244,6 +245,9 @@ function AuthNavigator() {
   // Register for push notifications when logged in
   useEffect(() => {
     if (!isLoggedIn || !currentPlayerId) return;
+    // Only register once per player session to avoid duplicate APNs calls
+    if (pushTokenRegistered.current === currentPlayerId) return;
+    pushTokenRegistered.current = currentPlayerId;
 
     const registerToken = async () => {
       const token = await registerForPushNotificationsAsync();
@@ -372,6 +376,8 @@ function AuthNavigator() {
       if (responseListener.current) {
         responseListener.current.remove();
       }
+      // Reset push token registration if player logs out
+      if (!isLoggedIn) pushTokenRegistered.current = null;
     };
   }, [isLoggedIn, currentPlayerId, isReady]);
 
