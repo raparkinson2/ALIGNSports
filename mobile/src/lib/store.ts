@@ -966,7 +966,13 @@ export const useTeamStore = create<TeamStore>()(
       }),
 
       players: initialPlayers,
-      addPlayer: (player) => set((state) => ({ players: [...state.players, player] })),
+      addPlayer: (player) => set((state) => {
+        // Prevent duplicates - if a player with this id already exists, update instead of add
+        if (state.players.some((p) => p.id === player.id)) {
+          return { players: state.players.map((p) => p.id === player.id ? { ...p, ...player } : p) };
+        }
+        return { players: [...state.players, player] };
+      }),
       updatePlayer: (id, updates) => set((state) => {
         // Get the updated player data - check both state.players and active team
         let currentPlayer = state.players.find((p) => p.id === id);
@@ -1209,7 +1215,15 @@ export const useTeamStore = create<TeamStore>()(
         };
       }),
       updateGame: (id, updates) => set((state) => ({
-        games: state.games.map((g) => (g.id === id ? { ...g, ...updates } : g)),
+        games: state.games.map((g) => {
+          if (g.id !== id) return g;
+          const merged = { ...g, ...updates };
+          // Deduplicate player ID arrays to prevent double-renders
+          if (merged.invitedPlayers) merged.invitedPlayers = [...new Set(merged.invitedPlayers)];
+          if (merged.checkedInPlayers) merged.checkedInPlayers = [...new Set(merged.checkedInPlayers)];
+          if (merged.checkedOutPlayers) merged.checkedOutPlayers = [...new Set(merged.checkedOutPlayers)];
+          return merged;
+        }),
       })),
       removeGame: (id) => set((state) => ({ games: state.games.filter((g) => g.id !== id) })),
 

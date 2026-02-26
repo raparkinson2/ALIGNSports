@@ -245,8 +245,8 @@ function AuthNavigator() {
   useEffect(() => {
     if (!isLoggedIn || !currentPlayerId) return;
 
-    // Register for push notifications
-    registerForPushNotificationsAsync().then(async (token) => {
+    const registerToken = async () => {
+      const token = await registerForPushNotificationsAsync();
       if (token && currentPlayerId) {
         // Save the push token to the player's preferences (local store)
         updateNotificationPreferences(currentPlayerId, { pushToken: token });
@@ -260,6 +260,7 @@ function AuthNavigator() {
               console.log('Push token: no backend URL configured, skipping save');
               return;
             }
+            console.log(`Push token: saving to backend (attempt ${retryCount + 1}) url=${backendUrl}`);
             const res = await fetch(`${backendUrl}/api/notifications/save-token`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -267,7 +268,7 @@ function AuthNavigator() {
             });
             const json = await res.json() as { success?: boolean; rowsUpdated?: number; error?: string };
             if (json.success) {
-              console.log('Push token saved via backend, rowsUpdated:', json.rowsUpdated);
+              console.log('Push token saved successfully for player:', currentPlayerId);
               return;
             }
             console.log('Push token backend save failed:', json.error);
@@ -287,7 +288,10 @@ function AuthNavigator() {
       } else {
         console.log('Push token: failed to get token (permissions denied or simulator)');
       }
-    });
+    };
+
+    // Register immediately
+    registerToken();
 
     // Check for notification that opened the app (when app was completely closed)
     Notifications.getLastNotificationResponseAsync().then((response) => {

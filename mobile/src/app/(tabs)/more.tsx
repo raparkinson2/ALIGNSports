@@ -305,6 +305,8 @@ interface NotificationPreferencesModalProps {
   onClose: () => void;
   preferences: NotificationPreferences;
   onSave: (prefs: Partial<NotificationPreferences>) => void;
+  currentPlayerId?: string | null;
+  backendUrl?: string;
 }
 
 interface PreferenceToggleProps {
@@ -334,7 +336,7 @@ function PreferenceToggle({ label, description, value, onToggle }: PreferenceTog
   );
 }
 
-function NotificationPreferencesModal({ visible, onClose, preferences, onSave }: NotificationPreferencesModalProps) {
+function NotificationPreferencesModal({ visible, onClose, preferences, onSave, currentPlayerId, backendUrl }: NotificationPreferencesModalProps) {
   const [prefs, setPrefs] = useState<NotificationPreferences>(preferences);
   const [isTestingNotif, setIsTestingNotif] = useState(false);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
@@ -415,6 +417,20 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave }:
       setPermissionStatus(newStatus as 'granted' | 'denied' | 'undetermined');
 
       if (newStatus === 'granted') {
+        // Save token to backend if we have a player ID and backend URL
+        if (token && currentPlayerId && backendUrl) {
+          try {
+            const res = await fetch(`${backendUrl}/api/notifications/save-token`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ playerId: currentPlayerId, pushToken: token, platform: Platform.OS }),
+            });
+            const json = await res.json() as { success?: boolean };
+            console.log('Push token saved from settings modal:', json.success);
+          } catch (err) {
+            console.log('Push token save from settings modal failed:', err);
+          }
+        }
         Alert.alert('Success', 'Push notifications are now enabled!');
       } else {
         // User denied in the popup or something went wrong
@@ -1446,6 +1462,8 @@ export default function MoreScreen() {
         onClose={() => setNotifPrefsVisible(false)}
         preferences={effectivePlayerId ? getNotificationPreferences(effectivePlayerId) : defaultNotificationPreferences}
         onSave={handleSaveNotificationPrefs}
+        currentPlayerId={currentPlayerId}
+        backendUrl={process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || ''}
       />
 
       {/* Change Password Modal */}

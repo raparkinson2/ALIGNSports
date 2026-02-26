@@ -658,8 +658,10 @@ export default function GameDetailScreen() {
   const checkedInCount = game.checkedInPlayers?.length ?? 0;
   const checkedOutCount = game.checkedOutPlayers?.length ?? 0;
   const pendingCount = (game.invitedPlayers?.length ?? 0) - checkedInCount - checkedOutCount;
-  const checkedInPlayers = players.filter((p) => game.checkedInPlayers?.includes(p.id));
-  const invitedPlayers = players.filter((p) => game.invitedPlayers?.includes(p.id));
+  // Deduplicate players array before filtering to prevent double-renders from race conditions
+  const uniquePlayers = players.filter((p, idx, arr) => arr.findIndex(x => x.id === p.id) === idx);
+  const checkedInPlayers = uniquePlayers.filter((p) => game.checkedInPlayers?.includes(p.id));
+  const invitedPlayers = uniquePlayers.filter((p) => game.invitedPlayers?.includes(p.id));
 
   // Sort invited players: checked in first, then pending, then checked out
   const sortedInvitedPlayers = [...invitedPlayers].sort((a, b) => {
@@ -674,13 +676,13 @@ export default function GameDetailScreen() {
   const currentPlayerObj = !currentPlayerInList && currentPlayerId ? players.find((p) => p.id === currentPlayerId) : null;
   const playersToDisplay = currentPlayerObj ? [currentPlayerObj, ...sortedInvitedPlayers] : sortedInvitedPlayers;
 
-  const uninvitedPlayers = players.filter((p) => !game.invitedPlayers?.includes(p.id));
+  const uninvitedPlayers = uniquePlayers.filter((p) => !game.invitedPlayers?.includes(p.id));
   const uninvitedActive = uninvitedPlayers.filter((p) => p.status === 'active');
   const uninvitedReserve = uninvitedPlayers.filter((p) => p.status === 'reserve');
-  const activePlayers = players.filter((p) => p.status === 'active');
-  const reservePlayers = players.filter((p) => p.status === 'reserve');
+  const activePlayers = uniquePlayers.filter((p) => p.status === 'active');
+  const reservePlayers = uniquePlayers.filter((p) => p.status === 'reserve');
   const allRosterPlayers = [...activePlayers, ...reservePlayers]; // For refreshment duty selection
-  const beerDutyPlayer = game.beerDutyPlayerId ? players.find((p) => p.id === game.beerDutyPlayerId) : null;
+  const beerDutyPlayer = game.beerDutyPlayerId ? uniquePlayers.find((p) => p.id === game.beerDutyPlayerId) : null;
 
   // Get jersey color info - handle both color name and hex code
   const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === game.jerseyColor || c.color === game.jerseyColor);
@@ -712,9 +714,12 @@ export default function GameDetailScreen() {
     // If the player isn't yet in invitedPlayers (self-check-in by a non-invited player),
     // add them to the invite list first so they appear for everyone.
     if (!isInvited && activeTeamId) {
-      updateGameAndSync(game.id, {
-        invitedPlayers: [...(game.invitedPlayers ?? []), playerId],
-      });
+      const currentInvited = game.invitedPlayers ?? [];
+      if (!currentInvited.includes(playerId)) {
+        updateGameAndSync(game.id, {
+          invitedPlayers: [...currentInvited, playerId],
+        });
+      }
       pushGameResponseToSupabase(game.id, playerId, 'invited').catch(console.error);
     }
 

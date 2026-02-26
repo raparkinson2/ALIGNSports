@@ -180,7 +180,11 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       .select('*')
       .eq('team_id', teamId);
 
-    const players = (playersData || []).map(mapPlayer);
+    // Deduplicate players by id in case of DB anomalies or race conditions
+    const rawPlayers = (playersData || []).map(mapPlayer);
+    const playerMap = new Map<string, Player>();
+    for (const p of rawPlayers) playerMap.set(p.id, p);
+    const players = Array.from(playerMap.values());
 
     // Fetch games
     const { data: gamesData } = await supabase
