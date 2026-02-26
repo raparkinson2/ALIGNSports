@@ -57,20 +57,22 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
     console.log('Push token: calling getExpoPushTokenAsync with projectId:', projectId);
 
+    // Use a longer timeout and surface the real error instead of swallowing it
     const expoToken = await Promise.race([
       Notifications.getExpoPushTokenAsync({ projectId }),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 15000)),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('APNs token request timed out after 20s')), 20000)
+      ),
     ]);
 
-    if (expoToken) {
-      console.log('Push token: obtained:', (expoToken as any).data);
-      return (expoToken as any).data;
-    }
-
-    console.log('Push token: timed out after 15s — APNs credentials may not be configured for this build');
-    return null;
+    console.log('Push token: obtained:', (expoToken as any).data);
+    return (expoToken as any).data;
   } catch (error: any) {
+    // Log the full error so we can diagnose APNs issues from logs
     console.log('Push token ERROR:', error?.message || error);
+    if (error?.message?.includes('timed out')) {
+      console.log('Push token: APNs timed out — check expo.dev credentials for bundle ID com.vibecode.alignsports-jy5wjr');
+    }
     return null;
   }
 }
