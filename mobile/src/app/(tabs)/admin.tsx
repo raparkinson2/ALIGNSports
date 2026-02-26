@@ -1521,37 +1521,57 @@ export default function AdminScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 setIsDiagnosticRunning(true);
 
-                // Race token registration against a 5s timeout
+                // Step 1: Check permission status
+                const { status: permStatus } = await (await import('expo-notifications')).getPermissionsAsync();
+
+                // Step 2: Get this device's Expo push token
                 let myToken: string | null = null;
-                let tokenError = 'timed out after 5s';
+                let tokenError = 'timed out';
                 try {
                   myToken = await Promise.race([
                     registerForPushNotificationsAsync(),
-                    new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+                    new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
                   ]);
-                  if (!myToken) tokenError = 'returned null (no permission or simulator)';
+                  if (!myToken) tokenError = 'null — check permissions or use physical device';
                 } catch (e: any) {
                   tokenError = e?.message || String(e);
                 }
 
-                // Get all players' tokens from Supabase
-                const { supabase } = await import('@/lib/supabase');
-                const { data: rows, error: dbError } = await supabase
-                  .from('players')
-                  .select('id, first_name, push_token, notification_preferences')
-                  .eq('team_id', activeTeamId || '');
-
-                const lines = (rows || []).map((r: any) => {
-                  const token = r.push_token || (r.notification_preferences as any)?.pushToken;
-                  return `${r.first_name}: ${token ? '✓ token saved' : '✗ no token'}`;
-                });
-
-                if (dbError) lines.push(`DB error: ${dbError.message}`);
+                // Step 3: Fetch all team tokens via backend (bypasses RLS, shows multi-device array)
+                const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+                type DebugPlayer = { id: string; name: string; email: string; push_token: string | null; push_tokens: Array<{ token: string; platform: string; lastSeen: string }>; token_count: number; has_token: boolean };
+                let debugPlayers: DebugPlayer[] = [];
+                let fetchError = '';
+                if (backendUrl && activeTeamId) {
+                  try {
+                    const res = await fetch(`${backendUrl}/api/notifications/debug-tokens?teamId=${activeTeamId}`);
+                    const json = await res.json() as { players?: DebugPlayer[]; error?: string };
+                    if (json.players) debugPlayers = json.players;
+                    else fetchError = json.error || 'unknown error';
+                  } catch (e: any) {
+                    fetchError = e?.message || String(e);
+                  }
+                } else {
+                  fetchError = backendUrl ? 'no activeTeamId' : 'no backend URL';
+                }
 
                 setIsDiagnosticRunning(false);
+
+                const tokenDisplay = myToken ? `${myToken}` : `NONE (${tokenError})`;
+
+                const playerLines = debugPlayers.map((p) => {
+                  if (p.token_count > 0) {
+                    const devices = p.push_tokens.map(t => `    • ${t.platform} — ${t.token.slice(0, 28)}...`).join('\n');
+                    return `✓ ${p.name} (${p.token_count} device${p.token_count !== 1 ? 's' : ''})\n${devices}`;
+                  }
+                  return `✗ ${p.name} — NO TOKEN`;
+                });
+
                 Alert.alert(
                   'Push Diagnostics',
-                  `MY DEVICE TOKEN:\n${myToken ? myToken.slice(0, 40) + '...' : `NONE (${tokenError})`}\n\nSUPABASE TOKENS:\n${lines.join('\n') || 'No players found'}`,
+                  `PERMISSION: ${permStatus}\n\nMY TOKEN:\n${tokenDisplay}\n\n` +
+                  `TEAM (${debugPlayers.filter(p => p.has_token).length}/${debugPlayers.length} have tokens):\n` +
+                  (fetchError ? `Error: ${fetchError}` : playerLines.join('\n\n') || 'No players found'),
                   [{ text: 'OK' }]
                 );
               }}
