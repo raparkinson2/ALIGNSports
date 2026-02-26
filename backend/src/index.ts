@@ -10,6 +10,7 @@ import { logger } from "hono/logger";
 const app = new Hono();
 
 // CORS middleware - validates origin against allowlist
+// Native mobile apps (iOS/Android) send no Origin header — always allow those requests.
 const allowed = [
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
@@ -20,7 +21,11 @@ const allowed = [
 app.use(
   "*",
   cors({
-    origin: (origin) => (origin && allowed.some((re) => re.test(origin)) ? origin : null),
+    origin: (origin) => {
+      // No origin = native mobile app (React Native fetch doesn't set Origin)
+      if (!origin) return "*";
+      return allowed.some((re) => re.test(origin)) ? origin : null;
+    },
     credentials: true,
   })
 );
