@@ -9,12 +9,6 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-interface PushTokenEntry {
-  token: string;
-  platform: string;
-  lastSeen: string; // ISO date string
-}
-
 interface ExpoPushMessage {
   to: string;
   title: string;
@@ -32,7 +26,7 @@ interface ExpoPushTicket {
   details?: { error?: string };
 }
 
-function isValidExpoToken(t: string): boolean {
+function isValidExpoToken(t: unknown): t is string {
   return (
     typeof t === "string" &&
     (t.startsWith("ExponentPushToken[") || t.startsWith("ExpoPushToken["))
@@ -41,7 +35,7 @@ function isValidExpoToken(t: string): boolean {
 
 /**
  * Send push notifications via Expo's push notification service.
- * Returns a map of token -> ticket for receipt processing.
+ * Returns per-token results so callers can handle DeviceNotRegistered cleanup.
  */
 async function sendExpoPushNotifications(
   messages: ExpoPushMessage[]
@@ -56,16 +50,12 @@ async function sendExpoPushNotifications(
     try {
       const res = await fetch("https://exp.host/--/api/v2/push/send", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(chunk),
       });
       if (!res.ok) {
         const text = await res.text();
-        console.error("[push] Expo API error:", text);
-        // Mark all as error
+        console.error("[push] Expo API HTTP error:", text);
         chunk.forEach((msg) =>
           results.push({ token: msg.to, ticket: { status: "error", message: text } })
         );
@@ -76,9 +66,7 @@ async function sendExpoPushNotifications(
             const token = chunk[i]?.to ?? "";
             results.push({ token, ticket });
             if (ticket.status === "error") {
-              console.error(
-                `[push] Token error (to: ${token}): ${ticket.message} - ${JSON.stringify(ticket.details)}`
-              );
+              console.error(`[push] Token error (to: ${token}): ${ticket.message} - ${JSON.stringify(ticket.details)}`);
             } else {
               console.log(`[push] Ticket ok id=${ticket.id} to=${token}`);
             }
@@ -86,7 +74,7 @@ async function sendExpoPushNotifications(
         }
       }
     } catch (err) {
-      console.error("[push] Failed to send push notifications:", err);
+      console.error("[push] Failed to reach Expo push API:", err);
       chunk.forEach((msg) =>
         results.push({ token: msg.to, ticket: { status: "error", message: String(err) } })
       );
@@ -97,68 +85,38 @@ async function sendExpoPushNotifications(
 }
 
 /**
- * Remove stale/invalid tokens from a player's notification_preferences.pushTokens array.
- * Also clears push_token column if it matches a stale token.
+ * Delete stale (DeviceNotRegistered) tokens from the push_tokens table.
  */
-async function removeStaleTokens(
-  playerId: string,
-  staleTokens: string[]
-): Promise<void> {
+async function removeStaleTokens(staleTokens: string[]): Promise<void> {
   if (staleTokens.length === 0) return;
-
-  const { data: rows } = await supabaseAdmin
-    .from("players")
-    .select("id, push_token, notification_preferences")
-    .eq("id", playerId)
-    .single();
-
-  if (!rows) return;
-
-  const prefs = (rows.notification_preferences as any) || {};
-  const existingEntries: PushTokenEntry[] = Array.isArray(prefs.pushTokens)
-    ? prefs.pushTokens
-    : [];
-
-  const filtered = existingEntries.filter(
-    (e) => !staleTokens.includes(e.token)
-  );
-
-  const newPushToken = staleTokens.includes(rows.push_token)
-    ? (filtered[0]?.token ?? null)
-    : rows.push_token;
-
-  await supabaseAdmin
-    .from("players")
-    .update({
-      push_token: newPushToken,
-      notification_preferences: {
-        ...prefs,
-        pushTokens: filtered,
-        pushToken: newPushToken ?? prefs.pushToken,
-      },
-    })
-    .eq("id", playerId);
-
-  console.log(
-    `[push] Removed ${staleTokens.length} stale token(s) for player ${playerId}`
-  );
+  const { error } = await supabaseAdmin
+    .from("push_tokens")
+    .delete()
+    .in("token", staleTokens);
+  if (error) {
+    console.error("[push] Failed to remove stale tokens:", error.message);
+  } else {
+    console.log(`[push] Removed ${staleTokens.length} stale token(s)`);
+  }
 }
 
 /**
  * POST /api/notifications/save-token
- * Saves a push token for a player using the service-role key (bypasses RLS).
- * Stores multiple tokens per player in notification_preferences.pushTokens array.
- * Body: { playerId: string, pushToken: string, platform?: string }
+ * Upserts a push token into the dedicated push_tokens table.
+ * Uses the token column as the unique conflict key so reinstalls don't create duplicates.
+ * Body: { playerId: string, pushToken: string, platform?: string, appBuild?: string }
  */
 notificationsRouter.post("/save-token", async (c) => {
   let playerId = "";
   let pushToken = "";
   let platform = "ios";
+  let appBuild: string | null = null;
   try {
     const req = await c.req.json();
     playerId = req.playerId || "";
     pushToken = req.pushToken || "";
     platform = req.platform || "ios";
+    appBuild = req.appBuild || null;
   } catch {
     return c.json({ error: "Invalid request body" }, 400);
   }
@@ -174,79 +132,26 @@ notificationsRouter.post("/save-token", async (c) => {
 
   console.log(`[push] save-token: player=${playerId} platform=${platform} token=${pushToken}`);
 
-  // Read current prefs to merge token into array
-  const { data: existing } = await supabaseAdmin
-    .from("players")
-    .select("id, notification_preferences")
-    .eq("id", playerId)
-    .single();
-
-  const prefs = (existing?.notification_preferences as any) || {};
-  const existingEntries: PushTokenEntry[] = Array.isArray(prefs.pushTokens)
-    ? prefs.pushTokens
-    : [];
-
-  // Upsert: update lastSeen if token exists, otherwise add new entry
-  const now = new Date().toISOString();
-  const idx = existingEntries.findIndex((e) => e.token === pushToken);
-  if (idx >= 0 && existingEntries[idx]) {
-    existingEntries[idx].lastSeen = now;
-    existingEntries[idx].platform = platform;
-    console.log(`[push] save-token: updated existing token entry for player ${playerId}`);
-  } else {
-    existingEntries.push({ token: pushToken, platform, lastSeen: now });
-    console.log(`[push] save-token: added new token for player ${playerId} (total: ${existingEntries.length})`);
-  }
-
-  // Keep only the 5 most recently seen tokens per player to avoid stale buildup
-  existingEntries.sort(
-    (a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime()
-  );
-  const trimmed = existingEntries.slice(0, 5);
-
-  const { data, error } = await supabaseAdmin
-    .from("players")
-    .update({
-      push_token: pushToken, // keep single column in sync for legacy reads
-      notification_preferences: {
-        ...prefs,
-        pushToken: pushToken,
-        pushTokens: trimmed,
+  const { error } = await supabaseAdmin
+    .from("push_tokens")
+    .upsert(
+      {
+        player_id: playerId,
+        token: pushToken,
+        platform,
+        app_build: appBuild,
+        last_seen: new Date().toISOString(),
       },
-    })
-    .eq("id", playerId)
-    .select("id");
+      { onConflict: "token" } // token is unique — upsert updates last_seen on reinstall
+    );
 
   if (error) {
     console.error("[push] save-token error:", error.message);
     return c.json({ error: error.message }, 500);
   }
 
-  const rowsUpdated = data?.length ?? 0;
-  console.log(`[push] save-token: updated ${rowsUpdated} rows for player ${playerId}`);
-
-  if (rowsUpdated === 0) {
-    const { error: upsertError } = await supabaseAdmin
-      .from("players")
-      .upsert(
-        {
-          id: playerId,
-          push_token: pushToken,
-          notification_preferences: {
-            pushToken: pushToken,
-            pushTokens: trimmed,
-          },
-        },
-        { onConflict: "id" }
-      );
-    if (upsertError) {
-      console.error("[push] save-token upsert error:", upsertError.message);
-      return c.json({ error: upsertError.message }, 500);
-    }
-    console.log(`[push] save-token: upserted player ${playerId}`);
-  }
-
-  return c.json({ success: true, rowsUpdated, tokenCount: trimmed.length });
+  console.log(`[push] save-token: upserted token for player ${playerId}`);
+  return c.json({ success: true });
 });
 
 /**
@@ -270,36 +175,34 @@ notificationsRouter.post("/send-push", async (c) => {
     return c.json({ error: "Invalid request body" }, 400);
   }
 
-  console.log(`[push] send-push received - tokens: ${tokens.length}, title: "${title}"`);
-
   if (!tokens.length || !title || !body) {
     return c.json({ error: "tokens, title, and body are required" }, 400);
   }
 
   const validTokens = tokens.filter(isValidExpoToken);
-  console.log(`[push] send-push valid tokens: ${validTokens.length}/${tokens.length}`);
+  console.log(`[push] send-push: ${validTokens.length}/${tokens.length} valid tokens`);
 
   if (validTokens.length === 0) {
     return c.json({ success: true, sent: 0, message: "No valid Expo push tokens" });
   }
 
   const messages: ExpoPushMessage[] = validTokens.map((token) => ({
-    to: token,
-    title,
-    body,
-    data,
-    sound: "default",
-    priority: "high",
+    to: token, title, body, data, sound: "default", priority: "high",
   }));
 
-  await sendExpoPushNotifications(messages);
-  return c.json({ success: true, sent: validTokens.length });
+  const results = await sendExpoPushNotifications(messages);
+  const stale = results.filter(r => r.ticket.details?.error === "DeviceNotRegistered").map(r => r.token);
+  await removeStaleTokens(stale);
+
+  const sent = results.filter(r => r.ticket.status === "ok").length;
+  return c.json({ success: true, sent });
 });
 
 /**
  * POST /api/notifications/send-to-players
- * Look up ALL push tokens for given player IDs (service-role, bypasses RLS),
- * send to every device, and clean up DeviceNotRegistered tokens.
+ * Looks up ALL push tokens for the given player IDs from the push_tokens table,
+ * sends to every registered device, and cleans up DeviceNotRegistered tokens.
+ * Falls back to email/phone cross-match for players whose IDs may have changed.
  * Body: { playerIds: string[], title: string, body: string, data?: object }
  */
 notificationsRouter.post("/send-to-players", async (c) => {
@@ -324,121 +227,103 @@ notificationsRouter.post("/send-to-players", async (c) => {
 
   console.log(`[push] send-to-players: ${playerIds.length} players, title: "${title}"`);
 
-  // Fetch all token data by player ID using service role (bypasses RLS)
-  const { data: rows, error } = await supabaseAdmin
-    .from("players")
-    .select("id, email, phone, push_token, notification_preferences")
-    .in("id", playerIds);
+  // Primary: fetch tokens from push_tokens table by player_id
+  const { data: tokenRows, error: tokenError } = await supabaseAdmin
+    .from("push_tokens")
+    .select("player_id, token, platform")
+    .in("player_id", playerIds);
 
-  if (error) {
-    console.error("[push] send-to-players: supabase error:", error.message);
+  if (tokenError) {
+    console.error("[push] send-to-players: push_tokens fetch error:", tokenError.message);
   }
 
-  console.log(
-    `[push] send-to-players: DB returned ${rows?.length ?? 0} rows for ${playerIds.length} IDs`
-  );
-
-  // Collect all tokens per player (multi-device support)
-  // token -> playerId mapping for cleanup after send
-  const tokenToPlayer: Record<string, string> = {};
   const allTokens = new Set<string>();
+  const tokenToPlayer: Record<string, string> = {};
+  const playersWithTokens = new Set<string>();
 
-  for (const row of rows || []) {
-    const prefs = (row.notification_preferences as any) || {};
-    const tokenEntries: PushTokenEntry[] = Array.isArray(prefs.pushTokens)
-      ? prefs.pushTokens
-      : [];
-
-    const playerTokens: string[] = [];
-
-    // Collect from pushTokens array first (multi-device)
-    for (const entry of tokenEntries) {
-      if (isValidExpoToken(entry.token)) {
-        playerTokens.push(entry.token);
-      }
-    }
-
-    // Also check legacy single-token columns
-    const legacyToken = row.push_token || prefs.pushToken;
-    if (legacyToken && isValidExpoToken(legacyToken) && !playerTokens.includes(legacyToken)) {
-      playerTokens.push(legacyToken);
-    }
-
-    if (playerTokens.length > 0) {
-      console.log(`[push] player ${row.id}: ${playerTokens.length} token(s)`);
-      for (const t of playerTokens) {
-        allTokens.add(t);
-        tokenToPlayer[t] = row.id;
-      }
-    } else {
-      console.log(`[push] player ${row.id}: NO tokens`);
+  for (const row of tokenRows || []) {
+    if (isValidExpoToken(row.token)) {
+      allTokens.add(row.token);
+      tokenToPlayer[row.token] = row.player_id;
+      playersWithTokens.add(row.player_id);
+      console.log(`[push] player ${row.player_id}: token via push_tokens table (${row.platform})`);
     }
   }
 
-  // For players with no tokens, try cross-team email/phone lookup
-  const foundPlayerIds = new Set((rows || []).map((r: any) => r.id));
-  const missingIds = playerIds.filter((id) => {
-    if (!foundPlayerIds.has(id)) return true; // not found by ID at all
-    const row = (rows || []).find((r: any) => r.id === id);
-    if (!row) return true;
-    const prefs = (row.notification_preferences as any) || {};
-    const hasTokens =
-      (Array.isArray(prefs.pushTokens) && prefs.pushTokens.length > 0) ||
-      row.push_token ||
-      prefs.pushToken;
-    return !hasTokens;
-  });
-
+  // Fallback: for players with no token in push_tokens, check the legacy push_token column
+  // and notification_preferences.pushToken in the players table (handles existing data)
+  const missingIds = playerIds.filter((id) => !playersWithTokens.has(id));
   if (missingIds.length > 0) {
-    const missingPlayers = (rows || []).filter((r: any) => missingIds.includes(r.id));
-    const emails = missingPlayers
-      .map((p: any) => p.email?.toLowerCase())
-      .filter(Boolean);
-    const phones = missingPlayers
-      .map((p: any) => p.phone?.replace(/\D/g, ""))
-      .filter(Boolean);
+    console.log(`[push] ${missingIds.length} players not in push_tokens, checking legacy columns`);
 
-    console.log(
-      `[push] send-to-players: ${missingIds.length} players missing tokens, trying email/phone fallback`
-    );
+    const { data: playerRows, error: playerError } = await supabaseAdmin
+      .from("players")
+      .select("id, email, phone, push_token, notification_preferences")
+      .in("id", missingIds);
+
+    if (playerError) {
+      console.error("[push] send-to-players: players fetch error:", playerError.message);
+    }
+
+    const playersMissingEverywhere: typeof playerRows = [];
+
+    for (const row of playerRows || []) {
+      const prefs = (row.notification_preferences as any) || {};
+      const legacyToken = row.push_token || prefs.pushToken;
+      const prefTokens: string[] = Array.isArray(prefs.pushTokens)
+        ? prefs.pushTokens.map((e: any) => e.token || e).filter(isValidExpoToken)
+        : [];
+
+      const candidates = [...new Set([legacyToken, ...prefTokens].filter(isValidExpoToken))];
+      if (candidates.length > 0) {
+        for (const t of candidates) {
+          allTokens.add(t);
+          tokenToPlayer[t] = row.id;
+        }
+        console.log(`[push] player ${row.id}: ${candidates.length} token(s) via legacy columns`);
+      } else {
+        console.log(`[push] player ${row.id}: NO tokens anywhere`);
+        playersMissingEverywhere.push(row);
+      }
+    }
+
+    // Cross-team email/phone fallback for players whose ID may have changed
+    const emails = (playersMissingEverywhere || []).map((p: any) => p.email?.toLowerCase()).filter(Boolean);
+    const phones = (playersMissingEverywhere || []).map((p: any) => p.phone?.replace(/\D/g, "")).filter(Boolean);
 
     if (emails.length > 0 || phones.length > 0) {
-      const { data: altRows } = await supabaseAdmin
+      // Check push_tokens table by matching email/phone via players join
+      const { data: altPlayerRows } = await supabaseAdmin
         .from("players")
-        .select("id, email, phone, push_token, notification_preferences")
-        .or("push_token.not.is.null,notification_preferences->>pushToken.not.is.null");
+        .select("id, email, phone")
+        .or(
+          [
+            ...emails.map((e: string) => `email.ilike.${e}`),
+            ...phones.map((p: string) => `phone.eq.${p}`),
+          ].join(",")
+        );
 
-      for (const altRow of altRows || []) {
-        const altPrefs = (altRow.notification_preferences as any) || {};
-        const altTokenEntries: PushTokenEntry[] = Array.isArray(altPrefs.pushTokens)
-          ? altPrefs.pushTokens
-          : [];
-        const altTokenList = [
-          ...altTokenEntries.map((e) => e.token),
-          altRow.push_token,
-          altPrefs.pushToken,
-        ].filter((t): t is string => !!t && isValidExpoToken(t));
+      if (altPlayerRows && altPlayerRows.length > 0) {
+        const altIds = altPlayerRows.map((r: any) => r.id);
+        const { data: altTokenRows } = await supabaseAdmin
+          .from("push_tokens")
+          .select("player_id, token")
+          .in("player_id", altIds);
 
-        if (altTokenList.length === 0) continue;
-
-        const altEmail = altRow.email?.toLowerCase();
-        const altPhone = altRow.phone?.replace(/\D/g, "");
-
-        for (const missingPlayer of missingPlayers) {
-          const id = missingPlayer.id;
-          const mpEmail = missingPlayer.email?.toLowerCase();
-          const mpPhone = missingPlayer.phone?.replace(/\D/g, "");
-
-          if (
-            (altEmail && mpEmail && altEmail === mpEmail) ||
-            (altPhone && mpPhone && altPhone === mpPhone)
-          ) {
-            for (const t of altTokenList) {
-              if (!allTokens.has(t)) {
-                allTokens.add(t);
-                tokenToPlayer[t] = id;
-                console.log(`[push] found token for ${id} via email/phone fallback`);
-              }
+        for (const altTok of altTokenRows || []) {
+          if (isValidExpoToken(altTok.token) && !allTokens.has(altTok.token)) {
+            // Map it back to the original player ID via email/phone match
+            const altPlayer = altPlayerRows.find((r: any) => r.id === altTok.player_id);
+            const origPlayer = (playersMissingEverywhere || []).find((p: any) => {
+              const e = p.email?.toLowerCase();
+              const ph = p.phone?.replace(/\D/g, "");
+              return (e && e === altPlayer?.email?.toLowerCase()) ||
+                     (ph && ph === altPlayer?.phone?.replace(/\D/g, ""));
+            });
+            if (origPlayer) {
+              allTokens.add(altTok.token);
+              tokenToPlayer[altTok.token] = origPlayer.id;
+              console.log(`[push] player ${origPlayer.id}: found token via email/phone cross-match`);
             }
           }
         }
@@ -447,84 +332,72 @@ notificationsRouter.post("/send-to-players", async (c) => {
   }
 
   const tokenList = Array.from(allTokens);
-  console.log(
-    `[push] send-to-players: ${playerIds.length} players → ${tokenList.length} total tokens`
-  );
+  console.log(`[push] send-to-players: ${playerIds.length} players → ${tokenList.length} tokens`);
 
   if (tokenList.length === 0) {
-    return c.json({
-      success: true,
-      sent: 0,
-      message: "No valid push tokens found for given player IDs",
-    });
+    return c.json({ success: true, sent: 0, message: "No push tokens found for given player IDs" });
   }
 
   const messages: ExpoPushMessage[] = tokenList.map((token) => ({
-    to: token,
-    title,
-    body,
-    data,
-    sound: "default",
-    priority: "high",
+    to: token, title, body, data, sound: "default", priority: "high",
   }));
 
   const results = await sendExpoPushNotifications(messages);
 
   // Clean up DeviceNotRegistered tokens
-  const staleByPlayer: Record<string, string[]> = {};
-  for (const { token, ticket } of results) {
-    if (
-      ticket.status === "error" &&
-      ticket.details?.error === "DeviceNotRegistered"
-    ) {
-      const pid = tokenToPlayer[token];
-      if (pid) {
-        if (!staleByPlayer[pid]) staleByPlayer[pid] = [];
-        staleByPlayer[pid].push(token);
-      }
-    }
-  }
+  const staleTokens = results
+    .filter(r => r.ticket.status === "error" && r.ticket.details?.error === "DeviceNotRegistered")
+    .map(r => r.token);
+  await removeStaleTokens(staleTokens);
 
-  for (const [pid, staleTokens] of Object.entries(staleByPlayer)) {
-    await removeStaleTokens(pid, staleTokens);
-  }
-
-  const sent = results.filter((r) => r.ticket.status === "ok").length;
+  const sent = results.filter(r => r.ticket.status === "ok").length;
   return c.json({ success: true, sent, total_tokens: tokenList.length });
 });
 
 /**
  * GET /api/notifications/debug-tokens?teamId=xxx
- * Returns push token status for all players on a team (for debugging).
+ * Returns push token status for all players on a team.
  */
 notificationsRouter.get("/debug-tokens", async (c) => {
   const teamId = c.req.query("teamId");
   if (!teamId) return c.json({ error: "teamId required" }, 400);
 
-  const { data: rows, error } = await supabaseAdmin
+  // Fetch all players on the team
+  const { data: players, error: playersError } = await supabaseAdmin
     .from("players")
-    .select("id, first_name, last_name, email, push_token, notification_preferences")
+    .select("id, first_name, last_name, email")
     .eq("team_id", teamId);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (playersError) return c.json({ error: playersError.message }, 500);
 
-  const result = (rows || []).map((r: any) => {
-    const prefs = (r.notification_preferences as any) || {};
-    const tokenEntries: PushTokenEntry[] = Array.isArray(prefs.pushTokens)
-      ? prefs.pushTokens
-      : [];
+  const playerIds = (players || []).map((p: any) => p.id);
+
+  // Fetch all tokens for those players from push_tokens table
+  const { data: tokenRows } = await supabaseAdmin
+    .from("push_tokens")
+    .select("player_id, token, platform, last_seen")
+    .in("player_id", playerIds);
+
+  // Group tokens by player
+  const tokensByPlayer: Record<string, Array<{ token: string; platform: string; last_seen: string }>> = {};
+  for (const row of tokenRows || []) {
+    if (!tokensByPlayer[row.player_id]) tokensByPlayer[row.player_id] = [];
+    tokensByPlayer[row.player_id]!.push({
+      token: row.token,
+      platform: row.platform,
+      last_seen: row.last_seen,
+    });
+  }
+
+  const result = (players || []).map((p: any) => {
+    const tokens = tokensByPlayer[p.id] || [];
     return {
-      id: r.id,
-      name: `${r.first_name} ${r.last_name}`,
-      email: r.email,
-      push_token: r.push_token ?? null,
-      push_tokens: tokenEntries,
-      token_count: tokenEntries.length,
-      has_token: !!(
-        r.push_token ||
-        prefs.pushToken ||
-        tokenEntries.length > 0
-      ),
+      id: p.id,
+      name: `${p.first_name} ${p.last_name}`,
+      email: p.email,
+      token_count: tokens.length,
+      has_token: tokens.length > 0,
+      push_tokens: tokens,
     };
   });
 
