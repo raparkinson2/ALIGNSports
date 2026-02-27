@@ -3,7 +3,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { format, parseISO } from 'date-fns';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Component } from 'react';
+import type { ReactNode } from 'react';
 import {
   MapPin,
   Clock,
@@ -67,7 +68,32 @@ import { SoccerDiamondLineupViewer } from '@/components/SoccerDiamondLineupViewe
 import { LacrosseLineupEditor, hasAssignedLacrossePlayers } from '@/components/LacrosseLineupEditor';
 import { LacrosseLineupViewer } from '@/components/LacrosseLineupViewer';
 
-// Helper to convert hex codes to readable color names
+// Error boundary to catch render crashes and show a useful error instead of black screen
+class GameScreenErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: string }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: '' };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error?.message || String(error) };
+  }
+  componentDidCatch(error: Error) {
+    console.error('GameDetailScreen render crash:', error?.message, error?.stack);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, backgroundColor: '#0f172a', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <Text style={{ color: '#ef4444', fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>Error loading game</Text>
+          <Text style={{ color: '#94a3b8', fontSize: 12, textAlign: 'center' }}>{this.state.error}</Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+
 const hexToColorName = (hex: string): string => {
   const colorMap: Record<string, string> = {
     '#ffffff': 'White',
@@ -533,6 +559,14 @@ function PlayerRow({ player, status, onToggle, index, canToggle, isSelf }: Playe
 }
 
 export default function GameDetailScreen() {
+  return (
+    <GameScreenErrorBoundary>
+      <GameDetailScreenInner />
+    </GameScreenErrorBoundary>
+  );
+}
+
+function GameDetailScreenInner() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
@@ -702,10 +736,12 @@ export default function GameDetailScreen() {
   const beerDutyPlayer = game.beerDutyPlayerId ? uniquePlayers.find((p) => p.id === game.beerDutyPlayerId) : null;
 
   // Get jersey color info - handle both color name and hex code
-  const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === game.jerseyColor || c.color === game.jerseyColor);
+  // Safely handle undefined/null jerseyColor from Supabase
+  const safeJerseyColor = game.jerseyColor ?? '#1a1a1a';
+  const jerseyColorInfo = teamSettings.jerseyColors.find((c) => c.name === safeJerseyColor || c.color === safeJerseyColor);
   // If found in settings, use the name. Otherwise, try to convert hex to color name
-  const jerseyColorName = jerseyColorInfo?.name || hexToColorName(game.jerseyColor);
-  const jerseyColorHex = jerseyColorInfo?.color || (game.jerseyColor.startsWith('#') ? game.jerseyColor : colorNameToHex(game.jerseyColor));
+  const jerseyColorName = jerseyColorInfo?.name || hexToColorName(safeJerseyColor);
+  const jerseyColorHex = jerseyColorInfo?.color || (safeJerseyColor.startsWith('#') ? safeJerseyColor : colorNameToHex(safeJerseyColor));
 
   // Create gradient colors based on jersey color
   const getGradientColors = (hexColor: string): [string, string, string] => {
@@ -721,7 +757,7 @@ export default function GameDetailScreen() {
     return [hexColor, darkenColor(hexColor, 40), '#0f172a'];
   };
 
-  const gradientColors = getGradientColors(jerseyColorHex);
+  const gradientColors = getGradientColors(jerseyColorHex || '#1a1a1a');
 
   const handleToggleCheckIn = (playerId: string) => {
     const isIn = game.checkedInPlayers?.includes(playerId);
