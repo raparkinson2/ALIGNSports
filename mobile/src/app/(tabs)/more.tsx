@@ -48,6 +48,7 @@ import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone'
 import { sendTestNotification, registerForPushNotificationsAsync } from '@/lib/notifications';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { pushTeamLinkToSupabase, deleteTeamLinkFromSupabase } from '@/lib/realtime-sync';
+import { BACKEND_URL } from '@/lib/config';
 
 interface MenuItemProps {
   icon: React.ReactNode;
@@ -1513,7 +1514,7 @@ export default function MoreScreen() {
         preferences={effectivePlayerId ? getNotificationPreferences(effectivePlayerId) : defaultNotificationPreferences}
         onSave={handleSaveNotificationPrefs}
         currentPlayerId={currentPlayerId}
-        backendUrl={process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || ''}
+        backendUrl={BACKEND_URL}
       />
 
       {/* Change Password Modal */}

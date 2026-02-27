@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState, useEffect } from 'react';
 import { cancelGameInviteNotification } from './notifications';
+import { BACKEND_URL } from './config';
 
 // Sport Types and Positions
 export type Sport = 'baseball' | 'basketball' | 'hockey' | 'lacrosse' | 'soccer' | 'softball';
@@ -1987,7 +1988,7 @@ export const useTeamStore = create<TeamStore>()(
         const { userEmail, userPhone, currentPlayerId } = state;
 
         // Fire-and-forget: backend handles deleting the player row + auth account from Supabase
-        const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+        const backendUrl = BACKEND_URL;
         if (backendUrl && (currentPlayerId || userEmail)) {
           fetch(`${backendUrl}/api/auth/delete-account`, {
             method: 'POST',
@@ -2488,7 +2489,7 @@ export const useTeamStore = create<TeamStore>()(
         const { activeTeamId } = state;
 
         // Fire-and-forget: backend wipes all team content from Supabase, leaves players/auth intact
-        const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+        const backendUrl = BACKEND_URL;
         if (backendUrl && activeTeamId) {
           fetch(`${backendUrl}/api/auth/erase-team-data`, {
             method: 'POST',
@@ -2551,7 +2552,7 @@ export const useTeamStore = create<TeamStore>()(
         // Fire-and-forget: backend handles everything server-side from Supabase —
         // checks which players are exclusive to this team, deletes their auth accounts,
         // then deletes the team row (CASCADE removes all content).
-        const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+        const backendUrl = BACKEND_URL;
         if (backendUrl) {
           fetch(`${backendUrl}/api/auth/delete-team`, {
             method: 'POST',

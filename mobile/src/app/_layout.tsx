@@ -13,6 +13,7 @@ import { useTeamStore, useStoreHydrated, defaultNotificationPreferences } from '
 import { registerForPushNotificationsAsync } from '@/lib/notifications';
 import { clearInvalidSession, getSafeSession, supabase } from '@/lib/supabase';
 import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase, loadTeamFromSupabase } from '@/lib/realtime-sync';
+import { BACKEND_URL } from '@/lib/config';
 
 export const unstable_settings = {
   initialRouteName: 'login',
@@ -264,7 +265,7 @@ function AuthNavigator() {
         console.log('Push token registered for player:', currentPlayerId, 'token:', token);
 
         // Save token via backend endpoint — uses service-role key to bypass RLS
-        const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+        const backendUrl = BACKEND_URL;
         if (backendUrl) {
           try {
             const saveRes = await fetch(`${backendUrl}/api/notifications/save-token`, {

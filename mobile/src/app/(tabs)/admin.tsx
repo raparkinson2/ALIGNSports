@@ -66,6 +66,7 @@ import { createTeamInvitation } from '@/lib/team-invitations';
 import { pushPlayerToSupabase, pushTeamToSupabase, deletePlayerFromSupabase } from '@/lib/realtime-sync';
 import { sendPushToPlayers, registerForPushNotificationsAsync } from '@/lib/notifications';
 import { uploadPhotoToStorage } from '@/lib/photo-storage';
+import { BACKEND_URL } from '@/lib/config';
 
 interface PlayerManageCardProps {
   player: Player;
@@ -1561,7 +1562,7 @@ export default function AdminScreen() {
                 }
 
                 // Step 4: Check backend reachability
-                const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+                const backendUrl = BACKEND_URL;
                 let backendOk = false;
                 let backendErr = '';
                 if (backendUrl) {

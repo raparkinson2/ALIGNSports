@@ -13,6 +13,7 @@
 import { supabase } from './supabase';
 import { useTeamStore } from './store';
 import type { Game, Event, Player, ChatMessage, PaymentPeriod, PlayerPayment, PaymentEntry, Photo, AppNotification, Poll, TeamLink, Team, TeamSettings } from './store';
+import { BACKEND_URL } from './config';
 
 let activeChannel: ReturnType<typeof supabase.channel> | null = null;
 let activeSyncTeamId: string | null = null;
@@ -1278,7 +1279,7 @@ export async function deleteTeamFromSupabase(teamId: string): Promise<void> {
  * Delete a player's Supabase auth account via the backend admin endpoint.
  */
 export async function deleteAuthUser(email: string): Promise<void> {
-  const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+  const backendUrl = BACKEND_URL;
   if (!backendUrl) {
     console.warn('SYNC: deleteAuthUser - no backend URL configured');
     return;
@@ -1299,7 +1300,7 @@ export async function deleteAuthUser(email: string): Promise<void> {
  */
 export async function deleteAuthUsers(emails: string[]): Promise<void> {
   if (!emails.length) return;
-  const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+  const backendUrl = BACKEND_URL;
   if (!backendUrl) {
     console.warn('SYNC: deleteAuthUsers - no backend URL configured');
     return;

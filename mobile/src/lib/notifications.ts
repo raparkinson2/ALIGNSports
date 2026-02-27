@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { BACKEND_URL } from './config';
 
 // Configure how notifications are displayed when the app is in the foreground
 Notifications.setNotificationHandler({
@@ -221,7 +222,7 @@ export async function sendPushToPlayers(
 ): Promise<void> {
   if (playerIds.length === 0) return;
 
-  const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+  const backendUrl = BACKEND_URL;
   if (!backendUrl) {
     console.log('sendPushToPlayers: no backend URL configured');
     return;
