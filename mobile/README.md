@@ -41,6 +41,10 @@ Push tokens require a valid EAS project ID in `app.json` (`extra.eas.projectId`)
 
 **Test push notifications**: Admins can send a test push notification to all team members from the Admin tab → Communication → "Test Push Notifications". This shows how many players have registered devices and sends a real notification to verify the pipeline works.
 
+**Scheduled invite push delivery**: When `releaseScheduledGameInvites` fires on app mount (in both `index.tsx` and `game/[id].tsx`), it now sends push notifications via `sendPushToPlayers` to all invited players (excluding the current player/admin). Previously this only created in-app notification records and a local OS notification for the admin — other players never received a push.
+
+**Production backend redeployment required**: The production backend (`stunned-guts.vibecode.run`, used by TestFlight builds per `eas.json`) must be redeployed via the Deploy button in Vibecode for push token saving to work. Without this, `save-token` returns `{"success":true}` but stores no tokens.
+
 **Self-check-in**: Players always see their own row in the check-in list even before the admin explicitly invites them. Toggling their own status auto-adds them to `invitedPlayers` and writes to `game_responses` / `event_responses` in Supabase. Other team members see the change in real time.
 
 ## Device Support

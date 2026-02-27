@@ -974,8 +974,21 @@ export default function ScheduleScreen() {
     const releasedGames = releaseScheduledGameInvites();
     if (releasedGames.length > 0) {
       console.log('Released scheduled invites for', releasedGames.length, 'games');
+      // Send push notifications to other players for each released game
+      releasedGames.forEach((game) => {
+        const formattedDate = format(new Date(game.date), 'EEE, MMM d');
+        const otherPlayerIds = (game.invitedPlayers ?? []).filter((id) => id !== currentPlayerId);
+        if (otherPlayerIds.length > 0) {
+          sendPushToPlayers(
+            otherPlayerIds,
+            'New Game Added!',
+            `You've been invited to play vs ${game.opponent} on ${formattedDate} at ${game.time}. Make sure to check in or out in the app.`,
+            { gameId: game.id, type: 'game_invite' }
+          ).catch(console.error);
+        }
+      });
     }
-  }, [releaseScheduledGameInvites]);
+  }, [releaseScheduledGameInvites, currentPlayerId]);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isRecordModalVisible, setIsRecordModalVisible] = useState(false);
