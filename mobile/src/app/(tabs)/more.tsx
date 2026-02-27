@@ -580,6 +580,43 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave, c
               </View>
             </Pressable>
 
+            {/* Push Token Diagnostics */}
+            <Pressable
+              onPress={async () => {
+                try {
+                  const token = await registerForPushNotificationsAsync();
+                  if (token) {
+                    Alert.alert('Token Obtained', `Token: ${token}\n\nNow saving to backend...`, [{ text: 'OK' }]);
+                    const url = backendUrl;
+                    if (url && currentPlayerId) {
+                      const res = await fetch(`${url}/api/notifications/save-token`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ playerId: currentPlayerId, pushToken: token, platform: Platform.OS }),
+                      });
+                      const json = await res.json() as { success?: boolean; error?: string };
+                      Alert.alert('Save Result', json.success ? 'Token saved to DB successfully!' : `Save failed: ${json.error}`);
+                    } else {
+                      Alert.alert('Save Skipped', `No backend URL or player ID.\nURL: ${url}\nPlayer: ${currentPlayerId}`);
+                    }
+                  } else {
+                    Alert.alert('No Token', 'registerForPushNotificationsAsync returned null.\n\nCheck that:\n- Push notifications are enabled in iOS Settings\n- This is a physical device\n- Build has correct provisioning profile');
+                  }
+                } catch (e: any) {
+                  Alert.alert('Error', e?.message || String(e));
+                }
+              }}
+              className="bg-slate-800 border border-amber-500/40 rounded-xl p-4 mt-3 flex-row items-center active:bg-slate-700"
+            >
+              <View className="w-10 h-10 rounded-full bg-amber-500/20 items-center justify-center mr-3">
+                <Bug size={20} color="#f59e0b" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-amber-400 font-semibold">Diagnose Push Token</Text>
+                <Text className="text-slate-400 text-sm">Check if APNs token can be obtained</Text>
+              </View>
+            </Pressable>
+
             {/* Info Note */}
             <View className="bg-slate-800/50 rounded-xl p-4 mt-4 mb-4">
               <Text className="text-cyan-400 font-medium mb-1">About Push Notifications</Text>
