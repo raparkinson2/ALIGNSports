@@ -263,39 +263,23 @@ function AuthNavigator() {
         updateNotificationPreferences(currentPlayerId, { pushToken: token });
         console.log('Push token registered for player:', currentPlayerId, 'token:', token);
 
-        // Save token via backend (uses service-role key to bypass RLS)
-        const savePushToken = async (retryCount = 0) => {
-          try {
-            const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
-            if (!backendUrl) {
-              console.log('Push token: no backend URL configured, skipping save');
-              return;
-            }
-            console.log(`Push token: saving to backend (attempt ${retryCount + 1}) url=${backendUrl}`);
-            const res = await fetch(`${backendUrl}/api/notifications/save-token`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ playerId: currentPlayerId, pushToken: token, platform: Platform.OS }),
-            });
-            const json = await res.json() as { success?: boolean; rowsUpdated?: number; error?: string };
-            if (json.success) {
-              console.log('Push token saved successfully for player:', currentPlayerId);
-              return;
-            }
-            console.log('Push token backend save failed:', json.error);
-          } catch (err: any) {
-            console.log(`Push token backend save error (attempt ${retryCount + 1}):`, err?.message || err);
-          }
-
-          // Retry up to 3 times
-          if (retryCount < 3) {
-            setTimeout(() => savePushToken(retryCount + 1), 3000 * (retryCount + 1));
-          } else {
-            console.log('Push token: all backend save attempts failed for player:', currentPlayerId);
-          }
-        };
-
-        await savePushToken();
+        // Save token directly to Supabase — no backend hop needed
+        const { error } = await supabase
+          .from('push_tokens')
+          .upsert(
+            {
+              player_id: currentPlayerId,
+              token,
+              platform: Platform.OS,
+              last_seen: new Date().toISOString(),
+            },
+            { onConflict: 'token' }
+          );
+        if (error) {
+          console.log('Push token: Supabase save error:', error.message);
+        } else {
+          console.log('Push token: saved directly to Supabase for player:', currentPlayerId);
+        }
       } else {
         console.log('Push token: failed to get token (permissions denied or simulator)');
       }
