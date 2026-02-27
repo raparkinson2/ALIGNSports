@@ -18,6 +18,17 @@ Notifications.setNotificationHandler({
  * This token is what you'd send to a backend server to target this device
  */
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
+  // Wrap everything in a hard 25s timeout so the UI never hangs
+  return Promise.race([
+    _registerForPushNotificationsAsync(),
+    new Promise<null>((resolve) => setTimeout(() => {
+      console.log('Push token: hard timeout after 25s');
+      resolve(null);
+    }, 25000)),
+  ]);
+}
+
+async function _registerForPushNotificationsAsync(): Promise<string | null> {
   // Push notifications only work on physical devices
   if (!Device.isDevice) {
     console.log('Push notifications require a physical device');
@@ -57,7 +68,6 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
     console.log('Push token: calling getExpoPushTokenAsync with projectId:', projectId);
 
-    // Use a longer timeout and surface the real error instead of swallowing it
     const expoToken = await Promise.race([
       Notifications.getExpoPushTokenAsync({ projectId }),
       new Promise<never>((_, reject) =>
@@ -68,7 +78,6 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     console.log('Push token: obtained:', (expoToken as any).data);
     return (expoToken as any).data;
   } catch (error: any) {
-    // Log the full error so we can diagnose APNs issues from logs
     console.log('Push token ERROR:', error?.message || error);
     if (error?.message?.includes('timed out')) {
       console.log('Push token: APNs timed out — check expo.dev credentials for bundle ID com.vibecode.alignsports-jy5wjr');
