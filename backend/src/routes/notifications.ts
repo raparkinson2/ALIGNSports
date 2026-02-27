@@ -62,15 +62,41 @@ async function sendExpoPushNotifications(
       } else {
         const responseData = (await res.json()) as { data: ExpoPushTicket[] };
         if (responseData?.data) {
+          // Collect receipt IDs to fetch later
+          const receiptIds: string[] = [];
           responseData.data.forEach((ticket, i) => {
             const token = chunk[i]?.to ?? "";
             results.push({ token, ticket });
             if (ticket.status === "error") {
-              console.error(`[push] Token error (to: ${token}): ${ticket.message} - ${JSON.stringify(ticket.details)}`);
+              console.error(`[push] Ticket error (to: ${token}): ${ticket.message} - ${JSON.stringify(ticket.details)}`);
             } else {
               console.log(`[push] Ticket ok id=${ticket.id} to=${token}`);
+              if (ticket.id) receiptIds.push(ticket.id);
             }
           });
+
+          // Fetch receipts to get the real delivery status from APNs/FCM
+          if (receiptIds.length > 0) {
+            setTimeout(async () => {
+              try {
+                const receiptRes = await fetch("https://exp.host/--/api/v2/push/getReceipts", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Accept: "application/json" },
+                  body: JSON.stringify({ ids: receiptIds }),
+                });
+                const receiptData = (await receiptRes.json()) as { data: Record<string, { status: string; message?: string; details?: any }> };
+                for (const [id, receipt] of Object.entries(receiptData?.data || {})) {
+                  if (receipt.status === "error") {
+                    console.error(`[push] RECEIPT ERROR id=${id}: ${receipt.message} details=${JSON.stringify(receipt.details)}`);
+                  } else {
+                    console.log(`[push] Receipt ok id=${id}`);
+                  }
+                }
+              } catch (err) {
+                console.error("[push] Failed to fetch receipts:", err);
+              }
+            }, 15000); // Expo recommends waiting ~15s before fetching receipts
+          }
         }
       }
     } catch (err) {
