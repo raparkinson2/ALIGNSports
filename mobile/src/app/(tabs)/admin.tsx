@@ -65,6 +65,7 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { createTeamInvitation } from '@/lib/team-invitations';
 import { pushPlayerToSupabase, pushTeamToSupabase, deletePlayerFromSupabase } from '@/lib/realtime-sync';
 import { sendPushToPlayers, registerForPushNotificationsAsync } from '@/lib/notifications';
+import { uploadPhotoToStorage } from '@/lib/photo-storage';
 
 interface PlayerManageCardProps {
   player: Player;
@@ -1028,7 +1029,15 @@ export default function AdminScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      setTeamSettingsAndSync({ teamLogo: result.assets[0].uri });
+      // Upload to Supabase Storage so all devices can load the logo
+      let logoUrl = result.assets[0].uri;
+      if (activeTeamId) {
+        const uploadResult = await uploadPhotoToStorage(logoUrl, activeTeamId, 'team-logo');
+        if (uploadResult.success && uploadResult.url) {
+          logoUrl = uploadResult.url;
+        }
+      }
+      setTeamSettingsAndSync({ teamLogo: logoUrl });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
