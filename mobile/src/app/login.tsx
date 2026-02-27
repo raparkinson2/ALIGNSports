@@ -318,12 +318,7 @@ export default function LoginScreen() {
           console.log('LOGIN: Local result:', JSON.stringify(localResult));
           if (localResult.success) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            // Check if user belongs to multiple teams
-            if (localResult.multipleTeams) {
-              router.replace('/select-team');
-            } else {
-              router.replace('/(tabs)');
-            }
+            // AuthNavigator will handle redirect when isLoggedIn becomes true
             setIsLoading(false);
             return;
           }
@@ -333,11 +328,7 @@ export default function LoginScreen() {
           const verifiedResult = useTeamStore.getState().loginWithEmailVerified(trimmedIdentifier);
           if (verifiedResult.success) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            if (verifiedResult.multipleTeams) {
-              router.replace('/select-team');
-            } else {
-              router.replace('/(tabs)');
-            }
+            // AuthNavigator will handle redirect
             setIsLoading(false);
             return;
           }
@@ -372,12 +363,9 @@ export default function LoginScreen() {
                 useTeamStore.setState({
                   pendingTeamIds: playerRows.map(r => r.team_id),
                 });
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                router.replace('/select-team');
-              } else {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                router.replace('/(tabs)');
               }
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              // AuthNavigator will handle redirect
               setIsLoading(false);
               return;
             }
@@ -422,7 +410,7 @@ export default function LoginScreen() {
                 isLoggedIn: true,
               }));
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              router.replace('/(tabs)');
+              // AuthNavigator will handle redirect
               setIsLoading(false);
               return;
             }
@@ -458,12 +446,7 @@ export default function LoginScreen() {
 
       if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        // Check if user belongs to multiple teams
-        if (result.multipleTeams) {
-          router.replace('/select-team');
-        } else {
-          router.replace('/(tabs)');
-        }
+        // AuthNavigator will handle redirect when isLoggedIn becomes true
       } else if (isPhoneNumber(trimmedIdentifier) && result.error?.includes('No account found')) {
         // Phone user not in local store — try loading from Supabase
         console.log('LOGIN: Phone user not in local store, checking Supabase');
@@ -501,7 +484,7 @@ export default function LoginScreen() {
               isLoggedIn: true,
             });
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.replace('/(tabs)');
+            // AuthNavigator will handle redirect
             setIsLoading(false);
             return;
           }
@@ -527,7 +510,7 @@ export default function LoginScreen() {
     setCurrentPlayerId(playerId);
     setIsLoggedIn(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.replace('/(tabs)');
+    // AuthNavigator handles redirect
   };
 
   return (
