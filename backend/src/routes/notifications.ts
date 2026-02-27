@@ -110,8 +110,9 @@ async function generateAPNsJWT(teamId: string, keyId: string, privateKeyPem: str
   const encodedPayload = btoa(JSON.stringify(payload)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
   const signingInput = `${encodedHeader}.${encodedPayload}`;
 
-  // Parse the PEM key
+  // Parse the PEM key — handle both real newlines and literal \n from .env files
   const pemBody = privateKeyPem
+    .replace(/\\n/g, "\n")
     .replace(/-----BEGIN PRIVATE KEY-----/, "")
     .replace(/-----END PRIVATE KEY-----/, "")
     .replace(/-----BEGIN EC PRIVATE KEY-----/, "")
