@@ -637,6 +637,16 @@ export default function GameDetailScreen() {
   const [editGameStats, setEditGameStats] = useState<Record<string, string>>({});
 
   const game = games.find((g) => g.id === id);
+  const [gameNotFoundTimeout, setGameNotFoundTimeout] = useState(false);
+
+  useEffect(() => {
+    if (!game) {
+      const t = setTimeout(() => setGameNotFoundTimeout(true), 3000);
+      return () => clearTimeout(t);
+    } else {
+      setGameNotFoundTimeout(false);
+    }
+  }, [game]);
 
   // Initialize final score state from game data
   useEffect(() => {
@@ -648,6 +658,13 @@ export default function GameDetailScreen() {
   }, [game?.id, game?.finalScoreUs, game?.finalScoreThem, game?.gameResult]);
 
   if (!game) {
+    if (!gameNotFoundTimeout) {
+      return (
+        <View className="flex-1 bg-slate-900 items-center justify-center">
+          <Text className="text-slate-400">Loading...</Text>
+        </View>
+      );
+    }
     return (
       <View className="flex-1 bg-slate-900 items-center justify-center">
         <Text className="text-white">Game not found</Text>
