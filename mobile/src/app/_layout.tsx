@@ -263,22 +263,26 @@ function AuthNavigator() {
         updateNotificationPreferences(currentPlayerId, { pushToken: token });
         console.log('Push token registered for player:', currentPlayerId, 'token:', token);
 
-        // Save token directly to Supabase — no backend hop needed
-        const { error } = await supabase
-          .from('push_tokens')
-          .upsert(
-            {
-              player_id: currentPlayerId,
-              token,
-              platform: Platform.OS,
-              last_seen: new Date().toISOString(),
-            },
-            { onConflict: 'token' }
-          );
-        if (error) {
-          console.log('Push token: Supabase save error:', error.message);
+        // Save token via backend endpoint — uses service-role key to bypass RLS
+        const backendUrl = process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL || '';
+        if (backendUrl) {
+          try {
+            const saveRes = await fetch(`${backendUrl}/api/notifications/save-token`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ playerId: currentPlayerId, pushToken: token, platform: Platform.OS }),
+            });
+            const saveData = await saveRes.json() as { success?: boolean; error?: string };
+            if (saveData.success) {
+              console.log('Push token: saved via backend for player:', currentPlayerId);
+            } else {
+              console.log('Push token: backend save error:', saveData.error);
+            }
+          } catch (err: any) {
+            console.log('Push token: backend save failed:', err?.message || err);
+          }
         } else {
-          console.log('Push token: saved directly to Supabase for player:', currentPlayerId);
+          console.log('Push token: no backend URL configured, token not saved to server');
         }
       } else {
         console.log('Push token: failed to get token (permissions denied or simulator)');
