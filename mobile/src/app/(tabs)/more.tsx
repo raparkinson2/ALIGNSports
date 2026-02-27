@@ -584,26 +584,39 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave, c
             <Pressable
               onPress={async () => {
                 try {
-                  const token = await registerForPushNotificationsAsync();
-                  if (token) {
-                    Alert.alert('Token Obtained', `Token: ${token}\n\nNow saving to backend...`, [{ text: 'OK' }]);
-                    const url = backendUrl;
-                    if (url && currentPlayerId) {
-                      const res = await fetch(`${url}/api/notifications/save-token`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ playerId: currentPlayerId, pushToken: token, platform: Platform.OS }),
-                      });
-                      const json = await res.json() as { success?: boolean; error?: string };
-                      Alert.alert('Save Result', json.success ? 'Token saved to DB successfully!' : `Save failed: ${json.error}`);
-                    } else {
-                      Alert.alert('Save Skipped', `No backend URL or player ID.\nURL: ${url}\nPlayer: ${currentPlayerId}`);
-                    }
-                  } else {
-                    Alert.alert('No Token', 'registerForPushNotificationsAsync returned null.\n\nCheck that:\n- Push notifications are enabled in iOS Settings\n- This is a physical device\n- Build has correct provisioning profile');
+                  Alert.alert('Step 1', 'Checking permissions...');
+                  const { status } = await Notifications.getPermissionsAsync();
+                  Alert.alert('Step 2', `Permission status: ${status}`);
+
+                  if (status !== 'granted') {
+                    Alert.alert('Blocked', 'Notifications not granted. Enable in iOS Settings.');
+                    return;
+                  }
+
+                  Alert.alert('Step 3', 'Getting native APNs device token...');
+                  const nativeToken = await Notifications.getDevicePushTokenAsync();
+                  Alert.alert('Step 4 - Native Token', `Type: ${nativeToken.type}\nToken: ${String(nativeToken.data).substring(0, 40)}...`);
+
+                  Alert.alert('Step 5', 'Getting Expo push token...');
+                  const projectId = '727371d5-f124-42e2-af0e-40f420477bce';
+                  const expoToken = await Promise.race([
+                    Notifications.getExpoPushTokenAsync({ projectId }),
+                    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Expo token timed out after 15s')), 15000)),
+                  ]);
+                  Alert.alert('Step 6 - Expo Token', `Token: ${(expoToken as any).data}`);
+
+                  // Save to backend
+                  if (backendUrl && currentPlayerId) {
+                    const res = await fetch(`${backendUrl}/api/notifications/save-token`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ playerId: currentPlayerId, pushToken: (expoToken as any).data, platform: Platform.OS }),
+                    });
+                    const json = await res.json() as { success?: boolean; error?: string };
+                    Alert.alert('Step 7 - Saved', json.success ? 'Token saved to DB!' : `Failed: ${json.error}`);
                   }
                 } catch (e: any) {
-                  Alert.alert('Error', e?.message || String(e));
+                  Alert.alert('ERROR', e?.message || String(e));
                 }
               }}
               className="bg-slate-800 border border-amber-500/40 rounded-xl p-4 mt-3 flex-row items-center active:bg-slate-700"
