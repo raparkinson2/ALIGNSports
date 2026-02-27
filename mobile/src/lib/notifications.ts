@@ -61,17 +61,25 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     return null;
   }
 
+  console.log('Push token: device?', Device.isDevice, 'platform', Platform.OS);
   console.log('Push token: requesting Expo push token for projectId:', projectId);
-  const startMs = Date.now();
 
-  try {
-    const expoToken = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-    console.log(`Push token: obtained in ${Date.now() - startMs}ms — ${expoToken.substring(0, 40)}`);
-    return expoToken;
-  } catch (error: any) {
-    console.log(`Push token: getExpoPushTokenAsync failed after ${Date.now() - startMs}ms:`, error?.message || error);
-    return null;
+  // Retry loop: iOS can be slow on first install or after reboot.
+  // Try immediately, then wait 2s, 5s, 10s before giving up (~17s total).
+  const delays = [0, 2000, 5000, 10000];
+  for (let i = 0; i < delays.length; i++) {
+    if (delays[i]) await new Promise<void>((r) => setTimeout(r, delays[i]));
+    const startMs = Date.now();
+    try {
+      const expoToken = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+      console.log(`Push token: obtained on attempt ${i + 1} in ${Date.now() - startMs}ms — ${expoToken.substring(0, 40)}`);
+      return expoToken;
+    } catch (error: any) {
+      console.log(`Push token: attempt ${i + 1} failed after ${Date.now() - startMs}ms:`, error?.message || error);
+    }
   }
+  console.log('Push token: all attempts exhausted, returning null');
+  return null;
 }
 
 /**
