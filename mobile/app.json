@@ -3,7 +3,7 @@
     "name": "Align Sports",
     "slug": "align-sports",
     "scheme": "vibecode",
-    "version": "6.0",
+    "version": "6.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,

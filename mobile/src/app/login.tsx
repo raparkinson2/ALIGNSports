@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, ShieldQuestion, Phone, MailCheck, RefreshCw, KeySquare } from 'lucide-react-native';
+import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, ShieldQuestion, Phone, MailCheck, RefreshCw, KeySquare, Eye, EyeOff } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
@@ -66,6 +66,7 @@ export default function LoginScreen() {
 
   const [identifier, setIdentifier] = useState(''); // Can be email or phone
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -594,9 +595,15 @@ export default function LoginScreen() {
                   onChangeText={setPassword}
                   placeholder="Password"
                   placeholderTextColor="#64748b"
-                  secureTextEntry
+                  secureTextEntry={!showPassword}
                   className="flex-1 py-4 px-3 text-white text-base"
                 />
+                <Pressable onPress={() => setShowPassword(v => !v)} hitSlop={8}>
+                  {showPassword
+                    ? <EyeOff size={20} color="#64748b" />
+                    : <Eye size={20} color="#64748b" />
+                  }
+                </Pressable>
               </View>
             </View>
 
