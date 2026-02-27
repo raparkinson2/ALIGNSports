@@ -2,6 +2,12 @@
 
 A mobile app for recreational sports teams to manage schedules, rosters, check-ins, payments, and team communication. Supports multiple sports including Hockey, Baseball, Basketball, Lacrosse, Soccer, and Softball.
 
+## Known Crash Fixes
+
+**Login crash on fresh install**: `teamSettings` can be `null` before Zustand persist hydration completes. All accesses to `teamSettings.*` in `(tabs)/_layout.tsx` and `(tabs)/index.tsx` must use optional chaining (`teamSettings?.field`).
+
+**Game detail black screen**: `game.jerseyColor` can be `null` from Supabase (stored as empty string `''`). All jersey color lookups must use a safe fallback (`safeJerseyColor = game.jerseyColor ?? '#1a1a1a'`). An error boundary (`GameScreenErrorBoundary`) wraps the game detail screen to prevent black screens and log errors.
+
 ## Sync Architecture
 
 All real-time sync is handled by **Supabase Realtime** via a single WebSocket channel per team (`team-sync-v2:${teamId}`). The local Zustand store is a pure in-memory cache. On login, `loadTeamFromSupabase` fetches all data fresh.

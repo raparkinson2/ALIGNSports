@@ -10,9 +10,9 @@ export default function TabLayout() {
   const notifications = useTeamStore((s) => s.notifications) ?? [];
   const chatMessages = useTeamStore((s) => s.chatMessages) ?? [];
   const chatLastReadAt = useTeamStore((s) => s.chatLastReadAt) ?? {};
-  const showPayments = useTeamStore((s) => s.teamSettings.showPayments !== false);
-  const showTeamChat = useTeamStore((s) => s.teamSettings.showTeamChat !== false);
-  const showPhotos = useTeamStore((s) => s.teamSettings.showPhotos !== false);
+  const showPayments = useTeamStore((s) => s.teamSettings?.showPayments !== false);
+  const showTeamChat = useTeamStore((s) => s.teamSettings?.showTeamChat !== false);
+  const showPhotos = useTeamStore((s) => s.teamSettings?.showPhotos !== false);
 
   // Derive role status from reactive state
   const currentPlayer = players.find((p) => p.id === currentPlayerId);

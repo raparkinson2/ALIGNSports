@@ -211,26 +211,27 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false, hi
   const pendingCount = invitedCount - checkedInCount - checkedOutCount;
 
   // Get refreshment duty player if assigned and feature is enabled
-  const showRefreshmentDuty = teamSettings.showRefreshmentDuty !== false;
-  const is21Plus = teamSettings.refreshmentDutyIs21Plus !== false;
+  const showRefreshmentDuty = teamSettings?.showRefreshmentDuty !== false;
+  const is21Plus = teamSettings?.refreshmentDutyIs21Plus !== false;
   const beerDutyPlayer = showRefreshmentDuty && (game.showBeerDuty !== false) && game.beerDutyPlayerId
     ? players.find((p) => p.id === game.beerDutyPlayerId)
     : null;
 
   // Look up jersey color by name or hex code (handles both cases)
-  const jerseyColorInfo = (teamSettings.jerseyColors ?? []).find((c) => c.name === game.jerseyColor || c.color === game.jerseyColor);
+  const safeJerseyColor = game.jerseyColor ?? '#1a1a1a';
+  const jerseyColorInfo = (teamSettings?.jerseyColors ?? []).find((c) => c.name === safeJerseyColor || c.color === safeJerseyColor);
   // If found in settings, use the name. Otherwise, try to convert hex to color name
-  const jerseyColorName = jerseyColorInfo?.name || hexToColorName(game.jerseyColor);
-  const jerseyColorHex = jerseyColorInfo?.color || (game.jerseyColor.startsWith('#') ? game.jerseyColor : colorNameToHex(game.jerseyColor));
+  const jerseyColorName = jerseyColorInfo?.name || hexToColorName(safeJerseyColor);
+  const jerseyColorHex = jerseyColorInfo?.color || (safeJerseyColor.startsWith('#') ? safeJerseyColor : colorNameToHex(safeJerseyColor));
 
   // Check if lines are set (for hockey only)
-  const showLinesButton = teamSettings.showLineups !== false && teamSettings.sport === 'hockey' && hasAssignedPlayers(game.lineup);
+  const showLinesButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'hockey' && hasAssignedPlayers(game.lineup);
   // Check if lineup is set (for basketball)
-  const showBasketballLineupButton = teamSettings.showLineups !== false && teamSettings.sport === 'basketball' && hasAssignedBasketballPlayers(game.basketballLineup);
+  const showBasketballLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'basketball' && hasAssignedBasketballPlayers(game.basketballLineup);
   // Check if lineup is set (for baseball)
-  const showBaseballLineupButton = teamSettings.showLineups !== false && teamSettings.sport === 'baseball' && hasAssignedBaseballPlayers(game.baseballLineup);
+  const showBaseballLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'baseball' && hasAssignedBaseballPlayers(game.baseballLineup);
   // Check if lineup is set (for soccer)
-  const showSoccerLineupButton = teamSettings.showLineups !== false && teamSettings.sport === 'soccer' && hasAssignedSoccerPlayers(game.soccerLineup);
+  const showSoccerLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'soccer' && hasAssignedSoccerPlayers(game.soccerLineup);
 
   const cardContent = (
     <Pressable
@@ -966,7 +967,7 @@ export default function ScheduleScreen() {
   const notificationPrefs = currentPlayer?.notificationPreferences;
 
   // Get persisted view mode from team settings, default to 'list'
-  const persistedViewMode = teamSettings.upcomingGamesViewMode ?? 'list';
+  const persistedViewMode = teamSettings?.upcomingGamesViewMode ?? 'list';
 
   // Check for scheduled invites that need to be released on mount
   useEffect(() => {
@@ -995,10 +996,10 @@ export default function ScheduleScreen() {
   const [gameDate, setGameDate] = useState(new Date());
   const [gameTimeValue, setGameTimeValue] = useState('7:00');
   const [gameTimePeriod, setGameTimePeriod] = useState<'AM' | 'PM'>('PM');
-  const [selectedJersey, setSelectedJersey] = useState(teamSettings.jerseyColors?.[0]?.name || '');
+  const [selectedJersey, setSelectedJersey] = useState(teamSettings?.jerseyColors?.[0]?.name || '');
   const [notes, setNotes] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showBeerDuty, setShowBeerDuty] = useState(teamSettings.showRefreshmentDuty !== false);
+  const [showBeerDuty, setShowBeerDuty] = useState(teamSettings?.showRefreshmentDuty !== false);
   const [selectedBeerDutyPlayer, setSelectedBeerDutyPlayer] = useState<string | null>(null);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [showPlayerSelection, setShowPlayerSelection] = useState(false);
@@ -1010,15 +1011,15 @@ export default function ScheduleScreen() {
   const [androidPickerMode, setAndroidPickerMode] = useState<'date' | 'time'>('date');
 
   // Record editing state
-  const [recordWins, setRecordWins] = useState(teamSettings.record?.wins?.toString() ?? '0');
-  const [recordLosses, setRecordLosses] = useState(teamSettings.record?.losses?.toString() ?? '0');
-  const [recordTies, setRecordTies] = useState(teamSettings.record?.ties?.toString() ?? '0');
-  const [recordOtLosses, setRecordOtLosses] = useState(teamSettings.record?.otLosses?.toString() ?? '0');
-  const [recordWinStreak, setRecordWinStreak] = useState(teamSettings.record?.longestWinStreak?.toString() ?? '0');
-  const [recordLosingStreak, setRecordLosingStreak] = useState(teamSettings.record?.longestLosingStreak?.toString() ?? '0');
-  const [recordTeamGoals, setRecordTeamGoals] = useState(teamSettings.record?.teamGoals?.toString() ?? '0');
+  const [recordWins, setRecordWins] = useState(teamSettings?.record?.wins?.toString() ?? '0');
+  const [recordLosses, setRecordLosses] = useState(teamSettings?.record?.losses?.toString() ?? '0');
+  const [recordTies, setRecordTies] = useState(teamSettings?.record?.ties?.toString() ?? '0');
+  const [recordOtLosses, setRecordOtLosses] = useState(teamSettings?.record?.otLosses?.toString() ?? '0');
+  const [recordWinStreak, setRecordWinStreak] = useState(teamSettings?.record?.longestWinStreak?.toString() ?? '0');
+  const [recordLosingStreak, setRecordLosingStreak] = useState(teamSettings?.record?.longestLosingStreak?.toString() ?? '0');
+  const [recordTeamGoals, setRecordTeamGoals] = useState(teamSettings?.record?.teamGoals?.toString() ?? '0');
 
-  const sport = teamSettings.sport;
+  const sport = teamSettings?.sport ?? 'hockey';
 
   const activePlayers = players.filter((p) => p.status === 'active');
   const reservePlayers = players.filter((p) => p.status === 'reserve');
