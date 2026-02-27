@@ -9,134 +9,195 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-interface ExpoPushMessage {
-  to: string;
-  title: string;
-  body: string;
-  data?: Record<string, any>;
-  sound?: "default" | null;
-  badge?: number;
-  priority?: "default" | "normal" | "high";
-}
-
-interface ExpoPushTicket {
-  status: "ok" | "error";
-  id?: string;
-  message?: string;
-  details?: { error?: string };
-}
-
-function isValidExpoToken(t: unknown): t is string {
-  return (
-    typeof t === "string" &&
-    (t.startsWith("ExponentPushToken[") || t.startsWith("ExpoPushToken["))
-  );
-}
-
 /**
- * Send push notifications via Expo's push notification service.
- * Returns per-token results so callers can handle DeviceNotRegistered cleanup.
+ * Send push notifications directly via APNs HTTP/2 API using a .p8 auth key.
+ * Raw APNs device tokens are 64-char hex strings obtained via getDevicePushTokenAsync.
  */
-async function sendExpoPushNotifications(
-  messages: ExpoPushMessage[]
-): Promise<Array<{ token: string; ticket: ExpoPushTicket }>> {
-  const results: Array<{ token: string; ticket: ExpoPushTicket }> = [];
-  const chunks: ExpoPushMessage[][] = [];
-  for (let i = 0; i < messages.length; i += 100) {
-    chunks.push(messages.slice(i, i + 100));
+async function sendAPNsNotifications(
+  tokens: string[],
+  title: string,
+  body: string,
+  data?: Record<string, any>
+): Promise<{ sent: number; failed: number; stale: string[] }> {
+  const teamId = process.env.APNS_TEAM_ID;
+  const keyId = process.env.APNS_KEY_ID;
+  const privateKey = process.env.APNS_PRIVATE_KEY; // PEM string, newlines as \n
+  const bundleId = process.env.APNS_BUNDLE_ID || "com.vibecode.alignsports-jy5wjr";
+
+  if (!teamId || !keyId || !privateKey) {
+    console.error("[push] APNs env vars missing: APNS_TEAM_ID, APNS_KEY_ID, APNS_PRIVATE_KEY");
+    // Fallback to Expo push service for any Expo-format tokens
+    return sendViaExpoPushService(tokens, title, body, data);
   }
 
-  for (const chunk of chunks) {
-    try {
-      const res = await fetch("https://exp.host/--/api/v2/push/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(chunk),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("[push] Expo API HTTP error:", text);
-        chunk.forEach((msg) =>
-          results.push({ token: msg.to, ticket: { status: "error", message: text } })
-        );
-      } else {
-        const responseData = (await res.json()) as { data: ExpoPushTicket[] };
-        if (responseData?.data) {
-          // Collect receipt IDs to fetch later
-          const receiptIds: string[] = [];
-          responseData.data.forEach((ticket, i) => {
-            const token = chunk[i]?.to ?? "";
-            results.push({ token, ticket });
-            if (ticket.status === "error") {
-              console.error(`[push] Ticket error (to: ${token}): ${ticket.message} - ${JSON.stringify(ticket.details)}`);
-            } else {
-              console.log(`[push] Ticket ok id=${ticket.id} to=${token}`);
-              if (ticket.id) receiptIds.push(ticket.id);
-            }
-          });
+  let sent = 0;
+  let failed = 0;
+  const stale: string[] = [];
 
-          // Fetch receipts to get the real delivery status from APNs/FCM
-          if (receiptIds.length > 0) {
-            setTimeout(async () => {
-              try {
-                const receiptRes = await fetch("https://exp.host/--/api/v2/push/getReceipts", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json", Accept: "application/json" },
-                  body: JSON.stringify({ ids: receiptIds }),
-                });
-                const receiptData = (await receiptRes.json()) as { data: Record<string, { status: string; message?: string; details?: any }> };
-                for (const [id, receipt] of Object.entries(receiptData?.data || {})) {
-                  if (receipt.status === "error") {
-                    console.error(`[push] RECEIPT ERROR id=${id}: ${receipt.message} details=${JSON.stringify(receipt.details)}`);
-                  } else {
-                    console.log(`[push] Receipt ok id=${id}`);
-                  }
-                }
-              } catch (err) {
-                console.error("[push] Failed to fetch receipts:", err);
-              }
-            }, 15000); // Expo recommends waiting ~15s before fetching receipts
-          }
+  // Generate JWT for APNs
+  let jwtToken: string;
+  try {
+    jwtToken = await generateAPNsJWT(teamId, keyId, privateKey);
+  } catch (err) {
+    console.error("[push] Failed to generate APNs JWT:", err);
+    return sendViaExpoPushService(tokens, title, body, data);
+  }
+
+  const apnsUrl = "https://api.push.apple.com";
+
+  for (const token of tokens) {
+    // Skip Expo-format tokens — they go through Expo's service
+    if (token.startsWith("ExponentPushToken[") || token.startsWith("ExpoPushToken[")) {
+      console.log(`[push] Expo token found, routing via Expo: ${token.substring(0, 30)}`);
+      const result = await sendViaExpoPushService([token], title, body, data);
+      sent += result.sent;
+      failed += result.failed;
+      stale.push(...result.stale);
+      continue;
+    }
+
+    try {
+      const payload = JSON.stringify({
+        aps: {
+          alert: { title, body },
+          sound: "default",
+          badge: 1,
+          "content-available": 1,
+        },
+        ...data,
+      });
+
+      const res = await fetch(`${apnsUrl}/3/device/${token}`, {
+        method: "POST",
+        headers: {
+          authorization: `bearer ${jwtToken}`,
+          "apns-topic": bundleId,
+          "apns-push-type": "alert",
+          "apns-priority": "10",
+          "content-type": "application/json",
+        },
+        body: payload,
+      });
+
+      if (res.status === 200) {
+        console.log(`[push] APNs ok for token ${token.substring(0, 16)}...`);
+        sent++;
+      } else {
+        const errBody = await res.json().catch(() => ({})) as { reason?: string };
+        console.error(`[push] APNs error ${res.status} for token ${token.substring(0, 16)}...: ${errBody.reason}`);
+        if (errBody.reason === "BadDeviceToken" || errBody.reason === "Unregistered") {
+          stale.push(token);
         }
+        failed++;
       }
     } catch (err) {
-      console.error("[push] Failed to reach Expo push API:", err);
-      chunk.forEach((msg) =>
-        results.push({ token: msg.to, ticket: { status: "error", message: String(err) } })
-      );
+      console.error(`[push] APNs request failed for token ${token.substring(0, 16)}...:`, err);
+      failed++;
     }
   }
 
-  return results;
+  return { sent, failed, stale };
 }
 
 /**
- * Delete stale (DeviceNotRegistered) tokens from the push_tokens table.
+ * Generate a short-lived APNs JWT using the .p8 private key.
+ */
+async function generateAPNsJWT(teamId: string, keyId: string, privateKeyPem: string): Promise<string> {
+  const header = { alg: "ES256", kid: keyId };
+  const payload = { iss: teamId, iat: Math.floor(Date.now() / 1000) };
+
+  const encodedHeader = btoa(JSON.stringify(header)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const encodedPayload = btoa(JSON.stringify(payload)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const signingInput = `${encodedHeader}.${encodedPayload}`;
+
+  // Parse the PEM key
+  const pemBody = privateKeyPem
+    .replace(/-----BEGIN PRIVATE KEY-----/, "")
+    .replace(/-----END PRIVATE KEY-----/, "")
+    .replace(/-----BEGIN EC PRIVATE KEY-----/, "")
+    .replace(/-----END EC PRIVATE KEY-----/, "")
+    .replace(/\s/g, "");
+
+  const keyData = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
+
+  const cryptoKey = await crypto.subtle.importKey(
+    "pkcs8",
+    keyData,
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["sign"]
+  );
+
+  const encoder = new TextEncoder();
+  const signature = await crypto.subtle.sign(
+    { name: "ECDSA", hash: "SHA-256" },
+    cryptoKey,
+    encoder.encode(signingInput)
+  );
+
+  const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
+    .replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+
+  return `${signingInput}.${encodedSignature}`;
+}
+
+/**
+ * Fallback: send via Expo push service (for Expo-format tokens or when APNs creds missing).
+ */
+async function sendViaExpoPushService(
+  tokens: string[],
+  title: string,
+  body: string,
+  data?: Record<string, any>
+): Promise<{ sent: number; failed: number; stale: string[] }> {
+  const validTokens = tokens.filter(t =>
+    typeof t === "string" && (t.startsWith("ExponentPushToken[") || t.startsWith("ExpoPushToken["))
+  );
+
+  if (validTokens.length === 0) {
+    return { sent: 0, failed: tokens.length, stale: [] };
+  }
+
+  const messages = validTokens.map(token => ({ to: token, title, body, data, sound: "default", priority: "high" }));
+  let sent = 0;
+  const stale: string[] = [];
+
+  try {
+    const res = await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(messages),
+    });
+    if (res.ok) {
+      const responseData = await res.json() as { data: Array<{ status: string; details?: { error?: string } }> };
+      responseData.data?.forEach((ticket, i) => {
+        if (ticket.status === "ok") sent++;
+        else if (ticket.details?.error === "DeviceNotRegistered") stale.push(validTokens[i]!);
+      });
+    }
+  } catch (err) {
+    console.error("[push] Expo push service error:", err);
+  }
+
+  return { sent, failed: validTokens.length - sent, stale };
+}
+
+/**
+ * Delete stale tokens from push_tokens table.
  */
 async function removeStaleTokens(staleTokens: string[]): Promise<void> {
   if (staleTokens.length === 0) return;
-  const { error } = await supabaseAdmin
-    .from("push_tokens")
-    .delete()
-    .in("token", staleTokens);
-  if (error) {
-    console.error("[push] Failed to remove stale tokens:", error.message);
-  } else {
-    console.log(`[push] Removed ${staleTokens.length} stale token(s)`);
-  }
+  const { error } = await supabaseAdmin.from("push_tokens").delete().in("token", staleTokens);
+  if (error) console.error("[push] Failed to remove stale tokens:", error.message);
+  else console.log(`[push] Removed ${staleTokens.length} stale token(s)`);
 }
 
 /**
  * POST /api/notifications/save-token
- * Upserts a push token into the dedicated push_tokens table.
- * Uses the token column as the unique conflict key so reinstalls don't create duplicates.
- * Body: { playerId: string, pushToken: string, platform?: string, appBuild?: string }
+ * Upserts a push token. Accepts both raw APNs hex tokens and Expo-format tokens.
  */
 notificationsRouter.post("/save-token", async (c) => {
-  let playerId = "";
-  let pushToken = "";
-  let platform = "ios";
-  let appBuild: string | null = null;
+  let playerId = "", pushToken = "", platform = "ios", appBuild: string | null = null;
   try {
     const req = await c.req.json();
     playerId = req.playerId || "";
@@ -147,29 +208,14 @@ notificationsRouter.post("/save-token", async (c) => {
     return c.json({ error: "Invalid request body" }, 400);
   }
 
-  if (!playerId || !pushToken) {
-    return c.json({ error: "playerId and pushToken required" }, 400);
-  }
+  if (!playerId || !pushToken) return c.json({ error: "playerId and pushToken required" }, 400);
 
-  if (!isValidExpoToken(pushToken)) {
-    console.log(`[push] save-token: invalid token format for player ${playerId}: ${pushToken}`);
-    return c.json({ error: "Invalid Expo push token format" }, 400);
-  }
+  console.log(`[push] save-token: player=${playerId} platform=${platform} token=${pushToken.substring(0, 20)}...`);
 
-  console.log(`[push] save-token: player=${playerId} platform=${platform} token=${pushToken}`);
-
-  const { error } = await supabaseAdmin
-    .from("push_tokens")
-    .upsert(
-      {
-        player_id: playerId,
-        token: pushToken,
-        platform,
-        app_build: appBuild,
-        last_seen: new Date().toISOString(),
-      },
-      { onConflict: "token" } // token is unique — upsert updates last_seen on reinstall
-    );
+  const { error } = await supabaseAdmin.from("push_tokens").upsert(
+    { player_id: playerId, token: pushToken, platform, app_build: appBuild, last_seen: new Date().toISOString() },
+    { onConflict: "token" }
+  );
 
   if (error) {
     console.error("[push] save-token error:", error.message);
@@ -181,61 +227,11 @@ notificationsRouter.post("/save-token", async (c) => {
 });
 
 /**
- * POST /api/notifications/send-push
- * Send a push notification to an explicit list of Expo push tokens.
- * Body: { tokens: string[], title: string, body: string, data?: object }
- */
-notificationsRouter.post("/send-push", async (c) => {
-  let tokens: string[] = [];
-  let title = "";
-  let body = "";
-  let data: Record<string, any> = {};
-
-  try {
-    const req = await c.req.json();
-    tokens = req.tokens || [];
-    title = req.title || "";
-    body = req.body || "";
-    data = req.data || {};
-  } catch {
-    return c.json({ error: "Invalid request body" }, 400);
-  }
-
-  if (!tokens.length || !title || !body) {
-    return c.json({ error: "tokens, title, and body are required" }, 400);
-  }
-
-  const validTokens = tokens.filter(isValidExpoToken);
-  console.log(`[push] send-push: ${validTokens.length}/${tokens.length} valid tokens`);
-
-  if (validTokens.length === 0) {
-    return c.json({ success: true, sent: 0, message: "No valid Expo push tokens" });
-  }
-
-  const messages: ExpoPushMessage[] = validTokens.map((token) => ({
-    to: token, title, body, data, sound: "default", priority: "high",
-  }));
-
-  const results = await sendExpoPushNotifications(messages);
-  const stale = results.filter(r => r.ticket.details?.error === "DeviceNotRegistered").map(r => r.token);
-  await removeStaleTokens(stale);
-
-  const sent = results.filter(r => r.ticket.status === "ok").length;
-  return c.json({ success: true, sent });
-});
-
-/**
  * POST /api/notifications/send-to-players
- * Looks up ALL push tokens for the given player IDs from the push_tokens table,
- * sends to every registered device, and cleans up DeviceNotRegistered tokens.
- * Falls back to email/phone cross-match for players whose IDs may have changed.
- * Body: { playerIds: string[], title: string, body: string, data?: object }
+ * Looks up push tokens for given player IDs and sends via APNs directly.
  */
 notificationsRouter.post("/send-to-players", async (c) => {
-  let playerIds: string[] = [];
-  let title = "";
-  let body = "";
-  let data: Record<string, any> = {};
+  let playerIds: string[] = [], title = "", body = "", data: Record<string, any> = {};
 
   try {
     const req = await c.req.json();
@@ -253,142 +249,41 @@ notificationsRouter.post("/send-to-players", async (c) => {
 
   console.log(`[push] send-to-players: ${playerIds.length} players, title: "${title}"`);
 
-  // Primary: fetch tokens from push_tokens table by player_id
+  // Fetch tokens from push_tokens table
   const { data: tokenRows, error: tokenError } = await supabaseAdmin
     .from("push_tokens")
     .select("player_id, token, platform")
     .in("player_id", playerIds);
 
-  if (tokenError) {
-    console.error("[push] send-to-players: push_tokens fetch error:", tokenError.message);
-  }
+  if (tokenError) console.error("[push] push_tokens fetch error:", tokenError.message);
 
-  const allTokens = new Set<string>();
-  const tokenToPlayer: Record<string, string> = {};
-  const playersWithTokens = new Set<string>();
-
+  const allTokens: string[] = [];
   for (const row of tokenRows || []) {
-    if (isValidExpoToken(row.token)) {
-      allTokens.add(row.token);
-      tokenToPlayer[row.token] = row.player_id;
-      playersWithTokens.add(row.player_id);
-      console.log(`[push] player ${row.player_id}: token via push_tokens table (${row.platform})`);
+    if (row.token) {
+      allTokens.push(row.token);
+      console.log(`[push] player ${row.player_id}: token ${row.token.substring(0, 16)}... (${row.platform})`);
     }
   }
 
-  // Fallback: for players with no token in push_tokens, check the legacy push_token column
-  // and notification_preferences.pushToken in the players table (handles existing data)
-  const missingIds = playerIds.filter((id) => !playersWithTokens.has(id));
-  if (missingIds.length > 0) {
-    console.log(`[push] ${missingIds.length} players not in push_tokens, checking legacy columns`);
+  console.log(`[push] send-to-players: ${playerIds.length} players → ${allTokens.length} tokens`);
 
-    const { data: playerRows, error: playerError } = await supabaseAdmin
-      .from("players")
-      .select("id, email, phone, push_token, notification_preferences")
-      .in("id", missingIds);
-
-    if (playerError) {
-      console.error("[push] send-to-players: players fetch error:", playerError.message);
-    }
-
-    const playersMissingEverywhere: typeof playerRows = [];
-
-    for (const row of playerRows || []) {
-      const prefs = (row.notification_preferences as any) || {};
-      const legacyToken = row.push_token || prefs.pushToken;
-      const prefTokens: string[] = Array.isArray(prefs.pushTokens)
-        ? prefs.pushTokens.map((e: any) => e.token || e).filter(isValidExpoToken)
-        : [];
-
-      const candidates = [...new Set([legacyToken, ...prefTokens].filter(isValidExpoToken))];
-      if (candidates.length > 0) {
-        for (const t of candidates) {
-          allTokens.add(t);
-          tokenToPlayer[t] = row.id;
-        }
-        console.log(`[push] player ${row.id}: ${candidates.length} token(s) via legacy columns`);
-      } else {
-        console.log(`[push] player ${row.id}: NO tokens anywhere`);
-        playersMissingEverywhere.push(row);
-      }
-    }
-
-    // Cross-team email/phone fallback for players whose ID may have changed
-    const emails = (playersMissingEverywhere || []).map((p: any) => p.email?.toLowerCase()).filter(Boolean);
-    const phones = (playersMissingEverywhere || []).map((p: any) => p.phone?.replace(/\D/g, "")).filter(Boolean);
-
-    if (emails.length > 0 || phones.length > 0) {
-      // Check push_tokens table by matching email/phone via players join
-      const { data: altPlayerRows } = await supabaseAdmin
-        .from("players")
-        .select("id, email, phone")
-        .or(
-          [
-            ...emails.map((e: string) => `email.ilike.${e}`),
-            ...phones.map((p: string) => `phone.eq.${p}`),
-          ].join(",")
-        );
-
-      if (altPlayerRows && altPlayerRows.length > 0) {
-        const altIds = altPlayerRows.map((r: any) => r.id);
-        const { data: altTokenRows } = await supabaseAdmin
-          .from("push_tokens")
-          .select("player_id, token")
-          .in("player_id", altIds);
-
-        for (const altTok of altTokenRows || []) {
-          if (isValidExpoToken(altTok.token) && !allTokens.has(altTok.token)) {
-            // Map it back to the original player ID via email/phone match
-            const altPlayer = altPlayerRows.find((r: any) => r.id === altTok.player_id);
-            const origPlayer = (playersMissingEverywhere || []).find((p: any) => {
-              const e = p.email?.toLowerCase();
-              const ph = p.phone?.replace(/\D/g, "");
-              return (e && e === altPlayer?.email?.toLowerCase()) ||
-                     (ph && ph === altPlayer?.phone?.replace(/\D/g, ""));
-            });
-            if (origPlayer) {
-              allTokens.add(altTok.token);
-              tokenToPlayer[altTok.token] = origPlayer.id;
-              console.log(`[push] player ${origPlayer.id}: found token via email/phone cross-match`);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  const tokenList = Array.from(allTokens);
-  console.log(`[push] send-to-players: ${playerIds.length} players → ${tokenList.length} tokens`);
-
-  if (tokenList.length === 0) {
+  if (allTokens.length === 0) {
     return c.json({ success: true, sent: 0, message: "No push tokens found for given player IDs" });
   }
 
-  const messages: ExpoPushMessage[] = tokenList.map((token) => ({
-    to: token, title, body, data, sound: "default", priority: "high",
-  }));
+  const result = await sendAPNsNotifications(allTokens, title, body, data);
+  await removeStaleTokens(result.stale);
 
-  const results = await sendExpoPushNotifications(messages);
-
-  // Clean up DeviceNotRegistered tokens
-  const staleTokens = results
-    .filter(r => r.ticket.status === "error" && r.ticket.details?.error === "DeviceNotRegistered")
-    .map(r => r.token);
-  await removeStaleTokens(staleTokens);
-
-  const sent = results.filter(r => r.ticket.status === "ok").length;
-  return c.json({ success: true, sent, total_tokens: tokenList.length });
+  return c.json({ success: true, sent: result.sent, failed: result.failed, total_tokens: allTokens.length });
 });
 
 /**
  * GET /api/notifications/debug-tokens?teamId=xxx
- * Returns push token status for all players on a team.
  */
 notificationsRouter.get("/debug-tokens", async (c) => {
   const teamId = c.req.query("teamId");
   if (!teamId) return c.json({ error: "teamId required" }, 400);
 
-  // Fetch all players on the team
   const { data: players, error: playersError } = await supabaseAdmin
     .from("players")
     .select("id, first_name, last_name, email")
@@ -397,22 +292,15 @@ notificationsRouter.get("/debug-tokens", async (c) => {
   if (playersError) return c.json({ error: playersError.message }, 500);
 
   const playerIds = (players || []).map((p: any) => p.id);
-
-  // Fetch all tokens for those players from push_tokens table
   const { data: tokenRows } = await supabaseAdmin
     .from("push_tokens")
     .select("player_id, token, platform, last_seen")
     .in("player_id", playerIds);
 
-  // Group tokens by player
   const tokensByPlayer: Record<string, Array<{ token: string; platform: string; last_seen: string }>> = {};
   for (const row of tokenRows || []) {
     if (!tokensByPlayer[row.player_id]) tokensByPlayer[row.player_id] = [];
-    tokensByPlayer[row.player_id]!.push({
-      token: row.token,
-      platform: row.platform,
-      last_seen: row.last_seen,
-    });
+    tokensByPlayer[row.player_id]!.push({ token: row.token, platform: row.platform, last_seen: row.last_seen });
   }
 
   const result = (players || []).map((p: any) => {
@@ -427,11 +315,7 @@ notificationsRouter.get("/debug-tokens", async (c) => {
     };
   });
 
-  return c.json({
-    players: result,
-    count: result.length,
-    with_token: result.filter((r: any) => r.has_token).length,
-  });
+  return c.json({ players: result, count: result.length, with_token: result.filter((r: any) => r.has_token).length });
 });
 
 export { notificationsRouter };
