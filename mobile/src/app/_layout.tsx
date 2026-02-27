@@ -255,11 +255,13 @@ function AuthNavigator() {
     if (!isLoggedIn || !currentPlayerId) return;
     // Only register once per player session to avoid duplicate APNs calls
     if (pushTokenRegistered.current === currentPlayerId) return;
-    pushTokenRegistered.current = currentPlayerId;
 
     const registerToken = async () => {
       const token = await registerForPushNotificationsAsync();
       if (token && currentPlayerId) {
+        // Mark as registered only after successfully obtaining a token
+        pushTokenRegistered.current = currentPlayerId;
+
         // Save the push token to the player's preferences (local store)
         updateNotificationPreferences(currentPlayerId, { pushToken: token });
         console.log('Push token registered for player:', currentPlayerId, 'token:', token);
