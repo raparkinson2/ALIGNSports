@@ -242,6 +242,13 @@ function AuthNavigator() {
     return () => subscription.remove();
   }, [isLoggedIn, activeTeamId]);
 
+  // Reset push token registration ref when logged out so re-login always re-registers
+  useEffect(() => {
+    if (!isLoggedIn) {
+      pushTokenRegistered.current = null;
+    }
+  }, [isLoggedIn]);
+
   // Register for push notifications when logged in
   useEffect(() => {
     if (!isLoggedIn || !currentPlayerId) return;
@@ -376,8 +383,6 @@ function AuthNavigator() {
       if (responseListener.current) {
         responseListener.current.remove();
       }
-      // Reset push token registration if player logs out
-      if (!isLoggedIn) pushTokenRegistered.current = null;
     };
   }, [isLoggedIn, currentPlayerId, isReady]);
 
