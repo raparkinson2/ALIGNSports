@@ -1470,7 +1470,7 @@ export default function MoreScreen() {
           {/* Log Out */}
           <Pressable
             onPress={handleLogout}
-            className="flex-row items-center justify-center py-5 px-4 rounded-xl mb-8 mt-3 active:opacity-70"
+            className="flex-row items-center justify-center py-4 px-4 rounded-xl mb-8 mt-1 active:opacity-70"
           >
             <LogOut size={20} color="#ef4444" />
             <Text className="text-red-400 font-semibold text-base ml-2">Log Out</Text>
