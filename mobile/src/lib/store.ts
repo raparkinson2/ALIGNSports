@@ -1958,12 +1958,16 @@ export const useTeamStore = create<TeamStore>()(
       logout: () => {
         // Clear all in-memory team data — it will be loaded fresh from Supabase on next login.
         // Only session fields persist to AsyncStorage (via partialize).
+        // IMPORTANT: activeTeamId must be cleared here so the _layout.tsx safety check
+        // (isLoggedIn && players.length === 0 && !activeTeamId) doesn't fire a force-logout
+        // mid-login when isLoggedIn briefly becomes true before players are repopulated.
         set({
           isLoggedIn: false,
           currentPlayerId: null,
           userEmail: null,
           userPhone: null,
           pendingTeamIds: null,
+          activeTeamId: null,
           // Clear all in-memory team data
           players: [],
           games: [],
