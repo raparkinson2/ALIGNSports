@@ -1239,7 +1239,7 @@ export default function MoreScreen() {
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             logout();
-            router.replace('/login');
+            // AuthNavigator in _layout.tsx handles redirect to /login when isLoggedIn becomes false
           },
         },
       ]
@@ -1259,7 +1259,7 @@ export default function MoreScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     deleteAccount();
     setDeleteAccountModalVisible(false);
-    router.replace('/login');
+    // AuthNavigator in _layout.tsx handles redirect to /login when isLoggedIn becomes false
   };
 
   const handleSwitchTeam = () => {

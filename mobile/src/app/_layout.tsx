@@ -41,7 +41,7 @@ function AuthNavigator() {
   const segments = useSegments();
   const isLoggedIn = useTeamStore((s) => s.isLoggedIn);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
-  const players = useTeamStore((s) => s.players);
+  const playersLength = useTeamStore((s) => s.players.length);
   const pendingTeamIds = useTeamStore((s) => s.pendingTeamIds);
   const logout = useTeamStore((s) => s.logout);
   const updateNotificationPreferences = useTeamStore((s) => s.updateNotificationPreferences);
@@ -165,7 +165,7 @@ function AuthNavigator() {
     // Additional safety: if somehow isLoggedIn is true but no players exist, force logout
     // BUT only if there's no activeTeamId — if there is one, realtime sync will load players shortly
     const { activeTeamId: currentTeamId } = useTeamStore.getState();
-    if (isLoggedIn && players.length === 0 && !currentTeamId) {
+    if (isLoggedIn && playersLength === 0 && !currentTeamId) {
       console.log('No players exist, no active team, but isLoggedIn is true, forcing logout');
       stopRealtimeSync();
       logout();
@@ -174,7 +174,7 @@ function AuthNavigator() {
 
     if (isLoggedIn && currentPlayerId) {
       // Check if the player still exists in the store
-      const playerExists = players.some((p) => p.id === currentPlayerId);
+      const playerExists = useTeamStore.getState().players.some((p) => p.id === currentPlayerId);
       if (!playerExists) {
         // Only force logout if there's no active team being loaded
         // (activeTeamId means realtime sync may still be populating players)
@@ -194,7 +194,7 @@ function AuthNavigator() {
       }
       // else: currentPlayerId will be set once loadTeamFromSupabase finishes
     }
-  }, [isHydrated, isLoggedIn, currentPlayerId, players, logout]);
+  }, [isHydrated, isLoggedIn, currentPlayerId, playersLength, logout]);
 
   // Hide splash screen once hydration is complete
   useEffect(() => {
