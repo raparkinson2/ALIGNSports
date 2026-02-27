@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState, useEffect } from 'react';
+import { cancelGameInviteNotification } from './notifications';
 
 // Sport Types and Positions
 export type Sport = 'baseball' | 'basketball' | 'hockey' | 'lacrosse' | 'soccer' | 'softball';
@@ -1304,12 +1305,9 @@ export const useTeamStore = create<TeamStore>()(
           }));
 
           // Cancel any pending OS notifications for these games to prevent duplicates
-          // Import dynamically to avoid circular dependency issues
-          import('./notifications').then(({ cancelGameInviteNotification }) => {
-            gamesToRelease.forEach((game) => {
-              cancelGameInviteNotification(game.id).catch(() => {});
-            });
-          }).catch(() => {});
+          gamesToRelease.forEach((game) => {
+            cancelGameInviteNotification(game.id).catch(() => {});
+          });
 
           // Create in-app notifications for each game
           gamesToRelease.forEach((game) => {
