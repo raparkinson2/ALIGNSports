@@ -14,17 +14,21 @@ Notifications.setNotificationHandler({
 });
 
 /**
- * Register for push notifications and return the Expo Push Token
- * This token is what you'd send to a backend server to target this device
+ * Register for push notifications and return the Expo Push Token.
+ *
+ * Key flow:
+ * 1. Check/request permissions
+ * 2. Get native APNs device token first (warms up the APNs channel)
+ * 3. Then get Expo push token (which wraps the APNs token)
+ * 4. Hard 30s outer timeout so the UI never hangs forever
  */
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
-  // Wrap everything in a hard 25s timeout so the UI never hangs
   return Promise.race([
     _registerForPushNotificationsAsync(),
     new Promise<null>((resolve) => setTimeout(() => {
-      console.log('Push token: hard timeout after 25s');
+      console.log('Push token: hard timeout after 30s');
       resolve(null);
-    }, 25000)),
+    }, 30000)),
   ]);
 }
 
@@ -32,21 +36,6 @@ async function _registerForPushNotificationsAsync(): Promise<string | null> {
   // Push notifications only work on physical devices
   if (!Device.isDevice) {
     console.log('Push notifications require a physical device');
-    return null;
-  }
-
-  // Check existing permissions
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-
-  // Request permission if not already granted
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  if (finalStatus !== 'granted') {
-    console.log('Push token: permissions not granted, status:', finalStatus);
     return null;
   }
 
@@ -60,28 +49,61 @@ async function _registerForPushNotificationsAsync(): Promise<string | null> {
     });
   }
 
+  // Step 1: Check existing permissions
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+  console.log('Push token: existing permission status:', existingStatus);
+
+  // Step 2: Request permission if not already granted
+  if (existingStatus !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+    console.log('Push token: requested permission, status:', finalStatus);
+  }
+
+  if (finalStatus !== 'granted') {
+    console.log('Push token: permissions not granted, status:', finalStatus);
+    return null;
+  }
+
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId ||
+    (Constants as any).easConfig?.projectId ||
+    '727371d5-f124-42e2-af0e-40f420477bce';
+
+  console.log('Push token: projectId:', projectId);
+
+  // Step 3: Get native APNs device token FIRST — this warms up the APNs channel.
+  // Without this step, getExpoPushTokenAsync can hang indefinitely on TestFlight.
   try {
-    const projectId =
-      Constants.expoConfig?.extra?.eas?.projectId ||
-      (Constants as any).easConfig?.projectId ||
-      '727371d5-f124-42e2-af0e-40f420477bce';
+    console.log('Push token: getting native device token (APNs warm-up)...');
+    const deviceToken = await Promise.race([
+      Notifications.getDevicePushTokenAsync(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Native device token timed out after 15s')), 15000)
+      ),
+    ]);
+    console.log('Push token: native device token obtained, type:', (deviceToken as any).type, 'data prefix:', String((deviceToken as any).data).substring(0, 20));
+  } catch (nativeErr: any) {
+    console.log('Push token: native device token failed:', nativeErr?.message || nativeErr);
+    // Don't return null here — still try getExpoPushTokenAsync
+  }
 
+  // Step 4: Get Expo push token (wraps the native APNs token via Expo's service)
+  try {
     console.log('Push token: calling getExpoPushTokenAsync with projectId:', projectId);
-
     const expoToken = await Promise.race([
       Notifications.getExpoPushTokenAsync({ projectId }),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('APNs token request timed out after 20s')), 20000)
+        setTimeout(() => reject(new Error('Expo push token timed out after 20s')), 20000)
       ),
     ]);
 
-    console.log('Push token: obtained:', (expoToken as any).data);
-    return (expoToken as any).data;
+    const token = (expoToken as any).data as string;
+    console.log('Push token: Expo token obtained:', token);
+    return token;
   } catch (error: any) {
-    console.log('Push token ERROR:', error?.message || error);
-    if (error?.message?.includes('timed out')) {
-      console.log('Push token: APNs timed out — check expo.dev credentials for bundle ID com.vibecode.alignsports-jy5wjr');
-    }
+    console.log('Push token ERROR getting Expo token:', error?.message || error);
     return null;
   }
 }
