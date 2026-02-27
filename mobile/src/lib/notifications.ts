@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 // Configure how notifications are displayed when the app is in the foreground
@@ -13,24 +14,14 @@ Notifications.setNotificationHandler({
 });
 
 /**
- * Register for push notifications and return the raw APNs/FCM device token.
+ * Register for push notifications and return an Expo push token.
  *
- * Uses getDevicePushTokenAsync (not getExpoPushTokenAsync) so we go
- * directly to APNs on-device — no Expo push service, no network call,
- * no credentials setup required. Returns immediately once the OS provides
- * the token (usually < 1 second on a real device).
+ * Uses getExpoPushTokenAsync with the EAS projectId — this is the
+ * reliable path recommended by Expo for managed workflow apps.
+ * The token format is ExponentPushToken[...] and works with the
+ * Expo push service for delivery to APNs/FCM.
  */
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
-  return Promise.race([
-    _registerForPushNotificationsAsync(),
-    new Promise<null>((resolve) => setTimeout(() => {
-      console.log('Push token: hard timeout after 30s — APNs never responded');
-      resolve(null);
-    }, 30000)),
-  ]);
-}
-
-async function _registerForPushNotificationsAsync(): Promise<string | null> {
   // Push notifications only work on physical devices
   if (!Device.isDevice) {
     console.log('Push token: skipped — not a physical device');
@@ -41,40 +32,44 @@ async function _registerForPushNotificationsAsync(): Promise<string | null> {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'Default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#22c55e',
+      importance: Notifications.AndroidImportance.DEFAULT,
     });
   }
 
-  // Step 1: Check existing permissions
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-  console.log('Push token: permission status:', existingStatus);
+  // Step 1: Check/request permissions
+  const existing = await Notifications.getPermissionsAsync();
+  let status = existing.status;
+  console.log('Push token: permission status:', status);
 
-  // Step 2: Request permission if not already granted
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-    console.log('Push token: requested permission, new status:', finalStatus);
+  if (status !== 'granted') {
+    const req = await Notifications.requestPermissionsAsync();
+    status = req.status;
+    console.log('Push token: requested permission, new status:', status);
   }
 
-  if (finalStatus !== 'granted') {
-    console.log('Push token: permission denied, status:', finalStatus);
+  if (status !== 'granted') {
+    console.log('Push token: permission denied');
     return null;
   }
 
-  console.log('Push token: getting raw device token from APNs...');
+  // Step 2: Get Expo push token using EAS projectId
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+
+  if (!projectId) {
+    console.log('Push token: missing EAS projectId in app.json');
+    return null;
+  }
+
+  console.log('Push token: requesting Expo push token for projectId:', projectId);
   const startMs = Date.now();
 
-  // Step 3: Get raw APNs/FCM token directly from the OS — no Expo servers involved
   try {
-    const deviceToken = await Notifications.getDevicePushTokenAsync();
-    const token = deviceToken.data as string;
-    console.log(`Push token: obtained in ${Date.now() - startMs}ms — type: ${deviceToken.type}, prefix: ${token.substring(0, 30)}`);
-    return token;
+    const expoToken = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    console.log(`Push token: obtained in ${Date.now() - startMs}ms — ${expoToken.substring(0, 40)}`);
+    return expoToken;
   } catch (error: any) {
-    console.log(`Push token: getDevicePushTokenAsync failed after ${Date.now() - startMs}ms:`, error?.message || error);
+    console.log(`Push token: getExpoPushTokenAsync failed after ${Date.now() - startMs}ms:`, error?.message || error);
     return null;
   }
 }
