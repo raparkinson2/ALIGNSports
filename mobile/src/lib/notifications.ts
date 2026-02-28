@@ -1,6 +1,5 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { BACKEND_URL } from './config';
 
@@ -15,12 +14,11 @@ Notifications.setNotificationHandler({
 });
 
 /**
- * Register for push notifications and return an Expo push token.
+ * Register for push notifications and return a raw APNs device token.
  *
- * Uses getExpoPushTokenAsync with the EAS projectId — this is the
- * reliable path recommended by Expo for managed workflow apps.
- * The token format is ExponentPushToken[...] and works with the
- * Expo push service for delivery to APNs/FCM.
+ * Uses getDevicePushTokenAsync which returns the raw APNs hex token directly
+ * from iOS — no Expo push service or EAS project registration required.
+ * The backend sends directly via APNs using the configured .p8 key.
  */
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
   // Push notifications only work on physical devices
@@ -53,17 +51,8 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     return null;
   }
 
-  // Step 2: Get Expo push token using EAS projectId
-  const projectId =
-    Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
-
-  if (!projectId) {
-    console.log('Push token: missing EAS projectId in app.json');
-    return null;
-  }
-
   console.log('Push token: device?', Device.isDevice, 'platform', Platform.OS);
-  console.log('Push token: requesting Expo push token for projectId:', projectId);
+  console.log('Push token: requesting raw APNs device token');
 
   // Retry loop: iOS can be slow on first install or after reboot.
   // Try immediately, then wait 2s, 5s, 10s before giving up (~17s total).
@@ -72,9 +61,9 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     if (delays[i]) await new Promise<void>((r) => setTimeout(r, delays[i]));
     const startMs = Date.now();
     try {
-      const expoToken = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-      console.log(`Push token: obtained on attempt ${i + 1} in ${Date.now() - startMs}ms — ${expoToken.substring(0, 40)}`);
-      return expoToken;
+      const deviceToken = (await Notifications.getDevicePushTokenAsync()).data as string;
+      console.log(`Push token: obtained on attempt ${i + 1} in ${Date.now() - startMs}ms — ${deviceToken.substring(0, 16)}...`);
+      return deviceToken;
     } catch (error: any) {
       console.log(`Push token: attempt ${i + 1} failed after ${Date.now() - startMs}ms:`, error?.message || error);
     }

@@ -594,27 +594,20 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave, c
                     return;
                   }
 
-                  Alert.alert('Step 3', 'Getting native APNs device token...');
+                  Alert.alert('Step 3', 'Getting raw APNs device token...');
                   const nativeToken = await Notifications.getDevicePushTokenAsync();
-                  Alert.alert('Step 4 - Native Token', `Type: ${nativeToken.type}\nToken: ${String(nativeToken.data).substring(0, 40)}...`);
-
-                  Alert.alert('Step 5', 'Getting Expo push token...');
-                  const projectId = '727371d5-f124-42e2-af0e-40f420477bce';
-                  const expoToken = await Promise.race([
-                    Notifications.getExpoPushTokenAsync({ projectId }),
-                    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Expo token timed out after 15s')), 15000)),
-                  ]);
-                  Alert.alert('Step 6 - Expo Token', `Token: ${(expoToken as any).data}`);
+                  const tokenStr = String(nativeToken.data);
+                  Alert.alert('Step 4 - APNs Token', `Type: ${nativeToken.type}\nToken: ${tokenStr.substring(0, 40)}...`);
 
                   // Save to backend
                   if (backendUrl && currentPlayerId) {
                     const res = await fetch(`${backendUrl}/api/notifications/save-token`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ playerId: currentPlayerId, pushToken: (expoToken as any).data, platform: Platform.OS }),
+                      body: JSON.stringify({ playerId: currentPlayerId, pushToken: tokenStr, platform: Platform.OS }),
                     });
                     const json = await res.json() as { success?: boolean; error?: string };
-                    Alert.alert('Step 7 - Saved', json.success ? 'Token saved to DB!' : `Failed: ${json.error}`);
+                    Alert.alert('Step 5 - Saved', json.success ? 'Token saved to DB!' : `Failed: ${json.error}`);
                   }
                 } catch (e: any) {
                   Alert.alert('ERROR', e?.message || String(e));
