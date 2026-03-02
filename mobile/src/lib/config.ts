@@ -1,5 +1,8 @@
 /**
- * Central config — backend URL is hardcoded here so it is never dependent
- * on eas.json env vars being correct at build time.
+ * Central config — backend URL read from the EXPO_PUBLIC_VIBECODE_BACKEND_URL
+ * environment variable injected by the Vibecode platform at build/bundle time.
+ * Falls back to the last-known preview URL if the env var is somehow absent.
  */
-export const BACKEND_URL = 'https://preview-cueyvjyuxlfa.dev.vibecode.run';
+export const BACKEND_URL =
+  process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL ||
+  'https://preview-hapqzygfmxpn.dev.vibecode.run';
