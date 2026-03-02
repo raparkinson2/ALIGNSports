@@ -966,7 +966,10 @@ export default function ScheduleScreen() {
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
   const notificationPrefs = currentPlayer?.notificationPreferences;
 
-  // Get persisted view mode from team settings, default to 'list'
+  // Responsive layout for iPad — must come before viewMode state
+  const { isTablet, columns, containerPadding } = useResponsive();
+
+  // Get persisted view mode from team settings, default to 'list' (tablet always uses 'calendar')
   const persistedViewMode = teamSettings?.upcomingGamesViewMode ?? 'list';
 
   // Check for scheduled invites that need to be released on mount
@@ -994,6 +997,9 @@ export default function ScheduleScreen() {
   const [isRecordModalVisible, setIsRecordModalVisible] = useState(false);
   const [lineupViewerGame, setLineupViewerGame] = useState<Game | null>(null);
   const [viewMode, setViewMode] = useState<UpcomingGamesViewMode>(persistedViewMode);
+
+  // On tablet, always use calendar view. On phone, sync with persisted preference.
+  const effectiveViewMode: UpcomingGamesViewMode = isTablet ? 'calendar' : viewMode;
 
   // Sync local viewMode state when persisted value changes (e.g., on hydration)
   useEffect(() => {
@@ -1401,9 +1407,6 @@ export default function ScheduleScreen() {
   const isAllActiveSelected = activePlayers.every((p) => selectedPlayerIds.includes(p.id));
   const isAllReserveSelected = reservePlayers.length > 0 && reservePlayers.every((p) => selectedPlayerIds.includes(p.id));
 
-  // Responsive layout for iPad
-  const { isTablet, columns, containerPadding } = useResponsive();
-
   return (
     <View className="flex-1 bg-slate-900">
       <LinearGradient
@@ -1483,7 +1486,8 @@ export default function ScheduleScreen() {
               </Text>
             </View>
 
-            {/* View Toggle */}
+            {/* View Toggle — hidden on tablet (always Month view) */}
+            {!isTablet && (
             <View className="flex-row bg-slate-800/80 rounded-xl p-1">
               <Pressable
                 onPress={() => {
@@ -1493,11 +1497,11 @@ export default function ScheduleScreen() {
                 }}
                 className={cn(
                   'flex-row items-center px-3 py-1.5 rounded-lg',
-                  viewMode === 'list' && 'bg-cyan-500/30'
+                  effectiveViewMode === 'list' && 'bg-cyan-500/30'
                 )}
               >
-                <List size={16} color={viewMode === 'list' ? '#67e8f9' : '#64748b'} strokeWidth={viewMode === 'list' ? 2.5 : 2} />
-                <Text className={cn('text-xs font-medium ml-1.5', viewMode === 'list' ? 'text-cyan-300' : 'text-slate-500')}>List</Text>
+                <List size={16} color={effectiveViewMode === 'list' ? '#67e8f9' : '#64748b'} strokeWidth={effectiveViewMode === 'list' ? 2.5 : 2} />
+                <Text className={cn('text-xs font-medium ml-1.5', effectiveViewMode === 'list' ? 'text-cyan-300' : 'text-slate-500')}>List</Text>
               </Pressable>
               <Pressable
                 onPress={() => {
@@ -1507,16 +1511,17 @@ export default function ScheduleScreen() {
                 }}
                 className={cn(
                   'flex-row items-center px-3 py-1.5 rounded-lg',
-                  viewMode === 'calendar' && 'bg-cyan-500/30'
+                  effectiveViewMode === 'calendar' && 'bg-cyan-500/30'
                 )}
               >
-                <CalendarDays size={16} color={viewMode === 'calendar' ? '#67e8f9' : '#64748b'} strokeWidth={viewMode === 'calendar' ? 2.5 : 2} />
-                <Text className={cn('text-xs font-medium ml-1.5', viewMode === 'calendar' ? 'text-cyan-300' : 'text-slate-500')}>Month</Text>
+                <CalendarDays size={16} color={effectiveViewMode === 'calendar' ? '#67e8f9' : '#64748b'} strokeWidth={effectiveViewMode === 'calendar' ? 2.5 : 2} />
+                <Text className={cn('text-xs font-medium ml-1.5', effectiveViewMode === 'calendar' ? 'text-cyan-300' : 'text-slate-500')}>Month</Text>
               </Pressable>
             </View>
+            )}
           </View>
 
-          {viewMode === 'list' ? (
+          {effectiveViewMode === 'list' ? (
             <>
               {upcomingGames.length === 0 && upcomingEvents.length === 0 ? (
                 <View className="bg-slate-800/50 rounded-2xl p-8 items-center">
