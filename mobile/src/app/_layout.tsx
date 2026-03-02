@@ -255,10 +255,6 @@ function AuthNavigator() {
     if (!isLoggedIn || !currentPlayerId) return;
     // Only register once per player session to avoid duplicate APNs calls
     if (pushTokenRegistered.current === currentPlayerId) return;
-    // Wait until the current player actually exists in the players array
-    // (guards against race where currentPlayerId is set before Supabase sync completes)
-    const playerExists = useTeamStore.getState().players.some((p) => p.id === currentPlayerId);
-    if (!playerExists) return;
 
     const registerToken = async () => {
       const token = await registerForPushNotificationsAsync();
@@ -379,7 +375,7 @@ function AuthNavigator() {
         responseListener.current.remove();
       }
     };
-  }, [isLoggedIn, currentPlayerId, playersLength, isReady]);
+  }, [isLoggedIn, currentPlayerId, playersLength]);
 
   useEffect(() => {
     // Wait for navigation and hydration before making auth decisions
