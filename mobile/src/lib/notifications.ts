@@ -83,45 +83,53 @@ export async function registerForPushNotificationsAsync(playerId?: string): Prom
 
   console.log('Push token: permissions granted, fetching device token...');
 
-  // Wrap getDevicePushTokenAsync in a timeout — it can hang indefinitely on some
-  // iOS builds if APNs registration hasn't completed at the OS level yet.
-  const withTimeout = (ms: number): Promise<never> =>
-    new Promise((_, reject) => setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms));
+  // Use a promise that resolves via the device token listener OR a direct call.
+  // On iOS 15, getDevicePushTokenAsync() can hang forever if APNs hasn't registered yet.
+  // The addPushTokenListener fires when the OS delivers the token asynchronously.
+  const getTokenWithListener = (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      // Listen for token delivered by OS
+      const subscription = Notifications.addPushTokenListener((token) => {
+        subscription.remove();
+        if (token.data && typeof token.data === 'string' && token.data.length > 0) {
+          console.log('Push token: received via listener, type=', token.type);
+          resolve(token.data);
+        } else {
+          reject(new Error('Listener returned empty token'));
+        }
+      });
 
-  // Try immediately, then retry after delays.
-  const delays = [0, 3000, 8000, 15000];
-  let lastError = '';
-  for (let i = 0; i < delays.length; i++) {
-    if (delays[i]) {
-      console.log(`Push token: waiting ${delays[i]}ms before attempt ${i + 1}...`);
-      await new Promise<void>((r) => setTimeout(r, delays[i]));
-    }
-    const startMs = Date.now();
-    try {
-      const result = await Promise.race([
-        Notifications.getDevicePushTokenAsync(),
-        withTimeout(10000), // 10s hard timeout per attempt
-      ]);
-      const deviceToken = (result as any).data as string;
-      const elapsed = Date.now() - startMs;
-      console.log(`Push token: SUCCESS on attempt ${i + 1} in ${elapsed}ms`);
-      console.log(`Push token: type=${(result as any).type} token=${deviceToken.substring(0, 20)}...`);
-      if (typeof deviceToken === 'string' && deviceToken.length > 0) {
-        await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: true, tokenPrefix: deviceToken.substring(0, 20) });
-        return deviceToken;
-      }
-      lastError = 'Token was empty';
-      console.log('Push token: token was empty or invalid, retrying...');
-    } catch (error: any) {
-      const elapsed = Date.now() - startMs;
-      lastError = `${error?.code || ''} ${error?.message || error}`.trim();
-      console.log(`Push token: attempt ${i + 1} failed in ${elapsed}ms — ${lastError}`);
-    }
+      // Also try direct call in parallel — whichever resolves first wins
+      Notifications.getDevicePushTokenAsync()
+        .then((result) => {
+          if (result.data && typeof result.data === 'string' && result.data.length > 0) {
+            subscription.remove();
+            resolve(result.data);
+          }
+        })
+        .catch(() => {
+          // Direct call failed — listener may still fire, keep waiting
+        });
+
+      // Hard timeout: if neither fires in 30s, give up
+      setTimeout(() => {
+        subscription.remove();
+        reject(new Error('Timed out after 30000ms'));
+      }, 30000);
+    });
+  };
+
+  try {
+    const deviceToken = await getTokenWithListener();
+    console.log(`Push token: SUCCESS — ${deviceToken.substring(0, 20)}...`);
+    await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: true, tokenPrefix: deviceToken.substring(0, 20) });
+    return deviceToken;
+  } catch (error: any) {
+    const errMsg = `${error?.code || ''} ${error?.message || error}`.trim();
+    console.log('Push token: failed —', errMsg);
+    await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: false, errorMessage: errMsg });
+    return null;
   }
-
-  console.log('Push token: all attempts exhausted, returning null');
-  await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: false, errorMessage: `All retries failed: ${lastError}` });
-  return null;
 }
 
 /**
