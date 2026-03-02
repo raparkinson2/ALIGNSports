@@ -14,6 +14,8 @@
       "distribution": "internal"
     },
     "production": {
+      "autoIncrement": true,
+      "environment": "production",
       "env": {
         "EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY": "sk-proj-anielepohng9eing5Ol6Phex3oin9geg-n0tr3al",
         "EXPO_PUBLIC_VIBECODE_GROK_API_KEY": "xai-ahDi8ofei1Em2chaichoac2Beehi8thu-n0tr3al",
