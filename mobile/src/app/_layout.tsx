@@ -496,6 +496,13 @@ function AuthNavigator() {
           presentation: 'card',
         }}
       />
+      <Stack.Screen
+        name="push-diagnostics"
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
       <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
     </Stack>
   );

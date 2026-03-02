@@ -293,7 +293,7 @@ export default function AdminScreen() {
   const [newPlayerIsInjured, setNewPlayerIsInjured] = useState(false);
   const [newPlayerIsSuspended, setNewPlayerIsSuspended] = useState(false);
   const [newPlayerStatusEndDate, setNewPlayerStatusEndDate] = useState<string>(''); // YYYY-MM-DD format
-  const [isDiagnosticRunning, setIsDiagnosticRunning] = useState(false);
+
   const [showNewPlayerEndDatePicker, setShowNewPlayerEndDatePicker] = useState(false);
   const [newPlayerMemberRole, setNewPlayerMemberRole] = useState<'player' | 'reserve' | 'coach' | 'parent'>('player');
 
@@ -1526,112 +1526,9 @@ export default function AdminScreen() {
 
             {/* Push Token Diagnostics Button */}
             <Pressable
-              onPress={async () => {
-                if (isDiagnosticRunning) return;
+              onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                setIsDiagnosticRunning(true);
-
-                const Notifs = await import('expo-notifications');
-                const DeviceLib = await import('expo-device');
-                const ConstantsLib = await import('expo-constants');
-
-                // Step 1: Permission status
-                const { status: permStatus } = await Notifs.getPermissionsAsync();
-
-                // Step 2: Is this a real device?
-                const isDevice = DeviceLib.default.isDevice;
-                const deviceName = DeviceLib.default.deviceName || 'unknown';
-                const projectId =
-                  ConstantsLib.default.expoConfig?.extra?.eas?.projectId ||
-                  (ConstantsLib.default as any).easConfig?.projectId ||
-                  '727371d5-f124-42e2-af0e-40f420477bce';
-
-                // Step 3: Try to get this device's own token (with 15s timeout)
-                let myToken: string | null = null;
-                let tokenError = '';
-                if (isDevice && permStatus === 'granted') {
-                  try {
-                    const result = await Promise.race([
-                      Notifs.getExpoPushTokenAsync({ projectId }),
-                      new Promise<null>((_, reject) => setTimeout(() => reject(new Error('APNs timeout after 15s')), 15000)),
-                    ]);
-                    myToken = (result as any)?.data ?? null;
-                  } catch (e: any) {
-                    tokenError = e?.message || String(e);
-                  }
-                }
-
-                // Step 4: Check backend reachability
-                const backendUrl = BACKEND_URL;
-                let backendOk = false;
-                let backendErr = '';
-                if (backendUrl) {
-                  try {
-                    const r = await fetch(`${backendUrl}/api/notifications/debug-tokens?teamId=${activeTeamId || 'none'}`, { signal: AbortSignal.timeout(8000) });
-                    backendOk = r.ok;
-                    if (!r.ok) backendErr = `HTTP ${r.status}`;
-                  } catch (e: any) {
-                    backendErr = e?.message || String(e);
-                  }
-                }
-
-                // Step 5: If we got a token, try to save it now
-                let saveResult = '';
-                if (myToken && backendUrl && currentPlayerId) {
-                  try {
-                    const { Platform } = await import('react-native');
-                    const sr = await fetch(`${backendUrl}/api/notifications/save-token`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ playerId: currentPlayerId, pushToken: myToken, platform: Platform.OS }),
-                    });
-                    const sj = await sr.json() as { success?: boolean; error?: string };
-                    saveResult = sj.success ? '✓ saved to DB' : `✗ ${sj.error}`;
-                  } catch (e: any) {
-                    saveResult = `✗ ${e?.message || e}`;
-                  }
-                }
-
-                // Step 6: Fetch team token counts
-                type DebugPlayer = { id: string; name: string; email: string; push_tokens: Array<{ token: string; platform: string; last_seen: string }>; token_count: number; has_token: boolean };
-                let debugPlayers: DebugPlayer[] = [];
-                let fetchError = '';
-                if (backendUrl && activeTeamId) {
-                  try {
-                    const res = await fetch(`${backendUrl}/api/notifications/debug-tokens?teamId=${activeTeamId}`);
-                    const json = await res.json() as { players?: DebugPlayer[]; error?: string };
-                    if (json.players) debugPlayers = json.players;
-                    else fetchError = json.error || 'unknown error';
-                  } catch (e: any) {
-                    fetchError = e?.message || String(e);
-                  }
-                }
-
-                setIsDiagnosticRunning(false);
-
-                const withTokens = debugPlayers.filter(p => p.has_token).length;
-                const playerLines = debugPlayers.map((p) => {
-                  if (p.token_count > 0) {
-                    return `✓ ${p.name} (${p.token_count} device${p.token_count !== 1 ? 's' : ''})`;
-                  }
-                  return `✗ ${p.name} — no token`;
-                });
-
-                Alert.alert(
-                  'Push Diagnostics',
-                  `THIS DEVICE:\n` +
-                  `  Physical device: ${isDevice ? 'YES' : 'NO (simulator)'}\n` +
-                  `  Device: ${deviceName}\n` +
-                  `  Permission: ${permStatus}\n` +
-                  `  Token: ${myToken ? myToken.slice(0, 40) + '...' : tokenError || 'none'}\n` +
-                  `  Save result: ${saveResult || 'n/a'}\n\n` +
-                  `BACKEND:\n` +
-                  `  URL: ${backendUrl || 'NOT SET'}\n` +
-                  `  Reachable: ${backendUrl ? (backendOk ? 'YES' : `NO — ${backendErr}`) : 'n/a'}\n\n` +
-                  `TEAM TOKENS (${withTokens}/${debugPlayers.length} registered):\n` +
-                  (fetchError ? `  Error: ${fetchError}` : playerLines.join('\n') || '  No players found'),
-                  [{ text: 'OK' }]
-                );
+                router.push('/push-diagnostics');
               }}
               className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
             >
@@ -1642,15 +1539,10 @@ export default function AdminScreen() {
                   </View>
                   <View className="ml-3">
                     <Text className="text-white font-semibold">Push Token Diagnostics</Text>
-                    <Text className="text-slate-400 text-sm">
-                      {isDiagnosticRunning ? 'Running diagnostics...' : 'Check who has tokens registered'}
-                    </Text>
+                    <Text className="text-slate-400 text-sm">Check who has tokens registered</Text>
                   </View>
                 </View>
-                {isDiagnosticRunning
-                  ? <ActivityIndicator size="small" color="#60a5fa" />
-                  : <ChevronRight size={20} color="#64748b" />
-                }
+                <ChevronRight size={20} color="#64748b" />
               </View>
             </Pressable>
           </Animated.View>
