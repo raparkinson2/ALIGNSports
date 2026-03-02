@@ -83,8 +83,12 @@ export async function registerForPushNotificationsAsync(playerId?: string): Prom
 
   console.log('Push token: permissions granted, fetching device token...');
 
-  // Primary: try getDevicePushTokenAsync with retries.
-  // iOS can be slow to return the token on first install or after reboot.
+  // Wrap getDevicePushTokenAsync in a timeout — it can hang indefinitely on some
+  // iOS builds if APNs registration hasn't completed at the OS level yet.
+  const withTimeout = (ms: number): Promise<never> =>
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms));
+
+  // Try immediately, then retry after delays.
   const delays = [0, 3000, 8000, 15000];
   let lastError = '';
   for (let i = 0; i < delays.length; i++) {
@@ -94,11 +98,14 @@ export async function registerForPushNotificationsAsync(playerId?: string): Prom
     }
     const startMs = Date.now();
     try {
-      const result = await Notifications.getDevicePushTokenAsync();
-      const deviceToken = result.data as string;
+      const result = await Promise.race([
+        Notifications.getDevicePushTokenAsync(),
+        withTimeout(10000), // 10s hard timeout per attempt
+      ]);
+      const deviceToken = (result as any).data as string;
       const elapsed = Date.now() - startMs;
       console.log(`Push token: SUCCESS on attempt ${i + 1} in ${elapsed}ms`);
-      console.log(`Push token: type=${result.type} token=${deviceToken.substring(0, 20)}...`);
+      console.log(`Push token: type=${(result as any).type} token=${deviceToken.substring(0, 20)}...`);
       if (typeof deviceToken === 'string' && deviceToken.length > 0) {
         await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: true, tokenPrefix: deviceToken.substring(0, 20) });
         return deviceToken;
