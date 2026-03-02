@@ -213,17 +213,45 @@ notificationsRouter.post("/save-token", async (c) => {
 
   console.log(`[push] save-token: player=${playerId} platform=${platform} token=${pushToken.substring(0, 20)}...`);
 
+  // First: delete any OLD tokens for this player so we don't accumulate stale entries
+  // (keeps one token per player — the most recent one wins)
+  const { error: deleteOldErr } = await supabaseAdmin
+    .from("push_tokens")
+    .delete()
+    .eq("player_id", playerId)
+    .neq("token", pushToken);
+  if (deleteOldErr) {
+    console.warn("[push] save-token: could not clear old tokens for player:", deleteOldErr.message);
+  }
+
   const { error } = await supabaseAdmin.from("push_tokens").upsert(
     { player_id: playerId, token: pushToken, platform, app_build: appBuild, last_seen: new Date().toISOString() },
-    { onConflict: "token" }
+    { onConflict: "token", ignoreDuplicates: false }
   );
 
   if (error) {
-    console.error("[push] save-token error:", error.message);
-    return c.json({ error: error.message }, 500);
+    console.error("[push] save-token error:", error.code, error.message, "player:", playerId, "token_prefix:", pushToken.substring(0, 20));
+    // Fallback: try direct update if token already exists (race condition or missing constraint)
+    const { error: updateErr } = await supabaseAdmin
+      .from("push_tokens")
+      .update({ player_id: playerId, platform, last_seen: new Date().toISOString() })
+      .eq("token", pushToken);
+    if (updateErr) {
+      console.error("[push] save-token fallback update error:", updateErr.message);
+      // Last resort: insert ignoring conflicts
+      const { error: insertErr } = await supabaseAdmin
+        .from("push_tokens")
+        .insert({ player_id: playerId, token: pushToken, platform, app_build: appBuild, last_seen: new Date().toISOString() });
+      if (insertErr) {
+        console.error("[push] save-token insert error:", insertErr.message);
+        return c.json({ error: insertErr.message }, 500);
+      }
+    }
+    console.log(`[push] save-token: fallback updated token for player ${playerId}`);
+    return c.json({ success: true });
   }
 
-  console.log(`[push] save-token: upserted token for player ${playerId}`);
+  console.log(`[push] save-token: upserted token for player ${playerId}, token_prefix: ${pushToken.substring(0, 20)}`);
   return c.json({ success: true });
 });
 

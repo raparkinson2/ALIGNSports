@@ -3,6 +3,7 @@
 -- Separate table for push tokens so player/profile sync can never wipe them.
 -- Uses player_id (TEXT) to match the app's own player ID system (not auth.users).
 -- Run this in your Supabase SQL Editor.
+-- Safe to re-run: all statements are idempotent.
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS public.push_tokens (
@@ -12,15 +13,54 @@ CREATE TABLE IF NOT EXISTS public.push_tokens (
   platform    TEXT,
   app_build   TEXT,
   last_seen   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (token)
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Add unique constraint on token if it doesn't already exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.push_tokens'::regclass
+      AND contype = 'u'
+      AND conname = 'push_tokens_token_key'
+  ) THEN
+    ALTER TABLE public.push_tokens ADD CONSTRAINT push_tokens_token_key UNIQUE (token);
+  END IF;
+END;
+$$;
+
+-- Add unique constraint on player_id to enforce one token per player
+-- (drop old one first if exists, then re-add cleanly)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.push_tokens'::regclass
+      AND contype = 'u'
+      AND conname = 'push_tokens_player_id_key'
+  ) THEN
+    ALTER TABLE public.push_tokens ADD CONSTRAINT push_tokens_player_id_key UNIQUE (player_id);
+  END IF;
+END;
+$$;
 
 CREATE INDEX IF NOT EXISTS push_tokens_player_id_idx ON public.push_tokens (player_id);
 
--- RLS: fully open (same policy as all other tables in this app)
+-- RLS: fully open (backend uses service-role key to bypass anyway)
 ALTER TABLE public.push_tokens ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Open push_tokens" ON public.push_tokens FOR ALL USING (true) WITH CHECK (true);
 
--- Realtime (optional — not strictly needed for push tokens)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'push_tokens'
+      AND policyname = 'Open push_tokens'
+  ) THEN
+    CREATE POLICY "Open push_tokens" ON public.push_tokens FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END;
+$$;
+
+-- Realtime (optional)
 ALTER TABLE public.push_tokens REPLICA IDENTITY FULL;

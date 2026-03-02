@@ -32,18 +32,36 @@ All real-time sync is handled by **Supabase Realtime** via a single WebSocket ch
 
 ## Push Notifications
 
-Push tokens require a valid EAS project ID in `app.json` (`extra.eas.projectId`). The `registerForPushNotificationsAsync` function tries multiple sources: `extra.eas.projectId`, `easConfig.projectId`, and the expoConfig-level `projectId`. If none is found the function returns `null` gracefully (local notifications still work).
+**Architecture**: Raw APNs device tokens via `getDevicePushTokenAsync()`. Backend sends directly via APNs HTTP/2 with a .p8 key — no Expo push service required.
 
-**Push token saving**: On login, the token is saved via:
-1. A direct `supabase.from('players').update({ push_token }).select('id')` — now uses `.select('id')` to detect 0-row matches (player not yet in Supabase)
-2. A full `pushPlayerToSupabase` upsert if the player object is available
-3. Retried at +3s and +8s after login to handle slow connections / late team data loads
+**Token flow**:
+1. App opens → `isLoggedIn && currentPlayerId && player exists in players[]`
+2. Request APNs permission → get 64-char hex device token
+3. POST to `/api/notifications/save-token` with `{ playerId, pushToken, platform }`
+4. Backend upserts into Supabase `push_tokens` table (conflict on `token` column)
+5. Old tokens for same player are deleted to prevent stale entries
 
-**Test push notifications**: Admins can send a test push notification to all team members from the Admin tab → Communication → "Test Push Notifications". This shows how many players have registered devices and sends a real notification to verify the pipeline works.
+**Race condition guard**: Push token registration now waits until the player record actually exists in the local `players[]` array before firing. This prevents registering a token with a stale/unresolved `currentPlayerId`. The effect re-runs when `playersLength` changes.
 
-**Scheduled invite push delivery**: When `releaseScheduledGameInvites` fires on app mount (in both `index.tsx` and `game/[id].tsx`), it now sends push notifications via `sendPushToPlayers` to all invited players (excluding the current player/admin). Previously this only created in-app notification records and a local OS notification for the admin — other players never received a push.
+**Database**: The `push_tokens` table requires a `UNIQUE (token)` constraint for upsert to work. Run `supabase-push-tokens-migration.sql` in Supabase SQL Editor — it is idempotent and safe to re-run.
 
-**Production backend redeployment required**: The production backend (`stunned-guts.vibecode.run`, used by TestFlight builds per `eas.json`) must be redeployed via the Deploy button in Vibecode for push token saving to work. Without this, `save-token` returns `{"success":true}` but stores no tokens.
+**Sending notifications**: All notification sends go through `sendPushToPlayers(playerIds[], ...)` which hits `POST /api/notifications/send-to-players` on the backend. The backend looks up APNs tokens for those player IDs and sends directly via Apple's `api.push.apple.com`.
+
+**Debug endpoint**: `GET /api/notifications/debug-tokens?teamId=xxx` — returns all registered tokens per player. Use this to verify tokens are being saved after TestFlight install.
+
+**TestFlight checklist**:
+1. Run `supabase-push-tokens-migration.sql` in Supabase SQL Editor to ensure the table + unique constraint exist
+2. Deploy the backend via the Deploy button in Vibecode (production URL: `stunned-guts.vibecode.run`)
+3. Install TestFlight build and open the app — allow push notification permission when prompted
+4. Check backend logs or debug endpoint to confirm token saved
+5. Send a test notification from Admin tab → Communication → "Test Push Notifications"
+
+**APNs env vars** (backend `.env`):
+- `APNS_PRIVATE_KEY` — .p8 key contents (EC private key)
+- `APNS_KEY_ID` — 10-char key ID from Apple Developer portal
+- `APNS_TEAM_ID` — 10-char team ID from Apple Developer portal
+- `APNS_BUNDLE_ID` — app bundle identifier (e.g. `com.vibecode.alignsports-jy5wjr`)
+- `APNS_ENV` — `production` for TestFlight/App Store, `sandbox` for dev
 
 **Self-check-in**: Players always see their own row in the check-in list even before the admin explicitly invites them. Toggling their own status auto-adds them to `invitedPlayers` and writes to `game_responses` / `event_responses` in Supabase. Other team members see the change in real time.
 
