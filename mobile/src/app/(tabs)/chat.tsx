@@ -505,6 +505,7 @@ export default function ChatScreen() {
         const recipientIds = players
           .filter((p) => p.id !== currentPlayerId)
           .map((p) => p.id);
+        console.log(`[chat-push] sender=${currentPlayerId} recipients=${JSON.stringify(recipientIds)}`);
         sendPushToPlayers(recipientIds, `${senderName}`, preview, { type: 'chat_message' }).catch(console.error);
       }
     }

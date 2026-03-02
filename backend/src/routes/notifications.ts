@@ -158,6 +158,18 @@ async function sendViaExpoPushService(
  */
 async function removeStaleTokens(staleTokens: string[]): Promise<void> {
   if (staleTokens.length === 0) return;
+
+  // Log which players are losing tokens before deleting
+  const { data: staleRows } = await supabaseAdmin
+    .from("push_tokens")
+    .select("player_id, token")
+    .in("token", staleTokens);
+  if (staleRows && staleRows.length > 0) {
+    for (const row of staleRows) {
+      console.log(`[push] Removing stale token for player ${row.player_id}: ${row.token.substring(0, 16)}...`);
+    }
+  }
+
   const { error } = await supabaseAdmin.from("push_tokens").delete().in("token", staleTokens);
   if (error) console.error("[push] Failed to remove stale tokens:", error.message);
   else console.log(`[push] Removed ${staleTokens.length} stale token(s)`);
