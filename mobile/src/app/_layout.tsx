@@ -257,6 +257,22 @@ function AuthNavigator() {
     if (pushTokenRegistered.current === currentPlayerId) return;
 
     const registerToken = async () => {
+      // Post a "started" diagnostic immediately so we know the effect fired
+      try {
+        await fetch(`${BACKEND_URL}/api/notifications/registration-diagnostic`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            playerId: currentPlayerId,
+            permissionStatus: 'starting',
+            tokenObtained: false,
+            errorMessage: 'Registration started',
+            backendUrlSeen: BACKEND_URL,
+            platform: Platform.OS,
+          }),
+        });
+      } catch (_) { /* best effort */ }
+
       const token = await registerForPushNotificationsAsync(currentPlayerId);
       if (token && currentPlayerId) {
         // Mark as registered only after successfully obtaining a token
