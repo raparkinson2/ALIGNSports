@@ -100,7 +100,27 @@ export async function registerForPushNotificationsAsync(playerId?: string): Prom
 
   console.log('Push token: permissions granted, fetching device token...');
 
-  // On iOS, getDevicePushTokenAsync() can hang forever if APNs hasn't registered yet.
+  // On Android, use Expo's push token (ExponentPushToken) so Expo handles FCM routing.
+  // On iOS, use the raw device token for direct APNs (confirmed working with TestFlight).
+  if (Platform.OS === 'android') {
+    try {
+      const expoPushToken = await Notifications.getExpoPushTokenAsync({
+        projectId: '727371d5-f124-42e2-af0e-40f420477bce',
+      });
+      const token = expoPushToken.data;
+      console.log(`Push token (Android/Expo): SUCCESS — ${token.substring(0, 20)}...`);
+      await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: true, tokenPrefix: token.substring(0, 20) });
+      return token;
+    } catch (error: any) {
+      const errMsg = `${error?.code || ''} ${error?.message || error}`.trim();
+      console.log('Push token (Android/Expo): failed —', errMsg);
+      await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: false, errorMessage: errMsg });
+      return null;
+    }
+  }
+
+  // iOS: use raw device token for direct APNs.
+  // getDevicePushTokenAsync() can hang forever if APNs hasn't registered yet.
   // addPushTokenListener fires when the OS delivers the token asynchronously.
   // Run both in parallel — whichever resolves first wins.
   const getTokenWithListener = (): Promise<string> => {

@@ -127,75 +127,9 @@ async function sendAPNsNotifications(
 
 /**
  * Send push notifications via FCM HTTP v1 for Android devices.
+ * NOTE: Not used - Android uses Expo push tokens (ExponentPushToken) which
+ * are routed through sendViaExpoPushService inside sendAPNsNotifications.
  */
-async function sendFCMNotifications(
-  tokens: string[],
-  title: string,
-  body: string,
-  data?: Record<string, any>
-): Promise<{ sent: number; failed: number; stale: string[] }> {
-  const fcmKey = process.env.FCM_SERVER_KEY;
-  if (!fcmKey) {
-    console.error("[push] FCM_SERVER_KEY not set — cannot send to Android");
-    return { sent: 0, failed: tokens.length, stale: [] };
-  }
-
-  let sent = 0;
-  let failed = 0;
-  const stale: string[] = [];
-
-  for (const token of tokens) {
-    try {
-      const payload: Record<string, any> = {
-        message: {
-          token,
-          notification: { title, body },
-          android: {
-            priority: "high",
-            notification: { sound: "default", channel_id: "default" },
-          },
-          data: data ? Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])) : {},
-        },
-      };
-
-      // Extract project ID from the FCM key (service account JSON) or use legacy API
-      // Using legacy FCM HTTP API (v1 requires OAuth2 - legacy is simpler for server keys)
-      const res = await fetch("https://fcm.googleapis.com/fcm/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `key=${fcmKey}`,
-        },
-        body: JSON.stringify({
-          to: token,
-          notification: { title, body, sound: "default" },
-          data: data || {},
-          priority: "high",
-          android: { priority: "high" },
-        }),
-      });
-
-      const result = await res.json() as { success?: number; failure?: number; results?: Array<{ error?: string }> };
-      if (result.success === 1) {
-        sent++;
-        console.log(`[push] FCM sent to ${token.substring(0, 16)}...`);
-      } else {
-        const reason = result.results?.[0]?.error || "unknown";
-        console.error(`[push] FCM failed for ${token.substring(0, 16)}...: ${reason}`);
-        if (reason === "NotRegistered" || reason === "InvalidRegistration") {
-          stale.push(token);
-        }
-        failed++;
-      }
-    } catch (err) {
-      console.error(`[push] FCM error for ${token.substring(0, 16)}...:`, err);
-      failed++;
-    }
-  }
-
-  return { sent, failed, stale };
-}
-
 
 async function sendViaExpoPushService(
   tokens: string[],
@@ -356,47 +290,26 @@ notificationsRouter.post("/send-to-players", async (c) => {
     console.log(`[push] send-to-players: NO TOKEN for player IDs: ${missingPlayerIds.join(', ')}`);
   }
 
-  const iosTokens: string[] = [];
-  const androidTokens: string[] = [];
+  const allTokens: string[] = [];
   for (const row of tokenRows || []) {
     if (row.token) {
-      if (row.platform === "android") {
-        androidTokens.push(row.token);
-      } else {
-        iosTokens.push(row.token);
-      }
+      allTokens.push(row.token);
       console.log(`[push] player ${row.player_id}: token ${row.token.substring(0, 16)}... (${row.platform})`);
     }
   }
 
-  const totalTokens = iosTokens.length + androidTokens.length;
-  console.log(`[push] send-to-players: ${playerIds.length} players → ${iosTokens.length} iOS, ${androidTokens.length} Android`);
+  console.log(`[push] send-to-players: ${playerIds.length} players → ${allTokens.length} tokens`);
 
-  if (totalTokens === 0) {
+  if (allTokens.length === 0) {
     return c.json({ success: true, sent: 0, message: "No push tokens found for given player IDs" });
   }
 
-  let totalSent = 0;
-  let totalFailed = 0;
-  const allStale: string[] = [];
+  // sendAPNsNotifications internally routes ExponentPushToken (Android/Expo) via Expo push service
+  // and raw hex tokens (iOS) via APNs directly.
+  const result = await sendAPNsNotifications(allTokens, title, body, data);
+  await removeStaleTokens(result.stale);
 
-  if (iosTokens.length > 0) {
-    const iosResult = await sendAPNsNotifications(iosTokens, title, body, data);
-    totalSent += iosResult.sent;
-    totalFailed += iosResult.failed;
-    allStale.push(...iosResult.stale);
-  }
-
-  if (androidTokens.length > 0) {
-    const androidResult = await sendFCMNotifications(androidTokens, title, body, data);
-    totalSent += androidResult.sent;
-    totalFailed += androidResult.failed;
-    allStale.push(...androidResult.stale);
-  }
-
-  await removeStaleTokens(allStale);
-
-  return c.json({ success: true, sent: totalSent, failed: totalFailed, total_tokens: totalTokens });
+  return c.json({ success: true, sent: result.sent, failed: result.failed, total_tokens: allTokens.length });
 });
 
 /**
