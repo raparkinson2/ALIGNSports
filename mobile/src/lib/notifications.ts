@@ -47,27 +47,38 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   }
 
   if (status !== 'granted') {
-    console.log('Push token: permission denied');
+    console.log('Push token: permission denied — user must enable in Settings');
     return null;
   }
 
-  console.log('Push token: device?', Device.isDevice, 'platform', Platform.OS);
-  console.log('Push token: requesting raw APNs device token');
+  console.log('Push token: permissions granted, fetching device token...');
 
-  // Retry loop: iOS can be slow on first install or after reboot.
-  // Try immediately, then wait 2s, 5s, 10s before giving up (~17s total).
-  const delays = [0, 2000, 5000, 10000];
+  // Primary: try getDevicePushTokenAsync with retries.
+  // iOS can be slow to return the token on first install or after reboot.
+  const delays = [0, 3000, 8000, 15000];
   for (let i = 0; i < delays.length; i++) {
-    if (delays[i]) await new Promise<void>((r) => setTimeout(r, delays[i]));
+    if (delays[i]) {
+      console.log(`Push token: waiting ${delays[i]}ms before attempt ${i + 1}...`);
+      await new Promise<void>((r) => setTimeout(r, delays[i]));
+    }
     const startMs = Date.now();
     try {
-      const deviceToken = (await Notifications.getDevicePushTokenAsync()).data as string;
-      console.log(`Push token: obtained on attempt ${i + 1} in ${Date.now() - startMs}ms — ${deviceToken.substring(0, 16)}...`);
-      return deviceToken;
+      const result = await Notifications.getDevicePushTokenAsync();
+      const deviceToken = result.data as string;
+      const elapsed = Date.now() - startMs;
+      console.log(`Push token: SUCCESS on attempt ${i + 1} in ${elapsed}ms`);
+      console.log(`Push token: type=${result.type} token=${deviceToken.substring(0, 20)}...`);
+      // Validate it looks like a real APNs hex token (64 hex chars)
+      if (typeof deviceToken === 'string' && deviceToken.length > 0) {
+        return deviceToken;
+      }
+      console.log('Push token: token was empty or invalid, retrying...');
     } catch (error: any) {
-      console.log(`Push token: attempt ${i + 1} failed after ${Date.now() - startMs}ms:`, error?.message || error);
+      const elapsed = Date.now() - startMs;
+      console.log(`Push token: attempt ${i + 1} failed in ${elapsed}ms — ${error?.code || ''} ${error?.message || error}`);
     }
   }
+
   console.log('Push token: all attempts exhausted, returning null');
   return null;
 }
