@@ -67,45 +67,58 @@ async function sendAPNsNotifications(
   }
 
   // Handle raw APNs tokens via node-apn (proper HTTP/2)
+  // Send each token individually with a fresh provider to avoid node-apn
+  // multi-token connection issues where one failure corrupts the whole batch.
   if (rawApnsTokens.length > 0) {
-    const provider = createAPNsProvider();
-    if (!provider) {
+    // Verify credentials are available before looping
+    const credCheck = createAPNsProvider();
+    if (!credCheck) {
       console.error("[push] Cannot create APNs provider — credentials missing");
       failed += rawApnsTokens.length;
       return { sent, failed, stale };
     }
+    credCheck.shutdown();
 
-    try {
-      const notification = new apn.Notification();
-      notification.alert = { title, body };
-      notification.sound = "default";
-      notification.badge = 1;
-      notification.topic = bundleId;
-      notification.priority = 10;
-      notification.pushType = "alert";
-      if (data && Object.keys(data).length > 0) {
-        notification.payload = data;
-      }
-
-      console.log(`[push] Sending APNs to ${rawApnsTokens.length} device token(s) via node-apn`);
-      const result = await provider.send(notification, rawApnsTokens);
-
-      sent += result.sent.length;
-      console.log(`[push] APNs sent: ${result.sent.length}`);
-
-      for (const failure of result.failed) {
-        const tokenPrefix = failure.device?.substring(0, 16) || "unknown";
-        console.error(`[push] APNs failed for ${tokenPrefix}...: ${failure.status} — ${failure.response?.reason || failure.error}`);
-        if (failure.response?.reason === "BadDeviceToken" || failure.response?.reason === "Unregistered") {
-          stale.push(failure.device);
-        }
+    for (const token of rawApnsTokens) {
+      const singleProvider = createAPNsProvider();
+      if (!singleProvider) {
         failed++;
+        continue;
       }
-    } catch (err) {
-      console.error("[push] APNs provider.send error:", err);
-      failed += rawApnsTokens.length;
-    } finally {
-      provider.shutdown();
+      try {
+        const notification = new apn.Notification();
+        notification.alert = { title, body };
+        notification.sound = "default";
+        notification.badge = 1;
+        notification.topic = bundleId;
+        notification.priority = 10;
+        notification.pushType = "alert";
+        notification.expiry = Math.floor(Date.now() / 1000) + 86400; // expire in 24h
+        if (data && Object.keys(data).length > 0) {
+          notification.payload = data;
+        }
+
+        console.log(`[push] Sending APNs to token ${token.substring(0, 16)}...`);
+        const result = await singleProvider.send(notification, [token]);
+
+        if (result.sent.length > 0) {
+          sent++;
+          console.log(`[push] APNs sent to ${token.substring(0, 16)}...`);
+        }
+        for (const failure of result.failed) {
+          const tokenPrefix = failure.device?.substring(0, 16) || "unknown";
+          console.error(`[push] APNs failed for ${tokenPrefix}...: ${failure.status} — ${failure.response?.reason || failure.error}`);
+          if (failure.response?.reason === "BadDeviceToken" || failure.response?.reason === "Unregistered") {
+            stale.push(failure.device);
+          }
+          failed++;
+        }
+      } catch (err) {
+        console.error(`[push] APNs error for token ${token.substring(0, 16)}...:`, err);
+        failed++;
+      } finally {
+        singleProvider.shutdown();
+      }
     }
   }
 
