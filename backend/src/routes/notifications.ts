@@ -446,4 +446,20 @@ notificationsRouter.get("/registration-diagnostics", async (c) => {
   return c.json({ diagnostics: data, count: data?.length ?? 0 });
 });
 
+/**
+ * DELETE /api/notifications/registration-diagnostics
+ * Clears all diagnostic entries from the table.
+ */
+notificationsRouter.delete("/registration-diagnostics", async (c) => {
+  const { error } = await supabaseAdmin
+    .from("push_diagnostics")
+    .delete()
+    .neq("id", "00000000-0000-0000-0000-000000000000"); // delete all rows
+
+  if (error) {
+    return c.json({ error: error.message }, 500);
+  }
+  return c.json({ cleared: true });
+});
+
 export { notificationsRouter };
