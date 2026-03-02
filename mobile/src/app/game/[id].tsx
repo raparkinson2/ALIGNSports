@@ -3661,7 +3661,7 @@ function GameDetailScreenInner() {
                         'flex-row items-center p-3 rounded-xl border',
                         editInviteReleaseOption === 'none'
                           ? 'bg-slate-600/50 border-slate-500'
-                          : 'bg-slate-700/50 border-slate-600'
+                          : 'bg-slate-800/50 border-transparent'
                       )}
                     >
                       <BellOff size={18} color={editInviteReleaseOption === 'none' ? '#94a3b8' : '#64748b'} />

@@ -2162,7 +2162,7 @@ export default function ScheduleScreen() {
                       'flex-row items-center px-2.5 py-2 rounded-lg border',
                       inviteReleaseOption === 'none'
                         ? 'bg-slate-600/50 border-slate-500/50'
-                        : 'bg-slate-700/50 border-transparent'
+                        : 'bg-slate-800/50 border-transparent'
                     )}
                   >
                     <BellOff size={14} color={inviteReleaseOption === 'none' ? '#94a3b8' : '#64748b'} />
