@@ -179,11 +179,11 @@ function PaymentMethodButton({ method, amount }: PaymentMethodButtonProps) {
   return (
     <Pressable
       onPress={handlePress}
-      className="flex-row items-center justify-center py-2 px-3 rounded-lg active:opacity-80"
+      className="flex-1 flex-row items-center justify-center py-2.5 px-3 rounded-lg active:opacity-80"
       style={{ backgroundColor: info.color }}
     >
       <ExternalLink size={12} color="white" />
-      <Text className="text-white font-medium text-xs ml-1.5">{method.displayName || info.name}</Text>
+      <Text className="text-white font-medium text-xs ml-1.5" numberOfLines={1}>{method.displayName || info.name}</Text>
     </Pressable>
   );
 }
@@ -1239,9 +1239,9 @@ export default function PaymentsScreen() {
             ) : (
               <View className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/40">
                 <Text className="text-slate-500 text-xs mb-3 uppercase tracking-wider font-medium">Tap to pay externally</Text>
-                <View className="flex-row flex-wrap" style={{ gap: 8 }}>
+                <View className="flex-row" style={{ gap: 8 }}>
                   {paymentMethods.map((method, index) => (
-                    <View key={index} className="relative" style={{ marginTop: 4 }}>
+                    <View key={index} className="relative flex-1" style={{ marginTop: 4 }}>
                       <PaymentMethodButton method={method} />
                       {isAdmin() && (
                         <Pressable
