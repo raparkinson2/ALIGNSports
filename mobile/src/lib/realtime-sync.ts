@@ -868,36 +868,49 @@ async function refetchPayments(teamId: string): Promise<void> {
 // ─── Supabase write helpers ───────────────────────────────────────────────────
 
 export async function pushTeamToSupabase(teamId: string, teamName: string, settings: TeamSettings): Promise<void> {
+  const basePayload = {
+    id: teamId,
+    name: teamName,
+    sport: settings.sport,
+    team_logo: settings.teamLogo || null,
+    wins: settings.record?.wins || 0,
+    losses: settings.record?.losses || 0,
+    ties: settings.record?.ties || 0,
+    ot_losses: settings.record?.otLosses || 0,
+    show_team_stats: settings.showTeamStats ?? true,
+    show_payments: settings.showPayments ?? true,
+    show_team_chat: settings.showTeamChat ?? true,
+    show_photos: settings.showPhotos ?? true,
+    show_refreshment_duty: settings.showRefreshmentDuty ?? true,
+    refreshment_duty_is_21_plus: settings.refreshmentDutyIs21Plus ?? true,
+    show_lineups: settings.showLineups ?? true,
+    allow_player_self_stats: settings.allowPlayerSelfStats ?? false,
+    show_records: settings.showTeamRecords ?? true,
+    enabled_roles: settings.enabledRoles || ['player', 'reserve', 'coach', 'parent'],
+    is_softball: settings.isSoftball ?? false,
+    jersey_colors: settings.jerseyColors,
+    payment_methods: settings.paymentMethods,
+    current_season_name: settings.currentSeasonName || null,
+    season_history: settings.seasonHistory || [],
+    championships: settings.championships || [],
+  };
+
   try {
     const { error } = await supabase.from('teams').upsert({
-      id: teamId,
-      name: teamName,
-      sport: settings.sport,
-      team_logo: settings.teamLogo || null,
-      wins: settings.record?.wins || 0,
-      losses: settings.record?.losses || 0,
-      ties: settings.record?.ties || 0,
-      ot_losses: settings.record?.otLosses || 0,
-      show_team_stats: settings.showTeamStats ?? true,
-      show_payments: settings.showPayments ?? true,
-      show_team_chat: settings.showTeamChat ?? true,
-      show_photos: settings.showPhotos ?? true,
-      show_refreshment_duty: settings.showRefreshmentDuty ?? true,
-      refreshment_duty_is_21_plus: settings.refreshmentDutyIs21Plus ?? true,
-      show_lineups: settings.showLineups ?? true,
-      allow_player_self_stats: settings.allowPlayerSelfStats ?? false,
-      show_records: settings.showTeamRecords ?? true,
-      enabled_roles: settings.enabledRoles || ['player', 'reserve', 'coach', 'parent'],
-      is_softball: settings.isSoftball ?? false,
-      jersey_colors: settings.jerseyColors,
-      payment_methods: settings.paymentMethods,
-      current_season_name: settings.currentSeasonName || null,
-      season_history: settings.seasonHistory || [],
-      championships: settings.championships || [],
+      ...basePayload,
       stripe_account_id: settings.stripeAccountId || null,
       stripe_onboarding_complete: settings.stripeOnboardingComplete ?? false,
     }, { onConflict: 'id' });
-    if (error) console.error('SYNC: pushTeamToSupabase error:', error.message);
+
+    if (error) {
+      // If Stripe columns don't exist yet (migration not run), fall back to base payload
+      if (error.message?.includes('stripe_account_id') || error.message?.includes('stripe_onboarding_complete')) {
+        const { error: fallbackError } = await supabase.from('teams').upsert(basePayload, { onConflict: 'id' });
+        if (fallbackError) console.error('SYNC: pushTeamToSupabase error:', fallbackError.message);
+      } else {
+        console.error('SYNC: pushTeamToSupabase error:', error.message);
+      }
+    }
   } catch (err) {
     console.error('SYNC: pushTeamToSupabase error:', err);
   }
