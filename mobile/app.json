@@ -1,9 +1,9 @@
 {
   "expo": {
     "name": "Align Sports",
-    "slug": "align-sports-4gvibl",
+    "slug": "align-sports",
     "scheme": "vibecode",
-    "version": "6.6.0",
+    "version": "7.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
