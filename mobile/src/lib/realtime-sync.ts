@@ -46,6 +46,8 @@ function mapTeamSettings(t: any): TeamSettings {
     currentSeasonName: t.current_season_name || undefined,
     seasonHistory: t.season_history || [],
     championships: t.championships || [],
+    stripeAccountId: t.stripe_account_id || undefined,
+    stripeOnboardingComplete: t.stripe_onboarding_complete ?? false,
   };
 }
 
@@ -892,6 +894,8 @@ export async function pushTeamToSupabase(teamId: string, teamName: string, setti
       current_season_name: settings.currentSeasonName || null,
       season_history: settings.seasonHistory || [],
       championships: settings.championships || [],
+      stripe_account_id: settings.stripeAccountId || null,
+      stripe_onboarding_complete: settings.stripeOnboardingComplete ?? false,
     }, { onConflict: 'id' });
     if (error) console.error('SYNC: pushTeamToSupabase error:', error.message);
   } catch (err) {

@@ -35,8 +35,10 @@ import {
   Trophy,
   Archive,
   Bell,
+  CreditCard,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { WebView } from 'react-native-webview';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -337,6 +339,56 @@ export default function AdminScreen() {
   const [emailBody, setEmailBody] = useState('');
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  // Stripe Connect state
+  const [isStripeConnectLoading, setIsStripeConnectLoading] = useState(false);
+  const [stripeConnectWebViewUrl, setStripeConnectWebViewUrl] = useState<string | null>(null);
+
+  // Stripe Connect handler
+  const handleStripeConnect = async () => {
+    if (!activeTeamId || !currentPlayerId) return;
+    setIsStripeConnectLoading(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/api/payments/connect/onboard?teamId=${activeTeamId}&adminId=${currentPlayerId}`
+      );
+      const data = await res.json() as { url?: string; error?: string };
+      if (!res.ok || !data.url) throw new Error(data.error ?? 'Could not start Stripe onboarding');
+      setStripeConnectWebViewUrl(data.url);
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Could not start Stripe setup. Please try again.');
+    } finally {
+      setIsStripeConnectLoading(false);
+    }
+  };
+
+  const handleStripeDisconnect = () => {
+    Alert.alert(
+      'Disconnect Stripe',
+      'This will remove Stripe payments for your team. Players will no longer be able to pay via Stripe. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disconnect',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await fetch(`${BACKEND_URL}/api/payments/connect/disconnect`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ teamId: activeTeamId }),
+              });
+              setTeamSettingsAndSync({ stripeAccountId: undefined, stripeOnboardingComplete: false });
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch (err: any) {
+              Alert.alert('Error', 'Failed to disconnect Stripe.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   if (!isAdmin()) {
     return (
@@ -1591,6 +1643,90 @@ export default function AdminScreen() {
                 />
               </View>
             </View>
+
+            {/* Stripe Payments Setup */}
+            {teamSettings.showPayments !== false && (
+              <View className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50">
+                <View className="flex-row items-center mb-3">
+                  <View style={{ backgroundColor: '#635BFF20', borderRadius: 8, padding: 8 }}>
+                    <CreditCard size={20} color="#635BFF" />
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-white font-semibold">Setup Stripe Payments</Text>
+                    <Text className="text-slate-400 text-sm">
+                      Let players pay dues directly in the app
+                    </Text>
+                  </View>
+                </View>
+
+                {teamSettings.stripeAccountId && teamSettings.stripeOnboardingComplete ? (
+                  // Connected state
+                  <>
+                    <View className="flex-row items-center bg-green-500/10 rounded-xl px-3 py-2.5 mb-3 border border-green-500/20">
+                      <View className="w-2 h-2 rounded-full bg-green-400 mr-2" />
+                      <Text className="text-green-400 text-sm font-medium flex-1">Stripe connected</Text>
+                      <Text className="text-slate-500 text-xs">{teamSettings.stripeAccountId.slice(0, 16)}…</Text>
+                    </View>
+                    <View className="flex-row" style={{ gap: 8 }}>
+                      <Pressable
+                        onPress={handleStripeConnect}
+                        disabled={isStripeConnectLoading}
+                        className="flex-1 bg-slate-700 rounded-xl py-2.5 items-center active:bg-slate-600"
+                      >
+                        <Text className="text-slate-300 text-sm font-medium">Re-connect</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={handleStripeDisconnect}
+                        className="flex-1 bg-red-500/10 rounded-xl py-2.5 items-center border border-red-500/30 active:bg-red-500/20"
+                      >
+                        <Text className="text-red-400 text-sm font-medium">Disconnect</Text>
+                      </Pressable>
+                    </View>
+                  </>
+                ) : (
+                  // Not connected state
+                  <>
+                    <View className="mb-3">
+                      <View className="flex-row items-center mb-1.5">
+                        <View className="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2" />
+                        <Text className="text-slate-400 text-sm">Players pay dues directly in the app</Text>
+                      </View>
+                      <View className="flex-row items-center mb-1.5">
+                        <View className="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2" />
+                        <Text className="text-slate-400 text-sm">Funds deposited to your bank account</Text>
+                      </View>
+                      <View className="flex-row items-center">
+                        <View className="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2" />
+                        <Text className="text-slate-400 text-sm">Stripe processing fee + small platform fee applies</Text>
+                      </View>
+                    </View>
+                    <Pressable
+                      onPress={handleStripeConnect}
+                      disabled={isStripeConnectLoading}
+                      className="rounded-xl overflow-hidden active:opacity-85"
+                    >
+                      <LinearGradient
+                        colors={['#635BFF', '#7C3AED']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={{ paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
+                      >
+                        {isStripeConnectLoading ? (
+                          <ActivityIndicator color="white" size="small" />
+                        ) : (
+                          <>
+                            <CreditCard size={16} color="white" />
+                            <Text style={{ color: 'white', fontWeight: '700', fontSize: 14, marginLeft: 8 }}>
+                              Connect with Stripe
+                            </Text>
+                          </>
+                        )}
+                      </LinearGradient>
+                    </Pressable>
+                  </>
+                )}
+              </View>
+            )}
 
             {/* Performance Subsection Label */}
             <Text className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
@@ -3669,6 +3805,61 @@ export default function AdminScreen() {
                 </Text>
               </View>
             </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Stripe Connect WebView Modal */}
+      <Modal
+        visible={!!stripeConnectWebViewUrl}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setStripeConnectWebViewUrl(null)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setStripeConnectWebViewUrl(null)} className="p-1">
+                <X size={24} color="#94a3b8" />
+              </Pressable>
+              <View className="flex-row items-center">
+                <View style={{ backgroundColor: '#635BFF', borderRadius: 6, padding: 5, marginRight: 8 }}>
+                  <CreditCard size={14} color="white" />
+                </View>
+                <Text className="text-white font-semibold text-base">Connect with Stripe</Text>
+              </View>
+              <View style={{ width: 32 }} />
+            </View>
+
+            {stripeConnectWebViewUrl && (
+              <WebView
+                source={{ uri: stripeConnectWebViewUrl }}
+                style={{ flex: 1, backgroundColor: '#0f172a' }}
+                onNavigationStateChange={(navState) => {
+                  const url = navState.url ?? '';
+                  if (url.startsWith('vibecode://stripe-connect-success') || url.includes('stripe-connect-success')) {
+                    // Extract accountId from the URL if present
+                    const match = url.match(/accountId=([^&]+)/);
+                    const accountId = match?.[1];
+                    setStripeConnectWebViewUrl(null);
+                    if (accountId) {
+                      setTeamSettingsAndSync({ stripeAccountId: accountId, stripeOnboardingComplete: true });
+                    }
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    Alert.alert('Stripe Connected!', 'Your Stripe account is now linked. Players can pay dues directly in the app.', [{ text: 'Done' }]);
+                  } else if (url.startsWith('vibecode://stripe-connect-cancel') || url.includes('stripe-connect-cancel')) {
+                    setStripeConnectWebViewUrl(null);
+                  }
+                }}
+                startInLoadingState
+                renderLoading={() => (
+                  <View className="absolute inset-0 items-center justify-center bg-slate-900">
+                    <ActivityIndicator color="#635BFF" size="large" />
+                    <Text className="text-slate-400 mt-3 text-sm">Loading Stripe...</Text>
+                  </View>
+                )}
+              />
+            )}
           </SafeAreaView>
         </View>
       </Modal>

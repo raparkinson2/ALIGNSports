@@ -699,6 +699,9 @@ export interface TeamSettings {
   // Season Management
   currentSeasonName?: string; // Current season label (e.g., "2024-2025")
   seasonHistory?: ArchivedSeason[]; // Array of archived seasons
+  // Stripe Connect
+  stripeAccountId?: string; // Connected Stripe account ID (acct_xxx)
+  stripeOnboardingComplete?: boolean; // Whether onboarding is fully complete
 }
 
 export interface Championship {

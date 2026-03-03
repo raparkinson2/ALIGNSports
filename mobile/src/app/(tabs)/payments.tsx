@@ -1046,6 +1046,7 @@ export default function PaymentsScreen() {
           playerId,
           successUrl: 'vibecode://payment-success',
           cancelUrl: 'vibecode://payment-cancel',
+          teamStripeAccountId: teamSettings?.stripeAccountId ?? undefined,
         }),
       });
 

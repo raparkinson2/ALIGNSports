@@ -6,6 +6,7 @@ import { sampleRouter } from "./routes/sample";
 import { authRouter } from "./routes/auth";
 import { notificationsRouter } from "./routes/notifications";
 import { paymentsRouter } from "./routes/payments";
+import { connectRouter } from "./routes/connect";
 import { logger } from "hono/logger";
 
 const app = new Hono();
@@ -42,6 +43,7 @@ app.route("/api/sample", sampleRouter);
 app.route("/api/auth", authRouter);
 app.route("/api/notifications", notificationsRouter);
 app.route("/api/payments", paymentsRouter);
+app.route("/api/payments/connect", connectRouter);
 
 const port = Number(process.env.PORT) || 3000;
 
