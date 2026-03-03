@@ -650,20 +650,13 @@ function StripePayButton({ myPaymentStatus, isStripeLoading, onPay, isSetupCompl
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const [showPicker, setShowPicker] = useState(false);
 
-  // Not set up yet — show contextual message
+  // Not set up yet — show compact inline notice
   if (!isSetupComplete) {
     return (
-      <View style={{ backgroundColor: '#1e293b', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#334155' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-          <View style={{ backgroundColor: '#635BFF20', borderRadius: 8, padding: 6, marginRight: 10 }}>
-            <CreditCard size={16} color="#635BFF" />
-          </View>
-          <Text style={{ color: '#94a3b8', fontWeight: '600', fontSize: 14 }}>Pay with Stripe</Text>
-        </View>
-        <Text style={{ color: '#475569', fontSize: 13, lineHeight: 18 }}>
-          {isAdmin
-            ? 'Complete Stripe setup in the Admin panel to enable in-app payments.'
-            : 'In-app payments are not yet enabled. Contact your team admin to set up Stripe.'}
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#1e293b', borderRadius: 10, borderWidth: 1, borderColor: '#334155' }}>
+        <CreditCard size={14} color="#475569" />
+        <Text style={{ color: '#475569', fontSize: 12, marginLeft: 8, flex: 1 }}>
+          {isAdmin ? 'Enable in-app payments via Stripe in the Admin panel.' : 'In-app Stripe payments not yet enabled.'}
         </Text>
       </View>
     );
@@ -1227,22 +1220,28 @@ export default function PaymentsScreen() {
               </Pressable>
             </View>
 
-            <View className="bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-700/40">
-              <StripePayButton
-                myPaymentStatus={myPaymentStatus}
-                isStripeLoading={isStripeLoading}
-                onPay={handleStripePayment}
-                isSetupComplete={!!(teamSettings?.stripeAccountId && teamSettings?.stripeOnboardingComplete)}
-                isAdmin={isAdmin()}
-              />
-              {/* Fee disclosure row */}
-              <View className="flex-row items-center px-4 py-2.5 border-t border-slate-700/40">
-                <Info size={12} color="#475569" />
-                <Text className="text-slate-500 text-xs ml-2">
-                  Stripe processing fee applies · Card info never stored by Align Sports
-                </Text>
-              </View>
-            </View>
+            {(() => {
+              const stripeReady = !!(teamSettings?.stripeAccountId && teamSettings?.stripeOnboardingComplete);
+              return (
+                <View className={stripeReady ? "bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-700/40" : ""}>
+                  <StripePayButton
+                    myPaymentStatus={myPaymentStatus}
+                    isStripeLoading={isStripeLoading}
+                    onPay={handleStripePayment}
+                    isSetupComplete={stripeReady}
+                    isAdmin={isAdmin()}
+                  />
+                  {stripeReady && (
+                    <View className="flex-row items-center px-4 py-2.5 border-t border-slate-700/40">
+                      <Info size={12} color="#475569" />
+                      <Text className="text-slate-500 text-xs ml-2">
+                        Stripe processing fee applies · Card info never stored by Align Sports
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })()}
           </Animated.View>
 
           {/* Section 2: Payment Apps (Venmo, PayPal, etc.) */}
