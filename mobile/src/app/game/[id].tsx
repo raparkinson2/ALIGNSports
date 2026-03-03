@@ -1045,6 +1045,7 @@ function GameDetailScreenInner() {
             body: message,
             data: { gameId: game.id, type: type === 'invite' ? 'game_invite' : 'game_reminder' },
             sound: true,
+            ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
           },
           trigger: null, // Send immediately
         });
@@ -1115,6 +1116,7 @@ function GameDetailScreenInner() {
               body: message,
               data: { gameId: game.id, type: 'game_invite' },
               sound: true,
+              ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
             },
             trigger: null,
           });
@@ -1174,6 +1176,7 @@ function GameDetailScreenInner() {
             body: message,
             data: { gameId: game.id, type: 'game_invite' },
             sound: true,
+            ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
           },
           trigger: null,
         });

@@ -61,7 +61,9 @@ export async function registerForPushNotificationsAsync(playerId?: string): Prom
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'Default',
-      importance: Notifications.AndroidImportance.DEFAULT,
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
     });
   }
 
@@ -190,6 +192,7 @@ export async function scheduleGameReminder(
         body,
         data: { gameId, type: 'game_reminder' },
         sound: true,
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -346,6 +349,7 @@ export async function sendGameInviteNotification(
         body: `You've been invited to play vs ${opponent} on ${gameDate} at ${gameTime}. Make sure to check in or out in the app.`,
         data: { gameId, type: 'game_invite' },
         sound: true,
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
       },
       trigger: null, // Sends immediately
     });
@@ -393,6 +397,7 @@ export async function scheduleGameInviteNotification(
         body: `You've been invited to play vs ${opponent} on ${gameDate} at ${gameTime}. Make sure to check in or out in the app.`,
         data: { gameId, type: 'game_invite' },
         sound: true,
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -431,6 +436,7 @@ export async function sendTestNotification(): Promise<void> {
       title: 'Test Notification',
       body: 'Push notifications are working!',
       data: { type: 'test' },
+      ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
     },
     trigger: null, // Sends immediately
   });
@@ -474,6 +480,7 @@ export async function sendEventInviteNotification(
         body: `You've been invited to "${eventTitle}" on ${eventDate} at ${eventTime}. Tap to RSVP.`,
         data: { eventId, type: 'event_invite' },
         sound: true,
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
       },
       trigger: null, // Sends immediately
     });
@@ -504,6 +511,7 @@ export async function scheduleEventReminder(
         body,
         data: { eventId, type: 'event_reminder' },
         sound: true,
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -580,6 +588,7 @@ export async function sendChatMentionNotification(
         body,
         data: { type: 'chat_mention' },
         sound: true,
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
       },
       trigger: null, // Sends immediately
     });
@@ -606,6 +615,7 @@ export async function sendChatMessageNotification(
         body: body || 'Sent an image',
         data: { type: 'chat_message' },
         sound: true,
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
       },
       trigger: null, // Sends immediately
     });
