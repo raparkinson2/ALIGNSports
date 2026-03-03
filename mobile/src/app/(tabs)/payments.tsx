@@ -642,11 +642,32 @@ interface StripePayButtonProps {
   myPaymentStatus: { period: PaymentPeriod; payment: PlayerPayment | undefined }[];
   isStripeLoading: boolean;
   onPay: (period: PaymentPeriod, playerId: string) => void;
+  isSetupComplete: boolean;
+  isAdmin: boolean;
 }
 
-function StripePayButton({ myPaymentStatus, isStripeLoading, onPay }: StripePayButtonProps) {
+function StripePayButton({ myPaymentStatus, isStripeLoading, onPay, isSetupComplete, isAdmin }: StripePayButtonProps) {
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const [showPicker, setShowPicker] = useState(false);
+
+  // Not set up yet — show contextual message
+  if (!isSetupComplete) {
+    return (
+      <View style={{ backgroundColor: '#1e293b', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#334155' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+          <View style={{ backgroundColor: '#635BFF20', borderRadius: 8, padding: 6, marginRight: 10 }}>
+            <CreditCard size={16} color="#635BFF" />
+          </View>
+          <Text style={{ color: '#94a3b8', fontWeight: '600', fontSize: 14 }}>Pay with Stripe</Text>
+        </View>
+        <Text style={{ color: '#475569', fontSize: 13, lineHeight: 18 }}>
+          {isAdmin
+            ? 'Complete Stripe setup in the Admin panel to enable in-app payments.'
+            : 'In-app payments are not yet enabled. Contact your team admin to set up Stripe.'}
+        </Text>
+      </View>
+    );
+  }
 
   const unpaidPeriods = myPaymentStatus.filter(
     ({ payment, period }) =>
@@ -1202,6 +1223,8 @@ export default function PaymentsScreen() {
                 myPaymentStatus={myPaymentStatus}
                 isStripeLoading={isStripeLoading}
                 onPay={handleStripePayment}
+                isSetupComplete={!!(teamSettings?.stripeAccountId && teamSettings?.stripeOnboardingComplete)}
+                isAdmin={isAdmin()}
               />
               {/* Fee disclosure row */}
               <View className="flex-row items-center px-4 py-2.5 border-t border-slate-700/40">
