@@ -836,6 +836,9 @@ export default function PaymentsScreen() {
   // Payment info modal
   const [isPaymentInfoModalVisible, setIsPaymentInfoModalVisible] = useState(false);
 
+  // Stripe disclosure modal
+  const [isStripeDisclosureVisible, setIsStripeDisclosureVisible] = useState(false);
+
   // Stripe checkout state
   const [stripeCheckoutUrl, setStripeCheckoutUrl] = useState<string | null>(null);
   const [isStripeLoading, setIsStripeLoading] = useState(false);
@@ -1182,6 +1185,16 @@ export default function PaymentsScreen() {
               <View className="flex-row items-center">
                 <CreditCard size={16} color="#67e8f9" />
                 <Text className="text-cyan-400 font-semibold ml-2">Payment Methods</Text>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setIsStripeDisclosureVisible(true);
+                  }}
+                  className="ml-2 p-1.5"
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Info size={15} color="#475569" />
+                </Pressable>
               </View>
               {isAdmin() && (
                 <Pressable
@@ -2686,6 +2699,69 @@ export default function PaymentsScreen() {
             )}
           </SafeAreaView>
         </View>
+      </Modal>
+
+      {/* Stripe Payment Disclosure Modal */}
+      <Modal
+        visible={isStripeDisclosureVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setIsStripeDisclosureVisible(false)}
+      >
+        <Pressable
+          className="flex-1 bg-black/60 items-center justify-center px-6"
+          onPress={() => setIsStripeDisclosureVisible(false)}
+        >
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View className="bg-slate-800 rounded-2xl p-6 border border-slate-700/60" style={{ maxWidth: 360 }}>
+              {/* Header */}
+              <View className="flex-row items-center mb-4">
+                <View style={{ backgroundColor: '#635BFF20', borderRadius: 10, padding: 8 }}>
+                  <CreditCard size={20} color="#635BFF" />
+                </View>
+                <Text className="text-white font-bold text-lg ml-3">Payment Processing</Text>
+              </View>
+
+              {/* Body */}
+              <Text className="text-slate-300 text-sm leading-6 mb-3">
+                All payments are securely processed by <Text className="text-white font-semibold">Stripe</Text>, a certified PCI-DSS Level 1 payment processor.
+              </Text>
+              <Text className="text-slate-300 text-sm leading-6 mb-3">
+                Align Sports does not collect, store, or have access to your card number, CVV, or any other payment credentials. All sensitive financial data is handled exclusively by Stripe.
+              </Text>
+              <Text className="text-slate-400 text-xs leading-5">
+                By completing a payment, you agree to Stripe's{' '}
+                <Text
+                  className="text-cyan-400 underline"
+                  onPress={() => {
+                    Linking.openURL('https://stripe.com/legal/consumer');
+                    setIsStripeDisclosureVisible(false);
+                  }}
+                >
+                  Terms of Service
+                </Text>
+                {' '}and{' '}
+                <Text
+                  className="text-cyan-400 underline"
+                  onPress={() => {
+                    Linking.openURL('https://stripe.com/privacy');
+                    setIsStripeDisclosureVisible(false);
+                  }}
+                >
+                  Privacy Policy
+                </Text>
+                .
+              </Text>
+
+              <Pressable
+                onPress={() => setIsStripeDisclosureVisible(false)}
+                className="mt-5 bg-slate-700 rounded-xl py-3 items-center active:bg-slate-600"
+              >
+                <Text className="text-white font-semibold">Got it</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
