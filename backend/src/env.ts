@@ -12,6 +12,10 @@ const envSchema = z.object({
   // Supabase (service role for admin operations like deleting auth users)
   SUPABASE_URL: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  // Stripe
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_PLATFORM_FEE_PERCENT: z.string().optional().default("0.5"),
 });
 
 /**

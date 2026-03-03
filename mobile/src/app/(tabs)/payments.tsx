@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert, Linking, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert, Linking, Platform, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
@@ -22,12 +22,14 @@ import {
   ChevronUp,
   ChevronDown,
   Info,
+  Zap,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn, useAnimatedStyle, useSharedValue, withSpring, runOnJS } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { WebView } from 'react-native-webview';
 import {
   useTeamStore,
   PaymentPeriod,
@@ -43,6 +45,7 @@ import { useResponsive } from '@/lib/useResponsive';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { pushPaymentPeriodToSupabase, pushTeamToSupabase } from '@/lib/realtime-sync';
+import { BACKEND_URL } from '@/lib/config';
 
 // Helper to calculate correct payment status from actual payment amounts
 const calculatePaymentStatus = (paidAmount: number | undefined, periodAmount: number): 'paid' | 'partial' | 'unpaid' => {
@@ -647,6 +650,7 @@ export default function PaymentsScreen() {
   const reorderPaymentPeriods = useTeamStore((s) => s.reorderPaymentPeriods);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const activeTeamId = useTeamStore((s) => s.activeTeamId);
+  const teamName = useTeamStore((s) => s.teamName);
 
   // Wrapper: updates teamSettings locally AND pushes to Supabase
   const setTeamSettingsAndSync = (updates: Parameters<typeof setTeamSettings>[0]) => {
@@ -717,6 +721,10 @@ export default function PaymentsScreen() {
 
   // Payment info modal
   const [isPaymentInfoModalVisible, setIsPaymentInfoModalVisible] = useState(false);
+
+  // Stripe checkout state
+  const [stripeCheckoutUrl, setStripeCheckoutUrl] = useState<string | null>(null);
+  const [isStripeLoading, setIsStripeLoading] = useState(false);
 
   // Responsive layout for iPad
   const { isTablet, columns, containerPadding } = useResponsive();
@@ -895,6 +903,47 @@ export default function PaymentsScreen() {
         },
       ]
     );
+  };
+
+  // Launch Stripe Checkout in a WebView modal
+  const handleStripePayment = async (period: PaymentPeriod, playerId: string) => {
+    const balance = period.amount - (period.playerPayments.find(pp => pp.playerId === playerId)?.amount ?? 0);
+    if (balance <= 0) return;
+
+    setIsStripeLoading(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      const player = players.find(p => p.id === playerId);
+      const amountInCents = Math.round(balance * 100);
+
+      const res = await fetch(`${BACKEND_URL}/api/payments/create-checkout-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: amountInCents,
+          playerName: player ? getPlayerName(player) : '',
+          teamName: teamName ?? '',
+          paymentPeriodTitle: period.title,
+          paymentPeriodId: period.id,
+          playerId,
+          successUrl: 'vibecode://payment-success',
+          cancelUrl: 'vibecode://payment-cancel',
+        }),
+      });
+
+      const data = await res.json() as { url?: string; error?: string };
+
+      if (!res.ok || !data.url) {
+        throw new Error(data.error ?? 'Could not create checkout session');
+      }
+
+      setStripeCheckoutUrl(data.url);
+    } catch (err: any) {
+      Alert.alert('Payment Error', err?.message ?? 'Could not start Stripe checkout. Please try again.');
+    } finally {
+      setIsStripeLoading(false);
+    }
   };
 
   const movePeriodUp = (index: number) => {
@@ -1716,6 +1765,33 @@ export default function PaymentsScreen() {
                     );
                   })()}
 
+                  {/* Stripe Pay Now Button - visible to the player when unpaid/partial */}
+                  {selectedPlayerPayment?.status !== 'paid' && (
+                    <Pressable
+                      onPress={() => handleStripePayment(selectedPeriod, selectedPlayerId)}
+                      disabled={isStripeLoading}
+                      className="mb-6 rounded-2xl overflow-hidden active:opacity-85"
+                    >
+                      <LinearGradient
+                        colors={['#635BFF', '#7A73FF']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={{ padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        {isStripeLoading ? (
+                          <ActivityIndicator color="white" size="small" />
+                        ) : (
+                          <>
+                            <Zap size={18} color="white" />
+                            <Text className="text-white font-bold text-base ml-2">
+                              Pay ${Math.max(0, selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0))} with Stripe
+                            </Text>
+                          </>
+                        )}
+                      </LinearGradient>
+                    </Pressable>
+                  )}
+
                   {/* Add Payment Section - Admin Only */}
                   {isAdmin() && (
                     <View className="bg-slate-800/60 rounded-xl p-4 mb-6 border border-slate-700/50">
@@ -2426,6 +2502,63 @@ export default function PaymentsScreen() {
             </Pressable>
           </Pressable>
         </Pressable>
+      </Modal>
+
+      {/* Stripe Checkout WebView Modal */}
+      <Modal
+        visible={!!stripeCheckoutUrl}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setStripeCheckoutUrl(null)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setStripeCheckoutUrl(null)} className="p-1">
+                <X size={24} color="#94a3b8" />
+              </Pressable>
+              <View className="flex-row items-center">
+                <View
+                  style={{ backgroundColor: '#635BFF' }}
+                  className="w-6 h-6 rounded-md items-center justify-center mr-2"
+                >
+                  <Zap size={14} color="white" />
+                </View>
+                <Text className="text-white font-semibold text-base">Secure Checkout</Text>
+              </View>
+              <View style={{ width: 32 }} />
+            </View>
+
+            {stripeCheckoutUrl && (
+              <WebView
+                source={{ uri: stripeCheckoutUrl }}
+                style={{ flex: 1, backgroundColor: '#0f172a' }}
+                onNavigationStateChange={(navState) => {
+                  const url = navState.url ?? '';
+                  // Handle success/cancel deep links from Stripe
+                  if (url.startsWith('vibecode://payment-success') || url.includes('payment-success')) {
+                    setStripeCheckoutUrl(null);
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    Alert.alert(
+                      'Payment Submitted',
+                      'Your payment is being processed. Your payment status will update shortly.',
+                      [{ text: 'Done' }]
+                    );
+                  } else if (url.startsWith('vibecode://payment-cancel') || url.includes('payment-cancel')) {
+                    setStripeCheckoutUrl(null);
+                  }
+                }}
+                startInLoadingState
+                renderLoading={() => (
+                  <View className="absolute inset-0 items-center justify-center bg-slate-900">
+                    <ActivityIndicator color="#635BFF" size="large" />
+                    <Text className="text-slate-400 mt-3 text-sm">Loading Stripe Checkout...</Text>
+                  </View>
+                )}
+              />
+            )}
+          </SafeAreaView>
+        </View>
       </Modal>
     </View>
   );
