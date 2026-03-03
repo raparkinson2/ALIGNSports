@@ -2,7 +2,7 @@
   "expo": {
     "name": "Align Sports",
     "slug": "align-sports",
-    "scheme": "vibecode",
+    "scheme": "alignsports",
     "version": "7.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
