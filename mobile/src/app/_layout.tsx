@@ -7,13 +7,13 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useEffect, useState, useRef } from 'react';
-import { AppState, AppStateStatus, Platform } from 'react-native';
+import { AppState, AppStateStatus, Platform, Linking } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTeamStore, useStoreHydrated, defaultNotificationPreferences } from '@/lib/store';
 import { registerForPushNotificationsAsync } from '@/lib/notifications';
 import { clearInvalidSession, getSafeSession, supabase } from '@/lib/supabase';
-import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase, loadTeamFromSupabase } from '@/lib/realtime-sync';
+import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase, loadTeamFromSupabase, pushTeamToSupabase } from '@/lib/realtime-sync';
 import { BACKEND_URL } from '@/lib/config';
 
 export const unstable_settings = {
@@ -432,6 +432,42 @@ function AuthNavigator() {
       router.replace('/(tabs)');
     }
   }, [isLoggedIn, pendingTeamIds, segments, isReady, isHydrated, router]);
+
+  // Handle deep links for Stripe Connect callback (Safari redirects back via alignsports://)
+  useEffect(() => {
+    const handleUrl = (event: { url: string }) => {
+      const url = event.url;
+      if (url.includes('stripe-connect-success')) {
+        const match = url.match(/accountId=([^&]+)/);
+        const teamMatch = url.match(/teamId=([^&]+)/);
+        const accountId = match?.[1];
+        const teamId = teamMatch?.[1];
+        if (accountId) {
+          const s = useTeamStore.getState();
+          s.setTeamSettings({ stripeAccountId: accountId, stripeOnboardingComplete: true });
+          if (teamId) {
+            setTimeout(() => {
+              const state = useTeamStore.getState();
+              pushTeamToSupabase(teamId, state.teamName, state.teamSettings).catch(console.error);
+            }, 50);
+          }
+        }
+        router.replace('/stripe-setup');
+      } else if (url.includes('stripe-connect-cancel')) {
+        router.replace('/stripe-setup');
+      }
+    };
+
+    // Handle deep link when app is already open
+    const subscription = Linking.addEventListener('url', handleUrl);
+
+    // Handle deep link that launched the app from closed state
+    Linking.getInitialURL().then((url) => {
+      if (url) handleUrl({ url });
+    });
+
+    return () => subscription.remove();
+  }, [router]);
 
   return (
     <Stack>
