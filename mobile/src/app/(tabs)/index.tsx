@@ -47,7 +47,7 @@ import { hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
 import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
 import { hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
 import { sendGameInviteNotification, scheduleGameInviteNotification, sendEventInviteNotification, scheduleEventReminderDayBefore, scheduleEventReminderHourBefore, scheduleGameReminderDayBefore, scheduleGameReminderHoursBefore, sendPushToPlayers } from '@/lib/notifications';
-import { pushGameToSupabase, pushEventToSupabase, deleteGameFromSupabase } from '@/lib/realtime-sync';
+import { pushGameToSupabase, pushEventToSupabase, deleteGameFromSupabase, pushTeamToSupabase } from '@/lib/realtime-sync';
 
 const getDateLabel = (dateString: string): string => {
   const date = parseISO(dateString);
@@ -2311,6 +2311,12 @@ export default function ScheduleScreen() {
                     teamGoals: teamSettings.record?.teamGoals,
                   };
                   setTeamSettings({ record: newRecord });
+                  if (activeTeamId) {
+                    setTimeout(() => {
+                      const s = useTeamStore.getState();
+                      pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+                    }, 50);
+                  }
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   setIsRecordModalVisible(false);
                 }}
@@ -2387,6 +2393,12 @@ export default function ScheduleScreen() {
                 <Pressable
                   onPress={() => {
                     setTeamSettings({ record: undefined });
+                    if (activeTeamId) {
+                      setTimeout(() => {
+                        const s = useTeamStore.getState();
+                        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+                      }, 50);
+                    }
                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                     setIsRecordModalVisible(false);
                   }}

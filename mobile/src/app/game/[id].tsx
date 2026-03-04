@@ -47,7 +47,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, BattingOrderLineup, SoccerLineup, SoccerDiamondLineup, LacrosseLineup, getPlayerName, InviteReleaseOption, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, PlayerStats, GameLogEntry, getPlayerPositions } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { supabase } from '@/lib/supabase';
-import { pushGameToSupabase, pushGameResponseToSupabase, pushNotificationToSupabase, pushPlayerToSupabase, deleteGameFromSupabase } from '@/lib/realtime-sync';
+import { pushGameToSupabase, pushGameResponseToSupabase, pushNotificationToSupabase, pushPlayerToSupabase, deleteGameFromSupabase, pushTeamToSupabase } from '@/lib/realtime-sync';
 import { sendPushToPlayers, scheduleGameReminderDayBefore, scheduleGameReminderHoursBefore } from '@/lib/notifications';
 import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
@@ -1428,6 +1428,12 @@ function GameDetailScreenInner() {
       }
 
       setTeamSettings({ record: newRecord });
+      if (activeTeamId) {
+        setTimeout(() => {
+          const s = useTeamStore.getState();
+          pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+        }, 50);
+      }
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -1459,6 +1465,12 @@ function GameDetailScreenInner() {
               }
 
               setTeamSettings({ record: newRecord });
+              if (activeTeamId) {
+                setTimeout(() => {
+                  const s = useTeamStore.getState();
+                  pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+                }, 50);
+              }
             }
 
             // Clear the game result
