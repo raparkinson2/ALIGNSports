@@ -53,7 +53,9 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .btn-appstore { background: var(--cyan); color: #080c14; box-shadow: 0 0 30px rgba(103,232,249,0.2); }
 .btn-appstore:hover { opacity: 0.92; transform: translateY(-2px); box-shadow: 0 8px 40px rgba(103,232,249,0.3); }
 .btn-playstore { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: var(--text-secondary); }
-.btn-store-soon { cursor: default; opacity: 0.65; }
+.btn-store-soon { cursor: default; }
+.btn-appstore.btn-store-soon { opacity: 0.65; }
+.btn-playstore.btn-store-soon { opacity: 1; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.22); color: #e2e8f0; }
 .btn-store-lg { padding: 14px 28px; }
 .btn-store-text { display: flex; flex-direction: column; line-height: 1.2; }
 .btn-store-label { font-size: 10px; font-weight: 500; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.4px; }
@@ -449,8 +451,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
         <div class="footer-col">
           <h5>Support</h5>
           <a href="#faq">FAQ</a>
-          <a href="mailto:hello@alignapps.com">Contact Us</a>
-          <a href="mailto:hello@alignapps.com">Report a Bug</a>
+          <a href="mailto:rob@alignapps.com">Contact Us</a>
         </div>
         <div class="footer-col">
           <h5>Legal</h5>

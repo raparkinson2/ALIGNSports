@@ -762,7 +762,17 @@ body {
 
 .btn-store-soon {
   cursor: default;
+}
+
+.btn-appstore.btn-store-soon {
   opacity: 0.65;
+}
+
+.btn-playstore.btn-store-soon {
+  opacity: 1;
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.22);
+  color: var(--text-primary);
 }
 
 .btn-store-lg {
