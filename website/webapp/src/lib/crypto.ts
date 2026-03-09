@@ -1,13 +1,11 @@
 /**
  * Cryptographic utilities for the web — mirrors mobile/src/lib/crypto.ts
  *
- * Uses the Web Crypto API (SHA-256) with the same fallback salt used by
- * expo-crypto when SecureStore is unavailable (web environment).
- * This lets the website verify passwords set by mobile users who were using
- * the fallback salt, as well as plain-text legacy passwords.
+ * Uses the Web Crypto API (SHA-256) with the same shared fixed salt as the
+ * mobile app so that passwords set on any device are cross-platform compatible.
  */
 
-const FALLBACK_SALT = 'fallback_salt_for_web_environment_only';
+const SHARED_SALT = 'align_sports_shared_salt_v1';
 
 async function sha256Hex(input: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -18,11 +16,11 @@ async function sha256Hex(input: string): Promise<string> {
 }
 
 /**
- * Hash a password using SHA-256 with the fallback salt.
- * Matches the mobile app's behavior when SecureStore is unavailable.
+ * Hash a password using SHA-256 with the shared fixed salt.
+ * Matches the mobile app exactly — same password = same hash on all platforms.
  */
 export async function hashPassword(password: string): Promise<string> {
-  return sha256Hex(`${FALLBACK_SALT}:${password}`);
+  return sha256Hex(`${SHARED_SALT}:${password}`);
 }
 
 /**

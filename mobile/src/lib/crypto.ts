@@ -1,55 +1,25 @@
 /**
  * Cryptographic utilities for securing sensitive user data
  *
- * Uses expo-crypto for hashing passwords (one-way, secure)
- * Uses expo-secure-store for storing encryption keys securely
+ * Uses expo-crypto (SHA-256) with a shared fixed salt so that passwords
+ * set on any device (mobile or web) are interoperable.
  */
 import * as Crypto from 'expo-crypto';
-import * as SecureStore from 'expo-secure-store';
 
-// Key for storing the app's encryption salt in SecureStore
-const SALT_KEY = 'app_encryption_salt';
-
-/**
- * Get or create a unique salt for this device/installation
- * The salt is stored securely and persists across app restarts
- */
-async function getOrCreateSalt(): Promise<string> {
-  try {
-    let salt = await SecureStore.getItemAsync(SALT_KEY);
-    if (!salt) {
-      // Generate a random salt (32 bytes = 64 hex chars)
-      const randomBytes = await Crypto.getRandomBytesAsync(32);
-      salt = Array.from(randomBytes)
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-      await SecureStore.setItemAsync(SALT_KEY, salt);
-    }
-    return salt;
-  } catch {
-    // Fallback for web or if SecureStore fails - use a fixed salt
-    // This is less secure but allows the app to function
-    return 'fallback_salt_for_web_environment_only';
-  }
-}
-
-// Cache the salt after first retrieval
-let cachedSalt: string | null = null;
+// Shared fixed salt — identical across all platforms (mobile + web) so that
+// a password set on one device can be verified on any other device or browser.
+const SHARED_SALT = 'align_sports_shared_salt_v1';
 
 /**
- * Hash a password using SHA-256 with a device-specific salt
- * This is a one-way hash - passwords cannot be recovered
+ * Hash a password using SHA-256 with a shared fixed salt.
+ * Using a fixed shared salt ensures cross-platform compatibility:
+ * the same password always produces the same hash on mobile and web.
  *
  * @param password - The plain text password to hash
  * @returns The hashed password as a hex string
  */
 export async function hashPassword(password: string): Promise<string> {
-  if (!cachedSalt) {
-    cachedSalt = await getOrCreateSalt();
-  }
-
-  // Combine password with salt before hashing
-  const saltedPassword = `${cachedSalt}:${password}`;
+  const saltedPassword = `${SHARED_SALT}:${password}`;
 
   const hash = await Crypto.digestStringAsync(
     Crypto.CryptoDigestAlgorithm.SHA256,
