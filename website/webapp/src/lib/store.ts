@@ -383,6 +383,7 @@ export const useTeamStore = create<TeamStore>()(
     }),
     {
       name: 'align-sports-web',
+      skipHydration: true,
       storage: createJSONStorage(() => {
         if (typeof window === 'undefined') {
           return {
