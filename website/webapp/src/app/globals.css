@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #080c14;
+  --bg-2: #0d1526;
+  --bg-card: #0f1a2e;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-hover: rgba(103, 232, 249, 0.25);
+  --cyan: #67e8f9;
+  --purple: #a78bfa;
+  --green: #22c55e;
+}
+
+html {
+  background-color: #080c14;
+}
+
+body {
+  background-color: #080c14;
+  color: #f1f5f9;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Hide scrollbar on mobile nav */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
