@@ -5,6 +5,7 @@ import { MapPin, Pencil, CheckCircle2, XCircle, Circle, UserPlus, Send, X, Chevr
 import { cn, getDateLabel, formatTime, EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/utils';
 import { pushEventToSupabase, pushEventResponseToSupabase } from '@/lib/realtime-sync';
 import { useTeamStore } from '@/lib/store';
+import { getPlayerName } from '@/lib/types';
 import type { Event, Player, AppNotification } from '@/lib/types';
 
 interface EventCardProps {
@@ -29,7 +30,7 @@ export default function EventCard({
   const addNotification = useTeamStore((s) => s.addNotification);
   const activeTeamId = useTeamStore((s) => s.activeTeamId);
 
-  const [showRsvpList, setShowRsvpList] = useState(false);
+  const [showRsvpList, setShowRsvpList] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [reminderSent, setReminderSent] = useState(false);
   const [showAllPlayers, setShowAllPlayers] = useState(false);
@@ -324,7 +325,7 @@ export default function EventCard({
                     >
                       {getRsvpIcon(player.id)}
                       <span className={cn('flex-1 text-sm', isMe ? 'text-white font-medium' : 'text-slate-300')}>
-                        {player.name}
+                        {getPlayerName(player)}
                       </span>
                       {isMe && (
                         <span className="text-[10px] font-bold bg-[#67e8f9]/20 text-[#67e8f9] px-1.5 py-0.5 rounded-md">
@@ -439,7 +440,7 @@ export default function EventCard({
                         key={player.id}
                         className="flex items-center justify-between px-3 py-2.5 first:rounded-t-2xl last:rounded-b-2xl"
                       >
-                        <span className="text-sm text-slate-200">{player.name}</span>
+                        <span className="text-sm text-slate-200">{getPlayerName(player)}</span>
                         <button
                           onClick={() => handleInvitePlayer(player.id)}
                           className="px-3 py-1 rounded-lg bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] text-xs font-medium hover:bg-[#67e8f9]/20 transition-all"
@@ -464,7 +465,7 @@ export default function EventCard({
                         key={player.id}
                         className="flex items-center justify-between px-3 py-2.5 first:rounded-t-2xl last:rounded-b-2xl"
                       >
-                        <span className="text-sm text-slate-200">{player.name}</span>
+                        <span className="text-sm text-slate-200">{getPlayerName(player)}</span>
                         <button
                           onClick={() => handleInvitePlayer(player.id)}
                           className="px-3 py-1 rounded-lg bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] text-xs font-medium hover:bg-[#67e8f9]/20 transition-all"
