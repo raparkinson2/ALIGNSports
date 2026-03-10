@@ -763,3 +763,67 @@ export async function uploadAndSavePhoto(file: File, teamId: string, uploadedBy:
     return null;
   }
 }
+
+// ─── Polls ─────────────────────────────────────────────────────────────────────
+
+export async function pushPollToSupabase(poll: import('@/lib/types').Poll, teamId: string): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from('polls').upsert({
+      id: poll.id,
+      team_id: teamId,
+      question: poll.question,
+      options: poll.options,
+      created_by: poll.createdBy,
+      created_at: poll.createdAt,
+      expires_at: poll.expiresAt ?? null,
+      is_active: poll.isActive,
+      allow_multiple_votes: poll.allowMultipleVotes,
+      group_id: poll.groupId ?? null,
+      group_name: poll.groupName ?? null,
+      is_required: poll.isRequired ?? false,
+    });
+    if (error) console.error('SYNC: Poll upsert error:', error.message);
+  } catch (err) {
+    console.error('SYNC: pushPollToSupabase error:', err);
+  }
+}
+
+export async function deletePollFromSupabase(pollId: string): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from('polls').delete().eq('id', pollId);
+    if (error) console.error('SYNC: Poll delete error:', error.message);
+  } catch (err) {
+    console.error('SYNC: deletePollFromSupabase error:', err);
+  }
+}
+
+// ─── Team Links ─────────────────────────────────────────────────────────────────
+
+export async function pushTeamLinkToSupabase(link: import('@/lib/types').TeamLink, teamId: string): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from('team_links').upsert({
+      id: link.id,
+      team_id: teamId,
+      title: link.title,
+      url: link.url,
+      created_by: link.createdBy,
+      created_at: link.createdAt,
+    });
+    if (error) console.error('SYNC: TeamLink upsert error:', error.message);
+  } catch (err) {
+    console.error('SYNC: pushTeamLinkToSupabase error:', err);
+  }
+}
+
+export async function deleteTeamLinkFromSupabase(linkId: string): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from('team_links').delete().eq('id', linkId);
+    if (error) console.error('SYNC: TeamLink delete error:', error.message);
+  } catch (err) {
+    console.error('SYNC: deleteTeamLinkFromSupabase error:', err);
+  }
+}

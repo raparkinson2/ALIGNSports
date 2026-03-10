@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   Calendar,
   Users,
@@ -12,12 +12,11 @@ import {
   BarChart3,
   Trophy,
   Shield,
-  LogOut,
+  MoreHorizontal,
 } from 'lucide-react';
 import { cn, SPORT_EMOJI } from '@/lib/utils';
 import { useTeamStore } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
-import { signOut } from '@/lib/supabase-auth';
 import Avatar from '@/components/ui/Avatar';
 
 interface NavItem {
@@ -29,12 +28,10 @@ interface NavItem {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const teamName = useTeamStore((s) => s.teamName);
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const players = useTeamStore((s) => s.players);
-  const logout = useTeamStore((s) => s.logout);
   const getUnreadChatCount = useTeamStore((s) => s.getUnreadChatCount);
   const { isAdmin, isParent } = usePermissions();
 
@@ -65,13 +62,8 @@ export default function Sidebar() {
     ...(isAdmin
       ? [{ href: '/app/admin', label: 'Admin', icon: Shield }]
       : []),
+    { href: '/app/more', label: 'More', icon: MoreHorizontal },
   ];
-
-  const handleSignOut = async () => {
-    await signOut();
-    logout();
-    router.push('/login');
-  };
 
   return (
     <aside className="hidden lg:flex w-64 bg-[#0d1526] border-r border-white/[0.07] h-screen flex-col shrink-0">
@@ -124,10 +116,10 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      {/* Current player + sign out */}
-      <div className="px-4 py-4 border-t border-white/[0.07]">
-        {currentPlayer && (
-          <div className="flex items-center gap-3 mb-3">
+      {/* Current player */}
+      {currentPlayer && (
+        <div className="px-4 py-4 border-t border-white/[0.07]">
+          <Link href="/app/more" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <Avatar player={currentPlayer} size="sm" />
             <div className="min-w-0">
               <p className="text-sm font-medium text-slate-200 truncate">
@@ -137,16 +129,9 @@ export default function Sidebar() {
                 <p className="text-xs text-slate-400">#{currentPlayer.number}</p>
               )}
             </div>
-          </div>
-        )}
-        <button
-          onClick={handleSignOut}
-          className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-        >
-          <LogOut size={16} />
-          <span>Sign Out</span>
-        </button>
-      </div>
+          </Link>
+        </div>
+      )}
     </aside>
   );
 }
