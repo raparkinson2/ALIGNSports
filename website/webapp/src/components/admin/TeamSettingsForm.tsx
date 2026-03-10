@@ -1,7 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, AlertTriangle } from 'lucide-react';
+import {
+  Plus, Trash2, AlertTriangle, Check,
+  LayoutList, MessageSquare, Image, CreditCard,
+  BarChart2, Trophy, Coffee, Beer, TrendingUp,
+  User, UserMinus, UserCog, Users,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { pushTeamSettingsToSupabase } from '@/lib/realtime-sync';
 import { useTeamStore } from '@/lib/store';
@@ -10,23 +15,118 @@ import type { TeamSettings, Sport } from '@/lib/types';
 
 const SPORTS: Sport[] = ['hockey', 'baseball', 'basketball', 'soccer', 'lacrosse', 'softball'];
 
-interface FeatureToggle {
-  key: keyof TeamSettings;
+// ── Shared toggle card ─────────────────────────────────────────────────────────
+
+function FeatureCard({
+  icon: Icon,
+  iconColor,
+  iconBg,
+  label,
+  desc,
+  checked,
+  disabled,
+  onChange,
+  sub,
+}: {
+  icon: React.ElementType;
+  iconColor: string;
+  iconBg: string;
   label: string;
-  dependsOn?: keyof TeamSettings;
+  desc: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (v: boolean) => void;
+  sub?: React.ReactNode;
+}) {
+  return (
+    <div className={cn('space-y-0', disabled && 'opacity-40 pointer-events-none')}>
+      <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className={cn('p-2 rounded-full shrink-0', iconBg)}>
+              <Icon size={20} className={iconColor} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-white font-semibold text-sm">{label}</p>
+              <p className="text-slate-400 text-xs mt-0.5">{desc}</p>
+            </div>
+          </div>
+          {/* Toggle switch */}
+          <button
+            type="button"
+            onClick={() => onChange(!checked)}
+            className={cn(
+              'relative w-11 h-6 rounded-full transition-colors shrink-0',
+              checked ? 'bg-[#22c55e]' : 'bg-slate-700'
+            )}
+          >
+            <span className={cn(
+              'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all',
+              checked ? 'left-[22px]' : 'left-0.5'
+            )} />
+          </button>
+        </div>
+      </div>
+      {/* Sub-toggle indented */}
+      {sub}
+    </div>
+  );
 }
 
-const FEATURE_TOGGLES: FeatureToggle[] = [
-  { key: 'showTeamChat', label: 'Team Chat' },
-  { key: 'showPhotos', label: 'Photos' },
-  { key: 'showPayments', label: 'Payments' },
-  { key: 'showTeamStats', label: 'Stats' },
-  { key: 'showTeamRecords', label: 'Records' },
-  { key: 'showLineups', label: 'Lineups' },
-  { key: 'showRefreshmentDuty', label: '🥤 Refreshment Duty' },
-  { key: 'refreshmentDutyIs21Plus', label: '🍺 21+ Beverages (show beer mug)', dependsOn: 'showRefreshmentDuty' },
-  { key: 'allowPlayerSelfStats', label: 'Allow Players to Manage Own Stats', dependsOn: 'showTeamStats' },
-];
+function SubFeatureCard({
+  icon: Icon,
+  iconColor,
+  iconBg,
+  label,
+  desc,
+  checked,
+  onChange,
+}: {
+  icon: React.ElementType;
+  iconColor: string;
+  iconBg: string;
+  label: string;
+  desc: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="ml-6 mt-1.5 bg-slate-800/40 border border-slate-700/40 rounded-xl p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <div className={cn('p-1.5 rounded-full shrink-0', iconBg)}>
+            <Icon size={15} className={iconColor} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-slate-200 font-medium text-xs">{label}</p>
+            <p className="text-slate-500 text-[11px] mt-0.5">{desc}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => onChange(!checked)}
+          className={cn(
+            'relative w-9 h-5 rounded-full transition-colors shrink-0',
+            checked ? 'bg-[#22c55e]' : 'bg-slate-700'
+          )}
+        >
+          <span className={cn(
+            'absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all',
+            checked ? 'left-[18px]' : 'left-0.5'
+          )} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1 mb-2 mt-5 first:mt-0">
+      {children}
+    </p>
+  );
+}
 
 export default function TeamSettingsForm() {
   const teamName = useTeamStore((s) => s.teamName);
@@ -41,13 +141,11 @@ export default function TeamSettingsForm() {
   const [saved, setSaved] = useState(false);
   const [sportWarning, setSportWarning] = useState(false);
 
-  // Jersey color add state
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#ffffff');
 
-  const updateLocal = (updates: Partial<TeamSettings>) => {
+  const updateLocal = (updates: Partial<TeamSettings>) =>
     setLocalSettings((prev) => ({ ...prev, ...updates }));
-  };
 
   const handleSportChange = (sport: Sport) => {
     if (sport !== localSettings.sport) setSportWarning(true);
@@ -64,9 +162,7 @@ export default function TeamSettingsForm() {
   };
 
   const handleRemoveJerseyColor = (name: string) => {
-    updateLocal({
-      jerseyColors: (localSettings.jerseyColors ?? []).filter((c) => c.name !== name),
-    });
+    updateLocal({ jerseyColors: (localSettings.jerseyColors ?? []).filter((c) => c.name !== name) });
   };
 
   const handleSave = async () => {
@@ -80,11 +176,25 @@ export default function TeamSettingsForm() {
     setTimeout(() => setSaved(false), 2000);
   };
 
+  const f = (key: keyof TeamSettings) => localSettings[key] as boolean | undefined;
+  const set = (key: keyof TeamSettings) => (v: boolean) => updateLocal({ [key]: v });
+
+  const roles = [
+    { id: 'player' as const,  label: 'Player',  desc: 'Active team member',            icon: User,    iconColor: 'text-green-400',  iconBg: 'bg-green-500/20',  activeBg: 'bg-green-500',  required: true },
+    { id: 'reserve' as const, label: 'Reserve', desc: 'Backup / substitute player',     icon: UserMinus, iconColor: 'text-slate-400', iconBg: 'bg-slate-600/20', activeBg: 'bg-slate-500',  required: false },
+    { id: 'coach' as const,   label: 'Coach',   desc: 'Team coach (no jersey # needed)',icon: UserCog, iconColor: 'text-[#67e8f9]',  iconBg: 'bg-cyan-500/20',   activeBg: 'bg-cyan-500',   required: false },
+    { id: 'parent' as const,  label: 'Parent',  desc: 'Parent / guardian of a player',  icon: Users,   iconColor: 'text-pink-400',   iconBg: 'bg-pink-500/20',   activeBg: 'bg-pink-500',   required: false },
+  ];
+
+  const enabledRoles = localSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
+
   return (
-    <div className="space-y-6 w-full">
-      {/* Team name */}
-      <div>
-        <label className="block text-sm font-medium text-slate-300 mb-1.5">Team Name</label>
+    <div className="space-y-1 w-full">
+
+      {/* ── Team Name ─────────────────────────────────────────────────────── */}
+      <SectionLabel>Team Identity</SectionLabel>
+      <div className="mb-4">
+        <label className="block text-xs font-medium text-slate-400 mb-1.5">Team Name</label>
         <input
           type="text"
           value={localName}
@@ -93,9 +203,9 @@ export default function TeamSettingsForm() {
         />
       </div>
 
-      {/* Sport */}
-      <div>
-        <label className="block text-sm font-medium text-slate-300 mb-1.5">Sport</label>
+      {/* ── Sport ─────────────────────────────────────────────────────────── */}
+      <div className="mb-4">
+        <label className="block text-xs font-medium text-slate-400 mb-1.5">Sport</label>
         {sportWarning && (
           <div className="flex items-start gap-2 bg-orange-500/10 border border-orange-500/20 rounded-xl p-3 mb-2 text-orange-400 text-xs">
             <AlertTriangle size={14} className="shrink-0 mt-0.5" />
@@ -121,135 +231,166 @@ export default function TeamSettingsForm() {
         </div>
       </div>
 
-      {/* Feature toggles */}
-      <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">Features</label>
-        <div className="grid grid-cols-2 gap-2">
-          {FEATURE_TOGGLES.map((toggle) => {
-            const value = localSettings[toggle.key] as boolean | undefined;
-            const isDisabled = toggle.dependsOn ? !(localSettings[toggle.dependsOn] as boolean | undefined) : false;
-            return (
-              <label
-                key={toggle.key}
-                className={cn(
-                  'flex items-center gap-2.5 cursor-pointer p-2 rounded-xl hover:bg-white/[0.03]',
-                  isDisabled && 'opacity-40 cursor-not-allowed'
-                )}
-              >
-                <input
-                  type="checkbox"
-                  checked={!isDisabled && (value ?? false)}
-                  disabled={isDisabled}
-                  onChange={(e) => {
-                    if (!isDisabled) updateLocal({ [toggle.key]: e.target.checked });
-                  }}
-                  className="w-4 h-4 rounded border-white/20 bg-white/5 accent-[#67e8f9] disabled:cursor-not-allowed"
-                />
-                <span className="text-sm text-slate-300">{toggle.label}</span>
-              </label>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Enabled Roles */}
-      <div>
-        <label className="block text-sm font-medium text-slate-300 mb-1">Roles</label>
-        <p className="text-xs text-slate-500 mb-2">Select which roles are available when adding or editing players.</p>
-        <div className="space-y-2">
-          {([
-            { id: 'player' as const,  label: 'Player',  desc: 'Active team member',               emoji: '🟢', required: true  },
-            { id: 'reserve' as const, label: 'Reserve', desc: 'Backup / substitute player',        emoji: '⚪', required: false },
-            { id: 'coach' as const,   label: 'Coach',   desc: 'Team coach (no jersey # needed)',   emoji: '🎽', required: false },
-            { id: 'parent' as const,  label: 'Parent',  desc: 'Parent / guardian of a player',    emoji: '👨‍👧', required: false },
-          ]).map((role) => {
-            const current = localSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
-            const isEnabled = current.includes(role.id);
-            return (
-              <label
-                key={role.id}
-                className={cn(
-                  'flex items-center gap-3 p-3 rounded-xl border transition-all',
-                  isEnabled ? 'bg-[#67e8f9]/5 border-[#67e8f9]/20' : 'bg-white/[0.02] border-white/10',
-                  role.required ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-white/[0.04]'
-                )}
-              >
-                <input
-                  type="checkbox"
-                  checked={isEnabled}
-                  disabled={role.required}
-                  onChange={() => {
-                    if (role.required) return;
-                    const next = isEnabled
-                      ? current.filter((r) => r !== role.id)
-                      : [...current, role.id];
-                    updateLocal({ enabledRoles: next });
-                  }}
-                  className="w-4 h-4 rounded border-white/20 bg-white/5 accent-[#67e8f9] disabled:cursor-not-allowed"
-                />
-                <span className="text-base leading-none">{role.emoji}</span>
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium text-slate-200">{role.label}</span>
-                  {role.required && <span className="text-slate-500 text-xs ml-1">(Required)</span>}
-                  <p className="text-xs text-slate-500 mt-0.5">{role.desc}</p>
-                </div>
-              </label>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Jersey colors */}
-      <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">Jersey Colors</label>
+      {/* ── Jersey Colors ─────────────────────────────────────────────────── */}
+      <div className="mb-5">
+        <label className="block text-xs font-medium text-slate-400 mb-1.5">Jersey Colors</label>
         <div className="space-y-2 mb-3">
           {(localSettings.jerseyColors ?? []).map((jc) => (
             <div key={jc.name} className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2">
               <span className="w-5 h-5 rounded-full border border-white/20 shrink-0" style={{ backgroundColor: jc.color }} />
               <span className="text-sm text-slate-300 flex-1">{jc.name}</span>
-              <button
-                onClick={() => handleRemoveJerseyColor(jc.name)}
-                className="text-slate-500 hover:text-rose-400 p-1 rounded-lg hover:bg-rose-500/10 transition-all"
-              >
+              <button onClick={() => handleRemoveJerseyColor(jc.name)} className="text-slate-500 hover:text-rose-400 p-1 rounded-lg hover:bg-rose-500/10 transition-all">
                 <Trash2 size={13} />
               </button>
             </div>
           ))}
         </div>
         <div className="flex gap-2">
-          <input
-            type="color"
-            value={newColorHex}
-            onChange={(e) => setNewColorHex(e.target.value)}
-            className="w-10 h-10 rounded-xl border border-white/10 bg-transparent cursor-pointer"
-            title="Pick color"
-          />
-          <input
-            type="text"
-            value={newColorName}
-            onChange={(e) => setNewColorName(e.target.value)}
-            placeholder="Color name"
-            className="flex-1 bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm"
-          />
-          <button
-            onClick={handleAddJerseyColor}
-            className="px-3 py-2 rounded-xl bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] hover:bg-[#67e8f9]/20 transition-all"
-          >
+          <input type="color" value={newColorHex} onChange={(e) => setNewColorHex(e.target.value)} className="w-10 h-10 rounded-xl border border-white/10 bg-transparent cursor-pointer" />
+          <input type="text" value={newColorName} onChange={(e) => setNewColorName(e.target.value)} placeholder="Color name" className="flex-1 bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm" />
+          <button onClick={handleAddJerseyColor} className="px-3 py-2 rounded-xl bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] hover:bg-[#67e8f9]/20 transition-all">
             <Plus size={16} />
           </button>
         </div>
       </div>
 
-      {/* Save button */}
-      <div className="pt-2">
+      {/* ── Organization ──────────────────────────────────────────────────── */}
+      <SectionLabel>Organization</SectionLabel>
+      <div className="space-y-1.5 mb-1">
+        <FeatureCard
+          icon={LayoutList} iconColor="text-[#a78bfa]" iconBg="bg-[#a78bfa]/20"
+          label="Lineups" desc="Set and manage game lineups"
+          checked={f('showLineups') !== false}
+          onChange={set('showLineups')}
+        />
+      </div>
+
+      {/* ── Communication ─────────────────────────────────────────────────── */}
+      <SectionLabel>Communication</SectionLabel>
+      <div className="space-y-1.5 mb-1">
+        <FeatureCard
+          icon={MessageSquare} iconColor="text-[#67e8f9]" iconBg="bg-cyan-500/20"
+          label="Team Chat" desc="Enable in-app team messaging"
+          checked={f('showTeamChat') !== false}
+          onChange={set('showTeamChat')}
+        />
+      </div>
+
+      {/* ── Team Features ─────────────────────────────────────────────────── */}
+      <SectionLabel>Team Features</SectionLabel>
+      <div className="space-y-1.5 mb-1">
+
+        {/* Photos */}
+        <FeatureCard
+          icon={Image} iconColor="text-[#f472b6]" iconBg="bg-pink-500/20"
+          label="Photos" desc="Share team photos and media"
+          checked={f('showPhotos') !== false}
+          onChange={set('showPhotos')}
+        />
+
+        {/* Payments */}
+        <FeatureCard
+          icon={CreditCard} iconColor="text-[#635BFF]" iconBg="bg-[#635BFF]/20"
+          label="Payments" desc="Collect dues and track payments"
+          checked={f('showPayments') !== false}
+          onChange={set('showPayments')}
+        />
+
+        {/* Stats */}
+        <FeatureCard
+          icon={BarChart2} iconColor="text-[#a78bfa]" iconBg="bg-[#a78bfa]/20"
+          label="Team Stats" desc="Track player and team statistics"
+          checked={f('showTeamStats') !== false}
+          onChange={set('showTeamStats')}
+          sub={f('showTeamStats') !== false ? (
+            <div className="space-y-1.5">
+              <SubFeatureCard
+                icon={TrendingUp} iconColor="text-[#a78bfa]" iconBg="bg-[#a78bfa]/20"
+                label="Allow Players to Manage Own Stats" desc="Players can log their own stats"
+                checked={f('allowPlayerSelfStats') === true}
+                onChange={set('allowPlayerSelfStats')}
+              />
+              <SubFeatureCard
+                icon={Trophy} iconColor="text-amber-400" iconBg="bg-amber-500/20"
+                label="Team Records" desc="Show wins, losses and season record"
+                checked={f('showTeamRecords') === true}
+                onChange={set('showTeamRecords')}
+              />
+            </div>
+          ) : undefined}
+        />
+
+        {/* Refreshments */}
+        <FeatureCard
+          icon={Coffee} iconColor="text-orange-400" iconBg="bg-orange-500/20"
+          label="Refreshment Duty" desc="Assign and track snack duty"
+          checked={f('showRefreshmentDuty') !== false}
+          onChange={set('showRefreshmentDuty')}
+          sub={f('showRefreshmentDuty') !== false ? (
+            <SubFeatureCard
+              icon={Beer} iconColor="text-amber-400" iconBg="bg-amber-500/20"
+              label="21+ Beverages (show beer mug)" desc="Show beer mug icon for adult beverages"
+              checked={f('refreshmentDutyIs21Plus') === true}
+              onChange={set('refreshmentDutyIs21Plus')}
+            />
+          ) : undefined}
+        />
+      </div>
+
+      {/* ── Roles ─────────────────────────────────────────────────────────── */}
+      <SectionLabel>Roles</SectionLabel>
+      <p className="text-xs text-slate-500 mb-3 px-1">Select which roles are available when adding or editing players.</p>
+      <div className="space-y-2 mb-1">
+        {roles.map((role) => {
+          const isEnabled = enabledRoles.includes(role.id);
+          return (
+            <button
+              key={role.id}
+              type="button"
+              onClick={() => {
+                if (role.required) return;
+                const next = isEnabled
+                  ? enabledRoles.filter((r) => r !== role.id)
+                  : [...enabledRoles, role.id];
+                updateLocal({ enabledRoles: next });
+              }}
+              className={cn(
+                'w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all',
+                isEnabled
+                  ? `${role.iconBg} border-slate-600/60`
+                  : 'bg-slate-800/50 border-slate-700/50',
+                role.required ? 'cursor-not-allowed' : 'hover:brightness-110'
+              )}
+            >
+              <div className={cn('p-2 rounded-full shrink-0', role.iconBg)}>
+                <role.icon size={20} className={role.iconColor} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={cn('font-semibold text-sm', isEnabled ? 'text-white' : 'text-slate-500')}>
+                  {role.label}
+                  {role.required && <span className="text-slate-500 font-normal text-xs ml-1">(Required)</span>}
+                </p>
+                <p className={cn('text-xs mt-0.5', isEnabled ? 'text-slate-400' : 'text-slate-600')}>{role.desc}</p>
+              </div>
+              <div className={cn(
+                'w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all',
+                isEnabled ? `${role.activeBg} border-transparent` : 'border-slate-600'
+              )}>
+                {isEnabled && <Check size={13} className="text-white" />}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Save ──────────────────────────────────────────────────────────── */}
+      <div className="pt-4">
         <button
           onClick={handleSave}
           disabled={saving}
           className={cn(
             'w-full py-3 rounded-xl font-bold text-sm transition-all',
-            saved
-              ? 'bg-[#22c55e] text-white'
-              : 'bg-[#67e8f9] text-[#080c14] hover:bg-[#67e8f9]/90',
+            saved ? 'bg-[#22c55e] text-white' : 'bg-[#67e8f9] text-[#080c14] hover:bg-[#67e8f9]/90',
             saving && 'opacity-60 cursor-not-allowed'
           )}
         >
