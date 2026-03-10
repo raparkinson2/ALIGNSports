@@ -18,15 +18,22 @@ const emptyForm = {
   firstName: '',
   lastName: '',
   number: '',
-  position: '',
-  positions: [] as string[],
   email: '',
   phone: '',
+  positions: [] as string[],
   status: 'active' as PlayerStatus,
-  roles: [] as PlayerRole[],
   isInjured: false,
   isSuspended: false,
   statusEndDate: '',
+  roles: [] as PlayerRole[],
+};
+
+// Role config: colours + icons matching mobile
+const ROLE_CONFIG: Record<string, { label: string; activeClass: string; iconText?: string; emoji?: string }> = {
+  captain:  { label: 'Captain',  activeClass: 'bg-amber-500 text-white',   iconText: 'C' },
+  admin:    { label: 'Admin',    activeClass: 'bg-[#a78bfa] text-white',   emoji: '🛡️' },
+  coach:    { label: 'Coach',    activeClass: 'bg-[#67e8f9] text-[#080c14]', emoji: '🎽' },
+  parent:   { label: 'Parent',   activeClass: 'bg-pink-500 text-white',    emoji: '👨‍👧' },
 };
 
 export default function AddEditPlayerModal({ isOpen, onClose, player }: AddEditPlayerModalProps) {
@@ -40,6 +47,18 @@ export default function AddEditPlayerModal({ isOpen, onClose, player }: AddEditP
   const positions = SPORT_POSITIONS[sport] ?? [];
   const positionNames = SPORT_POSITION_NAMES[sport] ?? {};
 
+  // Which roles are enabled for this team (always include admin + captain)
+  const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
+  const showCoach = enabledRoles.includes('coach');
+  const showParent = enabledRoles.includes('parent');
+  // Captain and Admin are always available
+  const availableRoles: PlayerRole[] = [
+    'captain',
+    'admin',
+    ...(showCoach ? ['coach' as PlayerRole] : []),
+    ...(showParent ? ['parent' as PlayerRole] : []),
+  ];
+
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,21 +69,23 @@ export default function AddEditPlayerModal({ isOpen, onClose, player }: AddEditP
         firstName: player.firstName,
         lastName: player.lastName,
         number: player.number ?? '',
-        position: player.position ?? '',
-        positions: player.positions ?? [],
         email: player.email ?? '',
         phone: player.phone ?? '',
+        positions: player.positions ?? (player.position ? [player.position] : []),
         status: player.status,
-        roles: player.roles ?? [],
         isInjured: player.isInjured ?? false,
         isSuspended: player.isSuspended ?? false,
         statusEndDate: player.statusEndDate ?? '',
+        roles: player.roles ?? [],
       });
     } else {
       setForm(emptyForm);
     }
     setError(null);
   }, [player, isOpen]);
+
+  const set = <K extends keyof typeof form>(field: K, value: (typeof form)[K]) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
 
   const togglePosition = (pos: string) => {
     setForm((prev) => ({
@@ -76,10 +97,7 @@ export default function AddEditPlayerModal({ isOpen, onClose, player }: AddEditP
   };
 
   const toggleRole = (role: PlayerRole) => {
-    // Admin can't remove their own admin role
-    if (role === 'admin' && player?.id === currentPlayerId && player?.roles.includes('admin')) {
-      return;
-    }
+    if (role === 'admin' && player?.id === currentPlayerId && player?.roles.includes('admin')) return;
     setForm((prev) => ({
       ...prev,
       roles: prev.roles.includes(role)
@@ -88,15 +106,20 @@ export default function AddEditPlayerModal({ isOpen, onClose, player }: AddEditP
     }));
   };
 
+  const toggleStatus = (field: 'isInjured' | 'isSuspended') => {
+    setForm((prev) => ({ ...prev, [field]: !prev[field] }));
+  };
+
   const handleSave = async () => {
     if (!form.firstName.trim()) { setError('First name is required'); return; }
+    if (!form.email.trim()) { setError('Email is required'); return; }
     if (!activeTeamId) { setError('No active team'); return; }
 
     setSaving(true);
     setError(null);
 
     try {
-      const primaryPos = form.positions[0] ?? form.position;
+      const primaryPos = form.positions[0] ?? '';
       const updatedPlayer: Player = {
         id: player?.id ?? generateId(),
         firstName: form.firstName.trim(),
@@ -104,7 +127,7 @@ export default function AddEditPlayerModal({ isOpen, onClose, player }: AddEditP
         number: form.number.trim(),
         position: primaryPos,
         positions: form.positions,
-        email: form.email.trim() || undefined,
+        email: form.email.trim(),
         phone: form.phone.trim() || undefined,
         status: form.status,
         roles: form.roles,
@@ -126,33 +149,31 @@ export default function AddEditPlayerModal({ isOpen, onClose, player }: AddEditP
       }
       await pushPlayerToSupabase(updatedPlayer, activeTeamId);
       onClose();
-    } catch (err) {
+    } catch {
       setError('Failed to save player. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
+  const isSelfAdmin = (role: PlayerRole) =>
+    role === 'admin' && player?.id === currentPlayerId && (player?.roles ?? []).includes('admin');
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={player ? 'Edit Player' : 'Add Player'}
-      size="lg"
-    >
-      <div className="space-y-4">
+    <Modal isOpen={isOpen} onClose={onClose} title={player ? 'Edit Player' : 'Add Player'} size="lg">
+      <div className="space-y-5">
         {error && (
           <p className="text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl p-3">{error}</p>
         )}
 
-        {/* Name row */}
+        {/* Name */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">First Name *</label>
             <input
               type="text"
               value={form.firstName}
-              onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
+              onChange={(e) => set('firstName', e.target.value)}
               className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40"
             />
           </div>
@@ -161,162 +182,187 @@ export default function AddEditPlayerModal({ isOpen, onClose, player }: AddEditP
             <input
               type="text"
               value={form.lastName}
-              onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
+              onChange={(e) => set('lastName', e.target.value)}
               className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40"
             />
           </div>
         </div>
 
-        {/* Jersey number */}
+        {/* Jersey Number */}
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-1.5">Jersey Number</label>
           <input
             type="text"
             value={form.number}
-            onChange={(e) => setForm((p) => ({ ...p, number: e.target.value }))}
+            onChange={(e) => set('number', e.target.value)}
             placeholder="e.g. 17"
             className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40"
           />
         </div>
 
-        {/* Positions */}
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Position(s)</label>
-          <div className="flex flex-wrap gap-2">
-            {positions.map((pos) => (
-              <button
-                key={pos}
-                type="button"
-                onClick={() => togglePosition(pos)}
-                className={cn(
-                  'px-3 py-1.5 rounded-xl border text-sm font-medium transition-all',
-                  form.positions.includes(pos)
-                    ? 'border-[#67e8f9]/50 bg-[#67e8f9]/10 text-[#67e8f9]'
-                    : 'border-white/10 text-slate-400 hover:border-white/20'
-                )}
-              >
-                {pos}
-                {positionNames[pos] && (
-                  <span className="ml-1 text-[10px] opacity-60">({positionNames[pos]})</span>
-                )}
-              </button>
-            ))}
+        {/* Email + Phone */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Email *</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => set('email', e.target.value)}
+              placeholder="player@email.com"
+              className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Phone</label>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => set('phone', e.target.value)}
+              placeholder="(555) 000-0000"
+              className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40"
+            />
           </div>
         </div>
 
-        {/* Status */}
+        {/* Positions — single scrollable row */}
+        {positions.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Position(s)</label>
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {positions.map((pos) => (
+                <button
+                  key={pos}
+                  type="button"
+                  onClick={() => togglePosition(pos)}
+                  className={cn(
+                    'flex-shrink-0 px-3 py-1.5 rounded-xl border text-sm font-medium transition-all whitespace-nowrap',
+                    form.positions.includes(pos)
+                      ? 'border-[#67e8f9]/50 bg-[#67e8f9]/10 text-[#67e8f9]'
+                      : 'border-white/10 text-slate-400 hover:border-white/20'
+                  )}
+                >
+                  {pos}
+                  {positionNames[pos] && (
+                    <span className="ml-1 text-[10px] opacity-60">({positionNames[pos]})</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Player Status — 2×2 grid matching mobile */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Status</label>
-          <div className="flex gap-2">
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Player Status</label>
+          {/* Row 1: Active / Reserve */}
+          <div className="grid grid-cols-2 gap-2 mb-2">
             {(['active', 'reserve'] as PlayerStatus[]).map((s) => (
               <button
                 key={s}
                 type="button"
-                onClick={() => setForm((p) => ({ ...p, status: s }))}
+                onClick={() => set('status', s)}
                 className={cn(
-                  'flex-1 py-2 rounded-xl border text-sm font-medium capitalize transition-all',
+                  'py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all',
                   form.status === s
                     ? s === 'active'
-                      ? 'border-[#22c55e]/50 bg-[#22c55e]/10 text-[#22c55e]'
-                      : 'border-slate-500/50 bg-slate-500/10 text-slate-400'
-                    : 'border-white/10 text-slate-500 hover:border-white/20'
+                      ? 'bg-[#22c55e] text-white'
+                      : 'bg-slate-600 text-white'
+                    : 'bg-white/[0.05] border border-white/10 text-slate-400 hover:border-white/20'
                 )}
               >
-                {s}
+                {form.status === s && <span className="text-xs">✓</span>}
+                {s === 'active' ? 'Active' : 'Reserve'}
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Roles */}
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Roles</label>
-          <div className="flex flex-wrap gap-2">
-            {(['admin', 'captain', 'coach', 'parent'] as PlayerRole[]).map((role) => {
-              const isSelfAdmin = role === 'admin' && player?.id === currentPlayerId && player?.roles.includes('admin');
-              return (
-                <button
-                  key={role}
-                  type="button"
-                  onClick={() => toggleRole(role)}
-                  disabled={isSelfAdmin}
-                  className={cn(
-                    'px-3 py-1.5 rounded-xl border text-sm font-medium capitalize transition-all',
-                    form.roles.includes(role)
-                      ? 'border-[#a78bfa]/50 bg-[#a78bfa]/10 text-[#a78bfa]'
-                      : 'border-white/10 text-slate-400 hover:border-white/20',
-                    isSelfAdmin && 'opacity-50 cursor-not-allowed'
-                  )}
-                >
-                  {role}
-                  {isSelfAdmin && ' (you)'}
-                </button>
-              );
-            })}
+          {/* Row 2: Injured / Suspended */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => toggleStatus('isInjured')}
+              className={cn(
+                'py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all',
+                form.isInjured
+                  ? 'bg-red-500 text-white'
+                  : 'bg-white/[0.05] border border-white/10 text-slate-400 hover:border-white/20'
+              )}
+            >
+              <span className={cn('font-black text-base leading-none', form.isInjured ? 'text-white' : 'text-red-400')}>+</span>
+              Injured
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleStatus('isSuspended')}
+              className={cn(
+                'py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all',
+                form.isSuspended
+                  ? 'bg-red-600 text-white'
+                  : 'bg-white/[0.05] border border-white/10 text-slate-400 hover:border-white/20'
+              )}
+            >
+              <span className={cn('text-xs font-black', form.isSuspended ? 'text-white' : 'text-red-400')}>SUS</span>
+              Suspended
+            </button>
           </div>
+          {/* End date if injured or suspended */}
+          {(form.isInjured || form.isSuspended) && (
+            <div className="mt-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+              <label className="block text-xs font-medium text-amber-400 mb-1.5">End Date <span className="text-amber-500/60">(auto-mark OUT for games)</span></label>
+              <input
+                type="date"
+                value={form.statusEndDate}
+                onChange={(e) => set('statusEndDate', e.target.value)}
+                className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/40 [color-scheme:dark] text-sm"
+              />
+            </div>
+          )}
         </div>
 
-        {/* Email / Phone */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Roles — full-width flex row, only enabled roles */}
+        {availableRoles.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Email <span className="text-slate-500">(optional)</span></label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-              className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Phone <span className="text-slate-500">(optional)</span></label>
-            <input
-              type="tel"
-              value={form.phone}
-              onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-              className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40"
-            />
-          </div>
-        </div>
-
-        {/* Injury / Suspension toggles */}
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.isInjured}
-              onChange={(e) => setForm((p) => ({ ...p, isInjured: e.target.checked }))}
-              className="w-4 h-4 rounded border-white/20 bg-white/5 accent-orange-500"
-            />
-            <span className="text-sm text-slate-300">Injured</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.isSuspended}
-              onChange={(e) => setForm((p) => ({ ...p, isSuspended: e.target.checked }))}
-              className="w-4 h-4 rounded border-white/20 bg-white/5 accent-rose-500"
-            />
-            <span className="text-sm text-slate-300">Suspended</span>
-          </label>
-        </div>
-
-        {(form.isInjured || form.isSuspended) && (
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Status End Date <span className="text-slate-500">(optional)</span></label>
-            <input
-              type="date"
-              value={form.statusEndDate}
-              onChange={(e) => setForm((p) => ({ ...p, statusEndDate: e.target.value }))}
-              className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 [color-scheme:dark]"
-            />
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Roles</label>
+            <div className="flex gap-2">
+              {availableRoles.map((role) => {
+                const cfg = ROLE_CONFIG[role];
+                const active = form.roles.includes(role);
+                const locked = isSelfAdmin(role);
+                return (
+                  <button
+                    key={role}
+                    type="button"
+                    onClick={() => toggleRole(role)}
+                    disabled={locked}
+                    className={cn(
+                      'flex-1 py-3 rounded-xl text-sm font-semibold flex flex-col items-center justify-center gap-1 transition-all',
+                      active ? cfg.activeClass : 'bg-white/[0.05] border border-white/10 text-slate-400 hover:border-white/20',
+                      locked && 'opacity-50 cursor-not-allowed'
+                    )}
+                  >
+                    {cfg.emoji ? (
+                      <span className="text-base leading-none">{cfg.emoji}</span>
+                    ) : cfg.iconText ? (
+                      <span className={cn('w-5 h-5 rounded-full flex items-center justify-center text-xs font-black',
+                        active ? 'bg-white/20 text-white' : 'bg-amber-500/20 text-amber-500'
+                      )}>{cfg.iconText}</span>
+                    ) : null}
+                    <span>{cfg.label}</span>
+                    {locked && <span className="text-[10px] opacity-60">(you)</span>}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-slate-500 mt-1.5">
+              Captain and Admin are always available. Coach and Parent can be enabled in Team Settings.
+            </p>
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex gap-3 pt-2">
+        <div className="flex gap-3 pt-1">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-white/10 text-slate-400 hover:text-slate-200 transition-all text-sm font-medium"
+            className="flex-1 py-2.5 rounded-xl border border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20 transition-all text-sm font-medium"
           >
             Cancel
           </button>

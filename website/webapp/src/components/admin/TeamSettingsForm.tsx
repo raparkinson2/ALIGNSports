@@ -152,6 +152,53 @@ export default function TeamSettingsForm() {
         </div>
       </div>
 
+      {/* Enabled Roles */}
+      <div>
+        <label className="block text-sm font-medium text-slate-300 mb-1">Roles</label>
+        <p className="text-xs text-slate-500 mb-2">Select which roles are available when adding or editing players.</p>
+        <div className="space-y-2">
+          {([
+            { id: 'player' as const,  label: 'Player',  desc: 'Active team member',               emoji: '🟢', required: true  },
+            { id: 'reserve' as const, label: 'Reserve', desc: 'Backup / substitute player',        emoji: '⚪', required: false },
+            { id: 'coach' as const,   label: 'Coach',   desc: 'Team coach (no jersey # needed)',   emoji: '🎽', required: false },
+            { id: 'parent' as const,  label: 'Parent',  desc: 'Parent / guardian of a player',    emoji: '👨‍👧', required: false },
+          ]).map((role) => {
+            const current = localSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
+            const isEnabled = current.includes(role.id);
+            return (
+              <label
+                key={role.id}
+                className={cn(
+                  'flex items-center gap-3 p-3 rounded-xl border transition-all',
+                  isEnabled ? 'bg-[#67e8f9]/5 border-[#67e8f9]/20' : 'bg-white/[0.02] border-white/10',
+                  role.required ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-white/[0.04]'
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={isEnabled}
+                  disabled={role.required}
+                  onChange={() => {
+                    if (role.required) return;
+                    const next = isEnabled
+                      ? current.filter((r) => r !== role.id)
+                      : [...current, role.id];
+                    updateLocal({ enabledRoles: next });
+                  }}
+                  className="w-4 h-4 rounded border-white/20 bg-white/5 accent-[#67e8f9] disabled:cursor-not-allowed"
+                />
+                <span className="text-base leading-none">{role.emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium text-slate-200">{role.label}</span>
+                  {role.required && <span className="text-slate-500 text-xs ml-1">(Required)</span>}
+                  <p className="text-xs text-slate-500 mt-0.5">{role.desc}</p>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Jersey colors */}
       <div>
         <label className="block text-sm font-medium text-slate-300 mb-2">Jersey Colors</label>
