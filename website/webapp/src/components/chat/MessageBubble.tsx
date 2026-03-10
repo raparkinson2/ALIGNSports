@@ -99,20 +99,23 @@ export default function MessageBubble({ message, isOwn, sender, players, onDelet
         >
           {/* GIF */}
           {message.gifUrl && (
-            <div className="mb-1 rounded-xl overflow-hidden max-w-[240px]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={message.gifUrl}
-                alt="GIF"
-                width={message.gifWidth ?? 240}
-                height={message.gifHeight ?? 160}
-                className="w-full h-auto object-contain"
-                style={{
-                  aspectRatio: message.gifWidth && message.gifHeight
-                    ? `${message.gifWidth}/${message.gifHeight}`
-                    : 'auto',
-                }}
-              />
+            <div className="mb-1 max-w-[240px]">
+              <div className="rounded-xl overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={message.gifUrl}
+                  alt="GIF"
+                  width={message.gifWidth ?? 240}
+                  height={message.gifHeight ?? 160}
+                  className="w-full h-auto object-contain"
+                  style={{
+                    aspectRatio: message.gifWidth && message.gifHeight
+                      ? `${message.gifWidth}/${message.gifHeight}`
+                      : 'auto',
+                  }}
+                />
+              </div>
+              <p className="text-[10px] text-slate-500 text-right mt-0.5">Powered by <span className="font-bold">GIPHY</span></p>
             </div>
           )}
 
