@@ -47,7 +47,6 @@ function renderMentions(text: string, players: Player[]): React.ReactNode[] {
 
 export default function MessageBubble({ message, isOwn, sender, players, onDelete }: MessageBubbleProps) {
   const [showCtx, setShowCtx] = useState(false);
-  const [showTime, setShowTime] = useState(false);
 
   const timeStr = (() => {
     try {
@@ -94,8 +93,6 @@ export default function MessageBubble({ message, isOwn, sender, players, onDelet
               ? 'bg-[#67e8f9]/10 border-[#67e8f9]/20 text-slate-100'
               : 'bg-[#0f1a2e] border-white/10 text-slate-100'
           )}
-          onMouseEnter={() => setShowTime(true)}
-          onMouseLeave={() => setShowTime(false)}
         >
           {/* GIF */}
           {message.gifUrl && (
@@ -139,14 +136,14 @@ export default function MessageBubble({ message, isOwn, sender, players, onDelet
             </p>
           )}
 
-          {/* Timestamp on hover */}
-          {showTime && timeStr && (
-            <span className={cn(
-              'absolute -bottom-5 text-[10px] text-slate-500 whitespace-nowrap',
-              isOwn ? 'right-1' : 'left-1'
+          {/* Timestamp — always visible */}
+          {timeStr && (
+            <p className={cn(
+              'text-[10px] text-slate-500 mt-1',
+              isOwn ? 'text-right' : 'text-left'
             )}>
               {timeStr}
-            </span>
+            </p>
           )}
         </div>
       </div>
