@@ -9,8 +9,6 @@ import {
   MessageSquare,
   Image,
   DollarSign,
-  BarChart3,
-  Trophy,
   Shield,
   MoreHorizontal,
 } from 'lucide-react';
@@ -41,6 +39,7 @@ export default function Sidebar() {
   const sport = teamSettings.sport;
   const emoji = SPORT_EMOJI[sport] ?? '🏆';
 
+  // Stats/Records live inside More tab — not in the main sidebar nav
   const navItems: NavItem[] = [
     { href: '/app/schedule', label: 'Events', icon: Calendar },
     { href: '/app/roster', label: 'Roster', icon: Users },
@@ -53,16 +52,10 @@ export default function Sidebar() {
     ...(teamSettings.showPayments
       ? [{ href: '/app/payments', label: 'Payments', icon: DollarSign }]
       : []),
-    ...(teamSettings.showTeamStats
-      ? [{ href: '/app/stats', label: 'Stats', icon: BarChart3 }]
-      : []),
-    ...(teamSettings.showTeamRecords
-      ? [{ href: '/app/records', label: 'Records', icon: Trophy }]
-      : []),
+    { href: '/app/more', label: 'More', icon: MoreHorizontal },
     ...(isAdmin
       ? [{ href: '/app/admin', label: 'Admin', icon: Shield }]
       : []),
-    { href: '/app/more', label: 'More', icon: MoreHorizontal },
   ];
 
   return (

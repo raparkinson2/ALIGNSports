@@ -9,8 +9,6 @@ import {
   MessageSquare,
   Image,
   DollarSign,
-  BarChart3,
-  Trophy,
   Shield,
   MoreHorizontal,
 } from 'lucide-react';
@@ -34,7 +32,7 @@ export default function MobileNav() {
 
   const unreadChat = currentPlayerId ? getUnreadChatCount(currentPlayerId) : 0;
 
-  // Build main feature tabs
+  // Stats/Records live inside More tab — not in the main bottom nav
   const featureItems: MobileNavItem[] = [
     { href: '/app/schedule', label: 'Events', icon: Calendar },
     { href: '/app/roster', label: 'Roster', icon: Users },
@@ -46,12 +44,6 @@ export default function MobileNav() {
       : []),
     ...(teamSettings.showPayments
       ? [{ href: '/app/payments', label: 'Payments', icon: DollarSign }]
-      : []),
-    ...(teamSettings.showTeamStats
-      ? [{ href: '/app/stats', label: 'Stats', icon: BarChart3 }]
-      : []),
-    ...(teamSettings.showTeamRecords
-      ? [{ href: '/app/records', label: 'Records', icon: Trophy }]
       : []),
     ...(isAdmin
       ? [{ href: '/app/admin', label: 'Admin', icon: Shield }]
