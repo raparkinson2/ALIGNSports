@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Minus, Plus } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import { pushGameToSupabase } from '@/lib/realtime-sync';
 import { useTeamStore } from '@/lib/store';
@@ -115,6 +116,35 @@ function PlayerCircle({
   );
 }
 
+// ── Shared: +/- line count control ────────────────────────────────────────────
+
+function LineCountControl({ label, count, min, max, onChange }: {
+  label: string; count: number; min: number; max: number; onChange: (n: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <p className="text-base font-semibold text-white">{label}</p>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onChange(Math.max(min, count - 1))}
+          disabled={count <= min}
+          className="w-7 h-7 rounded-full bg-slate-700/80 border border-white/10 flex items-center justify-center text-slate-300 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-default transition-all"
+        >
+          <Minus size={13} />
+        </button>
+        <span className="text-white font-semibold w-4 text-center text-sm">{count}</span>
+        <button
+          onClick={() => onChange(Math.min(max, count + 1))}
+          disabled={count >= max}
+          className="w-7 h-7 rounded-full bg-slate-700/80 border border-white/10 flex items-center justify-center text-slate-300 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-default transition-all"
+        >
+          <Plus size={13} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Hockey ─────────────────────────────────────────────────────────────────────
 
 function HockeyLineupEditor({ lineup, players, isAdmin, onChange }: {
@@ -140,7 +170,13 @@ function HockeyLineupEditor({ lineup, players, isAdmin, onChange }: {
 
   return (
     <div className="space-y-3">
-      <p className="text-base font-semibold text-white">Forward Lines</p>
+      <LineCountControl
+        label="Forward Lines"
+        count={numFwd}
+        min={1}
+        max={4}
+        onChange={(n) => onChange({ ...lineup, numForwardLines: n })}
+      />
       {Array.from({ length: numFwd }, (_, i) => (
         <div key={`fwd-${i}`} className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4">
           <p className="text-cyan-400 text-sm font-medium mb-4 text-center">{ordinals[i]} Line</p>
@@ -152,7 +188,13 @@ function HockeyLineupEditor({ lineup, players, isAdmin, onChange }: {
         </div>
       ))}
 
-      <p className="text-base font-semibold text-white pt-2">Defense Pairs</p>
+      <LineCountControl
+        label="Defense Pairs"
+        count={numDef}
+        min={1}
+        max={4}
+        onChange={(n) => onChange({ ...lineup, numDefenseLines: n })}
+      />
       {Array.from({ length: numDef }, (_, i) => (
         <div key={`def-${i}`} className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4">
           <p className="text-cyan-400 text-sm font-medium mb-4 text-center">{ordinals[i]} Pair</p>
@@ -163,7 +205,7 @@ function HockeyLineupEditor({ lineup, players, isAdmin, onChange }: {
         </div>
       ))}
 
-      <p className="text-base font-semibold text-white pt-2">Goalies</p>
+      <p className="text-base font-semibold text-white">Goalies</p>
       <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4">
         <p className="text-cyan-400 text-sm font-medium mb-4 text-center">Starter</p>
         <div className="flex justify-center">
@@ -225,7 +267,13 @@ function BasketballLineupEditor({ lineup, players, isAdmin, onChange }: {
       </div>
 
       <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4">
-        <p className="text-cyan-400 text-sm font-medium mb-4 text-center">Bench</p>
+        <LineCountControl
+          label="Bench"
+          count={numBench}
+          min={0}
+          max={10}
+          onChange={(n) => onChange({ ...lineup, numBenchSpots: n })}
+        />
         <div className="flex flex-wrap justify-around gap-3">
           {Array.from({ length: numBench }, (_, i) => (
             <PlayerCircle key={`bench-${i}`} posLabel={`B${i + 1}`} size="sm" playerId={bench[i]} players={players} isAdmin={isAdmin} onChange={(id) => updateBench(i, id)} />
@@ -354,7 +402,13 @@ function LacrosseLineupEditor({ lineup, players, isAdmin, onChange }: {
       </div>
 
       <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4">
-        <p className="text-cyan-400 text-sm font-medium mb-4 text-center">Attack</p>
+        <LineCountControl
+          label="Attack"
+          count={numAtk}
+          min={1}
+          max={6}
+          onChange={(n) => onChange({ ...lineup, numAttackers: n })}
+        />
         <div className="flex justify-around">
           {Array.from({ length: numAtk }, (_, i) => (
             <PlayerCircle key={`atk-${i}`} posLabel={`A${i + 1}`} playerId={lineup.attackers?.[i]} players={players} isAdmin={isAdmin}
@@ -364,7 +418,13 @@ function LacrosseLineupEditor({ lineup, players, isAdmin, onChange }: {
       </div>
 
       <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4">
-        <p className="text-cyan-400 text-sm font-medium mb-4 text-center">Midfield</p>
+        <LineCountControl
+          label="Midfield"
+          count={numMid}
+          min={1}
+          max={6}
+          onChange={(n) => onChange({ ...lineup, numMidfielders: n })}
+        />
         <div className="flex justify-around">
           {Array.from({ length: numMid }, (_, i) => (
             <PlayerCircle key={`mid-${i}`} posLabel={`M${i + 1}`} playerId={lineup.midfielders?.[i]} players={players} isAdmin={isAdmin}
@@ -374,7 +434,13 @@ function LacrosseLineupEditor({ lineup, players, isAdmin, onChange }: {
       </div>
 
       <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4">
-        <p className="text-cyan-400 text-sm font-medium mb-4 text-center">Defense</p>
+        <LineCountControl
+          label="Defense"
+          count={numDef}
+          min={1}
+          max={6}
+          onChange={(n) => onChange({ ...lineup, numDefenders: n })}
+        />
         <div className="flex justify-around">
           {Array.from({ length: numDef }, (_, i) => (
             <PlayerCircle key={`def-${i}`} posLabel={`D${i + 1}`} playerId={lineup.defenders?.[i]} players={players} isAdmin={isAdmin}
