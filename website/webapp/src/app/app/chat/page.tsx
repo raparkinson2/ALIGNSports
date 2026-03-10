@@ -88,7 +88,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-full -m-4 lg:-m-6">
+    <div className="flex flex-col h-full -m-4 -mb-20 lg:-m-6 lg:-mb-6">
       {/* Message list */}
       <div className="flex-1 overflow-y-auto px-4 py-4 lg:px-6 space-y-2">
         {chatMessages.length === 0 && (
