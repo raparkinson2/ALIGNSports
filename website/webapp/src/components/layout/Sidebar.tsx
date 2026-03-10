@@ -45,7 +45,7 @@ export default function Sidebar() {
   const emoji = SPORT_EMOJI[sport] ?? '🏆';
 
   const navItems: NavItem[] = [
-    { href: '/app/schedule', label: 'Schedule', icon: Calendar },
+    { href: '/app/schedule', label: 'Events', icon: Calendar },
     { href: '/app/roster', label: 'Roster', icon: Users },
     ...(teamSettings.showTeamChat && !isParent
       ? [{ href: '/app/chat', label: 'Chat', icon: MessageSquare, badge: unreadChat > 0 ? unreadChat : undefined }]

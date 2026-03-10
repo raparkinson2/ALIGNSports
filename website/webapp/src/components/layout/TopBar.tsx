@@ -9,7 +9,7 @@ import Avatar from '@/components/ui/Avatar';
 import type { AppNotification } from '@/lib/types';
 
 const PAGE_TITLES: Record<string, string> = {
-  '/app/schedule': 'Schedule',
+  '/app/schedule': 'Events',
   '/app/roster': 'Roster',
   '/app/chat': 'Team Chat',
   '/app/photos': 'Photos',

@@ -20,13 +20,17 @@ export function getDateLabel(dateString: string): string {
 
 export function formatTime(timeStr: string): string {
   if (!timeStr) return '';
-  // Convert "19:00" → "7:00 PM" or pass through if already formatted
+  // Already in 12-hour format like "7:00 AM" or "10:30 PM" — pass through
+  if (/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(timeStr.trim())) return timeStr.trim();
+  // Convert 24-hour "19:00" → "7:00 PM"
   try {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    if (isNaN(hours)) return timeStr;
+    const [hourStr, minuteStr] = timeStr.split(':');
+    const hours = Number(hourStr);
+    const minutes = Number(minuteStr);
+    if (isNaN(hours) || isNaN(minutes)) return timeStr;
     const period = hours >= 12 ? 'PM' : 'AM';
     const h = hours % 12 || 12;
-    const m = minutes?.toString().padStart(2, '0') ?? '00';
+    const m = minutes.toString().padStart(2, '0');
     return `${h}:${m} ${period}`;
   } catch {
     return timeStr;
