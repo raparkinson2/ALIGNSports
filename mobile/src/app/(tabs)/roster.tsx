@@ -626,6 +626,11 @@ export default function RosterScreen() {
       };
       addPlayer(newPlayer);
 
+      // Persist new player to Supabase immediately
+      if (activeTeamId) {
+        pushPlayerToSupabase(newPlayer, activeTeamId).catch(console.error);
+      }
+
       // Also create a Supabase invitation for cross-device joining
       if (rawPhone || rawEmail) {
         // Generate a consistent team ID
