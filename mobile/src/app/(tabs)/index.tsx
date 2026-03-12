@@ -47,6 +47,9 @@ import { hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
 import { BattingOrderLineupViewer } from '@/components/BattingOrderLineupViewer';
 import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
 import { hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
+import { SoccerDiamondLineupViewer } from '@/components/SoccerDiamondLineupViewer';
+import { hasAssignedSoccerDiamondPlayers } from '@/components/SoccerDiamondLineupEditor';
+import { LacrosseLineupViewer } from '@/components/LacrosseLineupViewer';
 import { hasAssignedBattingOrder } from '@/components/BattingOrderLineupEditor';
 import { hasAssignedLacrossePlayers } from '@/components/LacrosseLineupEditor';
 import { sendGameInviteNotification, scheduleGameInviteNotification, sendEventInviteNotification, scheduleEventReminderDayBefore, scheduleEventReminderHourBefore, scheduleGameReminderDayBefore, scheduleGameReminderHoursBefore, sendPushToPlayers } from '@/lib/notifications';
@@ -236,8 +239,8 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false, hi
   const showBaseballLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'baseball' && (hasAssignedBaseballPlayers(game.baseballLineup) || hasAssignedBattingOrder(game.battingOrderLineup));
   // Check if lineup is set (for softball — uses batting order)
   const showSoftballLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'softball' && hasAssignedBattingOrder(game.battingOrderLineup);
-  // Check if lineup is set (for soccer)
-  const showSoccerLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'soccer' && hasAssignedSoccerPlayers(game.soccerLineup);
+  // Check if lineup is set (for soccer — 4-4-2 or diamond)
+  const showSoccerLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'soccer' && (hasAssignedSoccerPlayers(game.soccerLineup) || hasAssignedSoccerDiamondPlayers(game.soccerDiamondLineup));
   // Check if lineup is set (for lacrosse)
   const showLacrosseLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'lacrosse' && hasAssignedLacrossePlayers(game.lacrosseLineup);
 
@@ -2496,11 +2499,33 @@ export default function ScheduleScreen() {
       )}
 
       {/* Soccer Lineup Viewer Modal */}
-      {lineupViewerGame?.soccerLineup && teamSettings.sport === 'soccer' && (
+      {lineupViewerGame?.soccerLineup && hasAssignedSoccerPlayers(lineupViewerGame.soccerLineup) && teamSettings.sport === 'soccer' && (
         <SoccerLineupViewer
           visible={!!lineupViewerGame}
           onClose={() => setLineupViewerGame(null)}
           lineup={lineupViewerGame.soccerLineup}
+          players={players}
+          opponent={lineupViewerGame.opponent}
+        />
+      )}
+
+      {/* Soccer Diamond Lineup Viewer Modal */}
+      {lineupViewerGame?.soccerDiamondLineup && hasAssignedSoccerDiamondPlayers(lineupViewerGame.soccerDiamondLineup) && teamSettings.sport === 'soccer' && (
+        <SoccerDiamondLineupViewer
+          visible={!!lineupViewerGame}
+          onClose={() => setLineupViewerGame(null)}
+          lineup={lineupViewerGame.soccerDiamondLineup}
+          players={players}
+          opponent={lineupViewerGame.opponent}
+        />
+      )}
+
+      {/* Lacrosse Lineup Viewer Modal */}
+      {lineupViewerGame?.lacrosseLineup && hasAssignedLacrossePlayers(lineupViewerGame.lacrosseLineup) && teamSettings.sport === 'lacrosse' && (
+        <LacrosseLineupViewer
+          visible={!!lineupViewerGame}
+          onClose={() => setLineupViewerGame(null)}
+          lineup={lineupViewerGame.lacrosseLineup}
           players={players}
           opponent={lineupViewerGame.opponent}
         />
