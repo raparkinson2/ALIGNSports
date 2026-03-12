@@ -806,44 +806,67 @@ export default function RosterScreen() {
   const getPositionGroups = () => {
     const sport = teamSettings.sport;
 
+    // Players whose position doesn't match the current sport get shown in a catch-all group
+    const allMatchedIds = new Set<string>();
+
+    let groups: { title: string; players: Player[] }[] = [];
+
     if (sport === 'hockey') {
-      return [
+      groups = [
         { title: 'Forwards', players: players.filter((p) => ['C', 'LW', 'RW'].includes(p.position)) },
         { title: 'Defense', players: players.filter((p) => ['LD', 'RD'].includes(p.position)) },
         { title: 'Goalies', players: players.filter((p) => p.position === 'G') },
       ];
     } else if (sport === 'baseball' || sport === 'softball') {
-      return [
+      groups = [
         { title: 'Battery', players: players.filter((p) => ['P', 'C'].includes(p.position)) },
         { title: 'Infield', players: players.filter((p) => ['1B', '2B', '3B', 'SS'].includes(p.position)) },
         { title: 'Outfield', players: players.filter((p) => ['LF', 'RF', 'CF'].includes(p.position)) },
       ];
     } else if (sport === 'basketball') {
-      return [
+      groups = [
         { title: 'Guards', players: players.filter((p) => ['PG', 'SG'].includes(p.position)) },
         { title: 'Forwards', players: players.filter((p) => ['SF', 'PF'].includes(p.position)) },
         { title: 'Centers', players: players.filter((p) => p.position === 'C') },
       ];
     } else if (sport === 'lacrosse') {
-      return [
+      groups = [
         { title: 'Attack', players: players.filter((p) => p.position === 'A') },
         { title: 'Midfield', players: players.filter((p) => p.position === 'M') },
         { title: 'Defense', players: players.filter((p) => p.position === 'D') },
         { title: 'Goalies', players: players.filter((p) => p.position === 'G') },
       ];
     } else if (sport === 'soccer') {
-      return [
+      groups = [
         { title: 'Goalkeepers', players: players.filter((p) => p.position === 'GK') },
         { title: 'Defenders', players: players.filter((p) => p.position === 'DEF') },
         { title: 'Midfielders', players: players.filter((p) => p.position === 'MID') },
         { title: 'Forwards', players: players.filter((p) => p.position === 'FWD') },
       ];
     } else {
-      // Fallback - group all players together
-      return [
-        { title: 'Players', players: players },
-      ];
+      return [{ title: 'Players', players: players }];
     }
+
+    // Collect all player IDs that were matched into a group
+    for (const group of groups) {
+      for (const p of group.players) allMatchedIds.add(p.id);
+    }
+
+    // Also exclude coaches and parents from the unmatched group
+    const unmatched = players.filter(
+      (p) => !allMatchedIds.has(p.id) && p.position !== 'Coach' && p.position !== 'Parent'
+    );
+    if (unmatched.length > 0) {
+      groups.push({ title: 'Players', players: unmatched });
+    }
+
+    // Coaches and parents always shown at the bottom
+    const coaches = players.filter((p) => p.position === 'Coach' || p.roles?.includes('coach'));
+    const parents = players.filter((p) => p.position === 'Parent' || p.roles?.includes('parent'));
+    if (coaches.length > 0) groups.push({ title: 'Coaches', players: coaches });
+    if (parents.length > 0) groups.push({ title: 'Parents', players: parents });
+
+    return groups;
   };
 
   const positionGroups = getPositionGroups();

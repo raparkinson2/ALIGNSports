@@ -46,6 +46,8 @@ import { BaseballLineupViewer } from '@/components/BaseballLineupViewer';
 import { hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
 import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
 import { hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
+import { hasAssignedBattingOrder } from '@/components/BattingOrderLineupEditor';
+import { hasAssignedLacrossePlayers } from '@/components/LacrosseLineupEditor';
 import { sendGameInviteNotification, scheduleGameInviteNotification, sendEventInviteNotification, scheduleEventReminderDayBefore, scheduleEventReminderHourBefore, scheduleGameReminderDayBefore, scheduleGameReminderHoursBefore, sendPushToPlayers } from '@/lib/notifications';
 import { pushGameToSupabase, pushEventToSupabase, deleteGameFromSupabase, pushTeamToSupabase } from '@/lib/realtime-sync';
 
@@ -231,8 +233,12 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false, hi
   const showBasketballLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'basketball' && hasAssignedBasketballPlayers(game.basketballLineup);
   // Check if lineup is set (for baseball)
   const showBaseballLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'baseball' && hasAssignedBaseballPlayers(game.baseballLineup);
+  // Check if lineup is set (for softball — uses batting order)
+  const showSoftballLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'softball' && hasAssignedBattingOrder(game.battingOrderLineup);
   // Check if lineup is set (for soccer)
   const showSoccerLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'soccer' && hasAssignedSoccerPlayers(game.soccerLineup);
+  // Check if lineup is set (for lacrosse)
+  const showLacrosseLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'lacrosse' && hasAssignedLacrossePlayers(game.lacrosseLineup);
 
   const cardContent = (
     <Pressable
@@ -327,6 +333,36 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false, hi
 
           {/* Game Lineup Button (Soccer) */}
           {showSoccerLineupButton && (
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onViewLines();
+              }}
+              className="bg-emerald-500/20 rounded-xl p-3 mb-3 border border-emerald-500/30 flex-row items-center justify-center active:bg-emerald-500/30"
+            >
+              <ListOrdered size={16} color="#10b981" />
+              <Text className="text-emerald-400 font-medium ml-2">Game Lineup</Text>
+            </Pressable>
+          )}
+
+          {/* Game Lineup Button (Softball) */}
+          {showSoftballLineupButton && (
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onViewLines();
+              }}
+              className="bg-emerald-500/20 rounded-xl p-3 mb-3 border border-emerald-500/30 flex-row items-center justify-center active:bg-emerald-500/30"
+            >
+              <ListOrdered size={16} color="#10b981" />
+              <Text className="text-emerald-400 font-medium ml-2">Batting Order</Text>
+            </Pressable>
+          )}
+
+          {/* Game Lineup Button (Lacrosse) */}
+          {showLacrosseLineupButton && (
             <Pressable
               onPress={(e) => {
                 e.stopPropagation();
