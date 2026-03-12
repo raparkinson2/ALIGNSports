@@ -63,12 +63,12 @@ function getDisplayPosition(player: Player): string {
 }
 
 // Format name as "F. LastName"
-function formatName(fullName: string): string {
-  const parts = fullName.trim().split(' ');
-  if (parts.length < 2) return fullName;
-  const firstName = parts[0];
-  const lastName = parts.slice(1).join(' ');
-  return `${firstName.charAt(0)}. ${lastName}`;
+function formatName(player: Player): string {
+  const first = player.firstName?.trim() || '';
+  const last = player.lastName?.trim() || '';
+  if (!first && !last) return '';
+  if (!last) return first;
+  return `${first.charAt(0)}. ${last}`;
 }
 
 interface StatCardProps {
@@ -961,7 +961,7 @@ export default function TeamStatsScreen() {
                 >
                   <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', minWidth: 0 }}>
                     <Text className="text-cyan-400 font-medium text-xs mr-1" style={{ flexShrink: 0 }}>#{player.number}</Text>
-                    <Text className="text-white text-sm" style={{ flexShrink: 1, flexGrow: 1 }} numberOfLines={1}>{formatName(getPlayerName(player))}</Text>
+                    <Text className="text-white text-sm" style={{ flexShrink: 1, flexGrow: 1 }} numberOfLines={1}>{formatName(player)}</Text>
                   </View>
                   <Text className="text-slate-400 text-center text-xs" style={{ width: 40, flexShrink: 0 }}>{getDisplayPosition(player)}</Text>
                   <View style={{ flexDirection: 'row', marginLeft: 8, flexShrink: 0 }}>
@@ -1009,7 +1009,7 @@ export default function TeamStatsScreen() {
                     >
                       <View className="flex-row items-center" style={{ width: 76 }}>
                         <Text className="text-cyan-400 font-medium text-[10px] mr-0.5">#{player.number}</Text>
-                        <Text className="text-white text-xs" numberOfLines={1}>{formatName(getPlayerName(player))}</Text>
+                        <Text className="text-white text-xs" numberOfLines={1}>{formatName(player)}</Text>
                       </View>
                       <View className="flex-row flex-1 justify-between">
                         {statValues.map((value, i) => (
@@ -1058,7 +1058,7 @@ export default function TeamStatsScreen() {
                     >
                       <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', minWidth: 0 }}>
                         <Text className="text-cyan-400 font-medium text-xs mr-1" style={{ flexShrink: 0 }}>#{player.number}</Text>
-                        <Text className="text-white text-sm" style={{ flexShrink: 1, flexGrow: 1 }} numberOfLines={1}>{formatName(getPlayerName(player))}</Text>
+                        <Text className="text-white text-sm" style={{ flexShrink: 1, flexGrow: 1 }} numberOfLines={1}>{formatName(player)}</Text>
                       </View>
                       <View style={{ flexDirection: 'row', marginLeft: 8, flexShrink: 0 }}>
                         {statValues.map((value, i) => (
