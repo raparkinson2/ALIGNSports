@@ -71,12 +71,13 @@ function mapPlayer(p: any): Player {
     notificationPreferences: p.notification_preferences
       ? { ...p.notification_preferences, pushToken: p.push_token || p.notification_preferences?.pushToken || undefined }
       : p.push_token ? { pushToken: p.push_token } as any : undefined,
-    stats: p.stats || {},
+    stats: p.stats ? (({ _associatedPlayerId: _aid, ...rest }) => rest)(p.stats) : {},
     goalieStats: p.goalie_stats || {},
     pitcherStats: p.pitcher_stats || {},
     gameLogs: p.game_logs || [],
     // Include hashed password for phone-based auth (phone users have no Supabase Auth account)
     password: p.password || undefined,
+    associatedPlayerId: p.stats?._associatedPlayerId || undefined,
   };
 }
 
@@ -940,7 +941,7 @@ export async function pushPlayerToSupabase(player: Player, teamId: string): Prom
       //   endpoint which writes to the dedicated push_tokens table
       // - writing notification_preferences here would overwrite the JSONB column and could
       //   corrupt any data stored there by other processes
-      stats: player.stats || {},
+    stats: { ...(player.stats || {}), _associatedPlayerId: player.associatedPlayerId || undefined },
       goalie_stats: player.goalieStats || {},
       pitcher_stats: player.pitcherStats || {},
       game_logs: player.gameLogs || [],
