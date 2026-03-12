@@ -957,19 +957,19 @@ export default function TeamStatsScreen() {
                     showBorder ? 'border-b border-slate-700/50' : ''
                   }`}
                 >
-                  <View className="flex-1 flex-row items-center">
-                    <Text className="text-cyan-400 font-medium text-xs mr-1">#{player.number}</Text>
-                    <Text className="text-white text-sm">{formatName(getPlayerName(player))}</Text>
+                  <View className="flex-1 flex-row items-center min-w-0">
+                    <Text className="text-cyan-400 font-medium text-xs mr-1" style={{ flexShrink: 0 }}>#{player.number}</Text>
+                    <Text className="text-white text-sm flex-shrink" numberOfLines={1}>{formatName(getPlayerName(player))}</Text>
                   </View>
-                  <Text className="text-slate-400 w-10 text-center text-xs">{getDisplayPosition(player)}</Text>
-                  <View className="flex-row ml-2">
+                  <Text className="text-slate-400 w-10 text-center text-xs" style={{ flexShrink: 0 }}>{getDisplayPosition(player)}</Text>
+                  <View className="flex-row ml-2" style={{ flexShrink: 0 }}>
                     {statValues.map((value, i) => (
                       <Text key={i} className="text-slate-300 w-9 text-center text-sm">
                         {value}
                       </Text>
                     ))}
                   </View>
-                  <View className="w-4 items-center">
+                  <View className="w-4 items-center" style={{ flexShrink: 0 }}>
                     {canEdit && <ChevronRight size={14} color="#64748b" />}
                   </View>
                 </Pressable>
@@ -1054,18 +1054,18 @@ export default function TeamStatsScreen() {
                         index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
                       }`}
                     >
-                      <View className="flex-1 flex-row items-center">
-                        <Text className="text-cyan-400 font-medium text-xs mr-1">#{player.number}</Text>
-                        <Text className="text-white text-sm">{formatName(getPlayerName(player))}</Text>
+                      <View className="flex-1 flex-row items-center min-w-0">
+                        <Text className="text-cyan-400 font-medium text-xs mr-1" style={{ flexShrink: 0 }}>#{player.number}</Text>
+                        <Text className="text-white text-sm flex-shrink" numberOfLines={1}>{formatName(getPlayerName(player))}</Text>
                       </View>
-                      <View className="flex-row ml-2">
+                      <View className="flex-row ml-2" style={{ flexShrink: 0 }}>
                         {statValues.map((value, i) => (
                           <Text key={i} className="text-slate-300 w-11 text-center text-sm">
                             {value}
                           </Text>
                         ))}
                       </View>
-                      <View className="w-4 items-center">
+                      <View className="w-4 items-center" style={{ flexShrink: 0 }}>
                         {canEdit && <ChevronRight size={14} color="#64748b" />}
                       </View>
                     </Pressable>
