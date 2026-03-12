@@ -44,6 +44,7 @@ import { BasketballLineupViewer } from '@/components/BasketballLineupViewer';
 import { hasAssignedBasketballPlayers } from '@/components/BasketballLineupEditor';
 import { BaseballLineupViewer } from '@/components/BaseballLineupViewer';
 import { hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
+import { BattingOrderLineupViewer } from '@/components/BattingOrderLineupViewer';
 import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
 import { hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
 import { hasAssignedBattingOrder } from '@/components/BattingOrderLineupEditor';
@@ -231,8 +232,8 @@ function GameCard({ game, index, onPress, onViewLines, skipAnimation = false, hi
   const showLinesButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'hockey' && hasAssignedPlayers(game.lineup);
   // Check if lineup is set (for basketball)
   const showBasketballLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'basketball' && hasAssignedBasketballPlayers(game.basketballLineup);
-  // Check if lineup is set (for baseball)
-  const showBaseballLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'baseball' && hasAssignedBaseballPlayers(game.baseballLineup);
+  // Check if lineup is set (for baseball — field positions OR batting order)
+  const showBaseballLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'baseball' && (hasAssignedBaseballPlayers(game.baseballLineup) || hasAssignedBattingOrder(game.battingOrderLineup));
   // Check if lineup is set (for softball — uses batting order)
   const showSoftballLineupButton = teamSettings?.showLineups !== false && teamSettings?.sport === 'softball' && hasAssignedBattingOrder(game.battingOrderLineup);
   // Check if lineup is set (for soccer)
@@ -2470,8 +2471,8 @@ export default function ScheduleScreen() {
         />
       )}
 
-      {/* Baseball Lineup Viewer Modal */}
-      {lineupViewerGame?.baseballLineup && teamSettings.sport === 'baseball' && (
+      {/* Baseball Field Position Lineup Viewer Modal */}
+      {lineupViewerGame?.baseballLineup && hasAssignedBaseballPlayers(lineupViewerGame.baseballLineup) && teamSettings.sport === 'baseball' && (
         <BaseballLineupViewer
           visible={!!lineupViewerGame}
           onClose={() => setLineupViewerGame(null)}
@@ -2479,6 +2480,18 @@ export default function ScheduleScreen() {
           players={players}
           opponent={lineupViewerGame.opponent}
           isSoftball={teamSettings.isSoftball}
+        />
+      )}
+
+      {/* Baseball/Softball Batting Order Viewer Modal */}
+      {lineupViewerGame?.battingOrderLineup && hasAssignedBattingOrder(lineupViewerGame.battingOrderLineup) && (teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') && (
+        <BattingOrderLineupViewer
+          visible={!!lineupViewerGame}
+          onClose={() => setLineupViewerGame(null)}
+          lineup={lineupViewerGame.battingOrderLineup}
+          players={players}
+          opponent={lineupViewerGame.opponent}
+          sport={teamSettings.sport}
         />
       )}
 
