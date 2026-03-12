@@ -683,6 +683,23 @@ function GameDetailScreenInner() {
     }
   }, [game?.id, game?.finalScoreUs, game?.finalScoreThem, game?.gameResult]);
 
+  // Auto-purge coaches/parents from invitedPlayers if they were added before role filtering was introduced
+  useEffect(() => {
+    if (!game?.invitedPlayers?.length) return;
+    const coachParentIds = new Set(
+      players
+        .filter((p) => p.position === 'Coach' || p.position === 'Parent' || p.roles?.includes('coach') || p.roles?.includes('parent'))
+        .map((p) => p.id)
+    );
+    const hasCoachOrParent = game.invitedPlayers.some((id) => coachParentIds.has(id));
+    if (hasCoachOrParent) {
+      updateGameAndSync(game.id, {
+        invitedPlayers: game.invitedPlayers.filter((id) => !coachParentIds.has(id)),
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game?.id]);
+
   if (!game) {
     if (!gameNotFoundTimeout) {
       return (
@@ -698,9 +715,6 @@ function GameDetailScreenInner() {
     );
   }
 
-  const checkedInCount = game.checkedInPlayers?.length ?? 0;
-  const checkedOutCount = game.checkedOutPlayers?.length ?? 0;
-  const pendingCount = (game.invitedPlayers?.length ?? 0) - checkedInCount - checkedOutCount;
   // Deduplicate players array before filtering to prevent double-renders from race conditions
   const uniquePlayers = players.filter((p, idx, arr) => arr.findIndex(x => x.id === p.id) === idx);
   // Helper to check if a player is a coach or parent (should be excluded from check-in and lineups)
@@ -709,8 +723,11 @@ function GameDetailScreenInner() {
     p.roles?.includes('coach') || p.roles?.includes('parent');
   // Only non-coach/parent players participate in check-in
   const eligiblePlayers = uniquePlayers.filter((p) => !isCoachOrParent(p));
+  const checkedInCount = game.checkedInPlayers?.filter((id) => eligiblePlayers.some((p) => p.id === id)).length ?? 0;
+  const checkedOutCount = game.checkedOutPlayers?.filter((id) => eligiblePlayers.some((p) => p.id === id)).length ?? 0;
   const checkedInPlayers = eligiblePlayers.filter((p) => game.checkedInPlayers?.includes(p.id));
   const invitedPlayers = eligiblePlayers.filter((p) => game.invitedPlayers?.includes(p.id));
+  const pendingCount = invitedPlayers.length - checkedInCount - checkedOutCount;
 
   // Sort invited players: checked in first, then pending, then checked out
   const sortedInvitedPlayers = [...invitedPlayers].sort((a, b) => {
