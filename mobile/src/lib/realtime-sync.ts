@@ -179,11 +179,31 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     const teamSettings = mapTeamSettings(teamData);
     const teamName = teamData.name;
 
-    // Fetch players
-    const { data: playersData } = await supabase
-      .from('players')
-      .select('*')
-      .eq('team_id', teamId);
+    // Fire all independent queries simultaneously
+    const currentPlayerId = useTeamStore.getState().currentPlayerId;
+    const [
+      { data: playersData },
+      { data: gamesData },
+      { data: eventsData },
+      { data: chatData },
+      { data: periodsData },
+      { data: photosData },
+      { data: notifData },
+      { data: pollsData },
+      { data: linksData },
+    ] = await Promise.all([
+      supabase.from('players').select('*').eq('team_id', teamId),
+      supabase.from('games').select('*').eq('team_id', teamId).order('date', { ascending: true }),
+      supabase.from('events').select('*').eq('team_id', teamId).order('date', { ascending: true }),
+      supabase.from('chat_messages').select('*').eq('team_id', teamId).order('created_at', { ascending: true }).limit(200),
+      supabase.from('payment_periods').select('*').eq('team_id', teamId).order('sort_order', { ascending: true }),
+      supabase.from('photos').select('*').eq('team_id', teamId).order('uploaded_at', { ascending: false }),
+      currentPlayerId
+        ? supabase.from('notifications').select('*').eq('team_id', teamId).eq('to_player_id', currentPlayerId).eq('read', false).order('created_at', { ascending: false }).limit(50)
+        : Promise.resolve({ data: [] }),
+      supabase.from('polls').select('*').eq('team_id', teamId).order('created_at', { ascending: false }),
+      supabase.from('team_links').select('*').eq('team_id', teamId).order('created_at', { ascending: true }),
+    ]);
 
     // Deduplicate players by id in case of DB anomalies or race conditions
     const rawPlayers = (playersData || []).map(mapPlayer);
@@ -191,30 +211,43 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     for (const p of rawPlayers) playerMap.set(p.id, p);
     const players = Array.from(playerMap.values());
 
-    // Fetch games
-    const { data: gamesData } = await supabase
-      .from('games')
-      .select('*')
-      .eq('team_id', teamId)
-      .order('date', { ascending: true });
-
-    // Fetch game responses
+    // Fire response queries in parallel now that we have game/event/payment IDs
     const gameIds = (gamesData || []).map((g: any) => g.id);
+    const eventIds = (eventsData || []).map((e: any) => e.id);
+    const periodIds = (periodsData || []).map((p: any) => p.id);
+
+    const [
+      { data: grData },
+      { data: erData },
+      { data: ppData },
+    ] = await Promise.all([
+      gameIds.length > 0
+        ? supabase.from('game_responses').select('*').in('game_id', gameIds)
+        : Promise.resolve({ data: [] }),
+      eventIds.length > 0
+        ? supabase.from('event_responses').select('*').in('event_id', eventIds)
+        : Promise.resolve({ data: [] }),
+      periodIds.length > 0
+        ? supabase.from('player_payments').select('*').in('payment_period_id', periodIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    // Fetch payment entries (depends on player_payments)
+    const ppIds = (ppData || []).map((p: any) => p.id);
+    const { data: entriesData } = ppIds.length > 0
+      ? await supabase.from('payment_entries').select('*').in('player_payment_id', ppIds)
+      : { data: [] };
+
+    // Build game responses map
     let gameResponsesMap: Record<string, { in: string[]; out: string[]; invited: string[]; notes: Record<string, string> }> = {};
-    if (gameIds.length > 0) {
-      const { data: grData } = await supabase
-        .from('game_responses')
-        .select('*')
-        .in('game_id', gameIds);
-      for (const r of grData || []) {
-        if (!gameResponsesMap[r.game_id]) {
-          gameResponsesMap[r.game_id] = { in: [], out: [], invited: [], notes: {} };
-        }
-        const map = gameResponsesMap[r.game_id];
-        if (r.response === 'in') { map.in.push(r.player_id); map.invited.push(r.player_id); }
-        else if (r.response === 'out') { map.out.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
-        else if (r.response === 'invited') { map.invited.push(r.player_id); }
+    for (const r of grData || []) {
+      if (!gameResponsesMap[r.game_id]) {
+        gameResponsesMap[r.game_id] = { in: [], out: [], invited: [], notes: {} };
       }
+      const map = gameResponsesMap[r.game_id];
+      if (r.response === 'in') { map.in.push(r.player_id); map.invited.push(r.player_id); }
+      else if (r.response === 'out') { map.out.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
+      else if (r.response === 'invited') { map.invited.push(r.player_id); }
     }
 
     const games: Game[] = (gamesData || []).map((g: any) => {
@@ -222,43 +255,22 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       return { ...mapGame(g), checkedInPlayers: resp.in, checkedOutPlayers: resp.out, invitedPlayers: resp.invited, checkoutNotes: resp.notes };
     });
 
-    // Fetch events
-    const { data: eventsData } = await supabase
-      .from('events')
-      .select('*')
-      .eq('team_id', teamId)
-      .order('date', { ascending: true });
-
-    const eventIds = (eventsData || []).map((e: any) => e.id);
+    // Build event responses map
     let eventResponsesMap: Record<string, { confirmed: string[]; declined: string[]; invited: string[]; notes: Record<string, string> }> = {};
-    if (eventIds.length > 0) {
-      const { data: erData } = await supabase
-        .from('event_responses')
-        .select('*')
-        .in('event_id', eventIds);
-      for (const r of erData || []) {
-        if (!eventResponsesMap[r.event_id]) {
-          eventResponsesMap[r.event_id] = { confirmed: [], declined: [], invited: [], notes: {} };
-        }
-        const map = eventResponsesMap[r.event_id];
-        if (r.response === 'confirmed') { map.confirmed.push(r.player_id); map.invited.push(r.player_id); }
-        else if (r.response === 'declined') { map.declined.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
-        else if (r.response === 'invited') { map.invited.push(r.player_id); }
+    for (const r of erData || []) {
+      if (!eventResponsesMap[r.event_id]) {
+        eventResponsesMap[r.event_id] = { confirmed: [], declined: [], invited: [], notes: {} };
       }
+      const map = eventResponsesMap[r.event_id];
+      if (r.response === 'confirmed') { map.confirmed.push(r.player_id); map.invited.push(r.player_id); }
+      else if (r.response === 'declined') { map.declined.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
+      else if (r.response === 'invited') { map.invited.push(r.player_id); }
     }
 
     const events: Event[] = (eventsData || []).map((e: any) => {
       const resp = eventResponsesMap[e.id] || { confirmed: [], declined: [], invited: [], notes: {} };
       return { ...mapEvent(e), confirmedPlayers: resp.confirmed, declinedPlayers: resp.declined, invitedPlayers: resp.invited, declinedNotes: resp.notes };
     });
-
-    // Fetch chat messages (last 200)
-    const { data: chatData } = await supabase
-      .from('chat_messages')
-      .select('*')
-      .eq('team_id', teamId)
-      .order('created_at', { ascending: true })
-      .limit(200);
 
     const chatMessages: ChatMessage[] = (chatData || []).map((m: any) => ({
       id: m.id,
@@ -274,39 +286,16 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       createdAt: m.created_at,
     }));
 
-    // Fetch payment periods + player payments + entries
-    const { data: periodsData } = await supabase
-      .from('payment_periods')
-      .select('*')
-      .eq('team_id', teamId)
-      .order('sort_order', { ascending: true });
-
-    const periodIds = (periodsData || []).map((p: any) => p.id);
+    // Build payment maps
     let playerPaymentsMap: Record<string, any[]> = {};
     let entriesMap: Record<string, any[]> = {};
-
-    if (periodIds.length > 0) {
-      const { data: ppData } = await supabase
-        .from('player_payments')
-        .select('*')
-        .in('payment_period_id', periodIds);
-
-      const ppIds = (ppData || []).map((p: any) => p.id);
-      for (const pp of ppData || []) {
-        if (!playerPaymentsMap[pp.payment_period_id]) playerPaymentsMap[pp.payment_period_id] = [];
-        playerPaymentsMap[pp.payment_period_id].push(pp);
-      }
-
-      if (ppIds.length > 0) {
-        const { data: entriesData } = await supabase
-          .from('payment_entries')
-          .select('*')
-          .in('player_payment_id', ppIds);
-        for (const entry of entriesData || []) {
-          if (!entriesMap[entry.player_payment_id]) entriesMap[entry.player_payment_id] = [];
-          entriesMap[entry.player_payment_id].push(entry);
-        }
-      }
+    for (const pp of ppData || []) {
+      if (!playerPaymentsMap[pp.payment_period_id]) playerPaymentsMap[pp.payment_period_id] = [];
+      playerPaymentsMap[pp.payment_period_id].push(pp);
+    }
+    for (const entry of entriesData || []) {
+      if (!entriesMap[entry.player_payment_id]) entriesMap[entry.player_payment_id] = [];
+      entriesMap[entry.player_payment_id].push(entry);
     }
 
     const paymentPeriods: PaymentPeriod[] = (periodsData || []).map((pp: any) => ({
@@ -335,13 +324,6 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       }),
     }));
 
-    // Fetch photos
-    const { data: photosData } = await supabase
-      .from('photos')
-      .select('*')
-      .eq('team_id', teamId)
-      .order('uploaded_at', { ascending: false });
-
     const photos: Photo[] = (photosData || []).map((p: any) => ({
       id: p.id,
       gameId: p.game_id || '',
@@ -350,38 +332,18 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       uploadedAt: p.uploaded_at,
     }));
 
-    // Fetch notifications for current player
-    const currentPlayerId = useTeamStore.getState().currentPlayerId;
-    let notifications: AppNotification[] = [];
-    if (currentPlayerId) {
-      const { data: notifData } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('team_id', teamId)
-        .eq('to_player_id', currentPlayerId)
-        .eq('read', false)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      notifications = (notifData || []).map((n: any) => ({
-        id: n.id,
-        type: n.type,
-        title: n.title,
-        message: n.message,
-        gameId: n.game_id || undefined,
-        eventId: n.event_id || undefined,
-        fromPlayerId: n.from_player_id || undefined,
-        toPlayerId: n.to_player_id,
-        createdAt: n.created_at,
-        read: n.read || false,
-      }));
-    }
-
-    // Fetch polls
-    const { data: pollsData } = await supabase
-      .from('polls')
-      .select('*')
-      .eq('team_id', teamId)
-      .order('created_at', { ascending: false });
+    const notifications: AppNotification[] = (notifData || []).map((n: any) => ({
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      message: n.message,
+      gameId: n.game_id || undefined,
+      eventId: n.event_id || undefined,
+      fromPlayerId: n.from_player_id || undefined,
+      toPlayerId: n.to_player_id,
+      createdAt: n.created_at,
+      read: n.read || false,
+    }));
 
     const polls: Poll[] = (pollsData || []).map((p: any) => ({
       id: p.id,
@@ -396,13 +358,6 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       groupName: p.group_name || undefined,
       isRequired: p.is_required || false,
     }));
-
-    // Fetch team links
-    const { data: linksData } = await supabase
-      .from('team_links')
-      .select('*')
-      .eq('team_id', teamId)
-      .order('created_at', { ascending: true });
 
     const teamLinks: TeamLink[] = (linksData || []).map((l: any) => ({
       id: l.id,
