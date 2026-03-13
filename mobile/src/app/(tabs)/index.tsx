@@ -26,7 +26,7 @@ import {
   CalendarDays,
   ChevronLeft,
 } from 'lucide-react-native';
-import Animated, { FadeInDown, FadeInRight, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInRight, useAnimatedStyle, useSharedValue, withSpring, withRepeat, withTiming } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Trash2 } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -992,6 +992,7 @@ export default function ScheduleScreen() {
   const events = useTeamStore((s) => s.events);
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore((s) => s.teamSettings);
+  const isSyncing = useTeamStore((s) => s.isSyncing);
   const addGame = useTeamStore((s) => s.addGame);
   const addEvent = useTeamStore((s) => s.addEvent);
   const removeGame = useTeamStore((s) => s.removeGame);
@@ -1039,6 +1040,13 @@ export default function ScheduleScreen() {
   const [isRecordModalVisible, setIsRecordModalVisible] = useState(false);
   const [lineupViewerGame, setLineupViewerGame] = useState<Game | null>(null);
   const [viewMode, setViewMode] = useState<UpcomingGamesViewMode>(persistedViewMode);
+
+  // Skeleton pulse animation
+  const skeletonOpacity = useSharedValue(0.4);
+  useEffect(() => {
+    skeletonOpacity.value = withRepeat(withTiming(0.9, { duration: 800 }), -1, true);
+  }, []);
+  const skeletonStyle = useAnimatedStyle(() => ({ opacity: skeletonOpacity.value }));
 
   // On tablet, always use calendar view. On phone, sync with persisted preference.
   const effectiveViewMode: UpcomingGamesViewMode = isTablet ? 'calendar' : viewMode;
@@ -1566,6 +1574,13 @@ export default function ScheduleScreen() {
           {effectiveViewMode === 'list' ? (
             <>
               {upcomingGames.length === 0 && upcomingEvents.length === 0 ? (
+                isSyncing ? (
+                  <View className="gap-3">
+                    {[0, 1, 2].map((i) => (
+                      <Animated.View key={i} style={[skeletonStyle, { height: 100, borderRadius: 16, backgroundColor: '#1e293b' }]} />
+                    ))}
+                  </View>
+                ) : (
                 <View className="bg-slate-800/50 rounded-2xl p-8 items-center">
                   <Calendar size={48} color="#475569" />
                   <Text className="text-slate-400 text-center mt-4">
@@ -1580,6 +1595,7 @@ export default function ScheduleScreen() {
                     </Pressable>
                   )}
                 </View>
+                )
               ) : (
                 <>
                   {/* Games - Grid on iPad */}

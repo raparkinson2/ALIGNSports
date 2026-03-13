@@ -848,6 +848,8 @@ interface TeamStore {
   setCurrentPlayerId: (id: string | null) => void;
   isLoggedIn: boolean;
   setIsLoggedIn: (loggedIn: boolean) => void;
+  isSyncing: boolean;
+  setIsSyncing: (syncing: boolean) => void;
   logout: () => void;
   deleteAccount: () => void;
 
@@ -1960,6 +1962,8 @@ export const useTeamStore = create<TeamStore>()(
 
       isLoggedIn: false,
       setIsLoggedIn: (loggedIn) => set({ isLoggedIn: loggedIn }),
+      isSyncing: false,
+      setIsSyncing: (syncing) => set({ isSyncing: syncing }),
       logout: () => {
         // Clear all in-memory team data — it will be loaded fresh from Supabase on next login.
         // Only session fields persist to AsyncStorage (via partialize).

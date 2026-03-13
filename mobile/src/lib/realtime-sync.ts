@@ -136,6 +136,7 @@ function mapEvent(e: any): Event {
 // ─── Full team load (primary entry point after login) ─────────────────────────
 
 export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
+  useTeamStore.getState().setIsSyncing(true);
   try {
     console.log('SYNC: Loading full team data for:', teamId);
 
@@ -481,9 +482,11 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     }
 
     console.log(`SYNC: Loaded - ${players.length} players, ${games.length} games, ${events.length} events, ${chatMessages.length} msgs`);
+    useTeamStore.getState().setIsSyncing(false);
     return true;
   } catch (err) {
     console.error('SYNC: loadTeamFromSupabase error:', err);
+    useTeamStore.getState().setIsSyncing(false);
     return false;
   }
 }
