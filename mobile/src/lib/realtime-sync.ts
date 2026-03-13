@@ -259,8 +259,35 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       : (currentState1.teams.find(t => t.id === teamId)?.players || []);
     const finalPlayers = players.length > 0 ? players : localPlayers;
 
+    const chatMessages: ChatMessage[] = (chatData || []).map((m: any) => ({
+      id: m.id,
+      senderId: m.sender_id,
+      senderName: m.sender_name || undefined,
+      message: m.message || '',
+      imageUrl: m.image_url || undefined,
+      gifUrl: m.gif_url || undefined,
+      gifWidth: m.gif_width || undefined,
+      gifHeight: m.gif_height || undefined,
+      mentionedPlayerIds: m.mentioned_player_ids || [],
+      mentionType: m.mention_type || undefined,
+      createdAt: m.created_at,
+    }));
+
+    const notifications: AppNotification[] = (notifData || []).map((n: any) => ({
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      message: n.message,
+      gameId: n.game_id || undefined,
+      eventId: n.event_id || undefined,
+      fromPlayerId: n.from_player_id || undefined,
+      toPlayerId: n.to_player_id,
+      createdAt: n.created_at,
+      read: n.read || false,
+    }));
+
     if (isActiveTeam) {
-      useTeamStore.setState({ teamName, teamSettings, players: finalPlayers, games, events });
+      useTeamStore.setState({ teamName, teamSettings, players: finalPlayers, games, events, chatMessages, notifications });
     }
 
     // Resolve currentPlayerId if missing (needs players to be loaded first)
@@ -373,10 +400,7 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     }));
 
     // Flush phase 2 data and update the teams[] array with the full picture
-    // chatMessages and notifications were already flushed in Phase 1 — read them back from store
     const currentState2 = useTeamStore.getState();
-    const phase1ChatMessages = isActiveTeam ? currentState2.chatMessages : (currentState2.teams.find(t => t.id === teamId)?.chatMessages ?? []);
-    const phase1Notifications = isActiveTeam ? currentState2.notifications : (currentState2.teams.find(t => t.id === teamId)?.notifications ?? []);
     const teamEntry = {
       id: teamId,
       teamName,
@@ -384,13 +408,13 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       players: finalPlayers,
       games,
       events,
-      chatMessages: phase1ChatMessages,
+      chatMessages,
       chatLastReadAt: currentState2.teams.find(t => t.id === teamId)?.chatLastReadAt
         ?? (isActiveTeam ? currentState2.chatLastReadAt : {})
         ?? {},
       paymentPeriods,
       photos,
-      notifications: phase1Notifications,
+      notifications,
       polls,
       teamLinks,
     };
