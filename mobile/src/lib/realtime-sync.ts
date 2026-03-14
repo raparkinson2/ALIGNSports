@@ -15,6 +15,19 @@ import { useTeamStore } from './store';
 import type { Game, Event, Player, ChatMessage, PaymentPeriod, PlayerPayment, PaymentEntry, Photo, AppNotification, Poll, TeamLink, Team, TeamSettings } from './store';
 import { BACKEND_URL } from './config';
 
+// Suppress realtime payment refetches for a short window after a local push
+// to prevent the "appear → disappear → reappear" flicker loop.
+let _lastPaymentPushAt = 0;
+const PAYMENT_PUSH_SUPPRESS_MS = 4000;
+
+export function markPaymentPushTime() {
+  _lastPaymentPushAt = Date.now();
+}
+
+function shouldSuppressPaymentRefetch(): boolean {
+  return Date.now() - _lastPaymentPushAt < PAYMENT_PUSH_SUPPRESS_MS;
+}
+
 let activeChannel: ReturnType<typeof supabase.channel> | null = null;
 let activeSyncTeamId: string | null = null;
 
@@ -659,12 +672,14 @@ export function startRealtimeSync(teamId: string): void {
 
     // ── PAYMENT PERIODS ───────────────────────────────────────────────────────
     .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_periods', filter: `team_id=eq.${teamId}` }, async () => {
+      if (shouldSuppressPaymentRefetch()) return;
       console.log('SYNC: Payment period change — refetching payments');
       await refetchPayments(teamId);
     })
     // player_payments and payment_entries don't have team_id directly, so we refetch on any change
     // but deduplicate rapid-fire calls with a short debounce
     .on('postgres_changes', { event: '*', schema: 'public', table: 'player_payments' }, async (payload) => {
+      if (shouldSuppressPaymentRefetch()) return;
       // Only act if this change belongs to our team by checking period IDs in cache
       const store = useTeamStore.getState();
       const row = (payload.new || payload.old) as any;
@@ -676,6 +691,7 @@ export function startRealtimeSync(teamId: string): void {
       await refetchPayments(teamId);
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_entries' }, async (payload) => {
+      if (shouldSuppressPaymentRefetch()) return;
       // Only act if this entry belongs to a player_payment in our team
       const store = useTeamStore.getState();
       const row = (payload.new || payload.old) as any;
@@ -1089,6 +1105,7 @@ export async function deleteChatMessageFromSupabase(messageId: string): Promise<
 
 export async function pushPaymentPeriodToSupabase(period: PaymentPeriod, teamId: string): Promise<void> {
   try {
+    markPaymentPushTime();
     const { error } = await supabase.from('payment_periods').upsert({
       id: period.id,
       team_id: teamId,
