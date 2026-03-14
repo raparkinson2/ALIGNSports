@@ -1407,6 +1407,7 @@ export default function MoreScreen() {
             </Pressable>
           </Animated.View>
 
+          {/* Email Team - commented out, keeping code for future use
           <MenuItem
             icon={<Mail size={20} color="#67e8f9" />}
             title="Email Team"
@@ -1414,6 +1415,7 @@ export default function MoreScreen() {
             onPress={handleEmailTeam}
             index={4}
           />
+          */}
 
           {/* Support Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
