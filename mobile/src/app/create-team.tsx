@@ -1149,9 +1149,9 @@ export default function CreateTeamScreen() {
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-slate-300 text-sm mb-3">Sport</Text>
-                  <View className="flex-row flex-wrap justify-between">
-                    {(Object.keys(SPORT_NAMES) as Sport[]).map((s) => (
+                  <Text className="text-slate-300 text-sm mb-2">Sport</Text>
+                  <View className="flex-row gap-1.5">
+                    {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => SPORT_NAMES[a].localeCompare(SPORT_NAMES[b])).map((s) => (
                       <Pressable
                         key={s}
                         onPress={() => {
@@ -1159,24 +1159,20 @@ export default function CreateTeamScreen() {
                           setSport(s);
                         }}
                         className={cn(
-                          'w-[48%] items-center py-4 rounded-xl mb-4 border-2',
+                          'flex-1 items-center py-2 rounded-xl border',
                           sport === s
-                            ? 'bg-cyan-500/25 border-cyan-400'
-                            : 'bg-slate-800/60 border-slate-700/50'
+                            ? 'bg-cyan-500/20 border-cyan-400'
+                            : 'bg-slate-800/50 border-slate-700/40'
                         )}
-                        style={sport === s ? {
-                          shadowColor: '#22d3ee',
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.3,
-                          shadowRadius: 4,
-                          elevation: 3,
-                        } : undefined}
                       >
                         <Text
                           className={cn(
-                            'text-lg font-semibold',
-                            sport === s ? 'text-cyan-300' : 'text-slate-500'
+                            'text-sm font-medium',
+                            sport === s ? 'text-cyan-300' : 'text-slate-400'
                           )}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.7}
                         >
                           {SPORT_NAMES[s]}
                         </Text>
