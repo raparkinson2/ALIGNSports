@@ -1108,13 +1108,17 @@ export default function AdminScreen() {
               Type
             </Text>
 
-            <View className="flex-row justify-between mb-3 gap-2">
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingBottom: 12 }}
+            >
               {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => SPORT_NAMES[a].localeCompare(SPORT_NAMES[b])).map((sport) => (
                 <Pressable
                   key={sport}
                   onPress={() => handleChangeSport(sport)}
                   className={cn(
-                    'flex-1 items-center justify-center py-3 rounded-2xl border',
+                    'items-center justify-center px-4 py-2 rounded-2xl border',
                     teamSettings.sport === sport
                       ? 'bg-cyan-500/20 border-cyan-500/50'
                       : 'bg-slate-800/80 border-slate-700/50'
@@ -1122,18 +1126,15 @@ export default function AdminScreen() {
                 >
                   <Text
                     className={cn(
-                      'text-xs font-medium',
+                      'text-sm font-medium',
                       teamSettings.sport === sport ? 'text-cyan-400' : 'text-slate-400'
                     )}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.7}
                   >
                     {SPORT_NAMES[sport]}
                   </Text>
                 </Pressable>
               ))}
-            </View>
+            </ScrollView>
           </Animated.View>
 
           {/* Team Identity Section */}
