@@ -3,16 +3,96 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { useState } from 'react';
-import { ChevronLeft, Users, Check, Palette, X, ImageIcon, Edit3, User, UserMinus, UserCog, Heart } from 'lucide-react-native';
+import { ChevronLeft, Users, Check, Palette, X, ImageIcon, Edit3, User, UserMinus, UserCog, Hash } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { useTeamStore, Sport, SPORT_NAMES, Player, PlayerRole, SPORT_POSITIONS, getPlayerName } from '@/lib/store';
+import { useTeamStore, Sport, SPORT_NAMES, SPORT_POSITIONS, Player, PlayerRole, getPlayerName } from '@/lib/store';
 import { pushTeamToSupabase, pushPlayerToSupabase } from '@/lib/realtime-sync';
 import { uploadPhotoToStorage } from '@/lib/photo-storage';
 import { cn } from '@/lib/cn';
 import { ParentChildIcon } from '@/components/ParentChildIcon';
+import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg';
+
+// Sport Icons
+function HockeyIcon({ color, size = 24 }: { color: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M4 3L4 17L8 21L12 21L12 17" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path d="M4 17L12 17" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Ellipse cx="18" cy="19" rx="4" ry="2" stroke={color} strokeWidth={2} fill="none" />
+    </Svg>
+  );
+}
+
+function BaseballIcon({ color, size = 24 }: { color: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
+      <Path d="M7 5C8 7 8 9 7 12C6 15 6 17 7 19" stroke={color} strokeWidth={1.5} strokeLinecap="round" fill="none" />
+      <Path d="M17 5C16 7 16 9 17 12C18 15 18 17 17 19" stroke={color} strokeWidth={1.5} strokeLinecap="round" fill="none" />
+    </Svg>
+  );
+}
+
+function BasketballIcon({ color, size = 24 }: { color: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
+      <Line x1="12" y1="3" x2="12" y2="21" stroke={color} strokeWidth={1.5} />
+      <Line x1="3" y1="12" x2="21" y2="12" stroke={color} strokeWidth={1.5} />
+      <Path d="M8 3.5C6 6 5 9 5 12C5 15 6 18 8 20.5" stroke={color} strokeWidth={1.5} fill="none" />
+      <Path d="M16 3.5C18 6 19 9 19 12C19 15 18 18 16 20.5" stroke={color} strokeWidth={1.5} fill="none" />
+    </Svg>
+  );
+}
+
+function SoccerIcon({ color, size = 24 }: { color: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
+      <Path d="M12 8L15 10.5L13.5 14.5H10.5L9 10.5L12 8Z" stroke={color} strokeWidth={1.5} strokeLinejoin="round" fill={color} />
+      <Line x1="12" y1="8" x2="12" y2="3.5" stroke={color} strokeWidth={1.5} />
+      <Line x1="15" y1="10.5" x2="20" y2="9" stroke={color} strokeWidth={1.5} />
+      <Line x1="13.5" y1="14.5" x2="17" y2="19" stroke={color} strokeWidth={1.5} />
+      <Line x1="10.5" y1="14.5" x2="7" y2="19" stroke={color} strokeWidth={1.5} />
+      <Line x1="9" y1="10.5" x2="4" y2="9" stroke={color} strokeWidth={1.5} />
+    </Svg>
+  );
+}
+
+function LacrosseIcon({ color, size = 24 }: { color: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Line x1="4" y1="20" x2="14" y2="6" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M14 6C14 6 16 3 19 3C21 3 22 5 22 7C22 9 20 11 18 11C16 11 14 9 14 6Z" stroke={color} strokeWidth={2} fill="none" />
+      <Path d="M16 5C16 5 17 7 18 7" stroke={color} strokeWidth={1} strokeLinecap="round" />
+      <Path d="M18 5C18 5 18.5 7 19.5 7.5" stroke={color} strokeWidth={1} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function SoftballIcon({ color, size = 24 }: { color: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <SvgCircle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
+      <Path d="M7 5C8 7 8 9 7 12C6 15 6 17 7 19" stroke={color} strokeWidth={1.5} strokeLinecap="round" fill="none" />
+      <Path d="M17 5C16 7 16 9 17 12C18 15 18 17 17 19" stroke={color} strokeWidth={1.5} strokeLinecap="round" fill="none" />
+    </Svg>
+  );
+}
+
+function SportIcon({ sport, color, size = 24 }: { sport: Sport; color: string; size?: number }) {
+  switch (sport) {
+    case 'baseball': return <BaseballIcon color={color} size={size} />;
+    case 'basketball': return <BasketballIcon color={color} size={size} />;
+    case 'hockey': return <HockeyIcon color={color} size={size} />;
+    case 'lacrosse': return <LacrosseIcon color={color} size={size} />;
+    case 'soccer': return <SoccerIcon color={color} size={size} />;
+    case 'softball': return <SoftballIcon color={color} size={size} />;
+  }
+}
 
 // Preset jersey colors for quick selection
 const PRESET_COLORS = [
@@ -63,6 +143,7 @@ export default function CreateNewTeamScreen() {
   const isCoach = memberRole === 'coach';
   const isParent = memberRole === 'parent';
   const [jerseyNumber, setJerseyNumber] = useState(currentPlayer?.number || '');
+  const [position, setPosition] = useState<string>('');
 
   // Team logo picker functions
   const handlePickTeamLogo = async () => {
@@ -103,6 +184,10 @@ export default function CreateNewTeamScreen() {
       }
       if (!isCoach && !isParent && !jerseyNumber.trim()) {
         setError('Please enter your jersey number');
+        return;
+      }
+      if (!isCoach && !isParent && !position) {
+        setError('Please select your position');
         return;
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -168,7 +253,7 @@ export default function CreateNewTeamScreen() {
         password: currentPlayer.password,
         phone: currentPlayer.phone || userPhone || undefined,
         number: (isCoach || isParent) ? '' : (jerseyNumber.trim() || '1'),
-        position: (isCoach || isParent) ? (isCoach ? 'Coach' : 'Parent') : SPORT_POSITIONS[sport][0],
+        position: (isCoach || isParent) ? (isCoach ? 'Coach' : 'Parent') : (position || SPORT_POSITIONS[sport][0]),
         roles,
         status: memberRole === 'reserve' ? 'reserve' : 'active',
         avatar: currentPlayer.avatar,
@@ -308,7 +393,7 @@ export default function CreateNewTeamScreen() {
             {/* Step 1: Team Info */}
             {step === 1 && (
               <Animated.View entering={FadeInDown.delay(150).springify()}>
-                <View className="items-center mb-8">
+                <View className="items-center mb-6">
                   <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
                     <Users size={32} color="#67e8f9" />
                   </View>
@@ -327,7 +412,47 @@ export default function CreateNewTeamScreen() {
                   </View>
                 )}
 
-                <View className="mb-6">
+                {/* Sport Selection */}
+                <View className="mb-5">
+                  <Text className="text-slate-400 text-sm mb-2">Sport <Text className="text-red-400">*</Text></Text>
+                  <View className="flex-row flex-wrap justify-between">
+                    {(Object.keys(SPORT_NAMES) as Sport[]).map((s) => (
+                      <Pressable
+                        key={s}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setSport(s);
+                          setPosition(SPORT_POSITIONS[s][0]);
+                        }}
+                        className={cn(
+                          'w-[31%] items-center py-3 rounded-xl mb-2 border',
+                          sport === s
+                            ? 'bg-cyan-500/25 border-cyan-400'
+                            : 'bg-slate-800/80 border-slate-700/50'
+                        )}
+                        style={sport === s ? {
+                          shadowColor: '#22d3ee',
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.3,
+                          shadowRadius: 4,
+                          elevation: 3,
+                        } : undefined}
+                      >
+                        <SportIcon sport={s} color={sport === s ? '#67e8f9' : '#475569'} size={22} />
+                        <Text
+                          className={cn(
+                            'text-xs font-semibold mt-1.5',
+                            sport === s ? 'text-cyan-300' : 'text-slate-500'
+                          )}
+                        >
+                          {SPORT_NAMES[s]}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+
+                <View className="mb-5">
                   <Text className="text-slate-400 text-sm mb-2">Team Name <Text className="text-red-400">*</Text></Text>
                   <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
                     <Users size={20} color="#64748b" />
@@ -343,7 +468,7 @@ export default function CreateNewTeamScreen() {
                 </View>
 
                 {/* Team Logo */}
-                <View className="mb-6">
+                <View className="mb-5">
                   <Text className="text-slate-400 text-sm mb-2">Team Logo <Text className="text-red-400">*</Text></Text>
                   <Pressable
                     onPress={handlePickTeamLogo}
@@ -375,55 +500,25 @@ export default function CreateNewTeamScreen() {
                   )}
                 </View>
 
-                <View className="mb-4">
-                  <Text className="text-slate-400 text-sm mb-3">Sport</Text>
-                  <View className="flex-row flex-wrap justify-between">
-                    {(Object.keys(SPORT_NAMES) as Sport[]).map((s) => (
-                      <Pressable
-                        key={s}
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          setSport(s);
-                        }}
-                        className={cn(
-                          'w-[48%] items-center py-4 rounded-xl mb-3 border',
-                          sport === s
-                            ? 'bg-cyan-500/20 border-cyan-500/50'
-                            : 'bg-slate-800/80 border-slate-700/50'
-                        )}
-                      >
-                        <Text
-                          className={cn(
-                            'text-lg font-semibold',
-                            sport === s ? 'text-cyan-400' : 'text-slate-400'
-                          )}
-                        >
-                          {SPORT_NAMES[s]}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-
+                {/* Role - Single horizontal row */}
                 <View className="mb-4">
                   <Text className="text-slate-400 text-sm mb-2">Your Role on this team</Text>
-                  {/* Row 1: Player & Reserve */}
-                  <View className="flex-row mb-2">
-                    {/* Player (Active) */}
+                  <View className="flex-row">
+                    {/* Player */}
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setMemberRole('player');
                       }}
                       className={cn(
-                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                        memberRole === 'player' ? 'bg-green-500' : 'bg-slate-800/80'
+                        'flex-1 py-3 px-1 rounded-xl mr-1.5 items-center justify-center border',
+                        memberRole === 'player' ? 'bg-green-500 border-green-400' : 'bg-slate-800/80 border-slate-700/50'
                       )}
                     >
                       <User size={16} color={memberRole === 'player' ? 'white' : '#22c55e'} />
                       <Text
                         className={cn(
-                          'font-semibold text-sm mt-1',
+                          'font-semibold text-xs mt-1',
                           memberRole === 'player' ? 'text-white' : 'text-slate-400'
                         )}
                       >
@@ -437,23 +532,20 @@ export default function CreateNewTeamScreen() {
                         setMemberRole('reserve');
                       }}
                       className={cn(
-                        'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                        memberRole === 'reserve' ? 'bg-slate-600' : 'bg-slate-800/80'
+                        'flex-1 py-3 px-1 rounded-xl mr-1.5 items-center justify-center border',
+                        memberRole === 'reserve' ? 'bg-slate-600 border-slate-500' : 'bg-slate-800/80 border-slate-700/50'
                       )}
                     >
                       <UserMinus size={16} color={memberRole === 'reserve' ? 'white' : '#94a3b8'} />
                       <Text
                         className={cn(
-                          'font-semibold text-sm mt-1',
+                          'font-semibold text-xs mt-1',
                           memberRole === 'reserve' ? 'text-white' : 'text-slate-400'
                         )}
                       >
                         Reserve
                       </Text>
                     </Pressable>
-                  </View>
-                  {/* Row 2: Coach & Parent */}
-                  <View className="flex-row">
                     {/* Coach */}
                     <Pressable
                       onPress={() => {
@@ -461,14 +553,14 @@ export default function CreateNewTeamScreen() {
                         setMemberRole('coach');
                       }}
                       className={cn(
-                        'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
-                        memberRole === 'coach' ? 'bg-cyan-500' : 'bg-slate-800/80'
+                        'flex-1 py-3 px-1 rounded-xl mr-1.5 items-center justify-center border',
+                        memberRole === 'coach' ? 'bg-cyan-500 border-cyan-400' : 'bg-slate-800/80 border-slate-700/50'
                       )}
                     >
                       <UserCog size={16} color={memberRole === 'coach' ? 'white' : '#67e8f9'} />
                       <Text
                         className={cn(
-                          'font-semibold text-sm mt-1',
+                          'font-semibold text-xs mt-1',
                           memberRole === 'coach' ? 'text-white' : 'text-slate-400'
                         )}
                       >
@@ -482,14 +574,14 @@ export default function CreateNewTeamScreen() {
                         setMemberRole('parent');
                       }}
                       className={cn(
-                        'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                        memberRole === 'parent' ? 'bg-pink-500' : 'bg-slate-800/80'
+                        'flex-1 py-3 px-1 rounded-xl items-center justify-center border',
+                        memberRole === 'parent' ? 'bg-pink-500 border-pink-400' : 'bg-slate-800/80 border-slate-700/50'
                       )}
                     >
                       <ParentChildIcon size={16} color={memberRole === 'parent' ? 'white' : '#ec4899'} />
                       <Text
                         className={cn(
-                          'font-semibold text-sm mt-1',
+                          'font-semibold text-xs mt-1',
                           memberRole === 'parent' ? 'text-white' : 'text-slate-400'
                         )}
                       >
@@ -497,11 +589,6 @@ export default function CreateNewTeamScreen() {
                       </Text>
                     </Pressable>
                   </View>
-                  <Text className="text-slate-500 text-xs mt-2">
-                    {(isCoach || isParent)
-                      ? 'Coaches and parents don\'t need jersey numbers'
-                      : 'Select your role on the team'}
-                  </Text>
                 </View>
 
                 {/* Jersey Number - Only shown for players/reserves */}
@@ -509,7 +596,7 @@ export default function CreateNewTeamScreen() {
                   <View className="mb-4">
                     <Text className="text-slate-400 text-sm mb-2">Jersey Number <Text className="text-red-400">*</Text></Text>
                     <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
-                      <Text className="text-slate-500 text-lg mr-2">#</Text>
+                      <Hash size={20} color="#64748b" />
                       <TextInput
                         value={jerseyNumber}
                         onChangeText={setJerseyNumber}
@@ -517,8 +604,41 @@ export default function CreateNewTeamScreen() {
                         placeholderTextColor="#64748b"
                         keyboardType="number-pad"
                         maxLength={3}
-                        className="flex-1 py-4 px-1 text-white text-base"
+                        className="flex-1 py-4 px-3 text-white text-base"
                       />
+                    </View>
+                  </View>
+                )}
+
+                {/* Position - Only shown for players/reserves after sport is selected */}
+                {!isCoach && !isParent && sport && (
+                  <View className="mb-4">
+                    <Text className="text-slate-400 text-sm mb-2">Position <Text className="text-red-400">*</Text></Text>
+                    <View className="flex-row flex-wrap">
+                      {SPORT_POSITIONS[sport].map((pos) => (
+                        <Pressable
+                          key={pos}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setPosition(pos);
+                          }}
+                          className={cn(
+                            'py-2 px-3 rounded-lg mr-2 mb-2 border',
+                            position === pos
+                              ? 'bg-cyan-500/25 border-cyan-400'
+                              : 'bg-slate-800/60 border-slate-700/50'
+                          )}
+                        >
+                          <Text
+                            className={cn(
+                              'text-sm font-semibold',
+                              position === pos ? 'text-cyan-300' : 'text-slate-400'
+                            )}
+                          >
+                            {pos}
+                          </Text>
+                        </Pressable>
+                      ))}
                     </View>
                   </View>
                 )}

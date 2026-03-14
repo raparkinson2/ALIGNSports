@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { ChevronLeft, User, Mail, Lock, Users, Check, Palette, X, Camera, ImageIcon, Phone, Hash, Edit3, UserCog, UserMinus, Heart } from 'lucide-react-native';
+import { ChevronLeft, User, Mail, Lock, Users, Check, Palette, X, Camera, ImageIcon, Phone, Hash, Edit3, UserCog, UserMinus } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -130,6 +130,7 @@ export default function CreateTeamScreen() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [jerseyNumber, setJerseyNumber] = useState('');
+  const [position, setPosition] = useState('');
   const [memberRole, setMemberRole] = useState<'player' | 'reserve' | 'coach' | 'parent'>('player');
   const isCoach = memberRole === 'coach';
   const isParent = memberRole === 'parent';
@@ -166,6 +167,9 @@ export default function CreateTeamScreen() {
       setConfirmPassword(formStore.confirmPassword);
       setTeamNameInput(formStore.teamNameInput);
       setSport(formStore.sport);
+      if (formStore.sport && formStore.memberRole !== 'coach' && formStore.memberRole !== 'parent') {
+        setPosition(SPORT_POSITIONS[formStore.sport][0]);
+      }
       setJerseyColors(formStore.jerseyColors);
       setAvatar(formStore.avatar);
       setTeamLogo(formStore.teamLogo);
@@ -471,6 +475,11 @@ export default function CreateTeamScreen() {
     setError('');
 
     if (step === 1) {
+      // Require sport for player/reserve
+      if ((memberRole === 'player' || memberRole === 'reserve') && !sport) {
+        setError('Please select a sport');
+        return;
+      }
       if (!name.trim()) {
         setError('Please enter your name');
         return;
@@ -511,6 +520,11 @@ export default function CreateTeamScreen() {
       // Require jersey number for player/reserve
       if ((memberRole === 'player' || memberRole === 'reserve') && !jerseyNumber.trim()) {
         setError('Please enter your jersey number');
+        return;
+      }
+      // Require position for player/reserve
+      if ((memberRole === 'player' || memberRole === 'reserve') && !position) {
+        setError('Please select your position');
         return;
       }
       // Check if email is already in use across all teams (local check)
@@ -636,7 +650,7 @@ export default function CreateTeamScreen() {
         password: hashedPassword,
         phone: phone ? unformatPhone(phone) : undefined,
         number: isCoach ? '' : (jerseyNumber.trim() || '1'),
-        position: isCoach ? 'Coach' : SPORT_POSITIONS[sport][0],
+        position: isCoach ? 'Coach' : isParent ? 'Parent' : (position || (sport ? SPORT_POSITIONS[sport][0] : 'P')),
         roles,
         status: memberRole === 'reserve' ? 'reserve' : 'active',
         ...(avatar && { avatar }),
@@ -758,7 +772,7 @@ export default function CreateTeamScreen() {
             {/* Step 1: Personal Info */}
             {step === 1 && (
               <Animated.View entering={FadeInDown.delay(150).springify()}>
-                <View className="items-center mb-8">
+                <View className="items-center mb-6">
                   {/* Tappable Avatar */}
                   <Pressable
                     onPress={handlePickImage}
@@ -796,6 +810,49 @@ export default function CreateTeamScreen() {
                   )}
                 </View>
 
+                {/* Sport Selection - Required for player/reserve */}
+                <View className="mb-4">
+                  <Text className="text-slate-300 text-sm mb-2">
+                    Sport {(memberRole === 'player' || memberRole === 'reserve') && <Text className="text-red-400">*</Text>}
+                  </Text>
+                  <View className="flex-row flex-wrap justify-between">
+                    {(Object.keys(SPORT_NAMES) as Sport[]).map((s) => (
+                      <Pressable
+                        key={s}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setSport(s);
+                          // Reset position when sport changes
+                          setPosition(SPORT_POSITIONS[s][0]);
+                        }}
+                        className={cn(
+                          'w-[31%] items-center py-3 rounded-xl mb-2 border',
+                          sport === s
+                            ? 'bg-cyan-500/25 border-cyan-400'
+                            : 'bg-slate-800/60 border-slate-700/50'
+                        )}
+                        style={sport === s ? {
+                          shadowColor: '#22d3ee',
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.3,
+                          shadowRadius: 4,
+                          elevation: 3,
+                        } : undefined}
+                      >
+                        <SportIcon sport={s} color={sport === s ? '#67e8f9' : '#475569'} size={22} />
+                        <Text
+                          className={cn(
+                            'text-xs font-semibold mt-1.5',
+                            sport === s ? 'text-cyan-300' : 'text-slate-500'
+                          )}
+                        >
+                          {SPORT_NAMES[s]}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+
                 <View className="mb-4">
                   <Text className="text-slate-300 text-sm mb-2">Your Name <Text className="text-red-400">*</Text></Text>
                   <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-600/60 px-4">
@@ -823,7 +880,6 @@ export default function CreateTeamScreen() {
                       value={email}
                       onChangeText={(text) => {
                         setEmail(text);
-                        // Clear error when typing
                         if (emailError) setEmailError('');
                       }}
                       onBlur={() => validateEmail(email)}
@@ -855,7 +911,6 @@ export default function CreateTeamScreen() {
                       value={phone}
                       onChangeText={(text) => {
                         setPhone(formatPhoneInput(text));
-                        // Clear error when typing
                         if (phoneError) setPhoneError('');
                       }}
                       onBlur={() => validatePhone(phone)}
@@ -874,26 +929,25 @@ export default function CreateTeamScreen() {
                   ) : null}
                 </View>
 
-                {/* Role Selector - 2x2 Grid */}
+                {/* Role Selector - Single horizontal row */}
                 <View className="mb-4">
                   <Text className="text-slate-300 text-sm mb-2">Your Role</Text>
-                  {/* Row 1: Player & Reserve */}
-                  <View className="flex-row mb-2">
-                    {/* Player (Active) */}
+                  <View className="flex-row">
+                    {/* Player */}
                     <Pressable
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setMemberRole('player');
                       }}
                       className={cn(
-                        'flex-1 py-3.5 px-2 rounded-xl mr-2 items-center justify-center border',
+                        'flex-1 py-3 px-1 rounded-xl mr-1.5 items-center justify-center border',
                         memberRole === 'player' ? 'bg-green-500 border-green-400' : 'bg-slate-800/60 border-slate-700/50'
                       )}
                     >
-                      <User size={18} color={memberRole === 'player' ? 'white' : '#475569'} strokeWidth={2} />
+                      <User size={16} color={memberRole === 'player' ? 'white' : '#475569'} strokeWidth={2} />
                       <Text
                         className={cn(
-                          'font-semibold text-sm mt-1',
+                          'font-semibold text-xs mt-1',
                           memberRole === 'player' ? 'text-white' : 'text-slate-500'
                         )}
                       >
@@ -907,23 +961,20 @@ export default function CreateTeamScreen() {
                         setMemberRole('reserve');
                       }}
                       className={cn(
-                        'flex-1 py-3.5 px-2 rounded-xl items-center justify-center border',
+                        'flex-1 py-3 px-1 rounded-xl mr-1.5 items-center justify-center border',
                         memberRole === 'reserve' ? 'bg-slate-600 border-slate-500' : 'bg-slate-800/60 border-slate-700/50'
                       )}
                     >
-                      <UserMinus size={18} color={memberRole === 'reserve' ? 'white' : '#475569'} strokeWidth={2} />
+                      <UserMinus size={16} color={memberRole === 'reserve' ? 'white' : '#475569'} strokeWidth={2} />
                       <Text
                         className={cn(
-                          'font-semibold text-sm mt-1',
+                          'font-semibold text-xs mt-1',
                           memberRole === 'reserve' ? 'text-white' : 'text-slate-500'
                         )}
                       >
                         Reserve
                       </Text>
                     </Pressable>
-                  </View>
-                  {/* Row 2: Coach & Parent */}
-                  <View className="flex-row">
                     {/* Coach */}
                     <Pressable
                       onPress={() => {
@@ -931,14 +982,14 @@ export default function CreateTeamScreen() {
                         setMemberRole('coach');
                       }}
                       className={cn(
-                        'flex-1 py-3.5 px-2 rounded-xl mr-2 items-center justify-center border',
+                        'flex-1 py-3 px-1 rounded-xl mr-1.5 items-center justify-center border',
                         memberRole === 'coach' ? 'bg-cyan-500 border-cyan-400' : 'bg-slate-800/60 border-slate-700/50'
                       )}
                     >
-                      <UserCog size={18} color={memberRole === 'coach' ? 'white' : '#475569'} strokeWidth={2} />
+                      <UserCog size={16} color={memberRole === 'coach' ? 'white' : '#475569'} strokeWidth={2} />
                       <Text
                         className={cn(
-                          'font-semibold text-sm mt-1',
+                          'font-semibold text-xs mt-1',
                           memberRole === 'coach' ? 'text-white' : 'text-slate-500'
                         )}
                       >
@@ -952,14 +1003,14 @@ export default function CreateTeamScreen() {
                         setMemberRole('parent');
                       }}
                       className={cn(
-                        'flex-1 py-3.5 px-2 rounded-xl items-center justify-center border',
+                        'flex-1 py-3 px-1 rounded-xl items-center justify-center border',
                         memberRole === 'parent' ? 'bg-pink-500 border-pink-400' : 'bg-slate-800/60 border-slate-700/50'
                       )}
                     >
-                      <ParentChildIcon size={18} color={memberRole === 'parent' ? 'white' : '#475569'} />
+                      <ParentChildIcon size={16} color={memberRole === 'parent' ? 'white' : '#475569'} />
                       <Text
                         className={cn(
-                          'font-semibold text-sm mt-1',
+                          'font-semibold text-xs mt-1',
                           memberRole === 'parent' ? 'text-white' : 'text-slate-500'
                         )}
                       >
@@ -967,17 +1018,12 @@ export default function CreateTeamScreen() {
                       </Text>
                     </Pressable>
                   </View>
-                  <Text className="text-slate-500 text-xs mt-2">
-                    {isCoach
-                      ? 'Coaches don\'t need jersey numbers or positions'
-                      : 'Select your role on the team'}
-                  </Text>
                 </View>
 
                 {/* Jersey Number - Only shown for players/reserves */}
                 {(memberRole === 'player' || memberRole === 'reserve') && (
                   <View className="mb-4">
-                    <Text className="text-slate-400 text-sm mb-2">Jersey Number <Text className="text-red-400">*</Text></Text>
+                    <Text className="text-slate-300 text-sm mb-2">Jersey Number <Text className="text-red-400">*</Text></Text>
                     <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
                       <Hash size={20} color="#64748b" />
                       <TextInput
@@ -989,6 +1035,39 @@ export default function CreateTeamScreen() {
                         maxLength={3}
                         className="flex-1 py-4 px-3 text-white text-base"
                       />
+                    </View>
+                  </View>
+                )}
+
+                {/* Position - Only shown for players/reserves after sport is selected */}
+                {(memberRole === 'player' || memberRole === 'reserve') && sport && (
+                  <View className="mb-4">
+                    <Text className="text-slate-300 text-sm mb-2">Position <Text className="text-red-400">*</Text></Text>
+                    <View className="flex-row flex-wrap">
+                      {SPORT_POSITIONS[sport].map((pos) => (
+                        <Pressable
+                          key={pos}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setPosition(pos);
+                          }}
+                          className={cn(
+                            'py-2 px-3 rounded-lg mr-2 mb-2 border',
+                            position === pos
+                              ? 'bg-cyan-500/25 border-cyan-400'
+                              : 'bg-slate-800/60 border-slate-700/50'
+                          )}
+                        >
+                          <Text
+                            className={cn(
+                              'text-sm font-semibold',
+                              position === pos ? 'text-cyan-300' : 'text-slate-400'
+                            )}
+                          >
+                            {pos}
+                          </Text>
+                        </Pressable>
+                      ))}
                     </View>
                   </View>
                 )}
