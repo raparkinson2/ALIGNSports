@@ -1102,7 +1102,7 @@ export default function AdminScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
         >
-          {/* Type Selection - Above Team Identity */}
+          {/* Type Selection - commented out, sport is set at team creation and doesn't need to change
           <Animated.View entering={FadeInDown.delay(50).springify()}>
             <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">
               Type
@@ -1136,6 +1136,7 @@ export default function AdminScreen() {
               ))}
             </ScrollView>
           </Animated.View>
+          */}
 
           {/* Team Identity Section */}
           <Animated.View entering={FadeInDown.delay(100).springify()}>
