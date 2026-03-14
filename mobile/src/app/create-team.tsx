@@ -483,6 +483,15 @@ export default function CreateTeamScreen() {
         setError('Please enter a valid email');
         return;
       }
+      if (!phone.trim()) {
+        setError('Please enter your phone number');
+        return;
+      }
+      const phoneDigits = phone.replace(/\D/g, '');
+      if (phoneDigits.length < 10) {
+        setError('Please enter a valid phone number');
+        return;
+      }
       // Check if there are real-time validation errors
       if (emailError) {
         setError(emailError);
@@ -497,6 +506,11 @@ export default function CreateTeamScreen() {
       // Check if still validating
       if (isValidatingEmail || isValidatingPhone) {
         setError('Please wait while we verify your information');
+        return;
+      }
+      // Require jersey number for player/reserve
+      if ((memberRole === 'player' || memberRole === 'reserve') && !jerseyNumber.trim()) {
+        setError('Please enter your jersey number');
         return;
       }
       // Check if email is already in use across all teams (local check)
@@ -783,7 +797,7 @@ export default function CreateTeamScreen() {
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-slate-300 text-sm mb-2">Your Name</Text>
+                  <Text className="text-slate-300 text-sm mb-2">Your Name <Text className="text-red-400">*</Text></Text>
                   <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-600/60 px-4">
                     <User size={20} color="#94a3b8" />
                     <TextInput
@@ -799,7 +813,7 @@ export default function CreateTeamScreen() {
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-slate-300 text-sm mb-2">Email Address</Text>
+                  <Text className="text-slate-300 text-sm mb-2">Email Address <Text className="text-red-400">*</Text></Text>
                   <View className={cn(
                     "flex-row items-center bg-slate-800/80 rounded-xl border px-4",
                     emailError ? "border-red-500/70" : "border-slate-600/60"
@@ -831,7 +845,7 @@ export default function CreateTeamScreen() {
                 </View>
 
                 <View className="mb-4">
-                  <Text className="text-slate-300 text-sm mb-2">Phone Number</Text>
+                  <Text className="text-slate-300 text-sm mb-2">Phone Number <Text className="text-red-400">*</Text></Text>
                   <View className={cn(
                     "flex-row items-center bg-slate-800/80 rounded-xl border px-4",
                     phoneError ? "border-red-500/70" : "border-slate-600/60"
@@ -960,10 +974,10 @@ export default function CreateTeamScreen() {
                   </Text>
                 </View>
 
-                {/* Jersey Number - Only shown for players */}
-                {!isCoach && (
+                {/* Jersey Number - Only shown for players/reserves */}
+                {(memberRole === 'player' || memberRole === 'reserve') && (
                   <View className="mb-4">
-                    <Text className="text-slate-400 text-sm mb-2">Jersey Number</Text>
+                    <Text className="text-slate-400 text-sm mb-2">Jersey Number <Text className="text-red-400">*</Text></Text>
                     <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
                       <Hash size={20} color="#64748b" />
                       <TextInput

@@ -101,6 +101,10 @@ export default function CreateNewTeamScreen() {
         setError('Please select a sport');
         return;
       }
+      if (!isCoach && !isParent && !jerseyNumber.trim()) {
+        setError('Please enter your jersey number');
+        return;
+      }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setStep(2);
     } else if (step === 2) {
@@ -503,7 +507,7 @@ export default function CreateNewTeamScreen() {
                 {/* Jersey Number - Only shown for players/reserves */}
                 {!isCoach && !isParent && (
                   <View className="mb-4">
-                    <Text className="text-slate-400 text-sm mb-2">Jersey Number</Text>
+                    <Text className="text-slate-400 text-sm mb-2">Jersey Number <Text className="text-red-400">*</Text></Text>
                     <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
                       <Text className="text-slate-500 text-lg mr-2">#</Text>
                       <TextInput
