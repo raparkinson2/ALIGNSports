@@ -1360,8 +1360,28 @@ export default function MoreScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Messages */}
+          {/* Notification Settings */}
           <Animated.View entering={FadeInDown.delay(112).springify()}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setNotifPrefsVisible(true);
+              }}
+              className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
+            >
+              <View className="w-10 h-10 rounded-full items-center justify-center bg-cyan-500/20">
+                <BellRing size={20} color="#67e8f9" />
+              </View>
+              <View className="flex-1 ml-3">
+                <Text className="font-semibold text-white">Notification Settings</Text>
+                <Text className="text-slate-400 text-sm">Manage push notification preferences</Text>
+              </View>
+              <ChevronRight size={20} color="#64748b" />
+            </Pressable>
+          </Animated.View>
+
+          {/* Messages */}
+          <Animated.View entering={FadeInDown.delay(125).springify()}>
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1382,26 +1402,6 @@ export default function MoreScreen() {
                 <Text className="text-slate-400 text-sm">
                   {unreadMessagesCount > 0 ? `${unreadMessagesCount} unread` : 'Direct messages from your team'}
                 </Text>
-              </View>
-              <ChevronRight size={20} color="#64748b" />
-            </Pressable>
-          </Animated.View>
-
-          {/* Notification Settings */}
-          <Animated.View entering={FadeInDown.delay(125).springify()}>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setNotifPrefsVisible(true);
-              }}
-              className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
-            >
-              <View className="w-10 h-10 rounded-full items-center justify-center bg-cyan-500/20">
-                <BellRing size={20} color="#67e8f9" />
-              </View>
-              <View className="flex-1 ml-3">
-                <Text className="font-semibold text-white">Notification Settings</Text>
-                <Text className="text-slate-400 text-sm">Manage push notification preferences</Text>
               </View>
               <ChevronRight size={20} color="#64748b" />
             </Pressable>
