@@ -1148,38 +1148,6 @@ export default function CreateTeamScreen() {
                   )}
                 </View>
 
-                <View className="mb-4">
-                  <Text className="text-slate-300 text-sm mb-2">Sport</Text>
-                  <View className="flex-row gap-1.5">
-                    {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => SPORT_NAMES[a].localeCompare(SPORT_NAMES[b])).map((s) => (
-                      <Pressable
-                        key={s}
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          setSport(s);
-                        }}
-                        className={cn(
-                          'flex-1 items-center py-2 rounded-xl border',
-                          sport === s
-                            ? 'bg-cyan-500/20 border-cyan-400'
-                            : 'bg-slate-800/50 border-slate-700/40'
-                        )}
-                      >
-                        <Text
-                          className={cn(
-                            'text-sm font-medium',
-                            sport === s ? 'text-cyan-300' : 'text-slate-400'
-                          )}
-                          numberOfLines={1}
-                          adjustsFontSizeToFit
-                          minimumFontScale={0.7}
-                        >
-                          {SPORT_NAMES[s]}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
               </Animated.View>
             )}
 
