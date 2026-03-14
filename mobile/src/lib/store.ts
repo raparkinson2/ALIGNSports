@@ -567,6 +567,19 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+// Direct message type (admin broadcasts to selected players)
+export interface DirectMessage {
+  id: string;
+  teamId: string;
+  senderId: string;
+  senderName: string;
+  recipientIds: string[]; // player IDs who received this
+  subject: string;
+  body: string;
+  createdAt: string;
+  readBy: string[]; // player IDs who have read it
+}
+
 // Payment tracking types
 export type PaymentApp = 'venmo' | 'paypal' | 'zelle' | 'cashapp' | 'applepay';
 
@@ -810,6 +823,12 @@ interface TeamStore {
   chatLastReadAt: Record<string, string>; // playerId -> ISO timestamp
   markChatAsRead: (playerId: string) => void;
   getUnreadChatCount: (playerId: string) => number;
+
+  // Direct Messages
+  directMessages: DirectMessage[];
+  addDirectMessage: (message: DirectMessage) => void;
+  markDirectMessageRead: (messageId: string, playerId: string) => void;
+  getUnreadDirectMessageCount: (playerId: string) => number;
 
   // Payments
   paymentPeriods: PaymentPeriod[];
@@ -1573,12 +1592,29 @@ export const useTeamStore = create<TeamStore>()(
         const state = get();
         const lastReadAt = state.chatLastReadAt[playerId];
         if (!lastReadAt) {
-          // No read timestamp — don't count old messages as unread
           return 0;
         }
-        // Count messages from others after last read time
         return state.chatMessages.filter(
           (m) => m.senderId !== playerId && new Date(m.createdAt) > new Date(lastReadAt)
+        ).length;
+      },
+
+      // Direct Messages
+      directMessages: [],
+      addDirectMessage: (message) => set((state) => ({
+        directMessages: [message, ...state.directMessages],
+      })),
+      markDirectMessageRead: (messageId, playerId) => set((state) => ({
+        directMessages: state.directMessages.map((m) =>
+          m.id === messageId && !m.readBy.includes(playerId)
+            ? { ...m, readBy: [...m.readBy, playerId] }
+            : m
+        ),
+      })),
+      getUnreadDirectMessageCount: (playerId) => {
+        const state = get();
+        return state.directMessages.filter(
+          (m) => m.recipientIds.includes(playerId) && !m.readBy.includes(playerId)
         ).length;
       },
 

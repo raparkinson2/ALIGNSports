@@ -380,6 +380,10 @@ function AuthNavigator() {
           else if (data?.type === 'poll' && data?.pollGroupId) {
             router.push(`/polls?openPoll=${data.pollGroupId}`);
           }
+          // Navigate to messages if it's a direct message notification
+          else if (data?.type === 'direct_message' && data?.messageId) {
+            router.push(`/messages?openMessageId=${data.messageId}`);
+          }
         }
       }, 100);
     });
@@ -450,6 +454,13 @@ function AuthNavigator() {
       />
       <Stack.Screen
         name="notifications"
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen
+        name="messages"
         options={{
           headerShown: false,
           presentation: 'card',
