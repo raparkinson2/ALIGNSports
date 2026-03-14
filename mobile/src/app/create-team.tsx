@@ -920,89 +920,36 @@ export default function CreateTeamScreen() {
 
                 {/* Role Selector - Single horizontal row */}
                 <View className="mb-3">
-                  <Text className="text-slate-400 text-xs mb-1.5">Your Role</Text>
-                  <View className="flex-row">
-                    {/* Player */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setMemberRole('player');
-                      }}
-                      className={cn(
-                        'flex-1 py-2 px-1 rounded-lg mr-1 items-center justify-center border',
-                        memberRole === 'player' ? 'bg-green-500/20 border-green-400/60' : 'bg-slate-800/50 border-slate-700/40'
-                      )}
-                    >
-                      <Text
+                  <Text className="text-slate-300 text-sm mb-2">Your Role</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                    {([
+                      { role: 'player', label: 'Player', active: 'bg-cyan-500/20 border-cyan-400', text: 'text-cyan-300' },
+                      { role: 'reserve', label: 'Reserve', active: 'bg-cyan-500/20 border-cyan-400', text: 'text-cyan-300' },
+                      { role: 'coach', label: 'Coach', active: 'bg-cyan-500/20 border-cyan-400', text: 'text-cyan-300' },
+                      { role: 'parent', label: 'Parent', active: 'bg-cyan-500/20 border-cyan-400', text: 'text-cyan-300' },
+                    ] as { role: 'player' | 'reserve' | 'coach' | 'parent'; label: string; active: string; text: string }[]).map(({ role, label, active, text }) => (
+                      <Pressable
+                        key={role}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setMemberRole(role);
+                        }}
                         className={cn(
-                          'font-medium text-xs',
-                          memberRole === 'player' ? 'text-green-300' : 'text-slate-500'
+                          'py-2 px-4 rounded-xl border',
+                          memberRole === role ? active : 'bg-slate-800/50 border-slate-700/40'
                         )}
                       >
-                        Player
-                      </Text>
-                    </Pressable>
-                    {/* Reserve */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setMemberRole('reserve');
-                      }}
-                      className={cn(
-                        'flex-1 py-2 px-1 rounded-lg mr-1 items-center justify-center border',
-                        memberRole === 'reserve' ? 'bg-slate-600/40 border-slate-500/60' : 'bg-slate-800/50 border-slate-700/40'
-                      )}
-                    >
-                      <Text
-                        className={cn(
-                          'font-medium text-xs',
-                          memberRole === 'reserve' ? 'text-slate-200' : 'text-slate-500'
-                        )}
-                      >
-                        Reserve
-                      </Text>
-                    </Pressable>
-                    {/* Coach */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setMemberRole('coach');
-                      }}
-                      className={cn(
-                        'flex-1 py-2 px-1 rounded-lg mr-1 items-center justify-center border',
-                        memberRole === 'coach' ? 'bg-cyan-500/20 border-cyan-400/60' : 'bg-slate-800/50 border-slate-700/40'
-                      )}
-                    >
-                      <Text
-                        className={cn(
-                          'font-medium text-xs',
-                          memberRole === 'coach' ? 'text-cyan-300' : 'text-slate-500'
-                        )}
-                      >
-                        Coach
-                      </Text>
-                    </Pressable>
-                    {/* Parent */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setMemberRole('parent');
-                      }}
-                      className={cn(
-                        'flex-1 py-2 px-1 rounded-lg items-center justify-center border',
-                        memberRole === 'parent' ? 'bg-pink-500/20 border-pink-400/60' : 'bg-slate-800/50 border-slate-700/40'
-                      )}
-                    >
-                      <Text
-                        className={cn(
-                          'font-medium text-xs',
-                          memberRole === 'parent' ? 'text-pink-300' : 'text-slate-500'
-                        )}
-                      >
-                        Parent
-                      </Text>
-                    </Pressable>
-                  </View>
+                        <Text
+                          className={cn(
+                            'text-sm font-medium',
+                            memberRole === role ? text : 'text-slate-400'
+                          )}
+                        >
+                          {label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
                 </View>
 
                 {/* Jersey Number - Only shown for players/reserves */}
