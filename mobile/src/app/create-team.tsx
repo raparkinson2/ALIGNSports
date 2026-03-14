@@ -815,7 +815,7 @@ export default function CreateTeamScreen() {
                   <Text className="text-slate-300 text-sm mb-2">
                     Sport {(memberRole === 'player' || memberRole === 'reserve') && <Text className="text-red-400">*</Text>}
                   </Text>
-                  <View className="flex-row flex-wrap justify-between">
+                  <View className="flex-row flex-wrap">
                     {(Object.keys(SPORT_NAMES) as Sport[]).map((s) => (
                       <Pressable
                         key={s}
@@ -826,24 +826,16 @@ export default function CreateTeamScreen() {
                           setPosition(SPORT_POSITIONS[s][0]);
                         }}
                         className={cn(
-                          'w-[31%] items-center py-3 rounded-xl mb-2 border',
+                          'py-1.5 px-3 rounded-lg mr-2 mb-2 border',
                           sport === s
-                            ? 'bg-cyan-500/25 border-cyan-400'
-                            : 'bg-slate-800/60 border-slate-700/50'
+                            ? 'bg-cyan-500/20 border-cyan-400'
+                            : 'bg-slate-800/50 border-slate-700/40'
                         )}
-                        style={sport === s ? {
-                          shadowColor: '#22d3ee',
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.3,
-                          shadowRadius: 4,
-                          elevation: 3,
-                        } : undefined}
                       >
-                        <SportIcon sport={s} color={sport === s ? '#67e8f9' : '#475569'} size={22} />
                         <Text
                           className={cn(
-                            'text-xs font-semibold mt-1.5',
-                            sport === s ? 'text-cyan-300' : 'text-slate-500'
+                            'text-sm font-medium',
+                            sport === s ? 'text-cyan-300' : 'text-slate-400'
                           )}
                         >
                           {SPORT_NAMES[s]}
@@ -853,29 +845,28 @@ export default function CreateTeamScreen() {
                   </View>
                 </View>
 
-                <View className="mb-4">
-                  <Text className="text-slate-300 text-sm mb-2">Your Name <Text className="text-red-400">*</Text></Text>
-                  <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-600/60 px-4">
-                    <User size={20} color="#94a3b8" />
+                <View className="mb-3">
+                  <Text className="text-slate-400 text-xs mb-1.5">Your Name <Text className="text-red-400">*</Text></Text>
+                  <View className="flex-row items-center bg-slate-800/60 rounded-lg border border-slate-700/40 px-3">
+                    <User size={16} color="#64748b" />
                     <TextInput
                       value={name}
                       onChangeText={setName}
                       placeholder="Full name"
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor="#64748b"
                       autoCapitalize="words"
-                      className="flex-1 py-4 px-3 text-white text-base"
-                      style={{ minHeight: 52 }}
+                      className="flex-1 py-3 px-2.5 text-white text-sm"
                     />
                   </View>
                 </View>
 
-                <View className="mb-4">
-                  <Text className="text-slate-300 text-sm mb-2">Email Address <Text className="text-red-400">*</Text></Text>
+                <View className="mb-3">
+                  <Text className="text-slate-400 text-xs mb-1.5">Email Address <Text className="text-red-400">*</Text></Text>
                   <View className={cn(
-                    "flex-row items-center bg-slate-800/80 rounded-xl border px-4",
-                    emailError ? "border-red-500/70" : "border-slate-600/60"
+                    "flex-row items-center bg-slate-800/60 rounded-lg border px-3",
+                    emailError ? "border-red-500/70" : "border-slate-700/40"
                   )}>
-                    <Mail size={20} color={emailError ? "#ef4444" : "#94a3b8"} />
+                    <Mail size={16} color={emailError ? "#ef4444" : "#64748b"} />
                     <TextInput
                       value={email}
                       onChangeText={(text) => {
@@ -884,29 +875,28 @@ export default function CreateTeamScreen() {
                       }}
                       onBlur={() => validateEmail(email)}
                       placeholder="your@email.com"
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor="#64748b"
                       keyboardType="email-address"
                       autoCapitalize="none"
                       autoCorrect={false}
-                      className="flex-1 py-4 px-3 text-white text-base"
-                      style={{ minHeight: 52 }}
+                      className="flex-1 py-3 px-2.5 text-white text-sm"
                     />
                     {isValidatingEmail && (
                       <Text className="text-cyan-400 text-xs">Checking...</Text>
                     )}
                   </View>
                   {emailError ? (
-                    <Text className="text-red-400 text-sm mt-2">{emailError}</Text>
+                    <Text className="text-red-400 text-xs mt-1">{emailError}</Text>
                   ) : null}
                 </View>
 
-                <View className="mb-4">
-                  <Text className="text-slate-300 text-sm mb-2">Phone Number <Text className="text-red-400">*</Text></Text>
+                <View className="mb-3">
+                  <Text className="text-slate-400 text-xs mb-1.5">Phone Number <Text className="text-red-400">*</Text></Text>
                   <View className={cn(
-                    "flex-row items-center bg-slate-800/80 rounded-xl border px-4",
-                    phoneError ? "border-red-500/70" : "border-slate-600/60"
+                    "flex-row items-center bg-slate-800/60 rounded-lg border px-3",
+                    phoneError ? "border-red-500/70" : "border-slate-700/40"
                   )}>
-                    <Phone size={20} color={phoneError ? "#ef4444" : "#94a3b8"} />
+                    <Phone size={16} color={phoneError ? "#ef4444" : "#64748b"} />
                     <TextInput
                       value={phone}
                       onChangeText={(text) => {
@@ -915,23 +905,22 @@ export default function CreateTeamScreen() {
                       }}
                       onBlur={() => validatePhone(phone)}
                       placeholder="(555) 123-4567"
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor="#64748b"
                       keyboardType="phone-pad"
-                      className="flex-1 py-4 px-3 text-white text-base"
-                      style={{ minHeight: 52 }}
+                      className="flex-1 py-3 px-2.5 text-white text-sm"
                     />
                     {isValidatingPhone && (
                       <Text className="text-cyan-400 text-xs">Checking...</Text>
                     )}
                   </View>
                   {phoneError ? (
-                    <Text className="text-red-400 text-sm mt-2">{phoneError}</Text>
+                    <Text className="text-red-400 text-xs mt-1">{phoneError}</Text>
                   ) : null}
                 </View>
 
                 {/* Role Selector - Single horizontal row */}
-                <View className="mb-4">
-                  <Text className="text-slate-300 text-sm mb-2">Your Role</Text>
+                <View className="mb-3">
+                  <Text className="text-slate-400 text-xs mb-1.5">Your Role</Text>
                   <View className="flex-row">
                     {/* Player */}
                     <Pressable
@@ -940,15 +929,14 @@ export default function CreateTeamScreen() {
                         setMemberRole('player');
                       }}
                       className={cn(
-                        'flex-1 py-3 px-1 rounded-xl mr-1.5 items-center justify-center border',
-                        memberRole === 'player' ? 'bg-green-500 border-green-400' : 'bg-slate-800/60 border-slate-700/50'
+                        'flex-1 py-2 px-1 rounded-lg mr-1 items-center justify-center border',
+                        memberRole === 'player' ? 'bg-green-500/20 border-green-400/60' : 'bg-slate-800/50 border-slate-700/40'
                       )}
                     >
-                      <User size={16} color={memberRole === 'player' ? 'white' : '#475569'} strokeWidth={2} />
                       <Text
                         className={cn(
-                          'font-semibold text-xs mt-1',
-                          memberRole === 'player' ? 'text-white' : 'text-slate-500'
+                          'font-medium text-xs',
+                          memberRole === 'player' ? 'text-green-300' : 'text-slate-500'
                         )}
                       >
                         Player
@@ -961,15 +949,14 @@ export default function CreateTeamScreen() {
                         setMemberRole('reserve');
                       }}
                       className={cn(
-                        'flex-1 py-3 px-1 rounded-xl mr-1.5 items-center justify-center border',
-                        memberRole === 'reserve' ? 'bg-slate-600 border-slate-500' : 'bg-slate-800/60 border-slate-700/50'
+                        'flex-1 py-2 px-1 rounded-lg mr-1 items-center justify-center border',
+                        memberRole === 'reserve' ? 'bg-slate-600/40 border-slate-500/60' : 'bg-slate-800/50 border-slate-700/40'
                       )}
                     >
-                      <UserMinus size={16} color={memberRole === 'reserve' ? 'white' : '#475569'} strokeWidth={2} />
                       <Text
                         className={cn(
-                          'font-semibold text-xs mt-1',
-                          memberRole === 'reserve' ? 'text-white' : 'text-slate-500'
+                          'font-medium text-xs',
+                          memberRole === 'reserve' ? 'text-slate-200' : 'text-slate-500'
                         )}
                       >
                         Reserve
@@ -982,15 +969,14 @@ export default function CreateTeamScreen() {
                         setMemberRole('coach');
                       }}
                       className={cn(
-                        'flex-1 py-3 px-1 rounded-xl mr-1.5 items-center justify-center border',
-                        memberRole === 'coach' ? 'bg-cyan-500 border-cyan-400' : 'bg-slate-800/60 border-slate-700/50'
+                        'flex-1 py-2 px-1 rounded-lg mr-1 items-center justify-center border',
+                        memberRole === 'coach' ? 'bg-cyan-500/20 border-cyan-400/60' : 'bg-slate-800/50 border-slate-700/40'
                       )}
                     >
-                      <UserCog size={16} color={memberRole === 'coach' ? 'white' : '#475569'} strokeWidth={2} />
                       <Text
                         className={cn(
-                          'font-semibold text-xs mt-1',
-                          memberRole === 'coach' ? 'text-white' : 'text-slate-500'
+                          'font-medium text-xs',
+                          memberRole === 'coach' ? 'text-cyan-300' : 'text-slate-500'
                         )}
                       >
                         Coach
@@ -1003,15 +989,14 @@ export default function CreateTeamScreen() {
                         setMemberRole('parent');
                       }}
                       className={cn(
-                        'flex-1 py-3 px-1 rounded-xl items-center justify-center border',
-                        memberRole === 'parent' ? 'bg-pink-500 border-pink-400' : 'bg-slate-800/60 border-slate-700/50'
+                        'flex-1 py-2 px-1 rounded-lg items-center justify-center border',
+                        memberRole === 'parent' ? 'bg-pink-500/20 border-pink-400/60' : 'bg-slate-800/50 border-slate-700/40'
                       )}
                     >
-                      <ParentChildIcon size={16} color={memberRole === 'parent' ? 'white' : '#475569'} />
                       <Text
                         className={cn(
-                          'font-semibold text-xs mt-1',
-                          memberRole === 'parent' ? 'text-white' : 'text-slate-500'
+                          'font-medium text-xs',
+                          memberRole === 'parent' ? 'text-pink-300' : 'text-slate-500'
                         )}
                       >
                         Parent
@@ -1022,10 +1007,10 @@ export default function CreateTeamScreen() {
 
                 {/* Jersey Number - Only shown for players/reserves */}
                 {(memberRole === 'player' || memberRole === 'reserve') && (
-                  <View className="mb-4">
-                    <Text className="text-slate-300 text-sm mb-2">Jersey Number <Text className="text-red-400">*</Text></Text>
-                    <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
-                      <Hash size={20} color="#64748b" />
+                  <View className="mb-3">
+                    <Text className="text-slate-400 text-xs mb-1.5">Jersey Number <Text className="text-red-400">*</Text></Text>
+                    <View className="flex-row items-center bg-slate-800/60 rounded-lg border border-slate-700/40 px-3">
+                      <Hash size={16} color="#64748b" />
                       <TextInput
                         value={jerseyNumber}
                         onChangeText={setJerseyNumber}
@@ -1033,7 +1018,7 @@ export default function CreateTeamScreen() {
                         placeholderTextColor="#64748b"
                         keyboardType="number-pad"
                         maxLength={3}
-                        className="flex-1 py-4 px-3 text-white text-base"
+                        className="flex-1 py-3 px-2.5 text-white text-sm"
                       />
                     </View>
                   </View>
@@ -1041,8 +1026,8 @@ export default function CreateTeamScreen() {
 
                 {/* Position - Only shown for players/reserves after sport is selected */}
                 {(memberRole === 'player' || memberRole === 'reserve') && sport && (
-                  <View className="mb-4">
-                    <Text className="text-slate-300 text-sm mb-2">Position <Text className="text-red-400">*</Text></Text>
+                  <View className="mb-3">
+                    <Text className="text-slate-400 text-xs mb-1.5">Position <Text className="text-red-400">*</Text></Text>
                     <View className="flex-row flex-wrap">
                       {SPORT_POSITIONS[sport].map((pos) => (
                         <Pressable
@@ -1052,15 +1037,15 @@ export default function CreateTeamScreen() {
                             setPosition(pos);
                           }}
                           className={cn(
-                            'py-2 px-3 rounded-lg mr-2 mb-2 border',
+                            'py-1.5 px-3 rounded-lg mr-2 mb-2 border',
                             position === pos
-                              ? 'bg-cyan-500/25 border-cyan-400'
-                              : 'bg-slate-800/60 border-slate-700/50'
+                              ? 'bg-cyan-500/20 border-cyan-400/60'
+                              : 'bg-slate-800/50 border-slate-700/40'
                           )}
                         >
                           <Text
                             className={cn(
-                              'text-sm font-semibold',
+                              'text-sm font-medium',
                               position === pos ? 'text-cyan-300' : 'text-slate-400'
                             )}
                           >
