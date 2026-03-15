@@ -513,8 +513,8 @@ export default function RosterScreen() {
     setFirstName(player.firstName);
     setLastName(player.lastName);
     setNumber(player.number);
-    // Filter out 'Coach' from positions - keep empty if coach
-    const playerPositions = getPlayerPositions(player).filter(p => p && p !== 'Coach');
+    // Filter out 'Coach' and 'Parent' from positions - keep empty if coach or parent
+    const playerPositions = getPlayerPositions(player).filter(p => p && p !== 'Coach' && p !== 'Parent');
     setSelectedPositions(playerPositions);
     setPhone(formatPhoneNumber(player.phone));
     setEmail(player.email || '');
@@ -607,12 +607,14 @@ export default function RosterScreen() {
     const effectiveStatus: PlayerStatus = memberRole === 'reserve' ? 'reserve' : 'active';
 
     if (editingPlayer) {
+      // Strip role-specific positions from selectedPositions when not that role
+      const cleanPositions = selectedPositions.filter(p => p !== 'Coach' && p !== 'Parent');
       const updates: Partial<Player> = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         number: (isCoachRole || isParentRole) ? '' : number.trim(),
-        position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : (selectedPositions[0] || '')),
-        positions: isCoachRole ? ['Coach'] : (isParentRole ? ['Parent'] : [...selectedPositions]),
+        position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : (cleanPositions[0] || '')),
+        positions: isCoachRole ? ['Coach'] : (isParentRole ? ['Parent'] : [...cleanPositions]),
         phone: rawPhone || undefined,
         email: rawEmail || undefined,
         associatedPlayerId: isParentRole ? (associatedPlayerId || undefined) : undefined,
@@ -639,13 +641,14 @@ export default function RosterScreen() {
       setIsModalVisible(false);
       resetForm();
     } else {
+      const cleanNewPositions = selectedPositions.filter(p => p !== 'Coach' && p !== 'Parent');
       const newPlayer: Player = {
         id: Date.now().toString(),
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         number: (isCoachRole || isParentRole) ? '' : number.trim(),
-        position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : selectedPositions[0]),
-        positions: isCoachRole ? ['Coach'] : (isParentRole ? ['Parent'] : selectedPositions),
+        position: isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : cleanNewPositions[0]),
+        positions: isCoachRole ? ['Coach'] : (isParentRole ? ['Parent'] : cleanNewPositions),
         phone: rawPhone || undefined,
         email: rawEmail || undefined,
         roles: isAdmin() ? roles : [],
