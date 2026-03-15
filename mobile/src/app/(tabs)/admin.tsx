@@ -1601,7 +1601,7 @@ export default function AdminScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push('/stripe-setup');
                 }}
-                className="bg-slate-800/60 rounded-2xl p-4 mb-4 border border-slate-700/30 ml-4 active:bg-slate-700/60"
+                className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center flex-1">
