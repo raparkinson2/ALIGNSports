@@ -1103,7 +1103,7 @@ export default function MorePage() {
 
   const currentPlayer = players.find(p => p.id === currentPlayerId) ?? null;
   const [tab, setTab] = useState<Tab>('home');
-  const [showEmailTeam, setShowEmailTeam] = useState(false);
+  const [showEmailTeam, _setShowEmailTeam] = useState(false); // kept for future use
 
   const otherTeams = useMemo(() => teams.filter(t => t.id !== activeTeamId), [teams, activeTeamId]);
   const unreadCount = notifications.filter(n => n.toPlayerId === currentPlayerId && !n.read).length;
@@ -1175,8 +1175,7 @@ export default function MorePage() {
       <SectionCard title="Communication &amp; Alerts">
         <MenuItem icon={Bell} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Notifications" sub="Game invites &amp; reminders" badge={unreadCount} onClick={() => setTab('notif-view')} />
         <MenuItem icon={BellRing} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Notification Settings" sub="Manage push notification preferences" onClick={() => setTab('notifications')} />
-        <MenuItem icon={MessageSquare} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Messages" sub="Direct messages from your team" onClick={() => router.push('/app/messages')} />
-        <MenuItem icon={Mail} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Email Team" sub="Send an email to all players" onClick={() => setShowEmailTeam(true)} last />
+        <MenuItem icon={MessageSquare} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Messages" sub="Direct messages from your team" onClick={() => router.push('/app/messages')} last />
       </SectionCard>
 
       {/* SUPPORT section */}
@@ -1198,8 +1197,6 @@ export default function MorePage() {
       </div>
 
       <p className="text-center text-xs text-slate-700 pb-6">AlignApps © {new Date().getFullYear()}</p>
-
-      <EmailTeamModal isOpen={showEmailTeam} onClose={() => setShowEmailTeam(false)} players={players} teamName={teamName} />
     </div>
   );
 }

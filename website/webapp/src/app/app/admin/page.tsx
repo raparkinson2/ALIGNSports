@@ -10,7 +10,7 @@ import AddEditPlayerModal from '@/components/admin/AddEditPlayerModal';
 import TeamSettingsForm from '@/components/admin/TeamSettingsForm';
 import Avatar from '@/components/ui/Avatar';
 import type { Player } from '@/lib/types';
-import { getPlayerName } from '@/lib/types';
+import { getPlayerName, isCoachOrParent } from '@/lib/types';
 import Modal from '@/components/ui/Modal';
 
 type AdminTab = 'players' | 'settings' | 'season';
@@ -147,7 +147,7 @@ export default function AdminPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-100 truncate">
                     {getPlayerName(player)}
-                    {player.number && <span className="ml-1 text-slate-500">#{player.number}</span>}
+                    {player.number && !isCoachOrParent(player) && <span className="ml-1 text-slate-500">#{player.number}</span>}
                   </p>
                   <div className="flex gap-1.5 flex-wrap mt-0.5">
                     <span className={cn(

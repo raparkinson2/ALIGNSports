@@ -9,6 +9,7 @@ import { generateId, cn } from '@/lib/utils';
 import PaymentPeriodCard from '@/components/payments/PaymentPeriodCard';
 import Modal from '@/components/ui/Modal';
 import type { PaymentPeriod, PaymentPeriodType, PaymentApp, PaymentMethod } from '@/lib/types';
+import { isCoachOrParent } from '@/lib/types';
 
 const PERIOD_TYPES: { value: PaymentPeriodType; label: string }[] = [
   { value: 'league_dues', label: 'League Dues' },
@@ -66,7 +67,7 @@ export default function PaymentsPage() {
   const [stripeError, setStripeError] = useState<string | null>(null);
   const [stripeDisclosureVisible, setStripeDisclosureVisible] = useState(false);
 
-  const activePlayers = players.filter((p) => p.status === 'active');
+  const activePlayers = players.filter((p) => p.status === 'active' && !isCoachOrParent(p));
   const paymentMethods = teamSettings.paymentMethods ?? [];
 
   const totalOwed = paymentPeriods.reduce((sum, period) => {

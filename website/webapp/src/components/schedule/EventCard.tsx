@@ -6,6 +6,7 @@ import { cn, getDateLabel, formatTime, EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } fr
 import { pushEventToSupabase, pushEventResponseToSupabase } from '@/lib/realtime-sync';
 import { useTeamStore } from '@/lib/store';
 import type { Event, Player, AppNotification } from '@/lib/types';
+import { isCoachOrParent } from '@/lib/types';
 
 interface EventCardProps {
   event: Event;
@@ -45,10 +46,10 @@ export default function EventCard({
 
   const rsvpLabel = event.type === 'practice' ? 'Check In' : 'RSVPs';
 
-  // RSVP data
-  const invitedPlayers = players.filter((p) => (event.invitedPlayers ?? []).includes(p.id));
-  const confirmedPlayers = players.filter((p) => (event.confirmedPlayers ?? []).includes(p.id));
-  const declinedPlayers = players.filter((p) => (event.declinedPlayers ?? []).includes(p.id));
+  // RSVP data — exclude coaches/parents from RSVP lists
+  const invitedPlayers = players.filter((p) => (event.invitedPlayers ?? []).includes(p.id) && !isCoachOrParent(p));
+  const confirmedPlayers = players.filter((p) => (event.confirmedPlayers ?? []).includes(p.id) && !isCoachOrParent(p));
+  const declinedPlayers = players.filter((p) => (event.declinedPlayers ?? []).includes(p.id) && !isCoachOrParent(p));
   const confirmedCount = confirmedPlayers.length;
   const declinedCount = declinedPlayers.length;
   const pendingInvited = invitedPlayers.filter(
@@ -59,7 +60,8 @@ export default function EventCard({
   const sortedPlayers = [...confirmedPlayers, ...pendingInvited, ...declinedPlayers];
   const visiblePlayers = showAllPlayers ? sortedPlayers : sortedPlayers.slice(0, PLAYER_PREVIEW_COUNT);
 
-  const uninvitedPlayers = players.filter((p) => !(event.invitedPlayers ?? []).includes(p.id));
+  // Uninvited players — exclude coaches/parents from invite list
+  const uninvitedPlayers = players.filter((p) => !(event.invitedPlayers ?? []).includes(p.id) && !isCoachOrParent(p));
   const uninvitedActive = uninvitedPlayers.filter((p) => p.status === 'active');
   const uninvitedReserve = uninvitedPlayers.filter((p) => p.status === 'reserve');
 

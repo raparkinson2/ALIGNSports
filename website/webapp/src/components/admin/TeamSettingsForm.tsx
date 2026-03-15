@@ -436,14 +436,14 @@ export default function TeamSettingsForm() {
               <span>Changing sport will affect position groupings on the roster and stats pages.</span>
             </div>
           )}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
             {SPORTS.map((sport) => (
               <button
                 key={sport}
                 type="button"
                 onClick={() => handleSportChange(sport)}
                 className={cn(
-                  'px-3 py-1.5 rounded-xl border text-sm font-medium capitalize transition-all',
+                  'px-3 py-1.5 rounded-xl border text-sm font-medium capitalize transition-all whitespace-nowrap shrink-0',
                   localSettings.sport === sport
                     ? 'border-[#67e8f9]/50 bg-[#67e8f9]/10 text-[#67e8f9]'
                     : 'border-white/10 text-slate-400 hover:border-white/20'
@@ -482,7 +482,7 @@ export default function TeamSettingsForm() {
         <SectionLabel>Organization</SectionLabel>
         <div className="space-y-1.5 mb-1">
           <FeatureCard
-            icon={LayoutList} iconColor="text-[#a78bfa]" iconBg="bg-[#a78bfa]/20"
+            icon={LayoutList} iconColor="text-[#67e8f9]" iconBg="bg-[#67e8f9]/20"
             label="Lineups" desc="Set and manage game lineups"
             checked={f('showLineups') !== false}
             onChange={set('showLineups')}
@@ -493,7 +493,7 @@ export default function TeamSettingsForm() {
         <SectionLabel>Communication</SectionLabel>
         <div className="space-y-1.5 mb-1">
           <FeatureCard
-            icon={MessageSquare} iconColor="text-[#67e8f9]" iconBg="bg-cyan-500/20"
+            icon={MessageSquare} iconColor="text-[#67e8f9]" iconBg="bg-[#67e8f9]/20"
             label="Team Chat" desc="Enable in-app team messaging"
             checked={f('showTeamChat') !== false}
             onChange={set('showTeamChat')}
@@ -506,7 +506,7 @@ export default function TeamSettingsForm() {
 
           {/* Photos */}
           <FeatureCard
-            icon={Image} iconColor="text-[#f472b6]" iconBg="bg-pink-500/20"
+            icon={Image} iconColor="text-[#67e8f9]" iconBg="bg-[#67e8f9]/20"
             label="Photos" desc="Share team photos and media"
             checked={f('showPhotos') !== false}
             onChange={set('showPhotos')}
@@ -514,7 +514,7 @@ export default function TeamSettingsForm() {
 
           {/* Payments + Stripe sub-row */}
           <FeatureCard
-            icon={CreditCard} iconColor="text-[#635BFF]" iconBg="bg-[#635BFF]/20"
+            icon={CreditCard} iconColor="text-[#67e8f9]" iconBg="bg-[#67e8f9]/20"
             label="Payments" desc="Collect dues and track payments"
             checked={f('showPayments') !== false}
             onChange={set('showPayments')}
@@ -529,20 +529,20 @@ export default function TeamSettingsForm() {
 
           {/* Stats */}
           <FeatureCard
-            icon={BarChart2} iconColor="text-[#a78bfa]" iconBg="bg-[#a78bfa]/20"
+            icon={BarChart2} iconColor="text-[#67e8f9]" iconBg="bg-[#67e8f9]/20"
             label="Team Stats" desc="Track player and team statistics"
             checked={f('showTeamStats') !== false}
             onChange={set('showTeamStats')}
             sub={f('showTeamStats') !== false ? (
               <div className="space-y-1.5">
                 <SubFeatureCard
-                  icon={TrendingUp} iconColor="text-[#a78bfa]" iconBg="bg-[#a78bfa]/20"
+                  icon={TrendingUp} iconColor="text-[#67e8f9]" iconBg="bg-[#67e8f9]/20"
                   label="Allow Players to Manage Own Stats" desc="Players can log their own stats"
                   checked={f('allowPlayerSelfStats') === true}
                   onChange={set('allowPlayerSelfStats')}
                 />
                 <SubFeatureCard
-                  icon={Trophy} iconColor="text-amber-400" iconBg="bg-amber-500/20"
+                  icon={Trophy} iconColor="text-[#67e8f9]" iconBg="bg-[#67e8f9]/20"
                   label="Team Records" desc="Show wins, losses and season record"
                   checked={f('showTeamRecords') === true}
                   onChange={set('showTeamRecords')}
@@ -553,13 +553,13 @@ export default function TeamSettingsForm() {
 
           {/* Refreshments */}
           <FeatureCard
-            icon={Coffee} iconColor="text-orange-400" iconBg="bg-orange-500/20"
+            icon={Coffee} iconColor="text-[#67e8f9]" iconBg="bg-[#67e8f9]/20"
             label="Refreshment Duty" desc="Assign and track snack duty"
             checked={f('showRefreshmentDuty') !== false}
             onChange={set('showRefreshmentDuty')}
             sub={f('showRefreshmentDuty') !== false ? (
               <SubFeatureCard
-                icon={Beer} iconColor="text-amber-400" iconBg="bg-amber-500/20"
+                icon={Beer} iconColor="text-[#67e8f9]" iconBg="bg-[#67e8f9]/20"
                 label="21+ Beverages (show beer mug)" desc="Show beer mug icon for adult beverages"
                 checked={f('refreshmentDutyIs21Plus') === true}
                 onChange={set('refreshmentDutyIs21Plus')}

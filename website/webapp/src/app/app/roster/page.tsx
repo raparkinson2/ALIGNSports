@@ -7,6 +7,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import PlayerCard from '@/components/roster/PlayerCard';
 import { cn } from '@/lib/utils';
 import type { Player, Sport } from '@/lib/types';
+import { isCoachOrParent } from '@/lib/types';
 import AddEditPlayerModal from '@/components/admin/AddEditPlayerModal';
 
 // Position groupings by sport
@@ -66,8 +67,9 @@ export default function RosterPage() {
   const sport = teamSettings.sport;
   const groups = SPORT_GROUPS[sport] ?? SPORT_GROUPS.hockey;
 
-  const activePlayers = players.filter((p) => p.status === 'active');
-  const reservePlayers = players.filter((p) => p.status === 'reserve');
+  const activePlayers = players.filter((p) => p.status === 'active' && !isCoachOrParent(p));
+  const reservePlayers = players.filter((p) => p.status === 'reserve' && !isCoachOrParent(p));
+  const coachesAndStaff = players.filter((p) => isCoachOrParent(p));
 
   // Group active players by position
   const groupedPlayers: Array<{ label: string; players: Player[] }> = groups.map((group) => ({
@@ -175,6 +177,26 @@ export default function RosterPage() {
                 ))}
               </div>
             )}
+          </section>
+        )}
+
+        {/* Coaches & Staff section */}
+        {coachesAndStaff.length > 0 && (
+          <section>
+            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+              Coaches &amp; Staff ({coachesAndStaff.length})
+            </h2>
+            <div className="space-y-2 opacity-80">
+              {coachesAndStaff.map((player) => (
+                <PlayerCard
+                  key={player.id}
+                  player={player}
+                  isAdmin={isAdmin}
+                  onEdit={handleEdit}
+                  onClick={handleEdit}
+                />
+              ))}
+            </div>
           </section>
         )}
       </div>

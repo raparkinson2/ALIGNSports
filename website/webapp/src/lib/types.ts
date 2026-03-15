@@ -197,6 +197,10 @@ export interface Player {
 }
 
 export const getPlayerName = (player: Player): string => `${player.firstName} ${player.lastName}`.trim();
+
+export const isCoachOrParent = (player: Player): boolean =>
+  player.position === 'Coach' || player.position === 'Parent' ||
+  (player.roles ?? []).includes('coach') || (player.roles ?? []).includes('parent');
 export const getPlayerInitials = (player: Player): string => {
   const first = player.firstName?.charAt(0)?.toUpperCase() || '';
   const last = player.lastName?.charAt(0)?.toUpperCase() || '';

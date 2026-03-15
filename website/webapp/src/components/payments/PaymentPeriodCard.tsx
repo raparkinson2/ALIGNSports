@@ -7,6 +7,7 @@ import { format, parseISO, differenceInDays } from 'date-fns';
 import { useTeamStore } from '@/lib/store';
 import { pushPaymentPeriodToSupabase } from '@/lib/realtime-sync';
 import { getPlayerName } from '@/lib/types';
+import { isCoachOrParent } from '@/lib/types';
 import type { PaymentPeriod, Player, TeamSettings } from '@/lib/types';
 import Avatar from '@/components/ui/Avatar';
 
@@ -32,10 +33,13 @@ function getDaysOverdue(dateStr: string | undefined): number | null {
   } catch { return null; }
 }
 
-export default function PaymentPeriodCard({ period, players, teamSettings, isAdmin }: PaymentPeriodCardProps) {
+export default function PaymentPeriodCard({ period, players: allPlayers, teamSettings, isAdmin }: PaymentPeriodCardProps) {
   const [expanded, setExpanded] = useState(false);
   const updatePlayerPayment = useTeamStore((s) => s.updatePlayerPayment);
   const activeTeamId = useTeamStore((s) => s.activeTeamId);
+
+  // Exclude coaches and parents from payment tracking
+  const players = allPlayers.filter((p) => !isCoachOrParent(p));
 
   const paidCount = period.playerPayments.filter((pp) => pp.status === 'paid').length;
   const totalCount = players.length;

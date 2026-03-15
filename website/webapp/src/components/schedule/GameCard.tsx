@@ -6,7 +6,7 @@ import {
   Users, UserPlus, Send, X, Circle, Eye,
 } from 'lucide-react';
 import { cn, getDateLabel, formatTime } from '@/lib/utils';
-import { getPlayerName } from '@/lib/types';
+import { getPlayerName, isCoachOrParent } from '@/lib/types';
 import { pushGameToSupabase, pushGameResponseToSupabase } from '@/lib/realtime-sync';
 import { useTeamStore } from '@/lib/store';
 import type { Game, Player, TeamSettings, AppNotification } from '@/lib/types';
@@ -55,22 +55,29 @@ export default function GameCard({
   const dateLabel = getDateLabel(game.date);
   const timeFormatted = formatTime(game.time);
 
-  const invitedPlayers = players.filter((p) => game.invitedPlayers?.includes(p.id));
-  const checkedInCount = game.checkedInPlayers?.length ?? 0;
-  const checkedOutCount = game.checkedOutPlayers?.length ?? 0;
-  const pendingCount = Math.max(0, invitedPlayers.length - checkedInCount - checkedOutCount);
+  // Only eligible (non-coach/parent) players in check-in lists
+  const eligibleInvited = players.filter((p) => game.invitedPlayers?.includes(p.id) && !isCoachOrParent(p));
+  const checkedInCount = (game.checkedInPlayers ?? []).filter((id) => {
+    const p = players.find((pl) => pl.id === id);
+    return p && !isCoachOrParent(p);
+  }).length;
+  const checkedOutCount = (game.checkedOutPlayers ?? []).filter((id) => {
+    const p = players.find((pl) => pl.id === id);
+    return p && !isCoachOrParent(p);
+  }).length;
+  const pendingCount = Math.max(0, eligibleInvited.length - checkedInCount - checkedOutCount);
 
-  // Players sorted: confirmed → pending → declined
-  const confirmedPlayers = players.filter((p) => game.checkedInPlayers?.includes(p.id));
-  const declinedPlayers = players.filter((p) => game.checkedOutPlayers?.includes(p.id));
-  const pendingInvited = invitedPlayers.filter(
+  // Players sorted: confirmed → pending → declined (no coaches/parents)
+  const confirmedPlayers = players.filter((p) => game.checkedInPlayers?.includes(p.id) && !isCoachOrParent(p));
+  const declinedPlayers = players.filter((p) => game.checkedOutPlayers?.includes(p.id) && !isCoachOrParent(p));
+  const pendingInvited = eligibleInvited.filter(
     (p) => !game.checkedInPlayers?.includes(p.id) && !game.checkedOutPlayers?.includes(p.id)
   );
   const sortedPlayers = [...confirmedPlayers, ...pendingInvited, ...declinedPlayers];
 
-  // Uninvited players for Invite More
+  // Uninvited players for Invite More — exclude coaches and parents
   const uninvitedPlayers = players.filter(
-    (p) => (p.status === 'active' || p.status === 'reserve') && !game.invitedPlayers?.includes(p.id)
+    (p) => (p.status === 'active' || p.status === 'reserve') && !game.invitedPlayers?.includes(p.id) && !isCoachOrParent(p)
   );
   const uninvitedActive = uninvitedPlayers.filter((p) => p.status === 'active');
   const uninvitedReserve = uninvitedPlayers.filter((p) => p.status === 'reserve');
