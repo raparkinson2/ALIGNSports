@@ -488,7 +488,7 @@ export default function ChatScreen() {
 
     // Send push notifications to relevant players
     if (currentPlayer) {
-      const senderName = getPlayerName(currentPlayer);
+      const senderFirstName = currentPlayer.firstName;
       const preview = messageText.trim().length > 100 ? messageText.trim().substring(0, 100) + '...' : messageText.trim();
 
       if (mentionType === 'all') {
@@ -496,17 +496,17 @@ export default function ChatScreen() {
         const recipientIds = players
           .filter((p) => p.id !== currentPlayerId && p.status === 'active')
           .map((p) => p.id);
-        sendPushToPlayers(recipientIds, `${senderName} mentioned everyone`, preview, { type: 'chat_mention' }).catch(console.error);
+        sendPushToPlayers(recipientIds, `New Team Chat from ${senderFirstName}!`, `${preview}\nTap to Respond.`, { type: 'chat_mention' }).catch(console.error);
       } else if (mentionType === 'specific' && mentionedPlayerIds?.length) {
         // @specific — push only the mentioned players
-        sendPushToPlayers(mentionedPlayerIds, `${senderName} mentioned you`, preview, { type: 'chat_mention' }).catch(console.error);
+        sendPushToPlayers(mentionedPlayerIds, `New Team Chat from ${senderFirstName}!`, `${preview}\nTap to Respond.`, { type: 'chat_mention' }).catch(console.error);
       } else {
         // Regular message — push all team members except sender
         const recipientIds = players
           .filter((p) => p.id !== currentPlayerId)
           .map((p) => p.id);
         console.log(`[chat-push] sender=${currentPlayerId} recipients=${JSON.stringify(recipientIds)}`);
-        sendPushToPlayers(recipientIds, `${senderName}`, preview, { type: 'chat_message' }).catch(console.error);
+        sendPushToPlayers(recipientIds, `New Team Chat from ${senderFirstName}!`, `${preview}\nTap to Respond.`, { type: 'chat_message' }).catch(console.error);
       }
     }
 
@@ -551,11 +551,10 @@ export default function ChatScreen() {
 
       // Push notification for image — fire immediately so recipients know
       if (currentPlayer) {
-        const senderName = getPlayerName(currentPlayer);
         const recipientIds = players
           .filter((p) => p.id !== currentPlayerId)
           .map((p) => p.id);
-        sendPushToPlayers(recipientIds, senderName, 'Sent a photo', { type: 'chat_message' }).catch(console.error);
+        sendPushToPlayers(recipientIds, `New Team Chat from ${currentPlayer.firstName}!`, `Sent a photo.\nTap to Respond.`, { type: 'chat_message' }).catch(console.error);
       }
 
       // Upload image to Supabase Storage in background, then sync the cloud URL
@@ -616,7 +615,7 @@ export default function ChatScreen() {
       const recipientIds = players
         .filter((p) => p.id !== currentPlayerId)
         .map((p) => p.id);
-      sendPushToPlayers(recipientIds, senderName, 'Sent a GIF', { type: 'chat_message' }).catch(console.error);
+      sendPushToPlayers(recipientIds, `New Team Chat from ${currentPlayer.firstName}!`, `Sent a GIF.\nTap to Respond.`, { type: 'chat_message' }).catch(console.error);
     }
 
     setIsGifModalVisible(false);
