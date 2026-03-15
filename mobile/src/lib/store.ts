@@ -826,6 +826,10 @@ interface TeamStore {
   markChatAsRead: (playerId: string) => void;
   getUnreadChatCount: (playerId: string) => number;
 
+  // Local event view tracking (persisted so it survives sync resets)
+  localViewedEventIds: string[];
+  markEventViewedLocally: (eventId: string) => void;
+
   // Direct Messages
   directMessages: DirectMessage[];
   addDirectMessage: (message: DirectMessage) => void;
@@ -1608,6 +1612,14 @@ export const useTeamStore = create<TeamStore>()(
           (m) => m.senderId !== playerId && new Date(m.createdAt) > new Date(lastReadAt)
         ).length;
       },
+
+      // Local event view tracking
+      localViewedEventIds: [],
+      markEventViewedLocally: (eventId) => set((state) => ({
+        localViewedEventIds: state.localViewedEventIds.includes(eventId)
+          ? state.localViewedEventIds
+          : [...state.localViewedEventIds, eventId],
+      })),
 
       // Direct Messages
       directMessages: [],
@@ -2988,6 +3000,7 @@ export const useTeamStore = create<TeamStore>()(
         userPhone: state.userPhone,
         pendingTeamIds: null, // Never persist pendingTeamIds — always start fresh
         chatLastReadAt: state.chatLastReadAt,
+        localViewedEventIds: state.localViewedEventIds,
         teamName: state.teamName,
         teamSettings: state.teamSettings, // Persist full settings so jerseyColors etc are available instantly
         teams: state.teams.map((t) => ({

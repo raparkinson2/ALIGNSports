@@ -137,7 +137,8 @@ export default function EventDetailScreen() {
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
-  const markEventViewed = useTeamStore((s) => s.markEventViewed);
+  const markEventViewedLocally = useTeamStore((s) => s.markEventViewedLocally);
+  const localViewedEventIds = useTeamStore((s) => s.localViewedEventIds);
 
   const event = events.find((e) => e.id === id);
 
@@ -178,9 +179,7 @@ export default function EventDetailScreen() {
   // Track that this player has viewed the event
   useEffect(() => {
     if (!event || !currentPlayerId) return;
-    const alreadyViewed = event.viewedBy?.includes(currentPlayerId);
-    if (alreadyViewed) return;
-    markEventViewed(event.id, currentPlayerId);
+    markEventViewedLocally(event.id);
     pushEventViewedToSupabase(event.id, currentPlayerId).catch(console.error);
   }, [event?.id, currentPlayerId]);
 
@@ -791,7 +790,9 @@ export default function EventDetailScreen() {
                     const isSelf = player.id === currentPlayerId;
                     // Players can toggle their own status, admins can toggle anyone
                     const canToggle = isSelf || isAdmin();
-                    const hasViewed = (event.viewedBy || []).includes(player.id);
+                    // hasViewed: true if Supabase shows they viewed, OR if this device's player viewed it locally
+                    const hasViewed = (event.viewedBy || []).includes(player.id) ||
+                      (player.id === currentPlayerId && localViewedEventIds.includes(event.id));
 
                     return (
                       <PlayerRow
