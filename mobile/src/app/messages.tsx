@@ -219,8 +219,8 @@ export default function MessagesScreen() {
     // Send push notifications to recipients
     await sendPushToPlayers(
       selectedRecipients,
-      `New Team Message in ${teamName}`,
-      `View the Message in the App.`,
+      `New Team Message from ${getPlayerName(currentPlayer)}`,
+      `${subject.trim()}. Tap to Read.`,
       { type: 'direct_message', messageId: message.id }
     );
 
