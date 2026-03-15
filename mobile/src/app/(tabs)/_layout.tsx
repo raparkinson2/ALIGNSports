@@ -157,15 +157,14 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
-                backgroundColor: focused ? 'rgba(34, 197, 94, 0.15)' : 'transparent',
+                backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
                 borderRadius: 10,
                 padding: 6,
               }}
             >
-              <DollarSign size={22} color={focused ? '#22c55e' : color} />
+              <DollarSign size={22} color={color} />
             </View>
           ),
-          tabBarActiveTintColor: '#22c55e',
         }}
       />
       <Tabs.Screen
@@ -214,15 +213,14 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
-                backgroundColor: focused ? 'rgba(167, 139, 250, 0.15)' : 'transparent',
+                backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
                 borderRadius: 10,
                 padding: 6,
               }}
             >
-              <Shield size={22} color={focused ? '#a78bfa' : color} />
+              <Shield size={22} color={color} />
             </View>
           ),
-          tabBarActiveTintColor: '#a78bfa',
         }}
       />
       <Tabs.Screen

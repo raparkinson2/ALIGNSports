@@ -1172,8 +1172,8 @@ export default function AdminScreen() {
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
-                  <View className="bg-amber-500/20 p-2 rounded-full">
-                    <ImageIcon size={20} color="#f59e0b" />
+                  <View className="bg-cyan-500/20 p-2 rounded-full">
+                    <ImageIcon size={20} color="#67e8f9" />
                   </View>
                   <View className="ml-3">
                     <Text className="text-white font-semibold">Team Logo</Text>
@@ -1213,8 +1213,8 @@ export default function AdminScreen() {
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
-                  <View className="bg-pink-500/20 p-2 rounded-full">
-                    <Palette size={20} color="#ec4899" />
+                  <View className="bg-cyan-500/20 p-2 rounded-full">
+                    <Palette size={20} color="#67e8f9" />
                   </View>
                   <View className="ml-3">
                     <Text className="text-white font-semibold">Jersey Colors</Text>
@@ -1275,8 +1275,8 @@ export default function AdminScreen() {
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
-                  <View className="bg-purple-500/20 p-2 rounded-full">
-                    <UserCog size={20} color="#a78bfa" />
+                  <View className="bg-cyan-500/20 p-2 rounded-full">
+                    <UserCog size={20} color="#67e8f9" />
                   </View>
                   <View className="ml-3">
                     <Text className="text-white font-semibold">Manage Roles</Text>
@@ -1293,8 +1293,8 @@ export default function AdminScreen() {
             <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
-                  <View className="bg-emerald-500/20 p-2 rounded-full">
-                    <ListOrdered size={20} color="#22c55e" />
+                  <View className="bg-cyan-500/20 p-2 rounded-full">
+                    <ListOrdered size={20} color="#67e8f9" />
                   </View>
                   <View className="ml-3 flex-1">
                     <Text className="text-white font-semibold">Lineup Management</Text>
@@ -1539,8 +1539,8 @@ export default function AdminScreen() {
             <View className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
-                  <View className="bg-purple-500/20 p-2 rounded-full">
-                    <ImageIcon size={20} color="#a78bfa" />
+                  <View className="bg-cyan-500/20 p-2 rounded-full">
+                    <ImageIcon size={20} color="#67e8f9" />
                   </View>
                   <View className="ml-3 flex-1">
                     <Text className="text-white font-semibold">Photos</Text>
@@ -1570,8 +1570,8 @@ export default function AdminScreen() {
             <View className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
-                  <View className="bg-green-500/20 p-2 rounded-full">
-                    <DollarSign size={20} color="#22c55e" />
+                  <View className="bg-cyan-500/20 p-2 rounded-full">
+                    <DollarSign size={20} color="#67e8f9" />
                   </View>
                   <View className="ml-3 flex-1">
                     <Text className="text-white font-semibold">Payments</Text>
@@ -1632,8 +1632,8 @@ export default function AdminScreen() {
             <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
-                  <View className="bg-emerald-500/20 p-2 rounded-full">
-                    <BarChart3 size={20} color="#10b981" />
+                  <View className="bg-cyan-500/20 p-2 rounded-full">
+                    <BarChart3 size={20} color="#67e8f9" />
                   </View>
                   <View className="ml-3 flex-1">
                     <Text className="text-white font-semibold">Team Stats</Text>
@@ -1749,8 +1749,8 @@ export default function AdminScreen() {
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center flex-1">
-                    <View className="bg-purple-500/20 p-2 rounded-full">
-                      <Archive size={20} color="#a78bfa" />
+                    <View className="bg-cyan-500/20 p-2 rounded-full">
+                      <Archive size={20} color="#67e8f9" />
                     </View>
                     <View className="ml-3 flex-1">
                       <Text className="text-white font-semibold">End Season</Text>
@@ -1775,8 +1775,8 @@ export default function AdminScreen() {
             <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
-                  <View className="bg-amber-500/20 p-2 rounded-full">
-                    <JuiceBoxIcon size={20} color="#f59e0b" />
+                  <View className="bg-cyan-500/20 p-2 rounded-full">
+                    <JuiceBoxIcon size={20} color="#67e8f9" />
                   </View>
                   <View className="ml-3 flex-1">
                     <Text className="text-white font-semibold">Refreshments</Text>
