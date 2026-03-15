@@ -1778,17 +1778,16 @@ export default function AdminScreen() {
       <Modal
         visible={isPlayerModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
         onRequestClose={() => setIsPlayerModalVisible(false)}
       >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsPlayerModalVisible(false)}>
-                <X size={24} color="#64748b" />
+              <Text className="text-white text-lg font-bold">Edit Player</Text>
+              <Pressable onPress={() => setIsPlayerModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
+                <X size={18} color="#94a3b8" />
               </Pressable>
-              <Text className="text-white text-lg font-semibold">Edit Player</Text>
-              <View style={{ width: 24 }} />
             </View>
 
             {selectedPlayer && (
@@ -2238,7 +2237,7 @@ export default function AdminScreen() {
                 )}
               </ScrollView>
             )}
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
 
@@ -2246,19 +2245,21 @@ export default function AdminScreen() {
       <Modal
         visible={isSettingsModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
         onRequestClose={() => setIsSettingsModalVisible(false)}
       >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsSettingsModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Team Settings</Text>
-              <Pressable onPress={handleSaveTeamName}>
-                <Text className="text-cyan-400 font-semibold">Save</Text>
-              </Pressable>
+              <Text className="text-white text-lg font-bold">Team Settings</Text>
+              <View className="flex-row items-center">
+                <Pressable onPress={handleSaveTeamName} className="mr-3">
+                  <Text className="text-cyan-400 font-semibold">Save</Text>
+                </Pressable>
+                <Pressable onPress={() => setIsSettingsModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
+                  <X size={18} color="#94a3b8" />
+                </Pressable>
+              </View>
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6">
@@ -2274,7 +2275,7 @@ export default function AdminScreen() {
                 />
               </View>
             </ScrollView>
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
 
@@ -2282,17 +2283,16 @@ export default function AdminScreen() {
       <Modal
         visible={isJerseyModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
         onRequestClose={() => setIsJerseyModalVisible(false)}
       >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsJerseyModalVisible(false)}>
-                <X size={24} color="#64748b" />
+              <Text className="text-white text-lg font-bold">Jersey Colors</Text>
+              <Pressable onPress={() => setIsJerseyModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
+                <X size={18} color="#94a3b8" />
               </Pressable>
-              <Text className="text-white text-lg font-semibold">Jersey Colors</Text>
-              <View style={{ width: 24 }} />
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6">
@@ -2423,7 +2423,7 @@ export default function AdminScreen() {
                 </Pressable>
               </View>
             </ScrollView>
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
 
@@ -2431,17 +2431,16 @@ export default function AdminScreen() {
       <Modal
         visible={isRolesModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
         onRequestClose={() => setIsRolesModalVisible(false)}
       >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsRolesModalVisible(false)}>
-                <X size={24} color="#64748b" />
+              <Text className="text-white text-lg font-bold">Manage Roles</Text>
+              <Pressable onPress={() => setIsRolesModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
+                <X size={18} color="#94a3b8" />
               </Pressable>
-              <Text className="text-white text-lg font-semibold">Manage Roles</Text>
-              <View style={{ width: 24 }} />
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6">
@@ -2507,7 +2506,7 @@ export default function AdminScreen() {
                 </Text>
               </View>
             </ScrollView>
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
 
@@ -2515,17 +2514,16 @@ export default function AdminScreen() {
       <Modal
         visible={isTeamStatsModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
         onRequestClose={() => setIsTeamStatsModalVisible(false)}
       >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsTeamStatsModalVisible(false)}>
-                <X size={24} color="#64748b" />
+              <Text className="text-white text-lg font-bold">Team Stats</Text>
+              <Pressable onPress={() => setIsTeamStatsModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
+                <X size={18} color="#94a3b8" />
               </Pressable>
-              <Text className="text-white text-lg font-semibold">Team Stats</Text>
-              <View style={{ width: 24 }} />
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6">
@@ -2616,7 +2614,7 @@ export default function AdminScreen() {
                 </>
               )}
             </ScrollView>
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
 
@@ -2624,17 +2622,16 @@ export default function AdminScreen() {
       <Modal
         visible={isRefreshmentModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
         onRequestClose={() => setIsRefreshmentModalVisible(false)}
       >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsRefreshmentModalVisible(false)}>
-                <X size={24} color="#64748b" />
+              <Text className="text-white text-lg font-bold">Refreshments</Text>
+              <Pressable onPress={() => setIsRefreshmentModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
+                <X size={18} color="#94a3b8" />
               </Pressable>
-              <Text className="text-white text-lg font-semibold">Refreshments</Text>
-              <View style={{ width: 24 }} />
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6">
@@ -2696,7 +2693,7 @@ export default function AdminScreen() {
                 </View>
               )}
             </ScrollView>
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
 
@@ -2704,25 +2701,27 @@ export default function AdminScreen() {
       <Modal
         visible={isNewPlayerModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
         onRequestClose={() => {
           setIsNewPlayerModalVisible(false);
           resetNewPlayerForm();
         }}
       >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => {
-                setIsNewPlayerModalVisible(false);
-                resetNewPlayerForm();
-              }}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Add Player</Text>
-              <Pressable onPress={handleCreatePlayer}>
-                <Text className="text-cyan-400 font-semibold">Create</Text>
-              </Pressable>
+              <Text className="text-white text-lg font-bold">Add Player</Text>
+              <View className="flex-row items-center">
+                <Pressable onPress={handleCreatePlayer} className="mr-3">
+                  <Text className="text-cyan-400 font-semibold">Create</Text>
+                </Pressable>
+                <Pressable onPress={() => {
+                  setIsNewPlayerModalVisible(false);
+                  resetNewPlayerForm();
+                }} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
+                  <X size={18} color="#94a3b8" />
+                </Pressable>
+              </View>
             </View>
 
             <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false}>
@@ -3158,7 +3157,7 @@ export default function AdminScreen() {
 
               <Text className="text-slate-500 text-xs mb-6"><Text className="text-red-400">*</Text> Required</Text>
             </ScrollView>
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
 
@@ -3268,17 +3267,16 @@ export default function AdminScreen() {
       <Modal
         visible={isEraseDataMenuModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
         onRequestClose={() => setIsEraseDataMenuModalVisible(false)}
       >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsEraseDataMenuModalVisible(false)}>
-                <X size={24} color="#64748b" />
+              <Text className="text-white text-lg font-bold">Danger Zone</Text>
+              <Pressable onPress={() => setIsEraseDataMenuModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
+                <X size={18} color="#94a3b8" />
               </Pressable>
-              <Text className="text-white text-lg font-semibold">Danger Zone</Text>
-              <View style={{ width: 24 }} />
             </View>
 
             <ScrollView className="flex-1 px-5 pt-6">
@@ -3336,7 +3334,7 @@ export default function AdminScreen() {
                 </View>
               </Pressable>
             </ScrollView>
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
 
@@ -3390,29 +3388,32 @@ export default function AdminScreen() {
       <Modal
         visible={isManagePlayersModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
         onRequestClose={() => setIsManagePlayersModalVisible(false)}
       >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsManagePlayersModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Manage Team</Text>
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setNewPlayerPositions([]);
-                  // Close manage players modal first, then open new player modal
-                  setIsManagePlayersModalVisible(false);
-                  setTimeout(() => {
-                    setIsNewPlayerModalVisible(true);
-                  }, 300);
-                }}
-              >
-                <UserPlus size={24} color="#22c55e" />
-              </Pressable>
+              <Text className="text-white text-lg font-bold">Manage Team</Text>
+              <View className="flex-row items-center">
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setNewPlayerPositions([]);
+                    // Close manage players modal first, then open new player modal
+                    setIsManagePlayersModalVisible(false);
+                    setTimeout(() => {
+                      setIsNewPlayerModalVisible(true);
+                    }, 300);
+                  }}
+                  className="mr-3"
+                >
+                  <UserPlus size={22} color="#22c55e" />
+                </Pressable>
+                <Pressable onPress={() => setIsManagePlayersModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
+                  <X size={18} color="#94a3b8" />
+                </Pressable>
+              </View>
             </View>
 
             <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false}>
@@ -3445,7 +3446,7 @@ export default function AdminScreen() {
                 />
               ))}
             </ScrollView>
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
 
@@ -3542,16 +3543,17 @@ export default function AdminScreen() {
       <Modal
         visible={isEndSeasonModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
         onRequestClose={() => {
           setIsEndSeasonModalVisible(false);
           setEndSeasonStep('name');
         }}
       >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
             {/* Header */}
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Text className="text-white text-lg font-bold">End Season</Text>
               <Pressable
                 onPress={() => {
                   if (endSeasonStep === 'confirm') {
@@ -3560,11 +3562,10 @@ export default function AdminScreen() {
                     setIsEndSeasonModalVisible(false);
                   }
                 }}
+                className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center"
               >
-                <X size={24} color="#64748b" />
+                <X size={18} color="#94a3b8" />
               </Pressable>
-              <Text className="text-white text-lg font-semibold">End Season</Text>
-              <View className="w-6" />
             </View>
 
             {endSeasonStep === 'name' ? (
@@ -3681,7 +3682,7 @@ export default function AdminScreen() {
                 </Pressable>
               </View>
             )}
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
 
@@ -3689,86 +3690,88 @@ export default function AdminScreen() {
       <Modal
         visible={isEmailModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
         onRequestClose={() => setIsEmailModalVisible(false)}
       >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
             {/* Header */}
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsEmailModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
               <Text className="text-white text-lg font-bold">Email Team</Text>
-              <Pressable
-                onPress={async () => {
-                  if (!emailSubject.trim()) {
-                    Alert.alert('Subject Required', 'Please enter a subject for your email.');
-                    return;
-                  }
-                  if (!emailBody.trim()) {
-                    Alert.alert('Message Required', 'Please enter a message for your email.');
-                    return;
-                  }
-                  if (selectedRecipients.length === 0) {
-                    Alert.alert('No Recipients', 'Please select at least one recipient.');
-                    return;
-                  }
-
-                  setIsSendingEmail(true);
-
-                  try {
-                    // Get selected player emails
-                    const recipientEmails = players
-                      .filter(p => selectedRecipients.includes(p.id) && p.email)
-                      .map(p => p.email as string);
-
-                    // Call Supabase Edge Function to send email
-                    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PUBLIC_URL;
-                    const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLIC_ANON;
-                    const response = await fetch(
-                      `${supabaseUrl}/functions/v1/send-team-email`,
-                      {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${supabaseAnonKey}`,
-                        },
-                        body: JSON.stringify({
-                          to: recipientEmails,
-                          subject: emailSubject.trim(),
-                          body: emailBody.trim(),
-                          teamName: teamName,
-                        }),
-                      }
-                    );
-
-                    if (response.ok) {
-                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                      Alert.alert('Email Sent', `Your email has been sent to ${recipientEmails.length} team member${recipientEmails.length === 1 ? '' : 's'}.`);
-                      setIsEmailModalVisible(false);
-                      setEmailSubject('');
-                      setEmailBody('');
-                      setSelectedRecipients([]);
-                    } else {
-                      const errorData = await response.json().catch(() => ({}));
-                      throw new Error(errorData.error || 'Failed to send email');
+              <View className="flex-row items-center">
+                <Pressable
+                  onPress={async () => {
+                    if (!emailSubject.trim()) {
+                      Alert.alert('Subject Required', 'Please enter a subject for your email.');
+                      return;
                     }
-                  } catch (err) {
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-                    Alert.alert('Error', 'Failed to send email. Please try again later.');
-                    console.error('Email send error:', err);
-                  }
+                    if (!emailBody.trim()) {
+                      Alert.alert('Message Required', 'Please enter a message for your email.');
+                      return;
+                    }
+                    if (selectedRecipients.length === 0) {
+                      Alert.alert('No Recipients', 'Please select at least one recipient.');
+                      return;
+                    }
 
-                  setIsSendingEmail(false);
-                }}
-                disabled={isSendingEmail || !emailSubject.trim() || !emailBody.trim() || selectedRecipients.length === 0}
-                className="px-4 py-2"
-              >
-                <Text className={`font-semibold ${isSendingEmail || !emailSubject.trim() || !emailBody.trim() || selectedRecipients.length === 0 ? 'text-slate-600' : 'text-cyan-400'}`}>
-                  {isSendingEmail ? 'Sending...' : 'Send'}
-                </Text>
-              </Pressable>
+                    setIsSendingEmail(true);
+
+                    try {
+                      // Get selected player emails
+                      const recipientEmails = players
+                        .filter(p => selectedRecipients.includes(p.id) && p.email)
+                        .map(p => p.email as string);
+
+                      // Call Supabase Edge Function to send email
+                      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PUBLIC_URL;
+                      const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLIC_ANON;
+                      const response = await fetch(
+                        `${supabaseUrl}/functions/v1/send-team-email`,
+                        {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${supabaseAnonKey}`,
+                          },
+                          body: JSON.stringify({
+                            to: recipientEmails,
+                            subject: emailSubject.trim(),
+                            body: emailBody.trim(),
+                            teamName: teamName,
+                          }),
+                        }
+                      );
+
+                      if (response.ok) {
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        Alert.alert('Email Sent', `Your email has been sent to ${recipientEmails.length} team member${recipientEmails.length === 1 ? '' : 's'}.`);
+                        setIsEmailModalVisible(false);
+                        setEmailSubject('');
+                        setEmailBody('');
+                        setSelectedRecipients([]);
+                      } else {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.error || 'Failed to send email');
+                      }
+                    } catch (err) {
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                      Alert.alert('Error', 'Failed to send email. Please try again later.');
+                      console.error('Email send error:', err);
+                    }
+
+                    setIsSendingEmail(false);
+                  }}
+                  disabled={isSendingEmail || !emailSubject.trim() || !emailBody.trim() || selectedRecipients.length === 0}
+                  className="px-3 py-2 mr-1"
+                >
+                  <Text className={`font-semibold ${isSendingEmail || !emailSubject.trim() || !emailBody.trim() || selectedRecipients.length === 0 ? 'text-slate-600' : 'text-cyan-400'}`}>
+                    {isSendingEmail ? 'Sending...' : 'Send'}
+                  </Text>
+                </Pressable>
+                <Pressable onPress={() => setIsEmailModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
+                  <X size={18} color="#94a3b8" />
+                </Pressable>
+              </View>
             </View>
 
             <ScrollView className="flex-1 px-5 py-4" keyboardShouldPersistTaps="handled">
@@ -3858,7 +3861,7 @@ export default function AdminScreen() {
                 </Text>
               </View>
             </ScrollView>
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
     </View>
