@@ -309,6 +309,7 @@ export default function AdminScreen() {
 
   // Erase all data confirmation modal
   const [isEraseDataModalVisible, setIsEraseDataModalVisible] = useState(false);
+  const [isEraseDataMenuModalVisible, setIsEraseDataMenuModalVisible] = useState(false);
 
   // Delete team confirmation modal
   const [isDeleteTeamModalVisible, setIsDeleteTeamModalVisible] = useState(false);
@@ -1746,35 +1747,13 @@ export default function AdminScreen() {
               Danger Zone
             </Text>
 
-            {/* Erase All Data */}
-            <Pressable
-              onPress={handleEraseAllData}
-              className="bg-orange-500/10 rounded-2xl p-4 mb-3 border border-orange-500/30 active:bg-orange-500/20"
-            >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center flex-1">
-                  <View className="bg-orange-500/20 p-2 rounded-full">
-                    <Trash2 size={20} color="#f97316" />
-                  </View>
-                  <View className="ml-3 flex-1">
-                    <Text className="text-orange-400 font-semibold">Erase All Data</Text>
-                    <Text className="text-slate-400 text-sm">
-                      Delete all team data and start fresh
-                    </Text>
-                  </View>
-                </View>
-                <ChevronRight size={20} color="#f97316" />
-              </View>
-            </Pressable>
-
-            {/* Delete Team - Nuclear Option */}
+            {/* Erase Data Nav Item */}
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                setDeleteConfirmText('');
-                setIsDeleteTeamModalVisible(true);
+                setIsEraseDataMenuModalVisible(true);
               }}
-              className="bg-red-900/30 rounded-2xl p-4 mb-3 border border-red-700/50 active:bg-red-900/50"
+              className="bg-red-900/20 rounded-2xl p-4 mb-3 border border-red-700/40 active:bg-red-900/40"
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
@@ -1782,9 +1761,9 @@ export default function AdminScreen() {
                     <AlertTriangle size={20} color="#dc2626" />
                   </View>
                   <View className="ml-3 flex-1">
-                    <Text className="text-red-500 font-semibold">Delete Team</Text>
+                    <Text className="text-red-400 font-semibold">Erase Data</Text>
                     <Text className="text-slate-400 text-sm">
-                      Permanently delete team and all accounts
+                      Erase or delete team data
                     </Text>
                   </View>
                 </View>
@@ -3282,6 +3261,82 @@ export default function AdminScreen() {
               </Pressable>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      {/* Erase Data Menu Modal */}
+      <Modal
+        visible={isEraseDataMenuModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsEraseDataMenuModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsEraseDataMenuModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Erase Data</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-6">
+              <Text className="text-slate-400 text-sm mb-6">
+                Permanently remove team data. These actions cannot be undone.
+              </Text>
+
+              {/* Erase All Data */}
+              <Pressable
+                onPress={() => {
+                  setIsEraseDataMenuModalVisible(false);
+                  handleEraseAllData();
+                }}
+                className="bg-orange-500/10 rounded-2xl p-4 mb-3 border border-orange-500/30 active:bg-orange-500/20"
+              >
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View className="bg-orange-500/20 p-2 rounded-full">
+                      <Trash2 size={20} color="#f97316" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="text-orange-400 font-semibold">Erase All Data</Text>
+                      <Text className="text-slate-400 text-sm">
+                        Delete all team data and start fresh
+                      </Text>
+                    </View>
+                  </View>
+                  <ChevronRight size={20} color="#f97316" />
+                </View>
+              </Pressable>
+
+              {/* Delete Team */}
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                  setIsEraseDataMenuModalVisible(false);
+                  setDeleteConfirmText('');
+                  setIsDeleteTeamModalVisible(true);
+                }}
+                className="bg-red-900/30 rounded-2xl p-4 mb-3 border border-red-700/50 active:bg-red-900/50"
+              >
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View className="bg-red-700/30 p-2 rounded-full">
+                      <AlertTriangle size={20} color="#dc2626" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="text-red-500 font-semibold">Delete Team</Text>
+                      <Text className="text-slate-400 text-sm">
+                        Permanently delete team and all accounts
+                      </Text>
+                    </View>
+                  </View>
+                  <ChevronRight size={20} color="#dc2626" />
+                </View>
+              </Pressable>
+            </ScrollView>
+          </SafeAreaView>
         </View>
       </Modal>
 
