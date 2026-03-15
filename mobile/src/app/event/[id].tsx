@@ -43,9 +43,11 @@ interface PlayerRowProps {
   index: number;
   canToggle: boolean;
   isSelf: boolean;
+  hasViewed?: boolean;
+  showViewedBadge?: boolean;
 }
 
-function PlayerRow({ player, status, onToggle, index, canToggle, isSelf }: PlayerRowProps) {
+function PlayerRow({ player, status, onToggle, index, canToggle, isSelf, hasViewed, showViewedBadge }: PlayerRowProps) {
   const handlePress = () => {
     if (!canToggle) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -87,7 +89,15 @@ function PlayerRow({ player, status, onToggle, index, canToggle, isSelf }: Playe
 
         <View className="flex-1 ml-3">
           <Text className="text-white font-semibold">{getPlayerName(player)}</Text>
-          <Text className="text-slate-400 text-xs">#{player.number}</Text>
+          <Text className="text-slate-400 text-xs">
+            #{player.number}{player.position ? ` · ${player.position}` : ''}
+          </Text>
+          {showViewedBadge && hasViewed && status === 'none' && (
+            <View className="flex-row items-center mt-0.5">
+              <Eye size={10} color="#22d3ee" />
+              <Text className="text-cyan-400 text-[10px] ml-0.5">Viewed</Text>
+            </View>
+          )}
         </View>
 
         {status === 'confirmed' ? (
@@ -784,6 +794,7 @@ export default function EventDetailScreen() {
                     const isSelf = player.id === currentPlayerId;
                     // Players can toggle their own status, admins can toggle anyone
                     const canToggle = isSelf || isAdmin();
+                    const hasViewed = (event.viewedBy || []).includes(player.id);
 
                     return (
                       <PlayerRow
@@ -794,51 +805,14 @@ export default function EventDetailScreen() {
                         index={index}
                         canToggle={canToggle}
                         isSelf={isSelf}
+                        hasViewed={hasViewed}
+                        showViewedBadge={canManageTeam()}
                       />
                     );
                   })
                 )}
               </View>
             </Animated.View>
-
-            {/* Viewed By — admin/captain only */}
-            {canManageTeam() && event.invitedPlayers && event.invitedPlayers.length > 0 && (
-              <Animated.View entering={FadeInDown.delay(300).springify()} className="px-5 mt-4 mb-2">
-                <View className="flex-row items-center mb-3">
-                  <Eye size={15} color="#94a3b8" />
-                  <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider ml-1.5">
-                    Viewed By ({(event.viewedBy || []).length}/{event.invitedPlayers.length})
-                  </Text>
-                </View>
-                <View className="bg-slate-800/50 rounded-2xl p-4">
-                  {event.invitedPlayers.map((playerId, index) => {
-                    const player = players.find((p) => p.id === playerId);
-                    if (!player) return null;
-                    const hasViewed = (event.viewedBy || []).includes(playerId) ||
-                      (event.confirmedPlayers || []).includes(playerId) ||
-                      (event.declinedPlayers || []).includes(playerId);
-                    return (
-                      <Animated.View
-                        key={playerId}
-                        entering={FadeInDown.delay(index * 30).springify()}
-                        className="flex-row items-center py-2 border-b border-slate-700/30 last:border-0"
-                      >
-                        <PlayerAvatar player={player} size={32} />
-                        <Text className="text-slate-300 text-sm ml-3 flex-1">{getPlayerName(player)}</Text>
-                        {hasViewed ? (
-                          <View className="flex-row items-center">
-                            <Eye size={14} color="#22d3ee" />
-                            <Text className="text-cyan-400 text-xs ml-1">Viewed</Text>
-                          </View>
-                        ) : (
-                          <Text className="text-slate-600 text-xs">Not opened</Text>
-                        )}
-                      </Animated.View>
-                    );
-                  })}
-                </View>
-              </Animated.View>
-            )}
 
             <View className="h-8" />
           </View>
