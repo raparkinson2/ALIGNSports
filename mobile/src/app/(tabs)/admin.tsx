@@ -1782,7 +1782,7 @@ export default function AdminScreen() {
         onRequestClose={() => setIsPlayerModalVisible(false)}
       >
         <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
+          <View className="bg-slate-900 rounded-t-3xl" style={{ maxHeight: '90%', minHeight: 300 }}>
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
               <Text className="text-white text-lg font-bold">Edit Player</Text>
               <Pressable onPress={() => setIsPlayerModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
@@ -1791,7 +1791,7 @@ export default function AdminScreen() {
             </View>
 
             {selectedPlayer && (
-              <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false}>
+              <ScrollView className="px-5 pt-4" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
                 {/* First Name and Last Name Row */}
                 <View className="flex-row mb-3">
                   {/* First Name Input */}
@@ -2249,7 +2249,7 @@ export default function AdminScreen() {
         onRequestClose={() => setIsSettingsModalVisible(false)}
       >
         <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
+          <View className="bg-slate-900 rounded-t-3xl" style={{ maxHeight: '90%', minHeight: 300 }}>
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
               <Text className="text-white text-lg font-bold">Team Settings</Text>
               <View className="flex-row items-center">
@@ -2262,7 +2262,7 @@ export default function AdminScreen() {
               </View>
             </View>
 
-            <ScrollView className="flex-1 px-5 pt-6">
+            <ScrollView className="px-5 pt-6" contentContainerStyle={{ paddingBottom: 40 }}>
               <View className="mb-5">
                 <Text className="text-slate-400 text-sm mb-2">Team Name</Text>
                 <TextInput
@@ -2287,7 +2287,7 @@ export default function AdminScreen() {
         onRequestClose={() => setIsJerseyModalVisible(false)}
       >
         <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
+          <View className="bg-slate-900 rounded-t-3xl" style={{ maxHeight: '90%', minHeight: 300 }}>
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
               <Text className="text-white text-lg font-bold">Jersey Colors</Text>
               <Pressable onPress={() => setIsJerseyModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
@@ -2295,7 +2295,7 @@ export default function AdminScreen() {
               </Pressable>
             </View>
 
-            <ScrollView className="flex-1 px-5 pt-6">
+            <ScrollView className="px-5 pt-6" contentContainerStyle={{ paddingBottom: 40 }}>
               {/* Current Colors */}
               <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
                 Current Colors
@@ -2435,7 +2435,7 @@ export default function AdminScreen() {
         onRequestClose={() => setIsRolesModalVisible(false)}
       >
         <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
+          <View className="bg-slate-900 rounded-t-3xl" style={{ maxHeight: '90%', minHeight: 300 }}>
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
               <Text className="text-white text-lg font-bold">Manage Roles</Text>
               <Pressable onPress={() => setIsRolesModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
@@ -2443,7 +2443,7 @@ export default function AdminScreen() {
               </Pressable>
             </View>
 
-            <ScrollView className="flex-1 px-5 pt-6">
+            <ScrollView className="px-5 pt-6" contentContainerStyle={{ paddingBottom: 40 }}>
               <Text className="text-slate-400 text-sm mb-4">
                 Select which roles are available when adding or editing players. Disabled roles will be hidden from selection.
               </Text>
@@ -2518,7 +2518,7 @@ export default function AdminScreen() {
         onRequestClose={() => setIsTeamStatsModalVisible(false)}
       >
         <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
+          <View className="bg-slate-900 rounded-t-3xl" style={{ maxHeight: '90%', minHeight: 300 }}>
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
               <Text className="text-white text-lg font-bold">Team Stats</Text>
               <Pressable onPress={() => setIsTeamStatsModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
@@ -2526,7 +2526,7 @@ export default function AdminScreen() {
               </Pressable>
             </View>
 
-            <ScrollView className="flex-1 px-5 pt-6">
+            <ScrollView className="px-5 pt-6" contentContainerStyle={{ paddingBottom: 40 }}>
               <Text className="text-slate-400 text-sm mb-6">
                 Configure team and player statistics tracking.
               </Text>
@@ -2626,7 +2626,7 @@ export default function AdminScreen() {
         onRequestClose={() => setIsRefreshmentModalVisible(false)}
       >
         <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
+          <View className="bg-slate-900 rounded-t-3xl" style={{ maxHeight: '90%', minHeight: 300 }}>
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
               <Text className="text-white text-lg font-bold">Refreshments</Text>
               <Pressable onPress={() => setIsRefreshmentModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
@@ -2634,7 +2634,7 @@ export default function AdminScreen() {
               </Pressable>
             </View>
 
-            <ScrollView className="flex-1 px-5 pt-6">
+            <ScrollView className="px-5 pt-6" contentContainerStyle={{ paddingBottom: 40 }}>
               <Text className="text-slate-400 text-sm mb-6">
                 Configure refreshment duty assignments for your team.
               </Text>
@@ -2708,7 +2708,7 @@ export default function AdminScreen() {
         }}
       >
         <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
+          <View className="bg-slate-900 rounded-t-3xl" style={{ maxHeight: '90%', minHeight: 300 }}>
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
               <Text className="text-white text-lg font-bold">Add Player</Text>
               <View className="flex-row items-center">
@@ -2724,7 +2724,7 @@ export default function AdminScreen() {
               </View>
             </View>
 
-            <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false}>
+            <ScrollView className="px-5 pt-4" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
               {/* First Name and Last Name Row */}
               <View className="flex-row mb-3">
                 {/* First Name Input */}
@@ -3271,7 +3271,7 @@ export default function AdminScreen() {
         onRequestClose={() => setIsEraseDataMenuModalVisible(false)}
       >
         <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
+          <View className="bg-slate-900 rounded-t-3xl" style={{ maxHeight: '90%', minHeight: 300 }}>
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
               <Text className="text-white text-lg font-bold">Danger Zone</Text>
               <Pressable onPress={() => setIsEraseDataMenuModalVisible(false)} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
@@ -3279,7 +3279,7 @@ export default function AdminScreen() {
               </Pressable>
             </View>
 
-            <ScrollView className="flex-1 px-5 pt-6">
+            <ScrollView className="px-5 pt-6" contentContainerStyle={{ paddingBottom: 40 }}>
               <Text className="text-slate-400 text-sm mb-6">
                 Permanently remove team data. These actions cannot be undone.
               </Text>
@@ -3392,7 +3392,7 @@ export default function AdminScreen() {
         onRequestClose={() => setIsManagePlayersModalVisible(false)}
       >
         <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
+          <View className="bg-slate-900 rounded-t-3xl" style={{ maxHeight: '90%', minHeight: 300 }}>
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
               <Text className="text-white text-lg font-bold">Manage Team</Text>
               <View className="flex-row items-center">
@@ -3416,7 +3416,7 @@ export default function AdminScreen() {
               </View>
             </View>
 
-            <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false}>
+            <ScrollView className="px-5 pt-4" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
               {players.map((player, index) => (
                 <SwipeablePlayerManageCard
                   key={player.id}
@@ -3550,7 +3550,7 @@ export default function AdminScreen() {
         }}
       >
         <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
+          <View className="bg-slate-900 rounded-t-3xl" style={{ maxHeight: '90%', minHeight: 300 }}>
             {/* Header */}
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
               <Text className="text-white text-lg font-bold">End Season</Text>
@@ -3694,7 +3694,7 @@ export default function AdminScreen() {
         onRequestClose={() => setIsEmailModalVisible(false)}
       >
         <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl max-h-[90%]">
+          <View className="bg-slate-900 rounded-t-3xl" style={{ maxHeight: '90%', minHeight: 300 }}>
             {/* Header */}
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
               <Text className="text-white text-lg font-bold">Email Team</Text>
@@ -3774,7 +3774,7 @@ export default function AdminScreen() {
               </View>
             </View>
 
-            <ScrollView className="flex-1 px-5 py-4" keyboardShouldPersistTaps="handled">
+            <ScrollView className="px-5 py-4" keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
               {/* Subject */}
               <View className="mb-4">
                 <Text className="text-slate-400 text-sm mb-2">Subject</Text>
