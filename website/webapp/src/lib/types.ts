@@ -300,6 +300,7 @@ export interface Game {
   inviteReleaseOption?: InviteReleaseOption;
   inviteReleaseDate?: string;
   invitesSent?: boolean;
+  viewedBy?: string[]; // playerIds who have opened the game detail
   finalScoreUs?: number;
   finalScoreThem?: number;
   gameResult?: 'win' | 'loss' | 'tie' | 'otLoss';
@@ -321,6 +322,7 @@ export interface Event {
   confirmedPlayers: string[];
   declinedPlayers?: string[];
   declinedNotes?: Record<string, string>;
+  viewedBy?: string[]; // playerIds who have opened the event detail
   inviteReleaseOption?: InviteReleaseOption;
   inviteReleaseDate?: string;
   invitesSent?: boolean;

@@ -170,30 +170,32 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
         : Promise.resolve({ data: [] }),
     ]);
 
-    const gameResponsesMap: Record<string, { in: string[]; out: string[]; invited: string[]; notes: Record<string, string> }> = {};
+    const gameResponsesMap: Record<string, { in: string[]; out: string[]; invited: string[]; notes: Record<string, string>; viewed: string[] }> = {};
     for (const r of grData || []) {
-      if (!gameResponsesMap[r.game_id]) gameResponsesMap[r.game_id] = { in: [], out: [], invited: [], notes: {} };
+      if (!gameResponsesMap[r.game_id]) gameResponsesMap[r.game_id] = { in: [], out: [], invited: [], notes: {}, viewed: [] };
       const map = gameResponsesMap[r.game_id];
       if (r.response === 'in') { map.in.push(r.player_id); map.invited.push(r.player_id); }
       else if (r.response === 'out') { map.out.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
       else if (r.response === 'invited') { map.invited.push(r.player_id); }
+      else if (r.response === 'viewed') { map.viewed.push(r.player_id); map.invited.push(r.player_id); }
     }
     const games: Game[] = (gamesData || []).map((g: any) => {
-      const resp = gameResponsesMap[g.id] || { in: [], out: [], invited: [], notes: {} };
-      return { ...mapGame(g), checkedInPlayers: resp.in, checkedOutPlayers: resp.out, invitedPlayers: resp.invited, checkoutNotes: resp.notes };
+      const resp = gameResponsesMap[g.id] || { in: [], out: [], invited: [], notes: {}, viewed: [] };
+      return { ...mapGame(g), checkedInPlayers: resp.in, checkedOutPlayers: resp.out, invitedPlayers: resp.invited, checkoutNotes: resp.notes, viewedBy: resp.viewed };
     });
 
-    const eventResponsesMap: Record<string, { confirmed: string[]; declined: string[]; invited: string[]; notes: Record<string, string> }> = {};
+    const eventResponsesMap: Record<string, { confirmed: string[]; declined: string[]; invited: string[]; notes: Record<string, string>; viewed: string[] }> = {};
     for (const r of erData || []) {
-      if (!eventResponsesMap[r.event_id]) eventResponsesMap[r.event_id] = { confirmed: [], declined: [], invited: [], notes: {} };
+      if (!eventResponsesMap[r.event_id]) eventResponsesMap[r.event_id] = { confirmed: [], declined: [], invited: [], notes: {}, viewed: [] };
       const map = eventResponsesMap[r.event_id];
       if (r.response === 'confirmed') { map.confirmed.push(r.player_id); map.invited.push(r.player_id); }
       else if (r.response === 'declined') { map.declined.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
       else if (r.response === 'invited') { map.invited.push(r.player_id); }
+      else if (r.response === 'viewed') { map.viewed.push(r.player_id); map.invited.push(r.player_id); }
     }
     const events: Event[] = (eventsData || []).map((e: any) => {
-      const resp = eventResponsesMap[e.id] || { confirmed: [], declined: [], invited: [], notes: {} };
-      return { ...mapEvent(e), confirmedPlayers: resp.confirmed, declinedPlayers: resp.declined, invitedPlayers: resp.invited, declinedNotes: resp.notes };
+      const resp = eventResponsesMap[e.id] || { confirmed: [], declined: [], invited: [], notes: {}, viewed: [] };
+      return { ...mapEvent(e), confirmedPlayers: resp.confirmed, declinedPlayers: resp.declined, invitedPlayers: resp.invited, declinedNotes: resp.notes, viewedBy: resp.viewed };
     });
 
     const chatMessages: ChatMessage[] = (chatData || []).map((m: any) => ({
@@ -390,17 +392,25 @@ export function startRealtimeSync(teamId: string): void {
       if (!row?.game_id || row.player_id !== store.currentPlayerId) return;
       const games = store.games.map((game) => {
         if (game.id !== row.game_id) return game;
-        let checkedIn = [...(game.checkedInPlayers || [])].filter((id) => id !== row.player_id);
-        let checkedOut = [...(game.checkedOutPlayers || [])].filter((id) => id !== row.player_id);
+        let checkedIn = [...(game.checkedInPlayers || [])];
+        let checkedOut = [...(game.checkedOutPlayers || [])];
         let invited = [...(game.invitedPlayers || [])].filter((id) => id !== row.player_id);
+        let viewed = [...(game.viewedBy || [])];
         const notes = { ...(game.checkoutNotes || {}) };
-        delete notes[row.player_id];
+
+        if (row.response !== 'viewed') {
+          checkedIn = checkedIn.filter((id) => id !== row.player_id);
+          checkedOut = checkedOut.filter((id) => id !== row.player_id);
+          delete notes[row.player_id];
+        }
+
         if (payload.eventType !== 'DELETE') {
           if (row.response === 'in') { checkedIn.push(row.player_id); if (!invited.includes(row.player_id)) invited.push(row.player_id); }
           else if (row.response === 'out') { checkedOut.push(row.player_id); if (!invited.includes(row.player_id)) invited.push(row.player_id); if (row.note) notes[row.player_id] = row.note; }
           else if (row.response === 'invited') { if (!invited.includes(row.player_id)) invited.push(row.player_id); }
+          else if (row.response === 'viewed') { if (!viewed.includes(row.player_id)) viewed.push(row.player_id); if (!invited.includes(row.player_id)) invited.push(row.player_id); }
         }
-        return { ...game, checkedInPlayers: checkedIn, checkedOutPlayers: checkedOut, invitedPlayers: invited, checkoutNotes: notes };
+        return { ...game, checkedInPlayers: checkedIn, checkedOutPlayers: checkedOut, invitedPlayers: invited, checkoutNotes: notes, viewedBy: viewed };
       });
       useTeamStore.setState({ games });
     })
@@ -417,7 +427,7 @@ export function startRealtimeSync(teamId: string): void {
       const existing = store.events.find((e) => e.id === updated.id);
       useTeamStore.setState({
         events: store.events.map((e) => e.id === updated.id
-          ? { ...updated, confirmedPlayers: existing?.confirmedPlayers || [], declinedPlayers: existing?.declinedPlayers || [], invitedPlayers: existing?.invitedPlayers || [], declinedNotes: existing?.declinedNotes }
+          ? { ...updated, confirmedPlayers: existing?.confirmedPlayers || [], declinedPlayers: existing?.declinedPlayers || [], invitedPlayers: existing?.invitedPlayers || [], declinedNotes: existing?.declinedNotes, viewedBy: existing?.viewedBy || [] }
           : e),
       });
     })
@@ -431,17 +441,26 @@ export function startRealtimeSync(teamId: string): void {
       if (!row?.event_id) return;
       const events = store.events.map((event) => {
         if (event.id !== row.event_id) return event;
-        let confirmed = [...(event.confirmedPlayers || [])].filter((id) => id !== row.player_id);
-        let declined = [...(event.declinedPlayers || [])].filter((id) => id !== row.player_id);
+        let confirmed = [...(event.confirmedPlayers || [])];
+        let declined = [...(event.declinedPlayers || [])];
         let invited = [...(event.invitedPlayers || [])].filter((id) => id !== row.player_id);
+        let viewed = [...(event.viewedBy || [])];
         const notes = { ...(event.declinedNotes || {}) };
-        delete notes[row.player_id];
+
+        if (row.response !== 'viewed') {
+          confirmed = confirmed.filter((id) => id !== row.player_id);
+          declined = declined.filter((id) => id !== row.player_id);
+          delete notes[row.player_id];
+        }
+
         if (payload.eventType !== 'DELETE') {
           if (row.response === 'confirmed') { confirmed.push(row.player_id); if (!invited.includes(row.player_id)) invited.push(row.player_id); }
           else if (row.response === 'declined') { declined.push(row.player_id); if (!invited.includes(row.player_id)) invited.push(row.player_id); if (row.note) notes[row.player_id] = row.note; }
           else if (row.response === 'invited') { if (!invited.includes(row.player_id)) invited.push(row.player_id); }
+          else if (row.response === 'viewed') { if (!viewed.includes(row.player_id)) viewed.push(row.player_id); if (!invited.includes(row.player_id)) invited.push(row.player_id); }
         }
-        return { ...event, confirmedPlayers: confirmed, declinedPlayers: declined, invitedPlayers: invited, declinedNotes: notes };
+
+        return { ...event, confirmedPlayers: confirmed, declinedPlayers: declined, invitedPlayers: invited, declinedNotes: notes, viewedBy: viewed };
       });
       useTeamStore.setState({ events });
     })
@@ -674,6 +693,44 @@ export async function pushEventResponseToSupabase(eventId: string, playerId: str
       { onConflict: 'event_id,player_id' }
     );
   } catch (err) { console.error('SYNC: pushEventResponseToSupabase error:', err); }
+}
+
+export async function pushEventViewedToSupabase(eventId: string, playerId: string): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    const { data } = await supabase
+      .from('event_responses')
+      .select('response')
+      .eq('event_id', eventId)
+      .eq('player_id', playerId)
+      .maybeSingle();
+    if (!data) {
+      await supabase.from('event_responses').insert(
+        { event_id: eventId, player_id: playerId, response: 'viewed' }
+      );
+    }
+  } catch (err) {
+    console.error('SYNC: pushEventViewedToSupabase error:', err);
+  }
+}
+
+export async function pushGameViewedToSupabase(gameId: string, playerId: string): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    const { data } = await supabase
+      .from('game_responses')
+      .select('response')
+      .eq('game_id', gameId)
+      .eq('player_id', playerId)
+      .maybeSingle();
+    if (!data) {
+      await supabase.from('game_responses').insert(
+        { game_id: gameId, player_id: playerId, response: 'viewed' }
+      );
+    }
+  } catch (err) {
+    console.error('SYNC: pushGameViewedToSupabase error:', err);
+  }
 }
 
 export async function pushChatMessageToSupabase(message: ChatMessage, teamId: string): Promise<void> {

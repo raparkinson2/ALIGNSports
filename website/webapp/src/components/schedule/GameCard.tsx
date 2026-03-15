@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import {
   MapPin, Pencil, CheckCircle2, XCircle, ChevronDown, ChevronUp,
-  Users, UserPlus, Send, X, Circle,
+  Users, UserPlus, Send, X, Circle, Eye,
 } from 'lucide-react';
 import { cn, getDateLabel, formatTime } from '@/lib/utils';
 import { getPlayerName } from '@/lib/types';
@@ -412,6 +412,12 @@ export default function GameCard({
                       {getPlayerName(player)}
                       {player.number ? <span className="text-slate-500 ml-1 text-xs">#{player.number}</span> : null}
                     </span>
+                    {isAdmin && (game.viewedBy ?? []).includes(player.id) && !isIn && !isOut && (
+                      <span className="flex items-center gap-1 text-[10px] text-cyan-400 shrink-0">
+                        <Eye size={10} />
+                        Viewed
+                      </span>
+                    )}
                     {isSelf && (
                       <span className="text-[10px] font-bold text-[#67e8f9] bg-cyan-500/15 px-1.5 py-0.5 rounded-md shrink-0">YOU</span>
                     )}

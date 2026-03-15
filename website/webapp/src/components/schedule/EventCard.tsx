@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MapPin, Pencil, CheckCircle2, XCircle, Circle, UserPlus, Send, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { MapPin, Pencil, CheckCircle2, XCircle, Circle, UserPlus, Send, X, ChevronDown, ChevronUp, Eye } from 'lucide-react';
 import { cn, getDateLabel, formatTime, EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/utils';
 import { pushEventToSupabase, pushEventResponseToSupabase } from '@/lib/realtime-sync';
 import { useTeamStore } from '@/lib/store';
@@ -326,6 +326,14 @@ export default function EventCard({
                       <span className={cn('flex-1 text-sm', isMe ? 'text-white font-medium' : 'text-slate-300')}>
                         {`${player.firstName} ${player.lastName}`}
                       </span>
+                      {isAdmin && (event.viewedBy ?? []).includes(player.id) &&
+                        !(event.confirmedPlayers ?? []).includes(player.id) &&
+                        !(event.declinedPlayers ?? []).includes(player.id) && (
+                          <span className="flex items-center gap-1 text-[10px] text-cyan-400">
+                            <Eye size={10} />
+                            Viewed
+                          </span>
+                        )}
                       {isMe && (
                         <span className="text-[10px] font-bold bg-[#67e8f9]/20 text-[#67e8f9] px-1.5 py-0.5 rounded-md">
                           YOU

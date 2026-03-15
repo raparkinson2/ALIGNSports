@@ -65,13 +65,18 @@ export default function AddEditPlayerModal({ isOpen, onClose, player }: AddEditP
 
   useEffect(() => {
     if (player) {
+      const isCoach = player.roles?.includes('coach') || player.position === 'Coach';
+      const isParent = player.roles?.includes('parent') || player.position === 'Parent';
+      // Filter out role-specific pseudo-positions from stored positions array
+      const cleanPositions = (player.positions ?? (player.position ? [player.position] : []))
+        .filter((p) => p !== 'Coach' && p !== 'Parent');
       setForm({
         firstName: player.firstName,
         lastName: player.lastName,
-        number: player.number ?? '',
+        number: (isCoach || isParent) ? '' : (player.number ?? ''),
         email: player.email ?? '',
         phone: player.phone ?? '',
-        positions: player.positions ?? (player.position ? [player.position] : []),
+        positions: cleanPositions,
         status: player.status,
         isInjured: player.isInjured ?? false,
         isSuspended: player.isSuspended ?? false,
@@ -119,14 +124,18 @@ export default function AddEditPlayerModal({ isOpen, onClose, player }: AddEditP
     setError(null);
 
     try {
-      const primaryPos = form.positions[0] ?? '';
+      const isCoachRole = form.roles.includes('coach');
+      const isParentRole = form.roles.includes('parent');
+      // Strip any role-specific pseudo-positions
+      const cleanPositions = form.positions.filter((p) => p !== 'Coach' && p !== 'Parent');
+      const primaryPos = isCoachRole ? 'Coach' : (isParentRole ? 'Parent' : (cleanPositions[0] ?? ''));
       const updatedPlayer: Player = {
         id: player?.id ?? generateId(),
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
-        number: form.number.trim(),
+        number: (isCoachRole || isParentRole) ? '' : form.number.trim(),
         position: primaryPos,
-        positions: form.positions,
+        positions: isCoachRole ? ['Coach'] : (isParentRole ? ['Parent'] : cleanPositions),
         email: form.email.trim(),
         phone: form.phone.trim() || undefined,
         status: form.status,

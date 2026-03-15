@@ -85,6 +85,7 @@ interface TeamStore {
   removeEvent: (id: string) => void;
   confirmEventAttendance: (eventId: string, playerId: string) => void;
   declineEventAttendance: (eventId: string, playerId: string, note?: string) => void;
+  markEventViewed: (eventId: string, playerId: string) => void;
 
   // Photo mutations
   addPhoto: (photo: Photo) => void;
@@ -247,6 +248,13 @@ export const useTeamStore = create<TeamStore>()(
           const notes = note ? { ...(e.declinedNotes || {}), [playerId]: note } : e.declinedNotes;
           return { ...e, confirmedPlayers: confirmed, declinedPlayers: declined, declinedNotes: notes };
         }),
+      })),
+      markEventViewed: (eventId, playerId) => set((s) => ({
+        events: s.events.map((e) =>
+          e.id === eventId && !(e.viewedBy || []).includes(playerId)
+            ? { ...e, viewedBy: [...(e.viewedBy || []), playerId] }
+            : e
+        ),
       })),
 
       addPhoto: (photo) => set((s) => ({ photos: [photo, ...s.photos] })),
