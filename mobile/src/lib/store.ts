@@ -828,6 +828,7 @@ interface TeamStore {
   directMessages: DirectMessage[];
   addDirectMessage: (message: DirectMessage) => void;
   markDirectMessageRead: (messageId: string, playerId: string) => void;
+  removeDirectMessage: (messageId: string) => void;
   getUnreadDirectMessageCount: (playerId: string) => number;
 
   // Payments
@@ -1610,6 +1611,9 @@ export const useTeamStore = create<TeamStore>()(
             ? { ...m, readBy: [...m.readBy, playerId] }
             : m
         ),
+      })),
+      removeDirectMessage: (messageId) => set((state) => ({
+        directMessages: state.directMessages.filter((m) => m.id !== messageId),
       })),
       getUnreadDirectMessageCount: (playerId) => {
         const state = get();

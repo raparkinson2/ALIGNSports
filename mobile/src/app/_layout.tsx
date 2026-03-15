@@ -318,7 +318,9 @@ function AuthNavigator() {
         console.log('App opened from notification:', response);
         const data = response.notification.request.content.data;
         if (isReady) {
-          if (data?.eventId) {
+          if (data?.type === 'direct_message' && data?.messageId) {
+            router.push(`/messages?openMessageId=${data.messageId}`);
+          } else if (data?.eventId) {
             router.push(`/event/${data.eventId}`);
           } else if (data?.gameId) {
             router.push(`/game/${data.gameId}`);

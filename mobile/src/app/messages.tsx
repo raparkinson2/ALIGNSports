@@ -1,11 +1,12 @@
 import {
   View, Text, Pressable, TextInput, ScrollView, Modal,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  Animated as RNAnimated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
-import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, Send, Plus, X, Check, CheckCheck, Users, Inbox, Mail } from 'lucide-react-native';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { ChevronLeft, Send, Plus, X, Check, CheckCheck, Users, Inbox, Mail, Trash2 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,6 +24,64 @@ function formatMessageDate(iso: string): string {
   return format(d, 'MMM d');
 }
 
+function SwipeableMessageRow({
+  children,
+  onDelete,
+  index,
+}: {
+  children: React.ReactNode;
+  onDelete: () => void;
+  index: number;
+}) {
+  const translateX = useRef(new RNAnimated.Value(0)).current;
+  const isOpen = useRef(false);
+  const { PanResponder } = require('react-native');
+
+  const close = () => {
+    isOpen.current = false;
+    RNAnimated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_: any, gs: any) =>
+        Math.abs(gs.dx) > 8 && Math.abs(gs.dy) < 20,
+      onPanResponderMove: (_: any, gs: any) => {
+        if (gs.dx < 0) translateX.setValue(gs.dx);
+        else if (isOpen.current) translateX.setValue(-80 + gs.dx);
+      },
+      onPanResponderRelease: (_: any, gs: any) => {
+        if (gs.dx < -60) {
+          isOpen.current = true;
+          RNAnimated.spring(translateX, { toValue: -80, useNativeDriver: true }).start();
+        } else {
+          close();
+        }
+      },
+    })
+  ).current;
+
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 40).springify()} className="mb-3">
+      <View style={{ overflow: 'hidden', borderRadius: 16 }}>
+        {/* Delete background */}
+        <Pressable
+          onPress={() => { close(); onDelete(); }}
+          style={{
+            position: 'absolute', right: 0, top: 0, bottom: 0, width: 80,
+            backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Trash2 size={20} color="white" />
+        </Pressable>
+        <RNAnimated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
+          {children}
+        </RNAnimated.View>
+      </View>
+    </Animated.View>
+  );
+}
+
 export default function MessagesScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ openMessageId?: string }>();
@@ -34,6 +93,7 @@ export default function MessagesScreen() {
   const directMessages = useTeamStore((s) => s.directMessages);
   const addDirectMessage = useTeamStore((s) => s.addDirectMessage);
   const markDirectMessageRead = useTeamStore((s) => s.markDirectMessageRead);
+  const removeDirectMessage = useTeamStore((s) => s.removeDirectMessage);
 
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
   const isAdmin = currentPlayer?.roles?.includes('admin') ?? false;
@@ -154,8 +214,8 @@ export default function MessagesScreen() {
     // Send push notifications to recipients
     await sendPushToPlayers(
       selectedRecipients,
-      `Message from ${getPlayerName(currentPlayer)}`,
-      subject.trim(),
+      `New Team Message in ${teamName}`,
+      `View the Message in the App.`,
       { type: 'direct_message', messageId: message.id }
     );
 
@@ -179,6 +239,19 @@ export default function MessagesScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const allIds = activePlayers.filter((p) => p.id !== currentPlayerId).map((p) => p.id);
     setSelectedRecipients(allIds);
+  };
+
+  const handleDeleteMessage = (msgId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert('Delete Message', 'Remove this message from your inbox?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: () => {
+          removeDirectMessage(msgId);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        },
+      },
+    ]);
   };
 
   // Filter messages for current view
@@ -256,10 +329,14 @@ export default function MessagesScreen() {
               const isUnread = tab === 'inbox' && currentPlayerId && !msg.readBy.includes(currentPlayerId);
               const recipientCount = msg.recipientIds.length;
               return (
-                <Animated.View key={msg.id} entering={FadeInDown.delay(i * 40).springify()}>
+                <SwipeableMessageRow
+                  key={msg.id}
+                  onDelete={() => handleDeleteMessage(msg.id)}
+                  index={i}
+                >
                   <Pressable
                     onPress={() => openMessage(msg)}
-                    className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/40 active:bg-slate-700/60"
+                    className="bg-slate-800/60 rounded-2xl p-4 border border-slate-700/40 active:bg-slate-700/60"
                   >
                     <View className="flex-row items-start justify-between mb-1">
                       <View className="flex-row items-center flex-1 mr-2">
@@ -288,7 +365,7 @@ export default function MessagesScreen() {
                       )}
                     </View>
                   </Pressable>
-                </Animated.View>
+                </SwipeableMessageRow>
               );
             })
           )}
