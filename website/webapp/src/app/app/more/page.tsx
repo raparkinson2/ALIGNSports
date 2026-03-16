@@ -1082,7 +1082,71 @@ function NoticesPage({ onBack }: { onBack: () => void }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-type Tab = 'home' | 'availability' | 'links' | 'polls' | 'stats' | 'notifications' | 'notif-view' | 'create-team' | 'faqs' | 'feature-request' | 'report-bug' | 'notices';
+type Tab = 'home' | 'availability' | 'links' | 'polls' | 'stats' | 'notifications' | 'notif-view' | 'switch-team' | 'create-team' | 'faqs' | 'feature-request' | 'report-bug' | 'notices';
+
+// ── Switch Team ────────────────────────────────────────────────────────────────
+
+function SwitchTeamPage({ teams, activeTeamId, switchTeam, onBack, onCreateTeam }: {
+  teams: import('@/lib/types').Team[];
+  activeTeamId: string | null;
+  switchTeam: (teamId: string) => void;
+  onBack: () => void;
+  onCreateTeam: () => void;
+}) {
+  return (
+    <div className="max-w-lg mx-auto">
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={onBack} className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all">
+          <ChevronRight size={18} className="rotate-180" />
+        </button>
+        <h1 className="text-xl font-bold text-slate-100">Switch Team</h1>
+      </div>
+
+      <div className="bg-[#0f1a2e] border border-white/[0.07] rounded-2xl overflow-hidden mb-4">
+        {teams.map((team, i) => {
+          const isActive = team.id === activeTeamId;
+          return (
+            <button
+              key={team.id}
+              onClick={() => { if (!isActive) { switchTeam(team.id); onBack(); } }}
+              disabled={isActive}
+              className={cn(
+                'w-full flex items-center gap-3 px-4 py-4 text-left transition-colors',
+                i < teams.length - 1 && 'border-b border-white/[0.05]',
+                isActive ? 'cursor-default' : 'hover:bg-white/[0.03]'
+              )}
+            >
+              <div className={cn(
+                'w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold text-sm',
+                isActive ? 'bg-[#67e8f9]/20 text-[#67e8f9]' : 'bg-slate-700/60 text-slate-400'
+              )}>
+                {team.teamName.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={cn('text-sm font-semibold truncate', isActive ? 'text-[#67e8f9]' : 'text-slate-100')}>
+                  {team.teamName}
+                </p>
+                {isActive && <p className="text-xs text-slate-500 mt-0.5">Current team</p>}
+              </div>
+              {isActive ? (
+                <Check size={16} className="text-[#67e8f9] shrink-0" />
+              ) : (
+                <ChevronRight size={16} className="text-slate-600 shrink-0" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <button
+        onClick={onCreateTeam}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] text-sm font-semibold hover:bg-[#67e8f9]/20 transition-all"
+      >
+        <Plus size={16} />Join or Create Another Team
+      </button>
+    </div>
+  );
+}
 
 export default function MorePage() {
   const players = useTeamStore((s) => s.players);
@@ -1115,6 +1179,7 @@ export default function MorePage() {
   };
 
   // Sub-pages
+  if (tab === 'switch-team') return <SwitchTeamPage teams={teams} activeTeamId={activeTeamId} switchTeam={switchTeam} onBack={() => setTab('home')} onCreateTeam={() => setTab('create-team')} />;
   if (tab === 'availability' && currentPlayer) return <AvailabilityPage player={currentPlayer} activeTeamId={activeTeamId} onBack={() => setTab('home')} />;
   if (tab === 'links') return <TeamLinksPage activeTeamId={activeTeamId} currentPlayerId={currentPlayerId} isAdmin={isAdmin} teamLinks={teamLinks} setTeamLinks={setTeamLinks} onBack={() => setTab('home')} />;
   if (tab === 'polls') return <TeamPollsPage activeTeamId={activeTeamId} currentPlayerId={currentPlayerId} isAdmin={isAdmin} polls={polls} setPolls={setPolls} onBack={() => setTab('home')} />;
@@ -1155,7 +1220,7 @@ export default function MorePage() {
           iconColor="text-[#67e8f9]"
           label="Switch Team"
           sub={teams.length > 1 ? `You're on ${teams.length} teams` : 'Switch or join another team'}
-          onClick={() => otherTeams.length > 0 ? switchTeam(otherTeams[0].id) : setTab('create-team')}
+          onClick={() => setTab('switch-team')}
         />
         <MenuItem icon={CalendarOff} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="My Availability" sub="Set dates you're unavailable" onClick={() => setTab('availability')} />
         <MenuItem icon={LinkIcon} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Team Links" sub={linksSubText} onClick={() => setTab('links')} />
