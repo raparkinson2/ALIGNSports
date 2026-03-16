@@ -93,7 +93,7 @@ function SubFeatureCard({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="ml-6 mt-1.5 bg-slate-800/40 border border-slate-700/40 rounded-xl p-3">
+    <div className="mt-1.5 bg-slate-800/40 border border-slate-700/40 rounded-xl p-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <div className={cn('p-1.5 rounded-full shrink-0', iconBg)}>
@@ -285,7 +285,7 @@ function StripeSubRow({
     <button
       type="button"
       onClick={onClick}
-      className="ml-6 mt-1.5 w-[calc(100%-1.5rem)] bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 flex items-center justify-between gap-3 hover:bg-slate-700/40 transition-all text-left"
+      className="mt-1.5 w-full bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 flex items-center justify-between gap-3 hover:bg-slate-700/40 transition-all text-left"
     >
       <div className="flex items-center gap-2.5 flex-1 min-w-0">
         <div className="p-1.5 rounded-full bg-[#635BFF]/20 shrink-0">
