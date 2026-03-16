@@ -436,7 +436,7 @@ export default function TeamSettingsForm() {
               <span>Changing sport will affect position groupings on the roster and stats pages.</span>
             </div>
           )}
-          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="flex flex-wrap gap-2">
             {SPORTS.map((sport) => (
               <button
                 key={sport}

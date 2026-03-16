@@ -1149,21 +1149,14 @@ export default function MorePage() {
 
       {/* TEAM section */}
       <SectionCard title="Team">
-        {otherTeams.length > 0 && (
-          <>
-            {otherTeams.map((team) => (
-              <MenuItem
-                key={team.id}
-                icon={ArrowLeftRight}
-                iconBg="bg-[#67e8f9]/10"
-                iconColor="text-[#67e8f9]"
-                label="Switch Team"
-                sub={`You're on ${teams.length} team${teams.length !== 1 ? 's' : ''}`}
-                onClick={() => switchTeam(team.id)}
-              />
-            ))}
-          </>
-        )}
+        <MenuItem
+          icon={ArrowLeftRight}
+          iconBg="bg-[#67e8f9]/10"
+          iconColor="text-[#67e8f9]"
+          label="Switch Team"
+          sub={teams.length > 1 ? `You're on ${teams.length} teams` : 'Switch or join another team'}
+          onClick={() => otherTeams.length > 0 ? switchTeam(otherTeams[0].id) : setTab('create-team')}
+        />
         <MenuItem icon={CalendarOff} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="My Availability" sub="Set dates you're unavailable" onClick={() => setTab('availability')} />
         <MenuItem icon={LinkIcon} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Team Links" sub={linksSubText} onClick={() => setTab('links')} />
         <MenuItem icon={BarChart3} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Team Polls" sub={pollsSubText} onClick={() => setTab('polls')} />
