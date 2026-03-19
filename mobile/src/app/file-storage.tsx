@@ -225,12 +225,12 @@ export default function FileStorageScreen() {
   });
 
   // Merge server list with locally-uploaded files; server wins on id collision
-  // (once the storage service indexes the file, it replaces the pending entry).
   const serverIds = new Set(serverFiles.map((f) => f.id));
   const files = [
     ...serverFiles,
     ...pendingFiles.filter((f) => !serverIds.has(f.id)),
   ];
+  console.log('[FileStorage] render — serverFiles:', serverFiles.length, 'pendingFiles:', pendingFiles.length, 'files:', files.length);
 
   const uploadMutation = useMutation({
     mutationFn: ({
@@ -243,7 +243,12 @@ export default function FileStorageScreen() {
       mimeType: string;
     }) => uploadTeamFile(uri, filename, mimeType, teamId),
     onSuccess: (newFile: TeamFile) => {
-      setPendingFiles((prev) => [...prev.filter((f) => f.id !== newFile.id), newFile]);
+      console.log('[FileStorage] onSuccess fired, newFile id:', newFile?.id, 'displayName:', newFile?.displayName);
+      setPendingFiles((prev) => {
+        const next = [...prev.filter((f) => f.id !== newFile.id), newFile];
+        console.log('[FileStorage] pendingFiles updated, count:', next.length);
+        return next;
+      });
       setShowUploadModal(false);
       setUploadError(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
