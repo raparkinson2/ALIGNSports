@@ -229,7 +229,13 @@ export default function FileStorageScreen() {
       filename: string;
       mimeType: string;
     }) => uploadTeamFile(uri, filename, mimeType, teamId),
-    onSuccess: () => {
+    onSuccess: (newFile: TeamFile) => {
+      // Immediately inject the new file into the cache so UI updates right away
+      queryClient.setQueryData(['team-files', teamId], (old: TeamFile[] = []) => {
+        const withoutDupe = old.filter((f) => f.id !== newFile.id);
+        return [...withoutDupe, newFile];
+      });
+      // Also kick off a background refetch to stay in sync
       queryClient.invalidateQueries({ queryKey: ['team-files', teamId] });
       setShowUploadModal(false);
       setUploadError(null);
@@ -252,6 +258,7 @@ export default function FileStorageScreen() {
 
   const handlePickImage = async () => {
     setUploadError(null);
+    uploadMutation.reset();
     const picked = await pickImageFile();
     if (!picked) return;
     setShowUploadModal(false);
@@ -260,6 +267,7 @@ export default function FileStorageScreen() {
 
   const handlePickDocument = async () => {
     setUploadError(null);
+    uploadMutation.reset();
     const picked = await pickDocumentFile();
     if (!picked) return;
     setShowUploadModal(false);
