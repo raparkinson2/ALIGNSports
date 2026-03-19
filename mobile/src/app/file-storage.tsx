@@ -230,25 +230,16 @@ export default function FileStorageScreen() {
       mimeType: string;
     }) => uploadTeamFile(uri, filename, mimeType, teamId),
     onSuccess: (newFile) => {
-      console.log('[upload] onSuccess called, newFile:', JSON.stringify(newFile));
-      console.log('[upload] teamId for setQueryData:', teamId);
-      // Add to cache deduped — do NOT call invalidateQueries here because the
-      // storage service has eventual consistency and an immediate refetch would
-      // return the old list (without the new file), overwriting this update.
       queryClient.setQueryData<TeamFile[]>(['team-files', teamId], (old) => {
-        console.log('[upload] setQueryData old cache length:', old?.length ?? 0);
         const existing = old ?? [];
         const without = existing.filter((f) => f.id !== newFile.id);
-        const next = [...without, newFile];
-        console.log('[upload] setQueryData new cache length:', next.length);
-        return next;
+        return [...without, newFile];
       });
       setShowUploadModal(false);
       setUploadError(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
     onError: (err: Error) => {
-      console.log('[upload] onError called:', err.message);
       setUploadError(err.message);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },

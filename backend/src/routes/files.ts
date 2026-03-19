@@ -32,16 +32,17 @@ filesRouter.post("/upload/:teamId", async (c) => {
     return c.json({ error: "Video and audio files are not allowed" }, 400);
   }
 
-  // Prefix filename with teamId so we can filter by team later
-  // file.name may be undefined when sent from React Native FormData; fallback to the
-  // explicit "filename" field sent alongside the file, then a timestamp-based name.
   const explicitFilename = formData.get("filename");
   const rawName =
     (file as File).name ||
     (typeof explicitFilename === "string" ? explicitFilename : null) ||
     `upload_${Date.now()}`;
   const safeName = rawName.replace(/[^a-zA-Z0-9._\-() ]/g, "_");
-  const prefixedName = `${teamId}__${safeName}`;
+
+  // Include a timestamp so every upload produces a unique storage entry even
+  // when the same filename is re-uploaded. Format: teamId__<ts>__originalName
+  const ts = Date.now();
+  const prefixedName = `${teamId}__${ts}__${safeName}`;
   const renamedFile = new File([file], prefixedName, { type: file.type });
 
   const storageForm = new FormData();
@@ -70,12 +71,9 @@ filesRouter.post("/upload/:teamId", async (c) => {
   }
 
   const result = (await response.json()) as { file: any };
-  console.log("[files] Storage upload response keys:", Object.keys(result.file ?? {}));
-  console.log("[files] Storage upload result.file:", JSON.stringify(result.file).slice(0, 400));
-  // Strip the teamId prefix from the display name
   const fileData = {
     ...result.file,
-    displayName: safeName,
+    displayName: safeName, // show original name without teamId/timestamp prefix
   };
   return c.json({ data: fileData });
 });
@@ -101,14 +99,12 @@ filesRouter.get("/:teamId", async (c) => {
 
   const teamFiles = (result.files ?? [])
     .filter((f: any) => f.originalFilename?.startsWith(prefix))
-    .map((f: any) => ({
-      ...f,
-      displayName: f.originalFilename.slice(prefix.length),
-    }));
-
-  if (teamFiles.length > 0) {
-    console.log("[files] List response keys for first file:", Object.keys(teamFiles[0]));
-  }
+    .map((f: any) => {
+      // Strip teamId__ and optional timestamp__ to recover the original filename
+      const withoutTeam = f.originalFilename.slice(prefix.length);
+      const displayName = withoutTeam.replace(/^\d{10,}__/, "");
+      return { ...f, displayName };
+    });
 
   return c.json({ data: teamFiles });
 });
