@@ -229,7 +229,12 @@ export default function FileStorageScreen() {
       filename: string;
       mimeType: string;
     }) => uploadTeamFile(uri, filename, mimeType, teamId),
-    onSuccess: () => {
+    onSuccess: (newFile) => {
+      // Immediately add to cache so UI updates even if storage list is eventually consistent
+      queryClient.setQueryData<TeamFile[]>(['team-files', teamId], (old) =>
+        old ? [...old, newFile] : [newFile]
+      );
+      // Also schedule a background refetch to sync with server
       queryClient.invalidateQueries({ queryKey: ['team-files', teamId] });
       setShowUploadModal(false);
       setUploadError(null);
