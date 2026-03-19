@@ -19,6 +19,7 @@ export async function uploadTeamFile(
 ): Promise<TeamFile> {
   const formData = new FormData();
   formData.append('file', { uri, type: mimeType, name: filename } as any);
+  formData.append('filename', filename);
 
   const response = await fetch(`${BACKEND_URL}/api/team-files/upload/${teamId}`, {
     method: 'POST',

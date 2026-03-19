@@ -33,21 +33,40 @@ filesRouter.post("/upload/:teamId", async (c) => {
   }
 
   // Prefix filename with teamId so we can filter by team later
-  const safeName = file.name.replace(/[^a-zA-Z0-9._\-() ]/g, "_");
+  // file.name may be undefined when sent from React Native FormData; fallback to the
+  // explicit "filename" field sent alongside the file, then a timestamp-based name.
+  const explicitFilename = formData.get("filename");
+  const rawName =
+    (file as File).name ||
+    (typeof explicitFilename === "string" ? explicitFilename : null) ||
+    `upload_${Date.now()}`;
+  const safeName = rawName.replace(/[^a-zA-Z0-9._\-() ]/g, "_");
   const prefixedName = `${teamId}__${safeName}`;
   const renamedFile = new File([file], prefixedName, { type: file.type });
 
   const storageForm = new FormData();
   storageForm.append("file", renamedFile);
 
-  const response = await fetch(`${STORAGE_BASE}/files/upload`, {
-    method: "POST",
-    body: storageForm,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${STORAGE_BASE}/files/upload`, {
+      method: "POST",
+      body: storageForm,
+    });
+  } catch (fetchErr) {
+    console.error("[files] Storage fetch error:", fetchErr);
+    return c.json({ error: "Storage service unavailable" }, 500);
+  }
 
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    return c.json({ error: (err as any).error || "Upload failed" }, 500);
+    const bodyText = await response.text().catch(() => "");
+    let errMsg = "Upload failed";
+    try {
+      const err = JSON.parse(bodyText);
+      if (err?.error) errMsg = err.error;
+    } catch {}
+    console.error("[files] Storage error response:", response.status, bodyText.slice(0, 200));
+    return c.json({ error: errMsg }, 500);
   }
 
   const result = (await response.json()) as { file: any };
@@ -63,7 +82,13 @@ filesRouter.post("/upload/:teamId", async (c) => {
 filesRouter.get("/:teamId", async (c) => {
   const { teamId } = c.req.param();
 
-  const response = await fetch(`${STORAGE_BASE}/files?limit=500`);
+  let response: Response;
+  try {
+    response = await fetch(`${STORAGE_BASE}/files?limit=500`);
+  } catch (fetchErr) {
+    console.error("[files] Storage list error:", fetchErr);
+    return c.json({ error: "Storage service unavailable" }, 500);
+  }
 
   if (!response.ok) {
     return c.json({ error: "Failed to list files" }, 500);
