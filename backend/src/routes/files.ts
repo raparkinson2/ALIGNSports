@@ -70,6 +70,8 @@ filesRouter.post("/upload/:teamId", async (c) => {
   }
 
   const result = (await response.json()) as { file: any };
+  console.log("[files] Storage upload response keys:", Object.keys(result.file ?? {}));
+  console.log("[files] Storage upload result.file:", JSON.stringify(result.file).slice(0, 400));
   // Strip the teamId prefix from the display name
   const fileData = {
     ...result.file,
@@ -103,6 +105,10 @@ filesRouter.get("/:teamId", async (c) => {
       ...f,
       displayName: f.originalFilename.slice(prefix.length),
     }));
+
+  if (teamFiles.length > 0) {
+    console.log("[files] List response keys for first file:", Object.keys(teamFiles[0]));
+  }
 
   return c.json({ data: teamFiles });
 });
