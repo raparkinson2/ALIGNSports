@@ -197,8 +197,7 @@ export default function PhotosScreen() {
         >
           <View>
             <View className="flex-row items-center">
-              <ImageIcon size={20} color="#67e8f9" />
-              <Text className="text-cyan-400 text-sm font-medium ml-2">Photos</Text>
+              <Text className="text-white text-3xl font-bold">Team Photos</Text>
               {(isUploading || isSyncing) && (
                 <View className="flex-row items-center ml-2">
                   <ActivityIndicator size="small" color="#67e8f9" />
@@ -208,7 +207,6 @@ export default function PhotosScreen() {
                 </View>
               )}
             </View>
-            <Text className="text-white text-3xl font-bold">Team Photos</Text>
           </View>
           <View className="flex-row items-center">
             <Pressable

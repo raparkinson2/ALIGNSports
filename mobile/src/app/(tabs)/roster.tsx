@@ -916,10 +916,6 @@ export default function RosterScreen() {
           entering={FadeIn.delay(50)}
           className="px-5 pt-2 pb-4"
         >
-          <View className="flex-row items-center">
-            <Users size={20} color="#67e8f9" />
-            <Text className="text-cyan-400 text-sm font-medium ml-2">Roster</Text>
-          </View>
           <View className="flex-row items-center justify-between">
             <Text className="text-white text-3xl font-bold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{teamName} Roster</Text>
             {canEditPlayers() && (
