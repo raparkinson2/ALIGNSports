@@ -230,14 +230,14 @@ export default function FileStorageScreen() {
       mimeType: string;
     }) => uploadTeamFile(uri, filename, mimeType, teamId),
     onSuccess: (newFile) => {
-      // Immediately add to cache (deduped by id) so UI updates even if storage is eventually consistent
+      // Add to cache deduped — do NOT call invalidateQueries here because the
+      // storage service has eventual consistency and an immediate refetch would
+      // return the old list (without the new file), overwriting this update.
       queryClient.setQueryData<TeamFile[]>(['team-files', teamId], (old) => {
         const existing = old ?? [];
         const without = existing.filter((f) => f.id !== newFile.id);
         return [...without, newFile];
       });
-      // Also schedule a background refetch to sync with server
-      queryClient.invalidateQueries({ queryKey: ['team-files', teamId] });
       setShowUploadModal(false);
       setUploadError(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
