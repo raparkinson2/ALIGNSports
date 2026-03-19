@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { BACKEND_URL } from './config';
 
 export type TeamFile = {
@@ -18,7 +19,17 @@ export async function uploadTeamFile(
   teamId: string
 ): Promise<TeamFile> {
   const formData = new FormData();
-  formData.append('file', { uri, type: mimeType, name: filename } as any);
+
+  if (Platform.OS === 'web') {
+    // On web, fetch the blob URI to get real file bytes, then wrap in a File object
+    const blobRes = await fetch(uri);
+    const blob = await blobRes.blob();
+    const file = new File([blob], filename, { type: mimeType });
+    formData.append('file', file);
+  } else {
+    // React Native: pass the { uri, type, name } object — RN's fetch handles it
+    formData.append('file', { uri, type: mimeType, name: filename } as any);
+  }
   formData.append('filename', filename);
 
   const response = await fetch(`${BACKEND_URL}/api/team-files/upload/${teamId}`, {

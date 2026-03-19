@@ -230,8 +230,6 @@ export default function FileStorageScreen() {
     ...serverFiles,
     ...pendingFiles.filter((f) => !serverIds.has(f.id)),
   ];
-  console.log('[FileStorage] render — serverFiles:', serverFiles.length, 'pendingFiles:', pendingFiles.length, 'files:', files.length);
-
   const uploadMutation = useMutation({
     mutationFn: ({
       uri,
@@ -243,14 +241,7 @@ export default function FileStorageScreen() {
       mimeType: string;
     }) => uploadTeamFile(uri, filename, mimeType, teamId),
     onSuccess: (newFile: TeamFile) => {
-      console.log('[FileStorage] onSuccess fired, newFile id:', newFile?.id, 'displayName:', newFile?.displayName);
-      // 1. Local state — shows file instantly this session
-      setPendingFiles((prev) => {
-        const next = [...prev.filter((f) => f.id !== newFile.id), newFile];
-        console.log('[FileStorage] pendingFiles updated, count:', next.length);
-        return next;
-      });
-      // 2. QueryClient cache — persists across navigation/remount (staleTime: 60s)
+      setPendingFiles((prev) => [...prev.filter((f) => f.id !== newFile.id), newFile]);
       queryClient.setQueryData<TeamFile[]>(['team-files', teamId], (old = []) => [
         ...old.filter((f) => f.id !== newFile.id),
         newFile,

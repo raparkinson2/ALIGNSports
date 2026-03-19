@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import { Platform } from 'react-native';
 
 export type PickedFile = {
   uri: string;
@@ -10,8 +11,11 @@ export type PickedFile = {
 
 /** Pick an image from the photo library (no videos) */
 export async function pickImageFile(): Promise<PickedFile | null> {
-  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!perm.granted) return null;
+  // Permission prompt is only needed on native — web uses the browser file picker
+  if (Platform.OS !== 'web') {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return null;
+  }
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
