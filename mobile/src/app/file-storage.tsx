@@ -210,18 +210,27 @@ export default function FileStorageScreen() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<TeamFile | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  // Track files uploaded this session in local state so they show instantly
+  // without depending on React Query's cache invalidation / refetch timing.
+  const [pendingFiles, setPendingFiles] = useState<TeamFile[]>([]);
 
   const teamId = activeTeamId ?? '';
 
-  const { data: files = [], isLoading, error } = useQuery({
+  const { data: serverFiles = [], isLoading, error } = useQuery({
     queryKey: ['team-files', teamId],
     queryFn: () => fetchTeamFiles(teamId),
     enabled: !!teamId,
-    // Don't auto-refetch on focus — that overwrites the optimistic update with
-    // stale cached data from the storage service. We control refetches manually.
     refetchOnWindowFocus: false,
     staleTime: 60_000,
   });
+
+  // Merge server list with locally-uploaded files; server wins on id collision
+  // (once the storage service indexes the file, it replaces the pending entry).
+  const serverIds = new Set(serverFiles.map((f) => f.id));
+  const files = [
+    ...serverFiles,
+    ...pendingFiles.filter((f) => !serverIds.has(f.id)),
+  ];
 
   const uploadMutation = useMutation({
     mutationFn: ({
@@ -234,10 +243,7 @@ export default function FileStorageScreen() {
       mimeType: string;
     }) => uploadTeamFile(uri, filename, mimeType, teamId),
     onSuccess: (newFile: TeamFile) => {
-      queryClient.setQueryData(['team-files', teamId], (old: TeamFile[] = []) => {
-        const withoutDupe = old.filter((f) => f.id !== newFile.id);
-        return [...withoutDupe, newFile];
-      });
+      setPendingFiles((prev) => [...prev.filter((f) => f.id !== newFile.id), newFile]);
       setShowUploadModal(false);
       setUploadError(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -250,7 +256,8 @@ export default function FileStorageScreen() {
 
   const deleteMutation = useMutation({
     mutationFn: (fileId: string) => deleteTeamFile(fileId),
-    onSuccess: () => {
+    onSuccess: (_, fileId) => {
+      setPendingFiles((prev) => prev.filter((f) => f.id !== fileId));
       queryClient.invalidateQueries({ queryKey: ['team-files', teamId] });
       setFileToDelete(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
