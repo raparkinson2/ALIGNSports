@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   ArrowLeftRight, CalendarOff, Link as LinkIcon, BarChart3, TrendingUp,
   Plus, Trash2, X, Bell, BellRing, Mail, HelpCircle, Lightbulb,
   Bug, FileText, ChevronRight, Check, ExternalLink, LogOut,
   UserPlus, Globe, UserCheck, Trophy, Calendar,
   CheckCircle2, Send, ShieldCheck, Eye, History, MessageSquare,
+  FolderOpen, Upload, File, Image as ImageIcon, AlertCircle,
 } from 'lucide-react';
 import { useTeamStore } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -998,6 +999,251 @@ function ReportBugPage({ currentPlayer, onBack }: { currentPlayer: Player | null
   );
 }
 
+// ── File Storage ───────────────────────────────────────────────────────────────
+
+type TeamFile = {
+  id: string;
+  displayName: string;
+  contentType: string;
+  sizeBytes: number;
+  url: string;
+  created: string;
+};
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function fileTypeLabel(ct: string): string {
+  if (ct === 'application/pdf') return 'PDF';
+  if (ct.startsWith('image/')) return 'Image';
+  if (ct === 'application/msword' || ct.includes('wordprocessingml')) return 'Word';
+  if (ct === 'application/vnd.ms-excel' || ct.includes('spreadsheetml')) return 'Excel';
+  if (ct === 'text/plain') return 'Text';
+  if (ct === 'text/csv') return 'CSV';
+  return 'File';
+}
+
+function FileTypeBadge({ ct }: { ct: string }) {
+  let bg = 'bg-[#312e81]', text = 'text-[#c4b5fd]';
+  if (ct.startsWith('image/')) { bg = 'bg-[#164e63]'; text = 'text-[#67e8f9]'; }
+  else if (ct === 'application/pdf') { bg = 'bg-[#450a0a]'; text = 'text-[#fca5a5]'; }
+  else if (ct.includes('word')) { bg = 'bg-[#1e3a5f]'; text = 'text-[#93c5fd]'; }
+  else if (ct.includes('excel') || ct.includes('spreadsheet')) { bg = 'bg-[#14532d]'; text = 'text-[#86efac]'; }
+  return (
+    <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded', bg, text)}>
+      {fileTypeLabel(ct)}
+    </span>
+  );
+}
+
+function FileStoragePage({ activeTeamId, isAdmin, onBack }: {
+  activeTeamId: string | null;
+  isAdmin: boolean;
+  onBack: () => void;
+}) {
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? '';
+  const [files, setFiles] = useState<TeamFile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch files on mount
+  React.useEffect(() => {
+    if (!activeTeamId) return;
+    setLoading(true);
+    fetch(`${BACKEND_URL}/api/team-files/${activeTeamId}`)
+      .then(r => r.json())
+      .then((d: { data?: TeamFile[] }) => {
+        const deduped = [...new Map((d.data ?? []).map(f => [f.id, f])).values()];
+        setFiles(deduped);
+        setLoading(false);
+      })
+      .catch(() => { setError('Failed to load files'); setLoading(false); });
+  }, [activeTeamId, BACKEND_URL]);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeTeamId) return;
+    // Block video/audio
+    if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
+      setUploadError('Video and audio files are not supported.');
+      return;
+    }
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('filename', file.name);
+      const res = await fetch(`${BACKEND_URL}/api/team-files/upload/${activeTeamId}`, {
+        method: 'POST',
+        body: form,
+      });
+      const data = (await res.json()) as { data?: TeamFile; error?: string };
+      if (!res.ok || data.error) throw new Error(data.error ?? 'Upload failed');
+      if (data.data) {
+        setFiles(prev => {
+          const without = prev.filter(f => f.id !== data.data!.id);
+          return [...without, data.data!];
+        });
+      }
+    } catch (err: unknown) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+      // reset input so same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDelete = async (fileId: string) => {
+    setDeletingId(fileId);
+    try {
+      await fetch(`${BACKEND_URL}/api/team-files/delete/${fileId}`, { method: 'DELETE' });
+      setFiles(prev => prev.filter(f => f.id !== fileId));
+    } catch { /* ignore */ }
+    setDeletingId(null);
+  };
+
+  return (
+    <div className="max-w-lg mx-auto">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all">
+            <ChevronRight size={18} className="rotate-180" />
+          </button>
+          <h1 className="text-xl font-bold text-slate-100">File Storage</h1>
+        </div>
+        {isAdmin && (
+          <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] text-sm font-semibold cursor-pointer hover:bg-[#67e8f9]/20 transition-all">
+            {uploading ? (
+              <span className="w-4 h-4 rounded-full border-2 border-[#67e8f9]/30 border-t-[#67e8f9] animate-spin" />
+            ) : (
+              <Upload size={15} />
+            )}
+            {uploading ? 'Uploading…' : 'Upload'}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.jpg,.jpeg,.png,.heic,.gif,.webp"
+              onChange={handleUpload}
+              disabled={uploading}
+            />
+          </label>
+        )}
+      </div>
+
+      {/* Info banner */}
+      <div className="flex items-start gap-3 bg-[#0f1a2e] border border-white/[0.07] rounded-2xl p-4 mb-4">
+        <AlertCircle size={15} className="text-[#67e8f9] shrink-0 mt-0.5" />
+        <div>
+          <p className="text-[#67e8f9] text-xs font-semibold mb-0.5">Supported File Types</p>
+          <p className="text-slate-500 text-xs leading-relaxed">
+            Images (JPG, PNG, HEIC) · PDF · Word · Excel · Text<br />
+            Videos and audio files are not supported.
+          </p>
+        </div>
+      </div>
+
+      {/* Upload error */}
+      {uploadError && (
+        <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 mb-4">
+          <X size={14} className="text-rose-400 shrink-0" />
+          <p className="text-rose-400 text-sm">{uploadError}</p>
+        </div>
+      )}
+
+      {/* File list */}
+      {loading ? (
+        <div className="flex flex-col items-center py-16 gap-3">
+          <div className="w-7 h-7 rounded-full border-2 border-[#67e8f9]/20 border-t-[#67e8f9] animate-spin" />
+          <p className="text-slate-500 text-sm">Loading files…</p>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center py-16 gap-2">
+          <p className="text-rose-400 text-sm">{error}</p>
+        </div>
+      ) : files.length === 0 ? (
+        <div className="flex flex-col items-center py-16 gap-3">
+          <div className="w-16 h-16 rounded-full bg-[#67e8f9]/[0.06] flex items-center justify-center">
+            <FolderOpen size={32} className="text-slate-600" />
+          </div>
+          <p className="text-slate-300 font-semibold">No files yet</p>
+          <p className="text-slate-500 text-sm text-center leading-relaxed">
+            Upload PDFs, images, and documents<br />to share with your team.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-[#0f1a2e] border border-white/[0.07] rounded-2xl overflow-hidden">
+          {files.map((file, i) => (
+            <div
+              key={file.id}
+              className={cn('flex items-center gap-3 px-4 py-3.5', i < files.length - 1 && 'border-b border-white/[0.05]')}
+            >
+              {/* Icon */}
+              <div className="w-9 h-9 rounded-xl bg-[#080c14] flex items-center justify-center shrink-0">
+                {file.contentType.startsWith('image/') ? (
+                  <ImageIcon size={18} className="text-[#67e8f9]" />
+                ) : file.contentType === 'application/pdf' ? (
+                  <FileText size={18} className="text-rose-400" />
+                ) : (
+                  <File size={18} className="text-[#a78bfa]" />
+                )}
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-100 truncate">{file.displayName}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <FileTypeBadge ct={file.contentType} />
+                  <span className="text-[11px] text-slate-500">{formatFileSize(file.sizeBytes)}</span>
+                  <span className="text-[11px] text-slate-600">
+                    {new Date(file.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <a
+                  href={file.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-[#67e8f9] hover:bg-[#67e8f9]/10 transition-colors"
+                  title="Open file"
+                >
+                  <ExternalLink size={15} />
+                </a>
+                {isAdmin && (
+                  <button
+                    onClick={() => handleDelete(file.id)}
+                    disabled={deletingId === file.id}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors disabled:opacity-40"
+                    title="Delete file"
+                  >
+                    {deletingId === file.id ? (
+                      <span className="w-3.5 h-3.5 rounded-full border-2 border-rose-400/30 border-t-rose-400 animate-spin block" />
+                    ) : (
+                      <Trash2 size={15} />
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Notices ────────────────────────────────────────────────────────────────────
 
 function NoticesPage({ onBack }: { onBack: () => void }) {
@@ -1082,7 +1328,7 @@ function NoticesPage({ onBack }: { onBack: () => void }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-type Tab = 'home' | 'availability' | 'links' | 'polls' | 'stats' | 'notifications' | 'notif-view' | 'switch-team' | 'create-team' | 'faqs' | 'feature-request' | 'report-bug' | 'notices';
+type Tab = 'home' | 'availability' | 'links' | 'polls' | 'files' | 'stats' | 'notifications' | 'notif-view' | 'switch-team' | 'create-team' | 'faqs' | 'feature-request' | 'report-bug' | 'notices';
 
 // ── Switch Team ────────────────────────────────────────────────────────────────
 
@@ -1183,6 +1429,7 @@ export default function MorePage() {
   if (tab === 'availability' && currentPlayer) return <AvailabilityPage player={currentPlayer} activeTeamId={activeTeamId} onBack={() => setTab('home')} />;
   if (tab === 'links') return <TeamLinksPage activeTeamId={activeTeamId} currentPlayerId={currentPlayerId} isAdmin={isAdmin} teamLinks={teamLinks} setTeamLinks={setTeamLinks} onBack={() => setTab('home')} />;
   if (tab === 'polls') return <TeamPollsPage activeTeamId={activeTeamId} currentPlayerId={currentPlayerId} isAdmin={isAdmin} polls={polls} setPolls={setPolls} onBack={() => setTab('home')} />;
+  if (tab === 'files') return <FileStoragePage activeTeamId={activeTeamId} isAdmin={isAdmin} onBack={() => setTab('home')} />;
   if (tab === 'stats') return <StatsAnalyticsPage teamSettings={teamSettings} onBack={() => setTab('home')} />;
   if (tab === 'notifications' && currentPlayer) return <NotificationsPage player={currentPlayer} activeTeamId={activeTeamId} onBack={() => setTab('home')} />;
   if (tab === 'notif-view') return <NotificationsViewPage onBack={() => setTab('home')} />;
@@ -1225,6 +1472,7 @@ export default function MorePage() {
         <MenuItem icon={CalendarOff} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="My Availability" sub="Set dates you're unavailable" onClick={() => setTab('availability')} />
         <MenuItem icon={LinkIcon} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Team Links" sub={linksSubText} onClick={() => setTab('links')} />
         <MenuItem icon={BarChart3} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Team Polls" sub={pollsSubText} onClick={() => setTab('polls')} />
+        <MenuItem icon={FolderOpen} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="File Storage" sub="PDFs, images, and documents" onClick={() => setTab('files')} />
         <MenuItem icon={TrendingUp} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Stats and Analytics" sub="Attendance and team statistics" onClick={() => setTab('stats')} />
         <MenuItem icon={UserPlus} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Create New Team" sub="Start a new team" onClick={() => setTab('create-team')} last />
       </SectionCard>

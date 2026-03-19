@@ -6,7 +6,6 @@ import { useTeamStore } from '@/lib/store';
 import { useTeamData } from '@/hooks/useTeamData';
 import { useAuth } from '@/hooks/useAuth';
 import Sidebar from '@/components/layout/Sidebar';
-import TopBar from '@/components/layout/TopBar';
 import MobileNav from '@/components/layout/MobileNav';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -42,7 +41,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <TopBar />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-20 lg:pb-6">
           {children}
         </main>
