@@ -230,14 +230,15 @@ export default function FileStorageScreen() {
       mimeType: string;
     }) => uploadTeamFile(uri, filename, mimeType, teamId),
     onSuccess: (newFile: TeamFile) => {
-      // Inject into cache immediately — optimistic update keeps all existing
-      // files and appends the new one. We do NOT invalidate right away because
-      // the storage service takes a few seconds to index the file; an early
-      // refetch would return stale data and wipe the update we just applied.
+      // Inject into cache immediately so the UI updates right away.
       queryClient.setQueryData(['team-files', teamId], (old: TeamFile[] = []) => {
         const withoutDupe = old.filter((f) => f.id !== newFile.id);
         return [...withoutDupe, newFile];
       });
+      // Re-fetch after 8 s to sync with storage (which can take several seconds to index).
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['team-files', teamId] });
+      }, 8000);
       setShowUploadModal(false);
       setUploadError(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

@@ -71,16 +71,26 @@ filesRouter.post("/upload/:teamId", async (c) => {
     return c.json({ error: errMsg }, 500);
   }
 
-  let result: { file: any };
+  let result: any;
   try {
     result = JSON.parse(responseText);
   } catch {
     console.error("[files] Storage returned non-JSON:", responseText.slice(0, 300));
     return c.json({ error: "Storage service returned unexpected response" }, 500);
   }
+
+  // Storage service may wrap in { file: {...} } or return the object directly
+  const raw = result?.file ?? result?.data ?? result;
+  console.log("[files] Storage upload result keys:", Object.keys(raw ?? {}));
+
+  if (!raw?.id) {
+    console.error("[files] Storage response missing id:", JSON.stringify(result).slice(0, 300));
+    return c.json({ error: "Storage returned incomplete file data" }, 500);
+  }
+
   const fileData = {
-    ...result.file,
-    displayName: safeName, // show original name without teamId/timestamp prefix
+    ...raw,
+    displayName: safeName,
   };
   return c.json({ data: fileData });
 });
