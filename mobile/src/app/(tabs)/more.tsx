@@ -29,6 +29,7 @@ import {
   ExternalLink,
   CalendarOff,
   FileText,
+  FolderOpen,
   UserX,
   UserCheck,
   HelpCircle,
@@ -1311,11 +1312,19 @@ export default function MoreScreen() {
           />
 
           <MenuItem
+            icon={<FolderOpen size={20} color="#67e8f9" />}
+            title="File Storage"
+            subtitle="Upload and share team documents"
+            onPress={() => router.push('/file-storage')}
+            index={4}
+          />
+
+          <MenuItem
             icon={<TrendingUp size={20} color="#67e8f9" />}
             title="Stats and Analytics"
             subtitle="Attendance and team statistics"
             onPress={() => router.push('/stats-analytics')}
-            index={4}
+            index={5}
           />
 
           <MenuItem

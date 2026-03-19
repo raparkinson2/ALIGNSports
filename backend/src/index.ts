@@ -7,6 +7,7 @@ import { authRouter } from "./routes/auth";
 import { notificationsRouter } from "./routes/notifications";
 import { paymentsRouter } from "./routes/payments";
 import { connectRouter } from "./routes/connect";
+import { filesRouter } from "./routes/files";
 import { logger } from "hono/logger";
 
 const app = new Hono();
@@ -44,6 +45,7 @@ app.route("/api/auth", authRouter);
 app.route("/api/notifications", notificationsRouter);
 app.route("/api/payments", paymentsRouter);
 app.route("/api/payments/connect", connectRouter);
+app.route("/api/team-files", filesRouter);
 
 const port = Number(process.env.PORT) || 3000;
 

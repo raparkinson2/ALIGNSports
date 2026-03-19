@@ -575,6 +575,13 @@ function AuthNavigator() {
           presentation: 'card',
         }}
       />
+      <Stack.Screen
+        name="file-storage"
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
       <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
     </Stack>
   );
