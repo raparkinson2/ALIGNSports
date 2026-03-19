@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter, Stack, useFocusEffect } from 'expo-router';
 import {
   ArrowLeft,
   FolderOpen,
@@ -25,7 +25,7 @@ import {
 } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTeamStore } from '@/lib/store';
 import {
@@ -217,6 +217,10 @@ export default function FileStorageScreen() {
     queryKey: ['team-files', teamId],
     queryFn: () => fetchTeamFiles(teamId),
     enabled: !!teamId,
+    // Don't auto-refetch on focus — that overwrites the optimistic update with
+    // stale cached data from the storage service. We control refetches manually.
+    refetchOnWindowFocus: false,
+    staleTime: 60_000,
   });
 
   const uploadMutation = useMutation({
@@ -257,6 +261,16 @@ export default function FileStorageScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
   });
+
+  // Refresh the list whenever the user navigates back to this screen (but only
+  // when no upload is in flight — we don't want to wipe the optimistic update).
+  useFocusEffect(
+    useCallback(() => {
+      if (teamId && !uploadMutation.isPending) {
+        queryClient.invalidateQueries({ queryKey: ['team-files', teamId] });
+      }
+    }, [teamId, queryClient, uploadMutation.isPending])
+  );
 
   const handlePickImage = async () => {
     setUploadError(null);
