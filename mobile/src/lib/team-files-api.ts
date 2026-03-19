@@ -26,7 +26,14 @@ export async function uploadTeamFile(
     body: formData,
   });
 
-  const data = (await response.json()) as { data?: TeamFile; error?: string };
+  const responseText = await response.text();
+  let data: { data?: TeamFile; error?: string };
+  try {
+    data = JSON.parse(responseText);
+  } catch {
+    console.error('[uploadTeamFile] Non-JSON response:', responseText.slice(0, 200));
+    throw new Error('Upload failed: server returned an unexpected response. Please try again.');
+  }
   if (!response.ok || data.error) {
     throw new Error(data.error ?? 'Upload failed');
   }

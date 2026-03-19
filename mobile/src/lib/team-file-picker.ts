@@ -17,15 +17,28 @@ export async function pickImageFile(): Promise<PickedFile | null> {
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     quality: 0.85,
     allowsEditing: false,
+    exif: false,
+    base64: false,
   });
 
   if (result.canceled || result.assets.length === 0) return null;
 
   const asset = result.assets[0];
+  // Normalize HEIC/HEIF to JPEG for storage compatibility
+  const rawMime = asset.mimeType ?? 'image/jpeg';
+  const mimeType =
+    rawMime === 'image/heic' || rawMime === 'image/heif' ? 'image/jpeg' : rawMime;
+  const rawName = asset.fileName ?? `image-${Date.now()}.jpg`;
+  // Ensure extension matches the MIME type we're sending
+  const filename =
+    mimeType === 'image/jpeg' && !rawName.match(/\.(jpg|jpeg)$/i)
+      ? rawName.replace(/\.[^.]+$/, '.jpg') || `image-${Date.now()}.jpg`
+      : rawName;
+
   return {
     uri: asset.uri,
-    filename: asset.fileName ?? `image-${Date.now()}.jpg`,
-    mimeType: asset.mimeType ?? 'image/jpeg',
+    filename,
+    mimeType,
     size: asset.fileSize,
   };
 }

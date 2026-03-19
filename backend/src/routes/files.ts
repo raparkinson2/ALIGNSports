@@ -59,18 +59,25 @@ filesRouter.post("/upload/:teamId", async (c) => {
     return c.json({ error: "Storage service unavailable" }, 500);
   }
 
+  const responseText = await response.text().catch(() => "");
+
   if (!response.ok) {
-    const bodyText = await response.text().catch(() => "");
     let errMsg = "Upload failed";
     try {
-      const err = JSON.parse(bodyText);
+      const err = JSON.parse(responseText);
       if (err?.error) errMsg = err.error;
     } catch {}
-    console.error("[files] Storage error response:", response.status, bodyText.slice(0, 200));
+    console.error("[files] Storage error response:", response.status, responseText.slice(0, 300));
     return c.json({ error: errMsg }, 500);
   }
 
-  const result = (await response.json()) as { file: any };
+  let result: { file: any };
+  try {
+    result = JSON.parse(responseText);
+  } catch {
+    console.error("[files] Storage returned non-JSON:", responseText.slice(0, 300));
+    return c.json({ error: "Storage service returned unexpected response" }, 500);
+  }
   const fileData = {
     ...result.file,
     displayName: safeName, // show original name without teamId/timestamp prefix
