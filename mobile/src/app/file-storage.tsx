@@ -244,11 +244,17 @@ export default function FileStorageScreen() {
     }) => uploadTeamFile(uri, filename, mimeType, teamId),
     onSuccess: (newFile: TeamFile) => {
       console.log('[FileStorage] onSuccess fired, newFile id:', newFile?.id, 'displayName:', newFile?.displayName);
+      // 1. Local state — shows file instantly this session
       setPendingFiles((prev) => {
         const next = [...prev.filter((f) => f.id !== newFile.id), newFile];
         console.log('[FileStorage] pendingFiles updated, count:', next.length);
         return next;
       });
+      // 2. QueryClient cache — persists across navigation/remount (staleTime: 60s)
+      queryClient.setQueryData<TeamFile[]>(['team-files', teamId], (old = []) => [
+        ...old.filter((f) => f.id !== newFile.id),
+        newFile,
+      ]);
       setShowUploadModal(false);
       setUploadError(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
