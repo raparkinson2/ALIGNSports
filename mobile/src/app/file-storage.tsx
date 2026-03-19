@@ -34,7 +34,7 @@ import {
   deleteTeamFile,
   formatFileSize,
   fileTypeLabel,
-  TeamFile,
+  type TeamFile,
 } from '@/lib/team-files-api';
 import { pickImageFile, pickDocumentFile } from '@/lib/team-file-picker';
 
@@ -229,12 +229,8 @@ export default function FileStorageScreen() {
       filename: string;
       mimeType: string;
     }) => uploadTeamFile(uri, filename, mimeType, teamId),
-    onSuccess: (newFile) => {
-      queryClient.setQueryData<TeamFile[]>(['team-files', teamId], (old) => {
-        const existing = old ?? [];
-        const without = existing.filter((f) => f.id !== newFile.id);
-        return [...without, newFile];
-      });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team-files', teamId] });
       setShowUploadModal(false);
       setUploadError(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
