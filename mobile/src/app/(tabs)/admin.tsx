@@ -1092,10 +1092,6 @@ export default function AdminScreen() {
           entering={FadeIn.delay(50)}
           className="px-5 pt-2 pb-4"
         >
-          <View className="flex-row items-center">
-            <Shield size={20} color="#a78bfa" />
-            <Text className="text-purple-400 text-sm font-medium ml-2">Admin</Text>
-          </View>
           <Text
             className="text-white text-3xl font-bold"
             numberOfLines={1}
