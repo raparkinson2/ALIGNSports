@@ -235,8 +235,12 @@ export default function FileStorageScreen() {
         const withoutDupe = old.filter((f) => f.id !== newFile.id);
         return [...withoutDupe, newFile];
       });
-      // Also kick off a background refetch to stay in sync
-      queryClient.invalidateQueries({ queryKey: ['team-files', teamId] });
+      // Delay the background refetch so the storage service has time to index
+      // the new file — an immediate refetch returns stale data and overwrites
+      // the optimistic update.
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['team-files', teamId] });
+      }, 3000);
       setShowUploadModal(false);
       setUploadError(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
