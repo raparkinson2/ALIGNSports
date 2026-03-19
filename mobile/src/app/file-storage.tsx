@@ -230,10 +230,12 @@ export default function FileStorageScreen() {
       mimeType: string;
     }) => uploadTeamFile(uri, filename, mimeType, teamId),
     onSuccess: (newFile) => {
-      // Immediately add to cache so UI updates even if storage list is eventually consistent
-      queryClient.setQueryData<TeamFile[]>(['team-files', teamId], (old) =>
-        old ? [...old, newFile] : [newFile]
-      );
+      // Immediately add to cache (deduped by id) so UI updates even if storage is eventually consistent
+      queryClient.setQueryData<TeamFile[]>(['team-files', teamId], (old) => {
+        const existing = old ?? [];
+        const without = existing.filter((f) => f.id !== newFile.id);
+        return [...without, newFile];
+      });
       // Also schedule a background refetch to sync with server
       queryClient.invalidateQueries({ queryKey: ['team-files', teamId] });
       setShowUploadModal(false);
@@ -373,7 +375,7 @@ export default function FileStorageScreen() {
               </Text>
             </Animated.View>
           ) : (
-            files.map((file, index) => {
+            [...new Map(files.map((f) => [f.id, f])).values()].map((file, index) => {
               const badge = typeBadgeStyle(file.contentType);
               return (
                 <Animated.View key={file.id} entering={FadeInDown.delay(index * 50).springify()}>
