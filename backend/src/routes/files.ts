@@ -1,14 +1,40 @@
 import { Hono } from "hono";
+import { createClient } from "@supabase/supabase-js";
 
 const filesRouter = new Hono();
 
-const STORAGE_BASE = "https://storage.vibecodeapp.com/v1";
+const BUCKET = "team-files";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SupabaseClient = ReturnType<typeof createClient<any>>;
+
+function getSupabase(): SupabaseClient {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error("Supabase env vars not set");
+  return createClient(url, key) as SupabaseClient;
+}
 
 // Blocked MIME type prefixes
 const BLOCKED_PREFIXES = ["video/", "audio/"];
 
 function isAllowedType(contentType: string): boolean {
-  return !BLOCKED_PREFIXES.some((prefix) => contentType.startsWith(prefix));
+  return !BLOCKED_PREFIXES.some((p) => contentType.startsWith(p));
+}
+
+// Ensure the bucket exists (called lazily on first upload/list)
+async function ensureBucket(supabase: ReturnType<typeof createClient>) {
+  const { data: buckets } = await supabase.storage.listBuckets();
+  const exists = buckets?.some((b) => b.name === BUCKET);
+  if (!exists) {
+    const { error } = await supabase.storage.createBucket(BUCKET, {
+      public: true,
+      fileSizeLimit: 52428800, // 50 MB
+    });
+    if (error && !error.message.includes("already exists")) {
+      console.error("[files] Failed to create bucket:", error.message);
+    }
+  }
 }
 
 // Upload a file for a team
@@ -23,7 +49,6 @@ filesRouter.post("/upload/:teamId", async (c) => {
   }
 
   const file = formData.get("file");
-
   if (!file || !(file instanceof File)) {
     return c.json({ error: "No file provided" }, 400);
   }
@@ -38,60 +63,49 @@ filesRouter.post("/upload/:teamId", async (c) => {
     (typeof explicitFilename === "string" ? explicitFilename : null) ||
     `upload_${Date.now()}`;
   const safeName = rawName.replace(/[^a-zA-Z0-9._\-() ]/g, "_");
-
-  // Include a timestamp so every upload produces a unique storage entry even
-  // when the same filename is re-uploaded. Format: teamId__<ts>__originalName
   const ts = Date.now();
-  const prefixedName = `${teamId}__${ts}__${safeName}`;
-  const renamedFile = new File([file], prefixedName, { type: file.type });
+  // Path: teamId/timestamp__filename  (teamId acts as the "folder")
+  const storagePath = `${teamId}/${ts}__${safeName}`;
 
-  const storageForm = new FormData();
-  storageForm.append("file", renamedFile);
-
-  let response: Response;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let supabase: any;
   try {
-    response = await fetch(`${STORAGE_BASE}/files/upload`, {
-      method: "POST",
-      body: storageForm,
+    supabase = getSupabase();
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
+
+  await ensureBucket(supabase);
+
+  const arrayBuffer = await file.arrayBuffer();
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .upload(storagePath, arrayBuffer, {
+      contentType: file.type,
+      upsert: false,
     });
-  } catch (fetchErr) {
-    console.error("[files] Storage fetch error:", fetchErr);
-    return c.json({ error: "Storage service unavailable" }, 500);
+
+  if (error) {
+    console.error("[files] Supabase upload error:", error.message);
+    return c.json({ error: `Upload failed: ${error.message}` }, 500);
   }
 
-  const responseText = await response.text().catch(() => "");
-
-  if (!response.ok) {
-    let errMsg = "Upload failed";
-    try {
-      const err = JSON.parse(responseText);
-      if (err?.error) errMsg = err.error;
-    } catch {}
-    console.error("[files] Storage error response:", response.status, responseText.slice(0, 300));
-    return c.json({ error: errMsg }, 500);
-  }
-
-  let result: any;
-  try {
-    result = JSON.parse(responseText);
-  } catch {
-    console.error("[files] Storage returned non-JSON:", responseText.slice(0, 300));
-    return c.json({ error: "Storage service returned unexpected response" }, 500);
-  }
-
-  // Storage service may wrap in { file: {...} } or return the object directly
-  const raw = result?.file ?? result?.data ?? result;
-  console.log("[files] Storage upload result keys:", Object.keys(raw ?? {}));
-
-  if (!raw?.id) {
-    console.error("[files] Storage response missing id:", JSON.stringify(result).slice(0, 300));
-    return c.json({ error: "Storage returned incomplete file data" }, 500);
-  }
+  const { data: urlData } = supabase.storage
+    .from(BUCKET)
+    .getPublicUrl(storagePath);
 
   const fileData = {
-    ...raw,
+    id: data.id ?? storagePath,
+    path: storagePath,
+    originalFilename: storagePath,
     displayName: safeName,
+    contentType: file.type,
+    sizeBytes: file.size,
+    url: urlData.publicUrl,
+    created: new Date().toISOString(),
   };
+
+  console.log("[files] Uploaded:", storagePath);
   return c.json({ data: fileData });
 });
 
@@ -99,57 +113,70 @@ filesRouter.post("/upload/:teamId", async (c) => {
 filesRouter.get("/:teamId", async (c) => {
   const { teamId } = c.req.param();
 
-  let response: Response;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let supabase: any;
   try {
-    response = await fetch(`${STORAGE_BASE}/files?limit=500`);
-  } catch (fetchErr) {
-    console.error("[files] Storage list error:", fetchErr);
-    return c.json({ error: "Storage service unavailable" }, 500);
+    supabase = getSupabase();
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
   }
 
-  if (!response.ok) {
+  await ensureBucket(supabase);
+
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .list(teamId, { limit: 500, sortBy: { column: "created_at", order: "desc" } });
+
+  if (error) {
+    console.error("[files] Supabase list error:", error.message);
     return c.json({ error: "Failed to list files" }, 500);
   }
 
-  const result = (await response.json()) as { files: any[] };
-  const allFiles = result.files ?? [];
-  const prefix = `${teamId}__`;
-
-  // Log to help diagnose which fields the storage service returns
-  if (allFiles.length > 0) {
-    const sample = allFiles[0];
-    console.log(`[files] list: total=${allFiles.length} sample_keys=${Object.keys(sample).join(",")}`);
-  } else {
-    console.log(`[files] list: storage returned 0 files total`);
-  }
-
-  const teamFiles = allFiles
-    .filter((f: any) => {
-      // Storage service may use originalFilename, filename, or name
-      const fname = f.originalFilename ?? f.filename ?? f.name ?? "";
-      return fname.startsWith(prefix);
-    })
+  const files = (data ?? [] as any[])
+    .filter((f: any) => f.name !== ".emptyFolderPlaceholder")
     .map((f: any) => {
-      const fname = f.originalFilename ?? f.filename ?? f.name ?? "";
-      const withoutTeam = fname.slice(prefix.length);
-      const displayName = withoutTeam.replace(/^\d{10,}__/, "");
-      // Normalise so the frontend always gets originalFilename
-      return { ...f, originalFilename: fname, displayName };
+      const storagePath = `${teamId}/${f.name}`;
+      const { data: urlData } = supabase.storage
+        .from(BUCKET)
+        .getPublicUrl(storagePath);
+
+      // Strip timestamp prefix to get the display name
+      const displayName = f.name.replace(/^\d{10,}__/, "");
+
+      return {
+        id: f.id ?? storagePath,
+        path: storagePath,
+        originalFilename: storagePath,
+        displayName,
+        contentType: f.metadata?.mimetype ?? "application/octet-stream",
+        sizeBytes: f.metadata?.size ?? 0,
+        url: urlData.publicUrl,
+        created: f.created_at ?? new Date().toISOString(),
+      };
     });
 
-  console.log(`[files] list: teamId=${teamId} matched=${teamFiles.length}`);
-  return c.json({ data: teamFiles });
+  console.log(`[files] list teamId=${teamId} count=${files.length}`);
+  return c.json({ data: files });
 });
 
-// Delete a file
+// Delete a file by its storage path (id = path)
 filesRouter.delete("/delete/:fileId", async (c) => {
   const { fileId } = c.req.param();
 
-  const response = await fetch(`${STORAGE_BASE}/files/${fileId}`, {
-    method: "DELETE",
-  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let supabase: any;
+  try {
+    supabase = getSupabase();
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
 
-  if (!response.ok) {
+  // fileId may be a full path like "team-xxx/ts__name.pdf"
+  // or just an opaque id — try to delete by treating it as the path first
+  const { error } = await supabase.storage.from(BUCKET).remove([fileId]);
+
+  if (error) {
+    console.error("[files] Supabase delete error:", error.message);
     return c.json({ error: "Delete failed" }, 500);
   }
 
