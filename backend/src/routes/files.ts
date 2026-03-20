@@ -95,7 +95,7 @@ filesRouter.post("/upload/:teamId", async (c) => {
     .getPublicUrl(storagePath);
 
   const fileData = {
-    id: data.id ?? storagePath,
+    id: storagePath,
     path: storagePath,
     originalFilename: storagePath,
     displayName: safeName,
@@ -144,7 +144,7 @@ filesRouter.get("/:teamId", async (c) => {
       const displayName = f.name.replace(/^\d{10,}__/, "");
 
       return {
-        id: f.id ?? storagePath,
+        id: storagePath,
         path: storagePath,
         originalFilename: storagePath,
         displayName,
@@ -159,9 +159,10 @@ filesRouter.get("/:teamId", async (c) => {
   return c.json({ data: files });
 });
 
-// Delete a file by its storage path (id = path)
-filesRouter.delete("/delete/:fileId", async (c) => {
-  const { fileId } = c.req.param();
+// Delete a file by its storage path: /delete/:teamId/:filename
+filesRouter.delete("/delete/:teamId/:filename", async (c) => {
+  const { teamId, filename } = c.req.param();
+  const filePath = `${teamId}/${filename}`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let supabase: any;
@@ -173,7 +174,7 @@ filesRouter.delete("/delete/:fileId", async (c) => {
 
   // fileId may be a full path like "team-xxx/ts__name.pdf"
   // or just an opaque id — try to delete by treating it as the path first
-  const { error } = await supabase.storage.from(BUCKET).remove([fileId]);
+  const { error } = await supabase.storage.from(BUCKET).remove([filePath]);
 
   if (error) {
     console.error("[files] Supabase delete error:", error.message);
