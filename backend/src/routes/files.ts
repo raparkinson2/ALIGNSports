@@ -112,17 +112,32 @@ filesRouter.get("/:teamId", async (c) => {
   }
 
   const result = (await response.json()) as { files: any[] };
+  const allFiles = result.files ?? [];
   const prefix = `${teamId}__`;
 
-  const teamFiles = (result.files ?? [])
-    .filter((f: any) => f.originalFilename?.startsWith(prefix))
+  // Log to help diagnose which fields the storage service returns
+  if (allFiles.length > 0) {
+    const sample = allFiles[0];
+    console.log(`[files] list: total=${allFiles.length} sample_keys=${Object.keys(sample).join(",")}`);
+  } else {
+    console.log(`[files] list: storage returned 0 files total`);
+  }
+
+  const teamFiles = allFiles
+    .filter((f: any) => {
+      // Storage service may use originalFilename, filename, or name
+      const fname = f.originalFilename ?? f.filename ?? f.name ?? "";
+      return fname.startsWith(prefix);
+    })
     .map((f: any) => {
-      // Strip teamId__ and optional timestamp__ to recover the original filename
-      const withoutTeam = f.originalFilename.slice(prefix.length);
+      const fname = f.originalFilename ?? f.filename ?? f.name ?? "";
+      const withoutTeam = fname.slice(prefix.length);
       const displayName = withoutTeam.replace(/^\d{10,}__/, "");
-      return { ...f, displayName };
+      // Normalise so the frontend always gets originalFilename
+      return { ...f, originalFilename: fname, displayName };
     });
 
+  console.log(`[files] list: teamId=${teamId} matched=${teamFiles.length}`);
   return c.json({ data: teamFiles });
 });
 
