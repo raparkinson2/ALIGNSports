@@ -159,6 +159,12 @@ filesRouter.get("/:teamId", async (c) => {
   return c.json({ data: files });
 });
 
+// Fallback: legacy single-segment id (UUID from old storage service) — just return success
+filesRouter.delete("/delete/:fileId", async (c) => {
+  console.log("[files] legacy delete id:", c.req.param("fileId"), "— returning success");
+  return c.json({ data: { success: true } });
+});
+
 // Delete a file by its storage path: /delete/:teamId/:filename
 filesRouter.delete("/delete/:teamId/:filename", async (c) => {
   const { teamId, filename } = c.req.param();
